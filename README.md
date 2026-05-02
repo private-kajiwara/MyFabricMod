@@ -1,4 +1,4 @@
-# Template Mod
+# ここはminecraftの自作Modリポジトリです
 
 ## Setup
 
