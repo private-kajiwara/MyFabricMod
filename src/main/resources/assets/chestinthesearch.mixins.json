@@ -5,6 +5,7 @@
   "mixins": [
   ],
   "client": [
+    "GenericContainerScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1
