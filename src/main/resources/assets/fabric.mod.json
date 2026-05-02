@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "chestinthesearch",
+  "version": "${version}",
+  "name": "Chest In The Search",
+  "description": "チェストやシュルカーボックス内のアイテムを検索・自動整理するModです。",
+  "authors": [
+    "Your Name"
+  ],
+  "contact": {
+    "homepage": "https://github.com/yourusername/ChestInTheSearch",
+    "sources": "https://github.com/yourusername/ChestInTheSearch"
+  },
+  "license": "MIT",
+  "icon": "assets/chestinthesearch/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.yourname.chestinthesearch.ChestInTheSearch"
+    ],
+    "client": [
+      "com.yourname.chestinthesearch.ChestInTheSearchClient"
+    ]
+  },
+  "mixins": [
+    "chestinthesearch.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.5",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
