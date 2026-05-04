@@ -1,31 +1,28 @@
 {
 	"schemaVersion": 1,
-	"id": "template-mod",
+	"id": "chestinthesearch",
 	"version": "${version}",
-	"name": "Template Mod",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"name": "Chest In The Search",
+	"description": "A mod that adds chest search functionality.",
 	"authors": [
-		"Me!"
+		"kajiwara"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://fabricmc.net/"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/template-mod/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.example.TemplateMod"
+			"com.kajiwara.chestinthesearch.ChestInTheSearch"
 		],
 		"client": [
-			"com.example.client.TemplateModClient"
+			"com.kajiwara.chestinthesearch.ChestInTheSearchClient"
 		]
 	},
 	"mixins": [
-		"template-mod.mixins.json",
 		{
-			"config": "template-mod.client.mixins.json",
+			"config": "chestinthesearch.client.mixins.json",
 			"environment": "client"
 		}
 	],

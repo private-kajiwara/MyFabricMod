@@ -18,7 +18,7 @@ loom {
 	splitEnvironmentSourceSets()
 
 	mods {
-		"template-mod" {
+		"chestinthesearch" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}
