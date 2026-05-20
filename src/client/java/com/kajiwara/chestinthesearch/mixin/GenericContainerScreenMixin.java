@@ -1,6 +1,5 @@
 package com.kajiwara.chestinthesearch.mixin;
 
-import com.kajiwara.chestinthesearch.ChestInTheSearch;
 import com.kajiwara.chestinthesearch.util.ContainerSorter;
 import com.kajiwara.chestinthesearch.util.DepositMatchingHelper;
 import net.minecraft.client.Minecraft;
@@ -75,18 +74,14 @@ public abstract class GenericContainerScreenMixin extends Screen {
         // ───────────────────────────────────────────────────────────
         AbstractContainerMenu anyMenu = ((AbstractContainerScreen<?>) (Object) this).getMenu();
         int containerSlotCount = DepositMatchingHelper.detectContainerSlotCount(anyMenu);
-        ChestInTheSearch.LOGGER.info("[CITS] init TAIL: menu={}, containerSlotCount={}",
-                anyMenu.getClass().getSimpleName(), containerSlotCount);
         if (containerSlotCount > 0) {
             this.cits$depositButton = Button.builder(
-                    Component.literal("Deposit Matching"),
+                    Component.literal("同種預入"),
                     btn -> DepositMatchingHelper.depositMatching(
                             Minecraft.getInstance(), anyMenu, containerSlotCount))
                     .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                     .build();
             this.addRenderableWidget(this.cits$depositButton);
-            ChestInTheSearch.LOGGER.info("[CITS] depositButton added: leftPos={}, topPos={}, imageWidth={}",
-                    this.leftPos, this.topPos, this.imageWidth);
         }
 
         // ───────────────────────────────────────────────────────────
@@ -203,15 +198,11 @@ public abstract class GenericContainerScreenMixin extends Screen {
      * <p>
      * 配置先:
      * <ul>
-     * <li>通常: GUI の上 (topPos - offset) に置く。
-     * <ul>
-     * <li>小型チェスト: 既存の search/sort 行 (topPos - 18) を避けて topPos - 36</li>
-     * <li>ラージチェスト / シュルカー等: 上段ウィジェットが無いので topPos - 18</li>
-     * </ul>
-     * </li>
-     * <li>フォールバック: GUI スケールが大きく上に余地が無い (topPos が小さい) 場合、
-     * GUI 内のタイトル帯の右端 (topPos + 4) に退避する。
-     * タイトル文字は左寄せなので、右端のボタンとはほぼ重ならない。</li>
+     * <li>ラージチェスト: 既存の側面パネル (◀▶/検索/種類/数量) の「数量ボタンの下」、
+     * 数量ボタンと同じ幅 (panelWidth = 80) で配置する。
+     * layoutRight に追従して左右どちらの側面でも正しく付く。</li>
+     * <li>小型チェスト / シュルカー等: GUI 画像の「真横 (右隣)」、タイトル帯と同じ高さに、
+     * 標準幅 ({@link #CITS_DEPOSIT_WIDTH}) で配置する。</li>
      * </ul>
      */
     @Unique
@@ -219,26 +210,30 @@ public abstract class GenericContainerScreenMixin extends Screen {
         if (this.cits$depositButton == null)
             return;
 
-        int width = CITS_DEPOSIT_WIDTH;
-        int x = this.leftPos + this.imageWidth - width;
-
-        // 既存の検索/ソート行が topPos - 18 に居るのは「小型チェスト」のみ。
-        // ラージチェストでは横の側面パネルに移動するため、 topPos - 18 は空いている。
-        boolean smallChestRowOccupied = (this.cits$searchBox != null) && !this.cits$isLargeChest;
-        int desiredOffsetAbove = smallChestRowOccupied ? 36 : 18;
-
+        int margin = 4;
+        int x;
         int y;
-        if (this.topPos - desiredOffsetAbove >= 2) {
-            // 上に余裕あり: GUI の外 (上) に置く
-            y = this.topPos - desiredOffsetAbove;
+        int width;
+
+        if (this.cits$isLargeChest) {
+            // ラージチェスト: 側面パネルの 数量 ボタン (y+54) の更に下 = y+72。
+            // 幅は panelWidth (= 数量 と同じ 80) に合わせる。
+            int panelWidth = 80;
+            int sideX = this.cits$layoutRight
+                    ? this.leftPos + this.imageWidth + margin
+                    : this.leftPos - panelWidth - margin;
+            x = sideX;
+            y = this.topPos + 72;
+            width = panelWidth;
         } else {
-            // 余裕無し: GUI 内タイトル帯の右端に退避 (右上の中)
-            y = this.topPos + 4;
+            // 小型チェスト / シュルカー等: GUI 画像の右隣、 GUI のタイトル帯と同じ Y。
+            x = this.leftPos + this.imageWidth + margin;
+            y = this.topPos;
+            width = CITS_DEPOSIT_WIDTH;
         }
 
         this.cits$depositButton.setX(x);
         this.cits$depositButton.setY(y);
         this.cits$depositButton.setWidth(width);
-        ChestInTheSearch.LOGGER.info("[CITS] depositButton positioned at x={}, y={}, w={}", x, y, width);
     }
 }
