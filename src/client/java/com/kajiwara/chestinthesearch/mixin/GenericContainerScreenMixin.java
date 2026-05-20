@@ -47,7 +47,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
     private boolean cits$isLargeChest = false;
 
     @Unique
-    private boolean cits$layoutRight = false;
+    private boolean cits$layoutRight = true;
 
     protected GenericContainerScreenMixin(Component title) {
         super(title);
