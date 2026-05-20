@@ -55,7 +55,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
     @Inject(method = "init", at = @At("TAIL"))
     private void cits$initWidgets(CallbackInfo ci) {
-        if (!((Object) this instanceof ContainerScreen containerScreen)) return;
+        if (!((Object) this instanceof ContainerScreen containerScreen))
+            return;
 
         ChestMenu menu = containerScreen.getMenu();
         int slotCount = menu.getRowCount() * 9;
@@ -69,14 +70,14 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
         this.cits$sortByTypeButton = Button.builder(
                 Component.literal("種類"),
-                btn -> ContainerSorter.sortByCategory(Minecraft.getInstance(), menu, slotCount)
-        ).bounds(0, 0, 26, 14).build();
+                btn -> ContainerSorter.sortByCategory(Minecraft.getInstance(), menu, slotCount)).bounds(0, 0, 26, 14)
+                .build();
         this.addRenderableWidget(this.cits$sortByTypeButton);
 
         this.cits$sortByCountButton = Button.builder(
                 Component.literal("数量"),
-                btn -> ContainerSorter.sortByCount(Minecraft.getInstance(), menu, slotCount)
-        ).bounds(0, 0, 26, 14).build();
+                btn -> ContainerSorter.sortByCount(Minecraft.getInstance(), menu, slotCount)).bounds(0, 0, 26, 14)
+                .build();
         this.addRenderableWidget(this.cits$sortByCountButton);
 
         if (this.cits$isLargeChest) {
@@ -85,8 +86,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     btn -> {
                         this.cits$layoutRight = false;
                         this.cits$applyLayout();
-                    }
-            ).bounds(0, 0, 20, 14).build();
+                    }).bounds(0, 0, 20, 14).build();
             this.addRenderableWidget(this.cits$layoutLeftButton);
 
             this.cits$layoutRightButton = Button.builder(
@@ -94,8 +94,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     btn -> {
                         this.cits$layoutRight = true;
                         this.cits$applyLayout();
-                    }
-            ).bounds(0, 0, 20, 14).build();
+                    }).bounds(0, 0, 20, 14).build();
             this.addRenderableWidget(this.cits$layoutRightButton);
         }
 

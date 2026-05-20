@@ -14,15 +14,18 @@ import java.util.List;
 
 public final class ContainerSorter {
 
-    private ContainerSorter() {}
+    private ContainerSorter() {
+    }
 
     public static void sortByCategory(Minecraft mc, AbstractContainerMenu menu, int slotCount) {
         sortWith(mc, menu, slotCount, (a, b) -> {
             int catA = category(a);
             int catB = category(b);
-            if (catA != catB) return Integer.compare(catA, catB);
+            if (catA != catB)
+                return Integer.compare(catA, catB);
             int nameComp = a.getHoverName().getString().compareTo(b.getHoverName().getString());
-            if (nameComp != 0) return nameComp;
+            if (nameComp != 0)
+                return nameComp;
             return Integer.compare(b.getCount(), a.getCount());
         });
     }
@@ -30,14 +33,16 @@ public final class ContainerSorter {
     public static void sortByCount(Minecraft mc, AbstractContainerMenu menu, int slotCount) {
         sortWith(mc, menu, slotCount, (a, b) -> {
             int countComp = Integer.compare(b.getCount(), a.getCount());
-            if (countComp != 0) return countComp;
+            if (countComp != 0)
+                return countComp;
             return a.getHoverName().getString().compareTo(b.getHoverName().getString());
         });
     }
 
     private static void sortWith(Minecraft mc, AbstractContainerMenu menu, int slotCount,
-                                Comparator<ItemStack> comparator) {
-        if (mc.player == null || mc.gameMode == null || slotCount <= 0) return;
+            Comparator<ItemStack> comparator) {
+        if (mc.player == null || mc.gameMode == null || slotCount <= 0)
+            return;
 
         List<ItemStack> items = new ArrayList<>(slotCount);
         for (int i = 0; i < slotCount; i++) {
@@ -47,8 +52,10 @@ public final class ContainerSorter {
         List<Integer> filled = new ArrayList<>();
         List<Integer> empty = new ArrayList<>();
         for (int i = 0; i < slotCount; i++) {
-            if (items.get(i).isEmpty()) empty.add(i);
-            else filled.add(i);
+            if (items.get(i).isEmpty())
+                empty.add(i);
+            else
+                filled.add(i);
         }
 
         filled.sort((a, b) -> comparator.compare(items.get(a), items.get(b)));
@@ -67,7 +74,8 @@ public final class ContainerSorter {
             int wantOrig = desired.get(target);
             int src = posOf[wantOrig];
 
-            if (src == target) continue;
+            if (src == target)
+                continue;
 
             boolean targetHasItem = !items.get(origOf[target]).isEmpty();
             swapSlots(mc, menu, target, src, targetHasItem);
@@ -81,7 +89,7 @@ public final class ContainerSorter {
     }
 
     private static void swapSlots(Minecraft mc, AbstractContainerMenu menu,
-                                int target, int src, boolean targetHasItem) {
+            int target, int src, boolean targetHasItem) {
         mc.gameMode.handleInventoryMouseClick(menu.containerId, src, 0, ClickType.PICKUP, mc.player);
         mc.gameMode.handleInventoryMouseClick(menu.containerId, target, 0, ClickType.PICKUP, mc.player);
         if (targetHasItem) {
@@ -107,12 +115,14 @@ public final class ContainerSorter {
                 || id.equals("carrot_on_a_stick") || id.equals("warped_fungus_on_a_stick")) {
             return 2;
         }
-        if (stack.has(DataComponents.FOOD)) return 3;
+        if (stack.has(DataComponents.FOOD))
+            return 3;
         if (id.equals("potion") || id.equals("splash_potion")
                 || id.equals("lingering_potion") || id.equals("tipped_arrow")) {
             return 4;
         }
-        if (stack.getItem() instanceof BlockItem) return 6;
+        if (stack.getItem() instanceof BlockItem)
+            return 6;
         return 5;
     }
 }
