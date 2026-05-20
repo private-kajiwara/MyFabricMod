@@ -1,5 +1,6 @@
 package com.kajiwara.chestinthesearch.mixin;
 
+import com.kajiwara.chestinthesearch.client.gui.SearchScreen;
 import com.kajiwara.chestinthesearch.util.ContainerSorter;
 import com.kajiwara.chestinthesearch.util.DepositMatchingHelper;
 import com.kajiwara.chestinthesearch.util.StackCompactor;
@@ -55,6 +56,12 @@ public abstract class GenericContainerScreenMixin extends Screen {
     // Shift+Click 時はプレイヤーインベントリ側も圧縮する (オプション仕様)。
     @Unique
     private Button cits$compactButton;
+
+    // 「倉庫検索 (Chest Network Search)」ボタン本体。
+    // クリックで {@link SearchScreen} を開く (チェスト GUI は閉じられる)。
+    // Deposit / Compact と同じく、対応 GUI のときのみ生成し、 Compact の直下に同サイズで配置。
+    @Unique
+    private Button cits$searchNetworkButton;
 
     // Deposit / Compact ボタン用の寸法定数 (ボタン右上配置の右端基準)
     @Unique
@@ -112,6 +119,19 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                     .build();
             this.addRenderableWidget(this.cits$compactButton);
+
+            // ───────────────────────────────────────────────────────────
+            // 「倉庫検索 (Chest Network Search)」ボタン。 Compact の直下に同サイズで配置。
+            // 押下で SearchScreen を開く。 Screen 切替により、現在のチェスト GUI は閉じられる。
+            // ───────────────────────────────────────────────────────────
+            // Mixin クラスは {@code extends Screen} を宣言しているので {@code this} を
+            // そのまま Screen として渡せる (実行時の自己型は AbstractContainerScreen)。
+            this.cits$searchNetworkButton = Button.builder(
+                    Component.literal("倉庫検索"),
+                    btn -> SearchScreen.open(this))
+                    .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
+                    .build();
+            this.addRenderableWidget(this.cits$searchNetworkButton);
         }
 
         // ───────────────────────────────────────────────────────────
@@ -272,6 +292,14 @@ public abstract class GenericContainerScreenMixin extends Screen {
             this.cits$compactButton.setX(x);
             this.cits$compactButton.setY(y + 18);
             this.cits$compactButton.setWidth(width);
+        }
+
+        // 倉庫検索ボタンは Compact ボタンの真下に「同じサイズ・同じ X」で配置する。
+        // = 既存追加ボタン群の一番下。サイズも統一。
+        if (this.cits$searchNetworkButton != null) {
+            this.cits$searchNetworkButton.setX(x);
+            this.cits$searchNetworkButton.setY(y + 36);
+            this.cits$searchNetworkButton.setWidth(width);
         }
     }
 }
