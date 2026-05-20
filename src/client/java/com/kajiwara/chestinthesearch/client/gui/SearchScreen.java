@@ -308,7 +308,8 @@ public class SearchScreen extends Screen {
 
         SearchIndex.SearchResult clicked = this.results.get(index);
         // ハイライト発火 → 前の screen に戻す (parent が null ならゲーム画面)。
-        ChestHighlighter.get().highlight(clicked.snapshot());
+        // ピン横ラベルに「検索ヒットしたアイテム名 ×総量」を表示する。
+        ChestHighlighter.get().highlight(clicked.snapshot(), clicked.stack(), clicked.count());
         this.onClose();
         return true;
     }
