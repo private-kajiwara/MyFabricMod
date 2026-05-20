@@ -9,6 +9,9 @@ For setup instructions, please see the [Fabric Documentation page](https://docs.
 <br>
 .\build-mod.bat    # ビルド
 
+## jar file build command
+.\gradlew.bat build
+
 ## License
 
 This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
