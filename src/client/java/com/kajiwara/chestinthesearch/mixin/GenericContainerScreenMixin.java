@@ -122,13 +122,25 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
             // ───────────────────────────────────────────────────────────
             // 「倉庫検索 (Chest Network Search)」ボタン。 Compact の直下に同サイズで配置。
-            // 押下で SearchScreen を開く。 Screen 切替により、現在のチェスト GUI は閉じられる。
+            //
+            // 押下の流れ:
+            //   1) player.closeContainer() でサーバへ ContainerClose パケットを送る。
+            //      これをしないと mc.setScreen(...) だけでは ContainerClose が送られず、
+            //      サーバ側でチェストが「開きっぱなし」扱いになる
+            //      ({@link AbstractContainerScreen#onClose} を経由しないため)。
+            //   2) その上で SearchScreen を開く (parent は null = 戻り先はゲーム画面)。
             // ───────────────────────────────────────────────────────────
-            // Mixin クラスは {@code extends Screen} を宣言しているので {@code this} を
-            // そのまま Screen として渡せる (実行時の自己型は AbstractContainerScreen)。
             this.cits$searchNetworkButton = Button.builder(
                     Component.literal("倉庫検索"),
-                    btn -> SearchScreen.open(this))
+                    btn -> {
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc.player != null) {
+                            // ContainerClose を送信し、 client 側の containerMenu を inventoryMenu に戻す。
+                            mc.player.closeContainer();
+                        }
+                        // チェスト GUI は既に閉じる扱いになっているので parent は不要。
+                        SearchScreen.open(null);
+                    })
                     .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                     .build();
             this.addRenderableWidget(this.cits$searchNetworkButton);
