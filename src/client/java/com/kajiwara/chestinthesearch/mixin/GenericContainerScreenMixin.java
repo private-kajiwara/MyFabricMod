@@ -1,5 +1,6 @@
 package com.kajiwara.chestinthesearch.mixin;
 
+import com.kajiwara.chestinthesearch.ChestInTheSearch;
 import com.kajiwara.chestinthesearch.util.ContainerSorter;
 import com.kajiwara.chestinthesearch.util.DepositMatchingHelper;
 import net.minecraft.client.Minecraft;
@@ -69,11 +70,13 @@ public abstract class GenericContainerScreenMixin extends Screen {
     private void cits$initWidgets(CallbackInfo ci) {
         // ───────────────────────────────────────────────────────────
         // (1) 「Deposit Matching」ボタンの追加
-        //     対応している ScreenHandler のときだけ生成する。
-        //     非対応 (例: InventoryScreen の InventoryMenu) では生成しない。
+        // 対応している ScreenHandler のときだけ生成する。
+        // 非対応 (例: InventoryScreen の InventoryMenu) では生成しない。
         // ───────────────────────────────────────────────────────────
         AbstractContainerMenu anyMenu = ((AbstractContainerScreen<?>) (Object) this).getMenu();
         int containerSlotCount = DepositMatchingHelper.detectContainerSlotCount(anyMenu);
+        ChestInTheSearch.LOGGER.info("[CITS] init TAIL: menu={}, containerSlotCount={}",
+                anyMenu.getClass().getSimpleName(), containerSlotCount);
         if (containerSlotCount > 0) {
             this.cits$depositButton = Button.builder(
                     Component.literal("Deposit Matching"),
@@ -82,12 +85,14 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                     .build();
             this.addRenderableWidget(this.cits$depositButton);
+            ChestInTheSearch.LOGGER.info("[CITS] depositButton added: leftPos={}, topPos={}, imageWidth={}",
+                    this.leftPos, this.topPos, this.imageWidth);
         }
 
         // ───────────────────────────────────────────────────────────
         // (2) 既存の検索/ソート関連は、これまで通り ContainerScreen のみで動作。
-        //     ただし Deposit ボタンの位置決めは行うため、ここで早期 return せず
-        //     先に layout だけ呼ぶ。
+        // ただし Deposit ボタンの位置決めは行うため、ここで早期 return せず
+        // 先に layout だけ呼ぶ。
         // ───────────────────────────────────────────────────────────
         if (!((Object) this instanceof ContainerScreen containerScreen)) {
             this.cits$applyLayout();
@@ -147,7 +152,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
         // 検索/ソート系は ContainerScreen のみで生成されるため、
         // それ以外 (= cits$searchBox が null) では以降の処理は不要。
-        if (this.cits$searchBox == null) return;
+        if (this.cits$searchBox == null)
+            return;
 
         if (!this.cits$isLargeChest) {
             int y = this.topPos - 18;
@@ -194,19 +200,45 @@ public abstract class GenericContainerScreenMixin extends Screen {
     /**
      * 「Deposit Matching」ボタンを GUI 右上に配置する。
      *
-     * <p>ChestScreen では既存の search/sort 行 (topPos - 18) を避けて 1 段上に置き、
-     * それ以外の対応 GUI (ShulkerBoxScreen 等) では GUI 直上 (topPos - 18) に置く。
+     * <p>
+     * 配置先:
+     * <ul>
+     * <li>通常: GUI の上 (topPos - offset) に置く。
+     * <ul>
+     * <li>小型チェスト: 既存の search/sort 行 (topPos - 18) を避けて topPos - 36</li>
+     * <li>ラージチェスト / シュルカー等: 上段ウィジェットが無いので topPos - 18</li>
+     * </ul>
+     * </li>
+     * <li>フォールバック: GUI スケールが大きく上に余地が無い (topPos が小さい) 場合、
+     * GUI 内のタイトル帯の右端 (topPos + 4) に退避する。
+     * タイトル文字は左寄せなので、右端のボタンとはほぼ重ならない。</li>
+     * </ul>
      */
     @Unique
     private void cits$applyDepositButtonLayout() {
-        if (this.cits$depositButton == null) return;
+        if (this.cits$depositButton == null)
+            return;
 
-        int x = this.leftPos + this.imageWidth - CITS_DEPOSIT_WIDTH;
-        // search box の有無で既存の上段行が存在するかを判定する
-        int y = (this.cits$searchBox != null) ? this.topPos - 36 : this.topPos - 18;
+        int width = CITS_DEPOSIT_WIDTH;
+        int x = this.leftPos + this.imageWidth - width;
+
+        // 既存の検索/ソート行が topPos - 18 に居るのは「小型チェスト」のみ。
+        // ラージチェストでは横の側面パネルに移動するため、 topPos - 18 は空いている。
+        boolean smallChestRowOccupied = (this.cits$searchBox != null) && !this.cits$isLargeChest;
+        int desiredOffsetAbove = smallChestRowOccupied ? 36 : 18;
+
+        int y;
+        if (this.topPos - desiredOffsetAbove >= 2) {
+            // 上に余裕あり: GUI の外 (上) に置く
+            y = this.topPos - desiredOffsetAbove;
+        } else {
+            // 余裕無し: GUI 内タイトル帯の右端に退避 (右上の中)
+            y = this.topPos + 4;
+        }
 
         this.cits$depositButton.setX(x);
         this.cits$depositButton.setY(y);
-        this.cits$depositButton.setWidth(CITS_DEPOSIT_WIDTH);
+        this.cits$depositButton.setWidth(width);
+        ChestInTheSearch.LOGGER.info("[CITS] depositButton positioned at x={}, y={}, w={}", x, y, width);
     }
 }
