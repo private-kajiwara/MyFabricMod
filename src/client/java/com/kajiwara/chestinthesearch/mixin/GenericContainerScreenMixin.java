@@ -2,6 +2,8 @@ package com.kajiwara.chestinthesearch.mixin;
 
 import com.kajiwara.chestinthesearch.util.ContainerSorter;
 import com.kajiwara.chestinthesearch.util.DepositMatchingHelper;
+import com.kajiwara.chestinthesearch.util.StackCompactor;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -49,7 +51,12 @@ public abstract class GenericContainerScreenMixin extends Screen {
     @Unique
     private Button cits$depositButton;
 
-    // Deposit ボタン用の寸法定数 (ボタン右上配置の右端基準)
+    // 「Compact (スタック圧縮)」ボタン本体。対応 GUI のときのみ生成される。
+    // Shift+Click 時はプレイヤーインベントリ側も圧縮する (オプション仕様)。
+    @Unique
+    private Button cits$compactButton;
+
+    // Deposit / Compact ボタン用の寸法定数 (ボタン右上配置の右端基準)
     @Unique
     private static final int CITS_DEPOSIT_WIDTH = 110;
     @Unique
@@ -82,6 +89,29 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                     .build();
             this.addRenderableWidget(this.cits$depositButton);
+
+            // ───────────────────────────────────────────────────────────
+            // 「Compact」ボタン。 Deposit と同じ条件 (= 対応 GUI) でのみ生成する。
+            // 通常クリック  : チェスト内のみ圧縮
+            // Shift+クリック: プレイヤーインベントリ側も併せて圧縮
+            // ───────────────────────────────────────────────────────────
+            this.cits$compactButton = Button.builder(
+                    Component.literal("スタック圧縮"),
+                    btn -> {
+                        Minecraft mc = Minecraft.getInstance();
+                        // Shift キー判定は InputConstants 経由で直接確認する (Mojang Mappings 環境差を回避)。
+                        var window = mc.getWindow();
+                        boolean shift = InputConstants.isKeyDown(window, InputConstants.KEY_LSHIFT)
+                                || InputConstants.isKeyDown(window, InputConstants.KEY_RSHIFT);
+                        if (shift) {
+                            StackCompactor.compactContainerAndPlayer(mc, anyMenu, containerSlotCount);
+                        } else {
+                            StackCompactor.compactContainer(mc, anyMenu, containerSlotCount);
+                        }
+                    })
+                    .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
+                    .build();
+            this.addRenderableWidget(this.cits$compactButton);
         }
 
         // ───────────────────────────────────────────────────────────
@@ -235,5 +265,13 @@ public abstract class GenericContainerScreenMixin extends Screen {
         this.cits$depositButton.setX(x);
         this.cits$depositButton.setY(y);
         this.cits$depositButton.setWidth(width);
+
+        // Compact ボタンは Deposit ボタンの真下に「同じサイズ・同じ X」で配置する。
+        // 行間は他のウィジェット (検索/種類/数量) と同じ 18px とする。
+        if (this.cits$compactButton != null) {
+            this.cits$compactButton.setX(x);
+            this.cits$compactButton.setY(y + 18);
+            this.cits$compactButton.setWidth(width);
+        }
     }
 }
