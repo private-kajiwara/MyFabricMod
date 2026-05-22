@@ -2,6 +2,7 @@ package com.kajiwara.chestinthesearch.client.gui;
 
 import com.kajiwara.chestinthesearch.client.render.ChestHighlighter;
 import com.kajiwara.chestinthesearch.search.ChestNetworkManager;
+import com.kajiwara.chestinthesearch.search.ContainerSnapshot;
 import com.kajiwara.chestinthesearch.search.SearchIndex;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -18,8 +19,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * 「Chest Network Search」のメイン GUI。
@@ -55,11 +58,46 @@ public class SearchScreen extends Screen {
     /** スクロール量 (px)。 0 = 最上段。 */
     private double scrollPx = 0.0;
 
+    /**
+     * 選択中の行データ。 key = (チェスト × アイテム種) を表す行識別子 (String)、
+     * value = ハイライト発火時に必要な (snapshot, ItemStack, 個数) のスナップショット。
+     *
+     * <p>
+     * チェスト単位ではなく「行 (= 同一チェスト内のアイテム種ごと)」をキーにすることで、
+     * 1 つのチェストに複数アイテムが入っていても 1 行ずつ個別にトグルできる。
+     *
+     * <p>
+     * 値は SearchResult のコピーで保持するため、クエリ変更で表示行から消えても
+     * 選択は維持され、 「選択したアイテムを検索」で正しく全件ハイライトされる。
+     *
+     * <p>
+     * 順序を安定させるため LinkedHashMap を使う。
+     */
+    private final Map<String, SelectedRow> selectedRows = new LinkedHashMap<>();
+
+    /** 選択行 1 件のスナップショット (ハイライト発火用にラベル/個数情報を保持)。 */
+    private record SelectedRow(ContainerSnapshot snapshot, ItemStack stack, int count) {
+    }
+
+    /**
+     * 行の一意キーを文字列で生成する。
+     * <ul>
+     * <li>同一チェスト (=同一 dim+pos) でもアイテム種 (item + components) が違えば別キー。</li>
+     * <li>クエリ変更でリストが再構築されてもキーは安定 (= 選択状態が保持される)。</li>
+     * </ul>
+     */
+    private static String makeRowKey(SearchIndex.SearchResult r) {
+        ContainerSnapshot.Key c = r.snapshot().key();
+        // ItemStack.toString() は "<count> <id>[components...]" 形式で、
+        // 同種・同 components のスタックは同一文字列になる。
+        return c.dimension() + "|" + c.pos() + "|" + r.stack();
+    }
+
     /** 各結果行の高さ (px)。 */
     private static final int ROW_HEIGHT = 22;
 
     /** リスト表示領域の上端 / 下端の余白 (px)。 */
-    private static final int LIST_TOP_INSET = 60;
+    private static final int LIST_TOP_INSET = 82;
     private static final int LIST_BOTTOM_INSET = 30;
     private static final int LIST_SIDE_INSET = 16;
 
@@ -115,8 +153,38 @@ public class SearchScreen extends Screen {
             rebuildResults();
         }).bounds(sortX + 172, searchY, 80, 18).build());
 
+        // ───────────────────────────────────────────────────────────
+        // 2 行目: 「選択したアイテムを検索」ボタン + 「選択解除」ボタン (左寄せ)
+        // 選択中のコンテナを一括ハイライトしてから Screen を閉じる。
+        // ───────────────────────────────────────────────────────────
+        int actionY = searchY + 22;
+        this.addRenderableWidget(Button.builder(
+                Component.literal("選択したアイテムを検索"),
+                b -> highlightSelectedAndClose())
+                .bounds(LIST_SIDE_INSET, actionY, 120, 18).build());
+
+        this.addRenderableWidget(Button.builder(
+                Component.literal("選択解除"),
+                b -> this.selectedRows.clear())
+                .bounds(LIST_SIDE_INSET + 126, actionY, 80, 18).build());
+
         // 初期結果セット
         rebuildResults();
+    }
+
+    /**
+     * 「選択したアイテムを検索」ボタンの動作。
+     * 選択中の全行 (= チェスト × アイテム種の組) を一括ハイライトして Screen を閉じる。
+     *
+     * <p>
+     * selectedRows に元データ (snapshot, stack, count) を保持しているので、
+     * クエリ変更で非表示になった選択もそのまま正しく highlight できる。
+     */
+    private void highlightSelectedAndClose() {
+        for (SelectedRow sr : this.selectedRows.values()) {
+            ChestHighlighter.get().highlight(sr.snapshot(), sr.stack(), sr.count());
+        }
+        this.onClose();
     }
 
     /** 現在のクエリ / ソート設定で結果リストを再構築する。 */
@@ -128,6 +196,8 @@ public class SearchScreen extends Screen {
             case COUNT -> this.results = SearchIndex.sortByCount(raw);
             case NAME -> this.results = SearchIndex.sortByName(raw);
         }
+        // 選択状態は {@link ContainerSnapshot.Key} で保持しているため、
+        // クエリ変更で行 index がズレても OK。意図的にクリアしない。
         // スクロール位置の正規化 (結果が縮んだら下端を超えないように)。
         clampScroll();
     }
@@ -173,14 +243,16 @@ public class SearchScreen extends Screen {
         // 「総コンテナ数 / 該当ヒット数」を右上ぎみに小さく表示
         int total = ChestNetworkManager.get().size();
         Component summary = Component.literal(
-                "登録 " + total + " 個 / ヒット " + this.results.size() + " 行");
+                "登録 " + total + " 個 / ヒット " + this.results.size() + " 行 / 選択 "
+                        + this.selectedRows.size() + " 件");
         g.drawString(font, summary, LIST_SIDE_INSET, 8, 0xFFAAAAAA, false);
 
         // 検索結果リスト本体
         renderList(g, mouseX, mouseY);
 
         // 下部ヒント
-        Component hint = Component.literal("行クリックで対象チェストをハイライト  /  ESC で閉じる");
+        Component hint = Component.literal(
+                "行クリック=選択トグル  /  「選択したアイテムを検索」でピン表示  /  ESC でキャンセル");
         g.drawCenteredString(font, hint, this.width / 2, this.height - 18, 0xFFAAAAAA);
     }
 
@@ -210,7 +282,9 @@ public class SearchScreen extends Screen {
                     continue;
                 boolean hovering = (mouseX >= left && mouseX <= right
                         && mouseY >= rowY && mouseY < rowY + ROW_HEIGHT);
-                renderRow(g, this.results.get(i), left, rowY, right - left, hovering, player);
+                SearchIndex.SearchResult r = this.results.get(i);
+                boolean selected = this.selectedRows.containsKey(makeRowKey(r));
+                renderRow(g, r, left, rowY, right - left, hovering, selected, player);
             }
         } finally {
             g.disableScissor();
@@ -222,10 +296,21 @@ public class SearchScreen extends Screen {
 
     /** 1 行の描画。 */
     private void renderRow(GuiGraphics g, SearchIndex.SearchResult result,
-            int x, int y, int width, boolean hovering, Vec3 player) {
-        // ホバー時はうっすらと反転
+            int x, int y, int width, boolean hovering, boolean selected, Vec3 player) {
+        // 選択中の行は「太い黄色帯」で強くハイライト + 左端の縦バー + 外枠。
+        // (チェックボックスは描画コスト避けて視覚的に同等)
+        if (selected) {
+            // 全面塗りつぶし (80% alpha でハッキリ見える)
+            g.fill(x, y, x + width, y + ROW_HEIGHT, 0xCC665500);
+            // 左端の太い縦バー (アクセント)
+            g.fill(x, y, x + 3, y + ROW_HEIGHT, 0xFFFFD040);
+            // 上下の境界線
+            g.fill(x, y, x + width, y + 1, 0xFFFFCC00);
+            g.fill(x, y + ROW_HEIGHT - 1, x + width, y + ROW_HEIGHT, 0xFFFFCC00);
+        }
+        // ホバー時の薄い白オーバーレイ (選択色の上にも乗せて、ホバー判別を残す)。
         if (hovering) {
-            g.fill(x, y, x + width, y + ROW_HEIGHT, 0x44FFFFFF);
+            g.fill(x, y, x + width, y + ROW_HEIGHT, 0x33FFFFFF);
         }
 
         Font font = this.font;
@@ -307,10 +392,16 @@ public class SearchScreen extends Screen {
             return false;
 
         SearchIndex.SearchResult clicked = this.results.get(index);
-        // ハイライト発火 → 前の screen に戻す (parent が null ならゲーム画面)。
-        // ピン横ラベルに「検索ヒットしたアイテム名 ×総量」を表示する。
-        ChestHighlighter.get().highlight(clicked.snapshot(), clicked.stack(), clicked.count());
-        this.onClose();
+        // 行クリックは「この 1 行のみ」を選択トグルする。
+        // (チェスト単位ではなく「行 = チェスト × アイテム種」単位で切り替わる)
+        // 実際の highlight 発火は「選択したアイテムを検索」ボタン側で一括。
+        String key = makeRowKey(clicked);
+        if (this.selectedRows.containsKey(key)) {
+            this.selectedRows.remove(key);
+        } else {
+            this.selectedRows.put(key,
+                    new SelectedRow(clicked.snapshot(), clicked.stack().copy(), clicked.count()));
+        }
         return true;
     }
 

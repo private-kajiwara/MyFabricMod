@@ -4,7 +4,8 @@
       "Bash(Remove-Item \"c:\\\\MyFabricMod\\\\src\\\\client\\\\java\\\\com\\\\kajiwara\\\\chestinthesearch\\\\ChestSearchScreen.java\" -Force)",
       "Bash(Remove-Item \"c:\\\\MyFabricMod\\\\src\\\\client\\\\java\\\\com\\\\kajiwara\\\\chestinthesearch\\\\mixin\\\\AbstractContainerScreenAccessor.java\" -Force)",
       "Bash(unzip -l /c/Users/ppapk/.gradle/caches/fabric-loom/1.21.11/minecraft-client.jar)",
-      "Bash(unzip -l /c/Users/ppapk/.gradle/caches/fabric-loom/1.21.11/minecraft-client-only.jar)"
+      "Bash(unzip -l /c/Users/ppapk/.gradle/caches/fabric-loom/1.21.11/minecraft-client-only.jar)",
+      "Bash(./gradlew.bat build *)"
     ]
   }
 }

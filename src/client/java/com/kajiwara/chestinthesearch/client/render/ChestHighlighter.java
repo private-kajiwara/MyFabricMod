@@ -138,8 +138,10 @@ public final class ChestHighlighter {
             return;
 
         ResourceKey<Level> currentDim = level.dimension();
+        // カメラ位置は LevelRenderState 経由 (Camera.position は private のため field 取れない)。
+        // 回転だけは Camera.rotation() で取得 (バニラ名札と同じ canonical な getter)。
         Vec3 cam = ctx.worldState().cameraRenderState.pos;
-        Quaternionf cameraRot = ctx.worldState().cameraRenderState.orientation;
+        Quaternionf cameraRot = mc.gameRenderer.getMainCamera().rotation();
 
         PoseStack ps = ctx.matrices();
         if (ps == null)
