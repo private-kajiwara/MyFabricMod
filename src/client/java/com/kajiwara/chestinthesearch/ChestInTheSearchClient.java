@@ -6,6 +6,7 @@ import com.kajiwara.chestinthesearch.classify.StorageMemory;
 import com.kajiwara.chestinthesearch.client.ClientKeyBindings;
 import com.kajiwara.chestinthesearch.client.render.ChestHighlighter;
 import com.kajiwara.chestinthesearch.search.ContainerScanner;
+import com.kajiwara.chestinthesearch.template.TemplateManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -61,5 +62,10 @@ public class ChestInTheSearchClient implements ClientModInitializer {
             ClientLifecycleEvents.CLIENT_STOPPING.register(client -> StorageMemory.save());
             ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> StorageMemory.save());
         }
+
+        // ─── Chest Template System ───
+        // 設定 + ストレージ初回ロード、 MoveQueue の tick 購読をまとめて登録。
+        // 配置データ (templates.json) は遅延ロードされる (= 初回 list() 呼び出し時)。
+        TemplateManager.register();
     }
 }

@@ -3,6 +3,9 @@ package com.kajiwara.chestinthesearch.mixin;
 import com.kajiwara.chestinthesearch.client.gui.CategoryBadgeRenderer;
 import com.kajiwara.chestinthesearch.client.gui.SearchScreen;
 import com.kajiwara.chestinthesearch.search.ContainerScanner;
+import com.kajiwara.chestinthesearch.template.config.TemplateConfig;
+import com.kajiwara.chestinthesearch.template.gui.TemplateManagerScreen;
+import com.kajiwara.chestinthesearch.template.gui.TemplateSaveScreen;
 import com.kajiwara.chestinthesearch.util.ContainerSorter;
 import com.kajiwara.chestinthesearch.util.DepositMatchingHelper;
 import com.kajiwara.chestinthesearch.util.StackCompactor;
@@ -65,6 +68,22 @@ public abstract class GenericContainerScreenMixin extends Screen {
     // Deposit / Compact と同じく、対応 GUI のときのみ生成し、 Compact の直下に同サイズで配置。
     @Unique
     private Button cits$searchNetworkButton;
+
+    // ───────────────────────────────────────────────────────────
+    // Chest Template System のボタン群:
+    //   - Save Template     : 現在のチェスト配置を新テンプレートとして保存
+    //   - Apply Template    : 直近 or 既定テンプレートを適用 (詳細は Manager)
+    //   - Manage Templates  : 管理画面 (一覧/名前変更/削除/複製/並び替え)
+    // 配置は「倉庫検索」の更に下に縦並びで追加する。
+    // ───────────────────────────────────────────────────────────
+    @Unique
+    private Button cits$saveTemplateButton;
+
+    @Unique
+    private Button cits$applyTemplateButton;
+
+    @Unique
+    private Button cits$manageTemplateButton;
 
     // Deposit / Compact ボタン用の寸法定数 (ボタン右上配置の右端基準)
     @Unique
@@ -185,6 +204,42 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                     .build();
             this.addRenderableWidget(this.cits$searchNetworkButton);
+
+            // ───────────────────────────────────────────────────────────
+            // Chest Template System のボタン 3 連
+            // (ユーザー設定で非表示にできる: TemplateConfig.showButtons)
+            // ───────────────────────────────────────────────────────────
+            if (TemplateConfig.get().showButtons) {
+                Screen selfScreen = (Screen) (Object) this;
+
+                this.cits$saveTemplateButton = Button.builder(
+                        Component.literal("配置を保存"),
+                        btn -> Minecraft.getInstance().setScreen(
+                                new TemplateSaveScreen(selfScreen, anyMenu, containerSlotCount)))
+                        .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
+                        .build();
+                this.addRenderableWidget(this.cits$saveTemplateButton);
+
+                this.cits$applyTemplateButton = Button.builder(
+                        Component.literal("テンプレ適用"),
+                        btn -> {
+                            // Apply は Manager 画面経由で「どのテンプレートを使うか」を選んでもらう。
+                            // (1 ボタンに「直近を再適用」を割り当てるのは別 issue。)
+                            Minecraft.getInstance().setScreen(
+                                    new TemplateManagerScreen(selfScreen, anyMenu, containerSlotCount));
+                        })
+                        .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
+                        .build();
+                this.addRenderableWidget(this.cits$applyTemplateButton);
+
+                this.cits$manageTemplateButton = Button.builder(
+                        Component.literal("テンプレ管理"),
+                        btn -> Minecraft.getInstance().setScreen(
+                                new TemplateManagerScreen(selfScreen, anyMenu, containerSlotCount)))
+                        .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
+                        .build();
+                this.addRenderableWidget(this.cits$manageTemplateButton);
+            }
         }
 
         // ───────────────────────────────────────────────────────────
@@ -348,11 +403,27 @@ public abstract class GenericContainerScreenMixin extends Screen {
         }
 
         // 倉庫検索ボタンは Compact ボタンの真下に「同じサイズ・同じ X」で配置する。
-        // = 既存追加ボタン群の一番下。サイズも統一。
         if (this.cits$searchNetworkButton != null) {
             this.cits$searchNetworkButton.setX(x);
             this.cits$searchNetworkButton.setY(y + 36);
             this.cits$searchNetworkButton.setWidth(width);
+        }
+
+        // Chest Template System 3 連: 倉庫検索の更に下に縦並び。
+        if (this.cits$saveTemplateButton != null) {
+            this.cits$saveTemplateButton.setX(x);
+            this.cits$saveTemplateButton.setY(y + 54);
+            this.cits$saveTemplateButton.setWidth(width);
+        }
+        if (this.cits$applyTemplateButton != null) {
+            this.cits$applyTemplateButton.setX(x);
+            this.cits$applyTemplateButton.setY(y + 72);
+            this.cits$applyTemplateButton.setWidth(width);
+        }
+        if (this.cits$manageTemplateButton != null) {
+            this.cits$manageTemplateButton.setX(x);
+            this.cits$manageTemplateButton.setY(y + 90);
+            this.cits$manageTemplateButton.setWidth(width);
         }
     }
 }
