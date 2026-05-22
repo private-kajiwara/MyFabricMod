@@ -1,5 +1,6 @@
 package com.kajiwara.chestinthesearch.client;
 
+import com.kajiwara.chestinthesearch.classify.AutoDepositManager;
 import com.kajiwara.chestinthesearch.client.gui.SearchScreen;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -27,6 +28,8 @@ import org.lwjgl.glfw.GLFW;
 public final class ClientKeyBindings {
 
     public static final String OPEN_SEARCH_KEY = "key.chestinthesearch.open_search";
+    /** Smart Storage Classification: 自動投入プランをチャットに表示するキー。 */
+    public static final String SMART_DEPOSIT_KEY = "key.chestinthesearch.smart_deposit";
 
     /**
      * 独自カテゴリを 1.21.11+ の新 API ({@link KeyMapping.Category#register}) で登録する。
@@ -37,6 +40,7 @@ public final class ClientKeyBindings {
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath("chestinthesearch", "search"));
 
     private static KeyMapping openSearch;
+    private static KeyMapping smartDeposit;
 
     private ClientKeyBindings() {
     }
@@ -52,6 +56,13 @@ public final class ClientKeyBindings {
                 GLFW.GLFW_KEY_G,
                 CATEGORY));
 
+        // 自動投入プランの一括表示。デフォルト「H」 (= "Home for items")。
+        smartDeposit = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                SMART_DEPOSIT_KEY,
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_H,
+                CATEGORY));
+
         ClientTickEvents.END_CLIENT_TICK.register(ClientKeyBindings::onTick);
     }
 
@@ -63,6 +74,16 @@ public final class ClientKeyBindings {
             // 別の Screen が開いている時はオープンを抑止する (誤発火防止)。
             if (mc.screen == null) {
                 SearchScreen.open();
+            }
+        }
+
+        if (smartDeposit != null) {
+            while (smartDeposit.consumeClick()) {
+                // Smart Deposit はゲーム画面 (Screen 無し) のときだけ発火。
+                // GUI を開いた状態だと既存の Deposit ボタンが提供する機能と被るため抑止。
+                if (mc.screen == null && mc.player != null) {
+                    AutoDepositManager.announceSummary(mc.player);
+                }
             }
         }
     }

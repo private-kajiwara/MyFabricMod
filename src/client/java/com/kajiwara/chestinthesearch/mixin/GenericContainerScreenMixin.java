@@ -1,11 +1,14 @@
 package com.kajiwara.chestinthesearch.mixin;
 
+import com.kajiwara.chestinthesearch.client.gui.CategoryBadgeRenderer;
 import com.kajiwara.chestinthesearch.client.gui.SearchScreen;
+import com.kajiwara.chestinthesearch.search.ContainerScanner;
 import com.kajiwara.chestinthesearch.util.ContainerSorter;
 import com.kajiwara.chestinthesearch.util.DepositMatchingHelper;
 import com.kajiwara.chestinthesearch.util.StackCompactor;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -77,6 +80,44 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
     protected GenericContainerScreenMixin(Component title) {
         super(title);
+    }
+
+    /**
+     * チェスト GUI のフレーム描画末尾で、 Smart Storage Classification の
+     * カテゴリバッジを上に乗せる。
+     *
+     * <p>
+     * 「[FOOD STORAGE] Confidence: 92%」のような小さい帯を GUI の上部に表示する。
+     * 既存ウィジェット (検索バー / 種類 / 数量) と衝突しない y 座標を、
+     * GUI 種別に応じて算出する:
+     * <ul>
+     * <li><b>小型 ContainerScreen (3 行チェスト)</b>: 検索/種類/数量 行が {@code topPos - 18} に出ている。
+     * バッジはその更に上 ({@code topPos - 32}) に置く。</li>
+     * <li><b>ラージチェスト</b>: 検索バーは側面 (左右パネル) なので GUI の真上は空。
+     * {@code topPos - 14} に置く。</li>
+     * <li><b>シュルカー等の非 ContainerScreen</b>: GUI の真上は空。
+     * {@code topPos - 14} に置く。</li>
+     * </ul>
+     *
+     * 設定でオフにできる ({@link com.kajiwara.chestinthesearch.classify.ClassifyConfig#showCategoryBadge})。
+     */
+    @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", at = @At("TAIL"))
+    private void cits$renderCategoryBadge(GuiGraphics g, int mouseX, int mouseY, float partialTick,
+            CallbackInfo ci) {
+        int badgeY = cits$badgeY();
+        CategoryBadgeRenderer.renderBadge(g, this.leftPos + 4, badgeY, ContainerScanner.currentActiveKey());
+    }
+
+    /**
+     * バッジ描画用の y 座標を選ぶ。
+     * 小型チェスト (= 検索行ありの ContainerScreen) のときだけ、検索行 (topPos-18) を避けて
+     * 更に上に押し上げる。それ以外は GUI の直上 (topPos-14) で十分。
+     */
+    @Unique
+    private int cits$badgeY() {
+        boolean smallChestWithSearchRow =
+                ((Object) this instanceof ContainerScreen) && !this.cits$isLargeChest;
+        return smallChestWithSearchRow ? this.topPos - 32 : this.topPos - 14;
     }
 
     @Inject(method = "init", at = @At("TAIL"))

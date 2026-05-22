@@ -244,6 +244,24 @@ public final class ContainerScanner {
         captureNow("force");
     }
 
+    /**
+     * 現在追跡中のコンテナの {@link ContainerSnapshot.Key} を返す。
+     * チェストを開いていない、もしくは pendingOpen が無いまま開いた (= 追跡対象外) 場合は null。
+     *
+     * <p>
+     * GUI 側 (チェスト画面のバッジ描画など) から「今開いてるチェストの分類を引きたい」ときに使う。
+     */
+    @Nullable
+    public static ContainerSnapshot.Key currentActiveKey() {
+        ActiveTracker a = active;
+        if (a == null)
+            return null;
+        // ラージチェストでも (dim, normalizedPos) の Key を返したい。
+        BlockPos normalized = a.secondaryPos == null ? a.pos
+                : ContainerSnapshot.normalize(a.pos, a.secondaryPos);
+        return new ContainerSnapshot.Key(a.dimension, normalized);
+    }
+
     // ════════════════════════════════════════════════════════════════════
     // ローカル DTO
     // ════════════════════════════════════════════════════════════════════

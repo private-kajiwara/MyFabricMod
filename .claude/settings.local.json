@@ -7,7 +7,11 @@
       "Bash(unzip -l /c/Users/ppapk/.gradle/caches/fabric-loom/1.21.11/minecraft-client-only.jar)",
       "Bash(./gradlew.bat build *)",
       "Bash(awk '/^c\\\\tgio\\\\t/{p=1; next} /^c\\\\t/{if\\(p\\) exit} p' /c/Users/ppapk/.gradle/caches/fabric-loom/1.21.11/loom.mappings.1_21_11.layered+hash.2198-v2/mappings.tiny | grep -E '\\\\tlineHeight')",
-      "Read(//c/Users/ppapk/.gradle/caches/fabric-loom/1.21.11/loom.mappings.1_21_11.layered+hash.2198-v2/**)"
+      "Read(//c/Users/ppapk/.gradle/caches/fabric-loom/1.21.11/loom.mappings.1_21_11.layered+hash.2198-v2/**)",
+      "Bash(mkdir -p c:/tmp/mctags)",
+      "Bash(jar xf *)",
+      "Bash(mv net/minecraft/tags/ItemTags.class c:/tmp/mctags/)",
+      "Bash(javap -public c:/tmp/mctags/ItemTags.class)"
     ]
   }
 }
