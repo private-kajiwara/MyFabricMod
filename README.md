@@ -7,7 +7,6 @@ For setup instructions, please see the [Fabric Documentation page](https://docs.
 ## build command
 ```txt
 .\run-client.bat   # ゲーム起動
-<br>
 .\build-mod.bat    # ビルド
 ```
 
