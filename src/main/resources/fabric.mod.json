@@ -1,8 +1,8 @@
 {
 	"schemaVersion": 1,
-	"id": "chestinthesearch",
+	"id": "omnichest",
 	"version": "${version}",
-	"name": "Chest In The Search",
+	"name": "OmniChest",
 	"description": "A mod that adds chest search functionality.",
 	"authors": [
 		"kajiwara"
@@ -14,15 +14,15 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.kajiwara.chestinthesearch.ChestInTheSearch"
+			"com.kajiwara.omnichest.OmniChest"
 		],
 		"client": [
-			"com.kajiwara.chestinthesearch.ChestInTheSearchClient"
+			"com.kajiwara.omnichest.OmniChestClient"
 		]
 	},
 	"mixins": [
 		{
-			"config": "chestinthesearch.client.mixins.json",
+			"config": "omnichest.client.mixins.json",
 			"environment": "client"
 		}
 	],
