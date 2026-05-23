@@ -274,23 +274,24 @@ public abstract class GenericContainerScreenMixin extends Screen {
                 .build();
         this.addRenderableWidget(this.cits$sortByCountButton);
 
-        if (this.cits$isLargeChest) {
-            this.cits$layoutLeftButton = Button.builder(
-                    Component.literal("◀"),
-                    btn -> {
-                        this.cits$layoutRight = false;
-                        this.cits$applyLayout();
-                    }).bounds(0, 0, 20, 14).build();
-            this.addRenderableWidget(this.cits$layoutLeftButton);
+        // ◀▶ レイアウト切替ボタンは「小型チェスト」「ラージチェスト」両方で生成する。
+        // ラージチェストでは側面パネル全体の左右切替、
+        // 小型チェストでは右列ボタン (同種預入/圧縮/倉庫検索/テンプレ系) の左右切替に使われる。
+        this.cits$layoutLeftButton = Button.builder(
+                Component.literal("◀"),
+                btn -> {
+                    this.cits$layoutRight = false;
+                    this.cits$applyLayout();
+                }).bounds(0, 0, 20, 14).build();
+        this.addRenderableWidget(this.cits$layoutLeftButton);
 
-            this.cits$layoutRightButton = Button.builder(
-                    Component.literal("▶"),
-                    btn -> {
-                        this.cits$layoutRight = true;
-                        this.cits$applyLayout();
-                    }).bounds(0, 0, 20, 14).build();
-            this.addRenderableWidget(this.cits$layoutRightButton);
-        }
+        this.cits$layoutRightButton = Button.builder(
+                Component.literal("▶"),
+                btn -> {
+                    this.cits$layoutRight = true;
+                    this.cits$applyLayout();
+                }).bounds(0, 0, 20, 14).build();
+        this.addRenderableWidget(this.cits$layoutRightButton);
 
         this.cits$applyLayout();
     }
@@ -309,16 +310,34 @@ public abstract class GenericContainerScreenMixin extends Screen {
             return;
 
         if (!this.cits$isLargeChest) {
+            // 検索バー + 種類 + 数量 を、 チェスト内スロットグリッド幅 (= 9*18 = 162px,
+            // leftPos+8 〜 leftPos+170) ぴったりに揃える。
+            //   search 106 + gap 2 + type 26 + gap 2 + count 26 = 162
             int y = this.topPos - 18;
             this.cits$searchBox.setX(this.leftPos + 8);
             this.cits$searchBox.setY(y);
-            this.cits$searchBox.setWidth(100);
-            this.cits$sortByTypeButton.setX(this.leftPos + 112);
+            this.cits$searchBox.setWidth(106);
+            this.cits$sortByTypeButton.setX(this.leftPos + 116);
             this.cits$sortByTypeButton.setY(y);
             this.cits$sortByTypeButton.setWidth(26);
-            this.cits$sortByCountButton.setX(this.leftPos + 142);
+            this.cits$sortByCountButton.setX(this.leftPos + 144);
             this.cits$sortByCountButton.setY(y);
             this.cits$sortByCountButton.setWidth(26);
+
+            // ◀▶ レイアウト切替ボタンは、 GUI の右隣 (または ◀ が押されていれば左隣) の、
+            // 検索行と同じ高さ (= topPos - 18) に並べる。
+            // → 右列ボタン群 (同種預入/圧縮/倉庫検索/テンプレ) の左右配置をトグルする。
+            int margin = 4;
+            int sideX = this.cits$layoutRight
+                    ? this.leftPos + this.imageWidth + margin
+                    : this.leftPos - CITS_DEPOSIT_WIDTH - margin;
+            int triangleWidth = (CITS_DEPOSIT_WIDTH - margin) / 2;
+            this.cits$layoutLeftButton.setX(sideX);
+            this.cits$layoutLeftButton.setY(y);
+            this.cits$layoutLeftButton.setWidth(triangleWidth);
+            this.cits$layoutRightButton.setX(sideX + triangleWidth + margin);
+            this.cits$layoutRightButton.setY(y);
+            this.cits$layoutRightButton.setWidth(triangleWidth);
             return;
         }
 
@@ -383,8 +402,16 @@ public abstract class GenericContainerScreenMixin extends Screen {
             x = sideX;
             y = this.topPos + 72;
             width = panelWidth;
+        } else if (this.cits$searchBox != null) {
+            // 小型チェスト (ChestMenu かつ非ラージ): ◀▶ で左右切替できる右列。
+            // y は GUI のタイトル帯と同じ高さから開始 (上に ◀▶ が居る)。
+            width = CITS_DEPOSIT_WIDTH;
+            x = this.cits$layoutRight
+                    ? this.leftPos + this.imageWidth + margin
+                    : this.leftPos - width - margin;
+            y = this.topPos;
         } else {
-            // 小型チェスト / シュルカー等: GUI 画像の右隣、 GUI のタイトル帯と同じ Y。
+            // シュルカー等 (非 ChestMenu): GUI 画像の右隣固定。 ◀▶ は存在しない。
             x = this.leftPos + this.imageWidth + margin;
             y = this.topPos;
             width = CITS_DEPOSIT_WIDTH;
