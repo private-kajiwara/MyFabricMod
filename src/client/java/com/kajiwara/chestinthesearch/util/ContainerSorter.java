@@ -1,5 +1,6 @@
 package com.kajiwara.chestinthesearch.util;
 
+import com.kajiwara.chestinthesearch.slotlock.InventoryProtectionLayer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -9,6 +10,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
 
@@ -44,14 +46,23 @@ public final class ContainerSorter {
         if (mc.player == null || mc.gameMode == null || slotCount <= 0)
             return;
 
+        // Slot Lock 連携: 範囲 [0, slotCount) 内で保護されているスロットは「動かさない / 受け取らない」。
+        // チェスト本体のスロット (= Player Inventory 以外) は基本的に保護対象外だが、
+        // 念のため範囲外のスロットを引かないよう Range API を使う。
+        BitSet protectedMask = InventoryProtectionLayer.buildProtectionMaskRange(menu, 0, slotCount);
+
         List<ItemStack> items = new ArrayList<>(slotCount);
         for (int i = 0; i < slotCount; i++) {
             items.add(menu.slots.get(i).getItem().copy());
         }
 
+        // 「動かす対象 (filled)」「空きスロット」「ロックスロット」の 3 区分。
+        // ロックスロットは元の位置のまま残し、 sort 計算から完全に除外する。
         List<Integer> filled = new ArrayList<>();
         List<Integer> empty = new ArrayList<>();
         for (int i = 0; i < slotCount; i++) {
+            if (protectedMask.get(i))
+                continue; // 保護: 元の位置に据え置く
             if (items.get(i).isEmpty())
                 empty.add(i);
             else
@@ -60,6 +71,13 @@ public final class ContainerSorter {
 
         filled.sort((a, b) -> comparator.compare(items.get(a), items.get(b)));
 
+        // 「desired (= 詰め直す順番)」を、ロックを除いたスロット連番に対して埋める。
+        // ロックスロットはこのリストには登場しないので一切スワップされない。
+        List<Integer> moveableTargets = new ArrayList<>(slotCount);
+        for (int i = 0; i < slotCount; i++) {
+            if (!protectedMask.get(i))
+                moveableTargets.add(i);
+        }
         List<Integer> desired = new ArrayList<>(filled);
         desired.addAll(empty);
 
@@ -70,11 +88,18 @@ public final class ContainerSorter {
             origOf[i] = i;
         }
 
-        for (int target = 0; target < slotCount; target++) {
-            int wantOrig = desired.get(target);
+        // moveableTargets[k] が「k 番目に置きたいアイテムの実際の置き先 (= 元スロット番号)」。
+        for (int k = 0; k < moveableTargets.size(); k++) {
+            int target = moveableTargets.get(k);
+            int wantOrig = desired.get(k);
             int src = posOf[wantOrig];
 
             if (src == target)
+                continue;
+
+            // 安全: target / src がロック対象になっていることはここでは起き得ない (= 除外済み) が、
+            // 念のため最終ガード。
+            if (protectedMask.get(target) || protectedMask.get(src))
                 continue;
 
             boolean targetHasItem = !items.get(origOf[target]).isEmpty();

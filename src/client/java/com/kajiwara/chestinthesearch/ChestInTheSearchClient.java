@@ -6,6 +6,8 @@ import com.kajiwara.chestinthesearch.classify.StorageMemory;
 import com.kajiwara.chestinthesearch.client.ClientKeyBindings;
 import com.kajiwara.chestinthesearch.client.render.ChestHighlighter;
 import com.kajiwara.chestinthesearch.search.ContainerScanner;
+import com.kajiwara.chestinthesearch.slotlock.SlotLockConfig;
+import com.kajiwara.chestinthesearch.slotlock.SlotLockStorage;
 import com.kajiwara.chestinthesearch.template.TemplateManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
@@ -67,5 +69,17 @@ public class ChestInTheSearchClient implements ClientModInitializer {
         // 設定 + ストレージ初回ロード、 MoveQueue の tick 購読をまとめて登録。
         // 配置データ (templates.json) は遅延ロードされる (= 初回 list() 呼び出し時)。
         TemplateManager.register();
+
+        // ─── Favorite Slot Lock System ───
+        // (1) Config を引いてデフォルト値を初期化 (load 失敗時のログを起動時に出す)。
+        SlotLockConfig.get();
+        // (2) Storage の listener install → 以後の変更通知でセーブフラグが立つ。
+        SlotLockStorage.get().install();
+        // (3) ロードとセーブのライフサイクル接続:
+        //     - クライアント起動完了時に load
+        //     - サーバ切断 / クライアント停止時に flush
+        ClientLifecycleEvents.CLIENT_STARTED.register(client -> SlotLockStorage.get().load());
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> SlotLockStorage.get().flushIfDirty());
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> SlotLockStorage.get().flushIfDirty());
     }
 }

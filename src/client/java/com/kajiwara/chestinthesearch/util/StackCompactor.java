@@ -1,5 +1,6 @@
 package com.kajiwara.chestinthesearch.util;
 
+import com.kajiwara.chestinthesearch.slotlock.InventoryProtectionLayer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
@@ -110,13 +111,22 @@ public final class StackCompactor {
                 continue;
             }
 
+            // Slot Lock 連携: ロック中スロットは「ソース」「行き先」両方の意味で対象外。
+            // anchor 自身がロック対象なら以後の圧縮計画から完全に除外する。
+            if (InventoryProtectionLayer.isProtectedByMenuSlot(menu, anchor)) {
+                continue;
+            }
+
             // anchor と同種のスロットを範囲内から収集する (anchor 自身を含む、昇順)。
+            // ロック中スロットは group に加えない (= グループの圧縮先 / 圧縮元 のどちらにもしない)。
             List<Integer> group = new ArrayList<>();
             group.add(anchor);
             processed[rel] = true;
             for (int i = anchor + 1; i < toExclusive; i++) {
                 int relI = i - fromInclusive;
                 if (processed[relI])
+                    continue;
+                if (InventoryProtectionLayer.isProtectedByMenuSlot(menu, i))
                     continue;
                 ItemStack s = menu.slots.get(i).getItem();
                 if (s.isEmpty())

@@ -1,5 +1,6 @@
 package com.kajiwara.chestinthesearch.template.apply;
 
+import com.kajiwara.chestinthesearch.slotlock.InventoryProtectionLayer;
 import com.kajiwara.chestinthesearch.template.category.TemplateMatchingEngine;
 import com.kajiwara.chestinthesearch.template.config.TemplateConfig;
 import com.kajiwara.chestinthesearch.template.data.ChestTemplate;
@@ -69,6 +70,8 @@ public final class SlotPlanner {
         // ・チェスト側スロットは「正しい場所にあるかチェック」する対象
         // ・プレイヤー側スロットは「持ち込む候補」
         // ・Hotbar (= 27..35 in player) は config.lockHotbar が true なら触らない
+        // ・Favorite Slot Lock (= プレイヤー側 0..40 の保護登録) も尊重する。
+        //   既存の lockHotbar フラグと OR 結合 (= どちらかが立てばロック扱い)。
         int total = menu.slots.size();
         List<SlotEntry> pool = new ArrayList<>(total);
         for (int i = 0; i < total; i++) {
@@ -76,8 +79,9 @@ public final class SlotPlanner {
             ItemStack item = slot.getItem();
             boolean isChest = i < containerSlotCount;
             boolean inHotbar = !isChest && (i >= total - 9);
-            boolean locked = !isChest && inHotbar && config.lockHotbar;
-            pool.add(new SlotEntry(i, item.copy(), isChest, locked));
+            boolean hotbarLocked = !isChest && inHotbar && config.lockHotbar;
+            boolean favoriteLocked = InventoryProtectionLayer.isProtectedSlot(slot);
+            pool.add(new SlotEntry(i, item.copy(), isChest, hotbarLocked || favoriteLocked));
         }
 
         // ─── (2) テンプレート上のスロットを優先度の高い順に解決する ───

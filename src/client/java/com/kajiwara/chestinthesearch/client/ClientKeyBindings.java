@@ -2,12 +2,20 @@ package com.kajiwara.chestinthesearch.client;
 
 import com.kajiwara.chestinthesearch.classify.AutoDepositManager;
 import com.kajiwara.chestinthesearch.client.gui.SearchScreen;
+import com.kajiwara.chestinthesearch.mixin.AbstractContainerScreenAccessor;
+import com.kajiwara.chestinthesearch.slotlock.MenuSlotLockSession;
+import com.kajiwara.chestinthesearch.slotlock.SlotIndexMapper;
+import com.kajiwara.chestinthesearch.slotlock.SlotLockManager;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -30,6 +38,19 @@ public final class ClientKeyBindings {
     public static final String OPEN_SEARCH_KEY = "key.chestinthesearch.open_search";
     /** Smart Storage Classification: 自動投入プランをチャットに表示するキー。 */
     public static final String SMART_DEPOSIT_KEY = "key.chestinthesearch.smart_deposit";
+    /**
+     * Favorite Slot Lock: GUI 内のホバー中スロットをロック切替するキー。
+     * Alt+Click / Middle-Click 操作が使えない (= キーボード派) ユーザー向けの代替入口。
+     * デフォルトは <b>未バインド</b> (= 衝突を避けるため、ユーザー任意設定)。
+     */
+    public static final String TOGGLE_SLOT_LOCK_KEY = "key.chestinthesearch.toggle_slot_lock";
+
+    /**
+     * Favorite Slot Lock: 全ロックを一括解除するキー。
+     * 誤爆防止のため <b>2 回連続押下</b> (1.5 秒以内) で確定する。
+     * デフォルトは未バインド。
+     */
+    public static final String CLEAR_ALL_LOCKS_KEY = "key.chestinthesearch.clear_all_slot_locks";
 
     /**
      * 独自カテゴリを 1.21.11+ の新 API ({@link KeyMapping.Category#register}) で登録する。
@@ -41,6 +62,11 @@ public final class ClientKeyBindings {
 
     private static KeyMapping openSearch;
     private static KeyMapping smartDeposit;
+    private static KeyMapping toggleSlotLock;
+    private static KeyMapping clearAllSlotLocks;
+
+    /** 一括解除キー押下時刻 (ms)。 1.5 秒以内の連続押下で確定。 */
+    private static long lastClearAllPressMs = 0L;
 
     private ClientKeyBindings() {
     }
@@ -63,6 +89,21 @@ public final class ClientKeyBindings {
                 GLFW.GLFW_KEY_H,
                 CATEGORY));
 
+        // Slot Lock 切替キー (= 未バインドで登録: ユーザーが好みのキーを割当可能)。
+        toggleSlotLock = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                TOGGLE_SLOT_LOCK_KEY,
+                InputConstants.Type.KEYSYM,
+                InputConstants.UNKNOWN.getValue(),
+                CATEGORY));
+
+        // Slot Lock 全解除キー (= 未バインド)。
+        // 2 回連続押下 (1.5 秒以内) で全ロックを消去する double-tap 仕様。
+        clearAllSlotLocks = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                CLEAR_ALL_LOCKS_KEY,
+                InputConstants.Type.KEYSYM,
+                InputConstants.UNKNOWN.getValue(),
+                CATEGORY));
+
         ClientTickEvents.END_CLIENT_TICK.register(ClientKeyBindings::onTick);
     }
 
@@ -83,6 +124,65 @@ public final class ClientKeyBindings {
                 // GUI を開いた状態だと既存の Deposit ボタンが提供する機能と被るため抑止。
                 if (mc.screen == null && mc.player != null) {
                     AutoDepositManager.announceSummary(mc.player);
+                }
+            }
+        }
+
+        if (toggleSlotLock != null) {
+            while (toggleSlotLock.consumeClick()) {
+                // インベントリ系の Screen で、ホバー中のスロットを toggle する。
+                // toggleSlotLock は ContainerScreen 外では何もしない (= 暴発防止)。
+                if (mc.screen instanceof AbstractContainerScreen<?> acs) {
+                    Slot hovered = ((AbstractContainerScreenAccessor) acs).cits$getHoveredSlot();
+                    if (hovered != null && hovered.container instanceof Inventory) {
+                        int playerSlot = hovered.getContainerSlot();
+                        if (playerSlot >= SlotIndexMapper.PLAYER_INV_SLOT_MIN
+                                && playerSlot <= SlotIndexMapper.PLAYER_INV_SLOT_MAX) {
+                            SlotLockManager.get().toggleSlotLock(playerSlot);
+                            if (mc.gui != null) {
+                                Component msg = Component.literal(
+                                        "[Slot Lock] toggled slot " + playerSlot);
+                                mc.gui.getChat().addMessage(msg);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (clearAllSlotLocks != null) {
+            while (clearAllSlotLocks.consumeClick()) {
+                // 全解除: double-tap (1.5 秒以内) で確定。
+                long now = System.currentTimeMillis();
+                int totalPlayer = SlotLockManager.get().size();
+                int totalSession = MenuSlotLockSession.get().size();
+                int total = totalPlayer + totalSession;
+                if (total == 0) {
+                    if (mc.gui != null) {
+                        mc.gui.getChat().addMessage(Component.literal(
+                                "§7[Slot Lock] §o解除対象のロックはありません。"));
+                    }
+                    lastClearAllPressMs = 0L;
+                    continue;
+                }
+                if (now - lastClearAllPressMs <= 1500L) {
+                    // 2 回目の押下 → 永続 + セッション 両方を全削除。
+                    SlotLockManager.get().clearAll();
+                    MenuSlotLockSession.get().clearAll();
+                    if (mc.gui != null) {
+                        mc.gui.getChat().addMessage(Component.literal(
+                                "§a[Slot Lock] §r" + totalPlayer + " 件 (永続) + "
+                                        + totalSession + " 件 (セッション) を全解除しました。"));
+                    }
+                    lastClearAllPressMs = 0L;
+                } else {
+                    // 1 回目の押下 → 警告のみ。
+                    lastClearAllPressMs = now;
+                    if (mc.gui != null) {
+                        mc.gui.getChat().addMessage(Component.literal(
+                                "§e[Slot Lock] §rもう一度押すと " + total
+                                        + " 件のロックを全解除します (1.5 秒以内)。"));
+                    }
                 }
             }
         }

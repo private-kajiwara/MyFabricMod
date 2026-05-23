@@ -1,5 +1,7 @@
 package com.kajiwara.chestinthesearch.util;
 
+import com.kajiwara.chestinthesearch.slotlock.InventoryProtectionLayer;
+import com.kajiwara.chestinthesearch.slotlock.SlotLockConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
@@ -74,6 +76,8 @@ public final class DepositMatchingHelper {
         if (containerSlotCount >= totalSlots)
             return;
 
+        SlotLockConfig lockCfg = SlotLockConfig.get();
+
         // プレイヤーインベントリ側スロットを順に走査する。
         // QUICK_MOVE 実行後はクライアント側予測で slots が即時更新されるため、
         // 次のスロットの判定時には最新状態を反映済み。
@@ -81,6 +85,16 @@ public final class DepositMatchingHelper {
             Slot playerSlot = menu.slots.get(slotIndex);
             ItemStack playerStack = playerSlot.getItem();
             if (playerStack.isEmpty())
+                continue;
+
+            // Slot Lock 連携: そのスロットが保護されているなら自動投入の source にしない。
+            if (InventoryProtectionLayer.isProtectedByMenuSlot(menu, slotIndex))
+                continue;
+
+            // Slot Lock 連携 (ITEM モード): スタック自体が ITEM ロック対象なら、
+            // たとえスロット自体は未ロックでも自動投入で送らない (= 設定で off にできる)。
+            if (lockCfg.blockSmartDepositOfItemLocked
+                    && InventoryProtectionLayer.isItemLockedStack(playerStack))
                 continue;
 
             // チェスト側にある「同種の既存スタック」の残り容量合計

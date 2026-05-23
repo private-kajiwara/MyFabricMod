@@ -3,7 +3,9 @@
 	"package": "com.kajiwara.chestinthesearch.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"GenericContainerScreenMixin"
+		"GenericContainerScreenMixin",
+		"SlotLockScreenMixin",
+		"AbstractContainerScreenAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

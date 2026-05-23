@@ -1,6 +1,8 @@
 package com.kajiwara.chestinthesearch.classify;
 
 import com.kajiwara.chestinthesearch.search.ContainerSnapshot;
+import com.kajiwara.chestinthesearch.slotlock.InventoryProtectionLayer;
+import com.kajiwara.chestinthesearch.slotlock.SlotLockConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
@@ -48,7 +50,24 @@ public final class AutoDepositManager {
 
         Inventory inv = player.getInventory();
         // メイン 36 スロット (ホットバー含む) を対象に取り出す。装備スロットは仕分け対象外。
-        List<ItemStack> stacks = new ArrayList<>(inv.getNonEquipmentItems());
+        // Slot Lock 連携:
+        //   - SLOT モードのロックスロットに居るアイテムは「動かさない」ので plan から除外。
+        //   - ITEM モードでロック中のアイテム種は (設定 on のとき) 全 plan から除外。
+        // どちらも「自動投入」の対象から外すだけで、プレイヤーが手動で動かすのは妨げない。
+        SlotLockConfig lockCfg = SlotLockConfig.get();
+        List<ItemStack> raw = inv.getNonEquipmentItems();
+        List<ItemStack> stacks = new ArrayList<>(raw.size());
+        for (int playerSlot = 0; playerSlot < raw.size(); playerSlot++) {
+            ItemStack s = raw.get(playerSlot);
+            if (s == null || s.isEmpty())
+                continue;
+            if (InventoryProtectionLayer.isProtectedByPlayerSlot(playerSlot))
+                continue;
+            if (lockCfg.blockSmartDepositOfItemLocked
+                    && InventoryProtectionLayer.isItemLockedStack(s))
+                continue;
+            stacks.add(s);
+        }
         return SmartRoutingManager.routeForInventory(stacks, player.level().dimension(), player.position());
     }
 
