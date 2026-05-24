@@ -2,6 +2,8 @@ package com.kajiwara.omnichest.config.gui.widget;
 
 import net.minecraft.client.gui.components.AbstractWidget;
 
+import java.util.function.IntConsumer;
+
 /**
  * 全 row が共有する「右端コントロールのサイズ」と Screen への widget 登録窓口。
  *
@@ -28,12 +30,25 @@ public final class ControlSize {
     }
 
     /**
-     * 「Screen に widget を生やす窓口」。
-     * Screen 側 (= OmniChestSettingsScreen) が impl を持ち、 row はこれを介して widget を渡す。
+     * 「Screen に widget を生やす窓口」+「カラーピッカーをポップアップで開く窓口」。
+     * Screen 側 (= OmniChestSettingsScreen) が impl を持ち、 row はこれを介して
+     * Screen の機能を呼び出す。
+     *
+     * <p>
+     * 「カラーピッカーは row が直接 Screen を知らない設計なので、 sink 経由で開かせる」
+     * という橋渡し役。 default 実装は no-op で、 popup 非対応の Screen でも壊れない。
      */
-    @FunctionalInterface
     public interface WidgetSink {
         /** widget を Screen に登録し、 同じ widget を返す (= fluent 用)。 */
         <W extends AbstractWidget> W add(W widget);
+
+        /**
+         * カラーピッカーポップアップを開く。 ユーザが OK を押したら {@code onConfirm} が
+         * 新しい色 (= 0xRRGGBB) で呼ばれる。 Cancel / Esc / 外側クリックでは呼ばれない。
+         * popup 非対応 Screen では何もしない (= default 実装)。
+         */
+        default void openColorPicker(int initialRgb, IntConsumer onConfirm) {
+            // no-op
+        }
     }
 }

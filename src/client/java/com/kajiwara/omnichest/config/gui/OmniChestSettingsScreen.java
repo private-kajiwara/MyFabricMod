@@ -1,5 +1,6 @@
 package com.kajiwara.omnichest.config.gui;
 
+import com.kajiwara.omnichest.config.gui.widget.ColorPickerPopup;
 import com.kajiwara.omnichest.config.gui.widget.ControlSize;
 import com.kajiwara.omnichest.config.gui.widget.RowEntry;
 import com.kajiwara.omnichest.config.gui.widget.TabModel;
@@ -143,6 +144,13 @@ public final class OmniChestSettingsScreen extends Screen {
     /** drag 開始時に「thumb 内のどこを掴んだか」(= drag 中はこの距離を維持)。 */
     private double sbDragOffset = 0.0;
 
+    /**
+     * カラーピッカー ポップアップ (= 表示中のみ非 null)。
+     * 表示中はすべての入力をこちらに優先ルーティングし、 widget / タブクリックを抑止する。
+     */
+    @Nullable
+    private ColorPickerPopup activePopup = null;
+
     public OmniChestSettingsScreen(@Nullable Screen parent, Component title,
             List<TabModel> tabs, Runnable onSave, Runnable onReset) {
         super(title);
@@ -207,6 +215,15 @@ public final class OmniChestSettingsScreen extends Screen {
             @Override
             public <W extends AbstractWidget> W add(W widget) {
                 return OmniChestSettingsScreen.this.addRenderableWidget(widget);
+            }
+
+            @Override
+            public void openColorPicker(int initialRgb,
+                    java.util.function.IntConsumer onConfirm) {
+                OmniChestSettingsScreen.this.activePopup = new ColorPickerPopup(
+                        OmniChestSettingsScreen.this.width,
+                        OmniChestSettingsScreen.this.height,
+                        initialRgb, onConfirm);
             }
         };
         for (TabModel tab : this.tabs) {
@@ -296,6 +313,16 @@ public final class OmniChestSettingsScreen extends Screen {
 
         // ─── フッタ separator ───
         g.fill(0, this.height - FOOTER_HEIGHT, this.width, this.height - FOOTER_HEIGHT + 1, COLOR_SEP);
+
+        // ─── ポップアップは最後に上から被せ描画する ───
+        // closed フラグが立っていたら参照を切る (= popup 自身が cancel/commit で閉じる)。
+        if (this.activePopup != null) {
+            if (this.activePopup.isClosed()) {
+                this.activePopup = null;
+            } else {
+                this.activePopup.render(g, mouseX, mouseY);
+            }
+        }
     }
 
     /**
@@ -555,6 +582,19 @@ public final class OmniChestSettingsScreen extends Screen {
         double mx = event.x();
         double my = event.y();
 
+        // ─── ポップアップ最優先ルーティング ───
+        // ピッカーが開いている間は、 widget / タブクリック / スクロールバーよりも先に
+        // ポップアップへクリックを渡す。 外側クリックは「Cancel と同等」として閉じる
+        // (popup 側で isClosed = true がセットされる)。
+        // ポップアップが開いている限り、 内外問わずクリックは消費して背後を触らせない。
+        if (this.activePopup != null) {
+            this.activePopup.mouseClicked(mx, my, event.button());
+            if (this.activePopup.isClosed()) {
+                this.activePopup = null;
+            }
+            return true;
+        }
+
         // ─── サイドバー縦スクロールバー ───
         if (event.button() == 0 && isOverSidebarVScrollbar(mx, my)) {
             startSidebarVDrag(my);
@@ -601,6 +641,11 @@ public final class OmniChestSettingsScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        // ポップアップが開いている時はドラッグもそちらへ。 SV/Hue ドラッグの追従に必須。
+        if (this.activePopup != null) {
+            this.activePopup.mouseDragged(event.x(), event.y(), event.button(), dx, dy);
+            return true;
+        }
         if (this.draggingSidebarV) {
             updateSidebarVDrag(event.y());
             return true;
@@ -614,6 +659,11 @@ public final class OmniChestSettingsScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
+        // ポップアップが開いていれば release もそちらに委譲 (drag mode リセット用)。
+        if (this.activePopup != null) {
+            this.activePopup.mouseReleased(event.x(), event.y(), event.button());
+            return true;
+        }
         if (event.button() == 0) {
             this.draggingSidebarV = false;
             this.draggingSidebarH = false;
@@ -641,6 +691,16 @@ public final class OmniChestSettingsScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
+        // ポップアップが開いている時は Esc / Enter をそちらで吸う (= Screen 全体は閉じない)。
+        if (this.activePopup != null) {
+            if (this.activePopup.keyPressed(event.key())) {
+                if (this.activePopup.isClosed()) {
+                    this.activePopup = null;
+                }
+                return true;
+            }
+            return true; // ポップアップ中は他のキーも通常画面へ渡さない。
+        }
         if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
             Minecraft.getInstance().setScreen(this.parent);
             return true;
