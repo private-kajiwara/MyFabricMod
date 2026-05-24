@@ -11,54 +11,10 @@ Minecraft Fabric MOD「OmniChest」のリポジトリ。
 ## 構成
 
 ```
-MyFabricMod/
-├── build.gradle               オーケストレータ
-├── settings.gradle            include :common, :fabric (2 つだけ)
-├── gradle.properties          ルート共通プロパティ (loom_version, mod_id, ...)
-│
-├── versions/                  ★ "実在する MC" のメタデータ集
-│   ├── versions.json          登録レジストリ (schema/policy/エントリ一覧)
-│   └── 1.21.11.properties     MC 1.21.11 の loader / api / yarn 値
-│
-├── buildSrc/                  Gradle build 用 helper
-│   ├── build.gradle
-│   └── src/main/groovy/
-│       ├── omnichest.fabric-version.gradle      convention plugin
-│       └── com/kajiwara/omnichest/build/
-│           ├── VersionRegistry.groovy           versions.json + .properties をロード
-│           ├── MojangVersionResolver.groovy     Mojang manifest 取得
-│           ├── FabricMetaResolver.groovy        Fabric Meta API 取得
-│           └── VersionValidator.groovy          実在性検証
-│
-├── common/                    Minecraft 非依存の共通モジュール
-│   └── src/main/java/com/kajiwara/omnichest/compat/
-│       ├── MinecraftCompat.java
-│       ├── VersionBridge.java
-│       ├── FabricCompatLayer.java
-│       ├── MappingResolver.java
-│       ├── VersionedEntrypoint.java
-│       ├── VersionDescriptor.java          ★ data-driven compat
-│       ├── VersionProfile.java             ★ runtime profile loader
-│       ├── VersionSpecificHooks.java
-│       ├── SharedConfig.java
-│       └── SharedLogic.java
-│
-├── fabric/                    "Fabric ターゲットの汎用ビルダ"
-│   ├── build.gradle           -Pmc=<MC> で対象 MC を切り替える単一モジュール
-│   └── src/main/
-│       ├── java/com/kajiwara/omnichest/fabric/compat/
-│       │   ├── DefaultMinecraftCompat.java
-│       │   ├── DefaultVersionBridge.java
-│       │   └── DefaultVersionSpecificHooks.java
-│       └── resources/META-INF/services/com.kajiwara.omnichest.compat.MinecraftCompat
-│
-├── src/                       既存実装 (Mod 本体 / Mixin / Screen)
-│   ├── main/                  ModInitializer 等 (common-side)
-│   └── client/                Screen / Render / Mixin (client-side)
-│
-└── .github/workflows/
-    ├── build.yml              versions.json から matrix を動的生成
-    └── release.yml            v* tag で全 jar を draft Release に添付
+または
+```txt
+cd C:\MyFabricMod
+./gradlew :fabric:runClient
 ```
 
 ---
