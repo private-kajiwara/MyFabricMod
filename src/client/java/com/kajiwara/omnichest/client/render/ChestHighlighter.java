@@ -1,8 +1,11 @@
 package com.kajiwara.omnichest.client.render;
 
+import com.kajiwara.omnichest.config.ConfigManager;
 import com.kajiwara.omnichest.mixin.RenderTypeAccessor;
+import com.kajiwara.omnichest.search.ContainerScanner;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
 import com.mojang.blaze3d.pipeline.BlendFunction;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.shaders.UniformType;
@@ -101,6 +104,35 @@ public final class ChestHighlighter {
 
     public static void register() {
         WorldRenderEvents.BEFORE_ENTITIES.register(INSTANCE::onWorldRender);
+
+        // ────────────────────────────────────────────────────────────
+        // 「ピン永続表示 (= チェストを開くまで残す)」設定用のクリアフック。
+        //
+        // {@link ContainerScanner#register()} が先に AFTER_INIT に登録しているため、
+        // ここで登録するリスナはその後に走り、 {@link ContainerScanner#currentActiveKey()}
+        // が「いま開いたチェスト」を返す状態になっている。
+        //
+        // 設定が OFF の場合は何もしない (= 既存の時間ベース消失 + GUI 中の自動延長を維持)。
+        // 設定が ON の場合のみ、 該当チェストのハイライトを即座に消す。
+        // ────────────────────────────────────────────────────────────
+        ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
+            if (!ConfigManager.get().search.pinPersistUntilOpened) {
+                return;
+            }
+            ContainerSnapshot.Key opened = ContainerScanner.currentActiveKey();
+            if (opened != null) {
+                INSTANCE.active.remove(opened);
+            }
+        });
+    }
+
+    /**
+     * 指定 {@link ContainerSnapshot.Key} のハイライトを即座に取り除く (= 存在しなければ no-op)。
+     * 主に「永続ピン設定 ON 時にチェストを開けた瞬間にピンを消す」ためのフック。
+     */
+    public void clearForKey(ContainerSnapshot.Key key) {
+        if (key == null) return;
+        active.remove(key);
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -110,11 +142,17 @@ public final class ChestHighlighter {
     /**
      * チェストにハイライトを登録する。同じ {@link ContainerSnapshot.Key} に
      * 複数アイテムを登録すると entries に追記される。
+     *
+     * <p>
+     * {@code durationMs} に {@link Long#MAX_VALUE} を渡すと「永続表示」になる。
+     * (= 加算オーバーフローを避けるため expiresAt 計算をバイパスする)。
      */
     public void highlight(ContainerSnapshot snapshot, ItemStack labelItem, int labelCount, long durationMs) {
         if (snapshot == null)
             return;
-        long expiresAt = System.currentTimeMillis() + Math.max(0L, durationMs);
+        long expiresAt = (durationMs == Long.MAX_VALUE)
+                ? Long.MAX_VALUE
+                : System.currentTimeMillis() + Math.max(0L, durationMs);
         boolean hasLabel = labelItem != null && !labelItem.isEmpty();
         ItemStack labelCopy = hasLabel ? labelItem.copy() : ItemStack.EMPTY;
 
@@ -142,11 +180,26 @@ public final class ChestHighlighter {
     }
 
     public void highlight(ContainerSnapshot snapshot, ItemStack labelItem, int labelCount) {
-        highlight(snapshot, labelItem, labelCount, DEFAULT_HIGHLIGHT_DURATION_MS);
+        highlight(snapshot, labelItem, labelCount, resolveDefaultDuration());
     }
 
     public void highlight(ContainerSnapshot snapshot) {
-        highlight(snapshot, ItemStack.EMPTY, 0, DEFAULT_HIGHLIGHT_DURATION_MS);
+        highlight(snapshot, ItemStack.EMPTY, 0, resolveDefaultDuration());
+    }
+
+    /**
+     * 設定 ({@link com.kajiwara.omnichest.config.data.SearchConfig#pinPersistUntilOpened}) を見て
+     * 「永続 = {@link Long#MAX_VALUE}」 または「既定 = {@link #DEFAULT_HIGHLIGHT_DURATION_MS}」を返す。
+     */
+    private static long resolveDefaultDuration() {
+        try {
+            if (ConfigManager.get().search.pinPersistUntilOpened) {
+                return Long.MAX_VALUE;
+            }
+        } catch (Throwable ignored) {
+            // 起動初期や設定読込失敗時は既定値で fallback (= 起動を妨げない)。
+        }
+        return DEFAULT_HIGHLIGHT_DURATION_MS;
     }
 
     public void clear() {

@@ -35,6 +35,14 @@ public final class SearchCategoryBuilder {
                         "0 = highlight stays until results are cleared."),
                 v -> Component.literal(v + " s"));
 
+        // 「ピン永続表示」(= チェストを開くまで消えない)。
+        // ON にすると上の Highlight Duration は無視され、対象チェストを開いた瞬間にだけ消える。
+        b.toggle(ConfigLabels.entry("search.pinPersistUntilOpened", "Pin Persistent Until Opened"),
+                cfg.pinPersistUntilOpened, v -> cfg.pinPersistUntilOpened = v,
+                ConfigLabels.tooltip("search.pinPersistUntilOpened",
+                        "Keep the pin / highlight visible until you actually open that chest. "
+                                + "Overrides Highlight Duration when ON."));
+
         b.toggle(ConfigLabels.entry("search.enableSearchHistory", "Enable Search History"),
                 cfg.enableSearchHistory, v -> cfg.enableSearchHistory = v, null);
 

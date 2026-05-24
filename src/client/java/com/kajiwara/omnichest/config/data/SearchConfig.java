@@ -34,4 +34,16 @@ public final class SearchConfig {
 
     /** 結果一覧のソート順。 */
     public SearchSortMode resultSortMode = SearchSortMode.DISTANCE;
+
+    /**
+     * ピン (ハイライトの黄色ボックス + 名前タグ) を「チェストを開けるまで永続表示」するか。
+     *
+     * <ul>
+     * <li>false (デフォルト): 既存挙動。 {@link #highlightDurationSec} 経過で自動的にフェードアウト。
+     *     ただしチェストを開いてピン対象アイテムが視界に入っている間は自動延長される。</li>
+     * <li>true: ピンは時間で消えず、ユーザーがそのチェストを実際に開いた瞬間に消える。
+     *     倉庫を探し当てるまで時間がかかるケース (= 遠距離 / 高所 / 障害物越し) に有効。</li>
+     * </ul>
+     */
+    public boolean pinPersistUntilOpened = false;
 }

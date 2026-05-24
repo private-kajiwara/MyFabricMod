@@ -76,6 +76,8 @@
   "config.omnichest.search.highlightDurationSec.tooltip": "0 = highlight stays until results are cleared.",
   "config.omnichest.search.enableSearchHistory": "Enable Search History",
   "config.omnichest.search.resultSortMode": "Result Sort Mode",
+  "config.omnichest.search.pinPersistUntilOpened": "Pin Persistent Until Opened",
+  "config.omnichest.search.pinPersistUntilOpened.tooltip": "Keep the pin / highlight visible until you actually open that chest. Overrides Highlight Duration when ON.",
 
   "config.omnichest.ai.enableClassification": "Enable AI Classification",
   "config.omnichest.ai.learningMode": "Learning Mode",
