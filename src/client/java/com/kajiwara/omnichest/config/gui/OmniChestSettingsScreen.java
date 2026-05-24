@@ -272,7 +272,17 @@ public final class OmniChestSettingsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // バニラ背景 + 半透明オーバレイは super.render が処理する。
+        // ★ 重要: super.render() より <b>前</b> に widget の位置 + 可視範囲を確定させる。
+        //
+        // 旧実装はレイアウトを {@link #renderContent} 内 (= super.render の後) で行っていたため、
+        // タブを切り替えた直後の最初の 1 フレームだけ、新しいタブの widget が
+        // 生成時の位置 (= bounds(0,0,…) なので画面左上) で super.render に描画されてしまい、
+        // 一瞬だけ画面左上にボタンの残像が見える不具合があった。
+        // 「設定項目を 1 度クリックしたら治る」のは、その時点で render が一巡し
+        // widget の position が正しい座標に書き換わったため。
+        prepareActiveTabLayout();
+
+        // バニラ背景 + 半透明オーバレイ + widget 群はここでまとめて描画される。
         super.render(g, mouseX, mouseY, partialTick);
 
         // ─── ヘッダ (= チェスト風バナー) ───
@@ -452,7 +462,45 @@ public final class OmniChestSettingsScreen extends Screen {
         if (this.sidebarScrollX > maxX) this.sidebarScrollX = maxX;
     }
 
-    /** コンテンツ領域 (= タブ中身) を描画。 */
+    /**
+     * 現在アクティブなタブの row を配置 + ビューポート可視判定する。
+     * {@link #render} の冒頭 (= {@code super.render()} の前) で呼ぶ前提。
+     *
+     * <p>
+     * 「位置決定」と「描画」を分離することで、 widget が
+     * {@code Button.bounds(0,0,…)} で生成された後の最初の super.render が
+     * (0,0) で描いてしまう問題 (= タブ切替直後の左上フラッシュ) を防ぐ。
+     */
+    private void prepareActiveTabLayout() {
+        if (this.tabs.isEmpty()) return;
+        TabModel tab = this.tabs.get(this.activeTab);
+
+        int contentLeft = SIDEBAR_WIDTH + 1 + SIDEBAR_GAP + CONTENT_PAD_X;
+        int contentRight = this.width - CONTENT_PAD_X;
+        int contentTop = HEADER_HEIGHT + 4;
+        int contentBottom = this.height - FOOTER_HEIGHT - 4;
+        int contentWidth = contentRight - contentLeft;
+        int viewportHeight = contentBottom - contentTop;
+
+        int totalHeight = 0;
+        for (RowEntry row : tab.rows()) totalHeight += row.getHeight();
+        clampContentScroll(totalHeight, viewportHeight);
+
+        int yCursor = contentTop - (int) Math.round(this.scrollPx);
+        for (RowEntry row : tab.rows()) {
+            row.layout(contentLeft, yCursor, contentWidth);
+            yCursor += row.getHeight();
+        }
+        // 視認範囲外の widget を非表示にして、 super.render の描画対象から外す
+        // (= 左上フラッシュ防止の本命処理)。
+        for (RowEntry row : tab.rows()) {
+            boolean inViewport = row.getY() + row.getHeight() > contentTop
+                    && row.getY() < contentBottom;
+            row.setVisible(inViewport);
+        }
+    }
+
+    /** コンテンツ領域 (= タブ中身) のラベル / スクロールバー描画。 widget 本体は super.render が描く。 */
     private void renderContent(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         if (this.tabs.isEmpty()) return;
         TabModel tab = this.tabs.get(this.activeTab);
@@ -464,25 +512,11 @@ public final class OmniChestSettingsScreen extends Screen {
         int contentWidth = contentRight - contentLeft;
         int viewportHeight = contentBottom - contentTop;
 
-        // 全 row の Y を計算。
+        // totalHeight はスクロールバーの描画判定にのみ使う (= レイアウト計算は prepareActiveTabLayout で完了済み)。
         int totalHeight = 0;
         for (RowEntry row : tab.rows()) totalHeight += row.getHeight();
-        clampContentScroll(totalHeight, viewportHeight);
 
-        int yCursor = contentTop - (int) Math.round(this.scrollPx);
-        for (RowEntry row : tab.rows()) {
-            row.layout(contentLeft, yCursor, contentWidth);
-            yCursor += row.getHeight();
-        }
-
-        // 視認範囲外の widget を非表示。
-        for (RowEntry row : tab.rows()) {
-            boolean inViewport = row.getY() + row.getHeight() > contentTop
-                    && row.getY() < contentBottom;
-            row.setVisible(inViewport);
-        }
-
-        // content を clip して row.render を呼ぶ。
+        // content を clip して row.render (= ラベル等の追加描画) を呼ぶ。
         g.enableScissor(contentLeft - CONTENT_PAD_X, contentTop,
                 contentRight + CONTENT_PAD_X, contentBottom);
         for (RowEntry row : tab.rows()) {

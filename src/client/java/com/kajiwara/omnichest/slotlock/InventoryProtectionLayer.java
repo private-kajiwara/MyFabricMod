@@ -1,6 +1,7 @@
 package com.kajiwara.omnichest.slotlock;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -119,6 +120,10 @@ public final class InventoryProtectionLayer {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || player.containerMenu == null)
+            return false;
+        // Creative インベントリのアイテムブラウザスロットはロック対象外
+        // (= 無限供給スロットなので保護する意味が無く、誤って overlay が乗ると邪魔)。
+        if (mc.screen instanceof CreativeModeInventoryScreen)
             return false;
         return MenuSlotLockSession.get().isLocked(player.containerMenu.containerId, slot.index);
     }

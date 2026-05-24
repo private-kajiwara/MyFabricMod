@@ -86,6 +86,17 @@ public final class ChestHighlighter {
     /** ピンテキストのワールドスケール (= 1 font-pixel あたりのワールド単位)。 */
     private static final float PIN_TEXT_SCALE = 0.025f;
 
+    /**
+     * 画面サイズ一定化のための「基準距離」(m)。
+     * <ul>
+     * <li>カメラからチェストまでの距離が {@code <= 基準距離} の間は素のスケール
+     *     ({@link #PIN_TEXT_SCALE}) のまま (= 近づくとそれなりに大きく見える)。</li>
+     * <li>基準距離を超えたら距離に比例してワールドスケールを引き伸ばす (= 角サイズが一定 = 画面上のサイズが一定)。</li>
+     * </ul>
+     * 「遠くても読める」を成立させつつ、近距離で巨大化しないバランス点として 6m を選択。
+     */
+    private static final double PIN_SCALE_REF_DISTANCE = 6.0;
+
     /** ピン背景色 (ARGB)。バニラのネームタグ (alpha ~0x40) より大幅に濃くする (alpha 0xE0)。 */
     private static final int PIN_BG_ARGB = 0xE0000000;
 
@@ -106,22 +117,35 @@ public final class ChestHighlighter {
         WorldRenderEvents.BEFORE_ENTITIES.register(INSTANCE::onWorldRender);
 
         // ────────────────────────────────────────────────────────────
-        // 「ピン永続表示 (= チェストを開くまで残す)」設定用のクリアフック。
+        // 「ピン永続表示 (= チェストを開くまで残す)」設定用のフック。
         //
         // {@link ContainerScanner#register()} が先に AFTER_INIT に登録しているため、
         // ここで登録するリスナはその後に走り、 {@link ContainerScanner#currentActiveKey()}
         // が「いま開いたチェスト」を返す状態になっている。
         //
         // 設定が OFF の場合は何もしない (= 既存の時間ベース消失 + GUI 中の自動延長を維持)。
-        // 設定が ON の場合のみ、 該当チェストのハイライトを即座に消す。
+        // 設定が ON の場合は:
+        //   - active からは <b>消さない</b> (= スロット overlay 用に検索可能なまま残す)
+        //   - {@code worldRenderSuppressed} を立ててワールド側のピン/ボックスのみ即座に消す
+        //   - 永続 (Long.MAX_VALUE) なら expiresAt を有限値に下げ、 GUI を閉じた後
+        //     SLOT_VIEW_REFRESH_MS 経過で自然に expire させる
         // ────────────────────────────────────────────────────────────
         ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
             if (!ConfigManager.get().search.pinPersistUntilOpened) {
                 return;
             }
             ContainerSnapshot.Key opened = ContainerScanner.currentActiveKey();
-            if (opened != null) {
-                INSTANCE.active.remove(opened);
+            if (opened == null) {
+                return;
+            }
+            ActiveHighlight ah = INSTANCE.active.get(opened);
+            if (ah == null) {
+                return;
+            }
+            ah.worldRenderSuppressed = true;
+            long fin = System.currentTimeMillis() + SLOT_VIEW_REFRESH_MS;
+            if (ah.expiresAt > fin) {
+                ah.expiresAt = fin;
             }
         });
     }
@@ -219,6 +243,14 @@ public final class ChestHighlighter {
      * {@code now + SLOT_VIEW_REFRESH_MS} に延長する (= 既にそれより先ならそのまま)。
      * これにより GUI を開いている間は常に最新フレームで時計がリセットされ続け、
      * GUI を閉じた後も少なくとも 10 秒間はピン/ボックス/スロット overlay が残る。
+     *
+     * <p>
+     * <b>例外</b>: {@link ActiveHighlight#worldRenderSuppressed} が立っているエントリは
+     * 延長対象から除外する。 これは「ピン永続表示 ON + チェスト開封済み」の状態であり、
+     * 開封時に {@code AFTER_INIT} listener が {@code expiresAt = now + 10s} を設定して
+     * 「あと 10 秒で消える」フェーズに入っている。 ここでスロットに該当アイテムが見えている
+     * 度に延長してしまうと、 アイテムを移動した後もずっとハイライトが残るバグ
+     * (=「一度チェスト開けたら消えるはずなのに残り続ける」) になる。
      */
     public boolean isHighlightedItem(ItemStack stack) {
         if (stack == null || stack.isEmpty())
@@ -240,7 +272,9 @@ public final class ChestHighlighter {
             }
             if (hitThis) {
                 matched = true;
-                if (h.expiresAt < refreshTo)
+                // 「開封済みフェーズ」では時計を延長しない。 そうしないと slot overlay の
+                // refresh で expiresAt が永久に再延長され、 ハイライトが消えなくなる。
+                if (!h.worldRenderSuppressed && h.expiresAt < refreshTo)
                     h.expiresAt = refreshTo;
             }
         }
@@ -283,6 +317,10 @@ public final class ChestHighlighter {
         RenderType xray = xrayLines();
 
         for (ActiveHighlight h : active.values()) {
+            // 「開封したのでピン/ボックスは消したい」が、 entry 自体はスロット overlay 用に
+            // active へ残しているケース (= pinPersistUntilOpened ON 時の挙動)。
+            if (h.worldRenderSuppressed)
+                continue;
             ContainerSnapshot snap = h.snapshot;
             if (!snap.dimension().equals(currentDim))
                 continue;
@@ -390,41 +428,48 @@ public final class ChestHighlighter {
         int lineHeight = font.lineHeight;        // 通常 9
         int rowSpacing = lineHeight + 1;         // 行間 1 px
 
-        // 行内容を rowIndex=0 (最下段) から順に組み立て
-        int totalRows = Math.max(1, entries.size());
-        Component[] rowTexts = new Component[totalRows];
-
-        // 距離は最下段にだけ付ける (= bottom row のみアイテム名 + 距離、上段はアイテム名のみ)
+        // 距離計算 (画面サイズ一定スケール + 表示テキスト両方に使う)
         double dx = cx - camPos.x;
         double dy = baseY - camPos.y;
         double dz = cz - camPos.z;
         double distSq = dx * dx + dy * dy + dz * dz;
         double distM = Math.sqrt(distSq);
-        Component distComp = Component.literal(String.format(Locale.ROOT, "  %.1fm", distM))
-                .withColor(0xAAAAAA);
 
-        if (entries.isEmpty()) {
-            rowTexts[0] = Component.literal("▼ ").withColor(THEME_RGB).append(distComp);
-        } else {
-            for (int i = 0; i < entries.size(); i++) {
-                HighlightEntry e = entries.get(i);
-                Component body = Component.literal(
-                        e.stack.getHoverName().getString() + " ×" + e.count).withColor(0xFFFFFF);
-                if (i == 0) {
-                    rowTexts[0] = Component.literal("▼ ").withColor(THEME_RGB)
-                            .append(body).append(distComp);
-                } else {
-                    rowTexts[i] = body;
-                }
-            }
+        // ─── 行レイアウト ───
+        // 最上段 (rowIndex = totalRows-1) に「▼ 距離」(黄色)
+        // その下にエントリを上から entries[0], entries[1], ..., entries[N-1] と並べる
+        //   (画面上の縦順序: 上→下 = ▼距離, 1番目, 2番目, ..., 最後)
+        int totalRows = (entries.isEmpty() ? 1 : entries.size() + 1);
+        Component[] rowTexts = new Component[totalRows];
+
+        Component headerComp = Component.literal(
+                String.format(Locale.ROOT, "▼ %.1fm", distM))
+                .withColor(THEME_RGB);
+        rowTexts[totalRows - 1] = headerComp; // 最上段
+
+        for (int i = 0; i < entries.size(); i++) {
+            HighlightEntry e = entries.get(i);
+            Component body = Component.literal(
+                    e.stack.getHoverName().getString() + " ×" + e.count).withColor(0xFFFFFF);
+            // entries[0] → ▼ の直下 (totalRows - 2)
+            // entries[N-1] → 最下段 (rowIndex 0)
+            int rowIndex = totalRows - 2 - i;
+            rowTexts[rowIndex] = body;
         }
 
         // ─── pose 変換 (バニラ NameTagFeatureRenderer.Storage.add と等価) ───
+        // ただし「画面上のサイズを一定にする」ため、 基準距離より遠ければ
+        // ワールドスケールを距離に比例させる (= 透視投影による縮小を打ち消す)。
+        // 基準距離以下では素のスケールに固定し、 近距離での過剰な肥大化を防ぐ。
+        float distScaleFactor = (float) (Math.max(distM, PIN_SCALE_REF_DISTANCE)
+                / PIN_SCALE_REF_DISTANCE);
+        float worldScale = PIN_TEXT_SCALE * distScaleFactor;
+
         matrices.pushPose();
         try {
             matrices.translate(dx, dy, dz);
             matrices.mulPose(camState.orientation);
-            matrices.scale(PIN_TEXT_SCALE, -PIN_TEXT_SCALE, PIN_TEXT_SCALE);
+            matrices.scale(worldScale, -worldScale, worldScale);
 
             // rowIndex=0 (最下段) の text 下端を pose Y=0 に合わせる。
             // → text の top-left を fy = -(rowIndex+1)*rowSpacing + 1 に置く (1 px の上端余白)。
@@ -517,11 +562,23 @@ public final class ChestHighlighter {
         final ContainerSnapshot snapshot;
         final List<HighlightEntry> entries;
         long expiresAt;
+        /**
+         * true なら {@link ChestHighlighter#onWorldRender(WorldRenderContext)} で
+         * このエントリのワールド側描画 (ピン + X-ray ボックス) をスキップする。
+         * 「対象チェストを開いた瞬間にピンを消す (= pinPersistUntilOpened)」用フラグ。
+         *
+         * <p>
+         * active マップからは消さないため、 {@link #isHighlightedItem(ItemStack)}
+         * 経由のスロット overlay は引き続き機能する。
+         * GUI を閉じた後は {@link #SLOT_VIEW_REFRESH_MS} 経過で自然に expire する。
+         */
+        boolean worldRenderSuppressed;
 
         ActiveHighlight(ContainerSnapshot snapshot, List<HighlightEntry> entries, long expiresAt) {
             this.snapshot = snapshot;
             this.entries = entries;
             this.expiresAt = expiresAt;
+            this.worldRenderSuppressed = false;
         }
     }
 }

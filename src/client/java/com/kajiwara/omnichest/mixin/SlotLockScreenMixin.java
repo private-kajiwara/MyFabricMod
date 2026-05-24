@@ -11,6 +11,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -208,6 +209,12 @@ public abstract class SlotLockScreenMixin extends Screen {
         Slot hovered = this.hoveredSlot;
         if (hovered == null)
             return;
+        // Creative インベントリの「アイテムブラウザ (タブの中身)」は無限供給スロットであり、
+        // ロックする意味が無い (= ハイライト誤爆を防ぐためここで一律スキップ)。
+        // プレイヤーインベントリ部 (= 下段) はロックしたいので、 hovered.container が
+        // Inventory のときだけ通常パスへ。
+        if (cits_slotLock$isCreativeNonPlayerSlot(hovered))
+            return;
 
         int button = event.button();
         boolean isAlt = event.hasAltDown();
@@ -317,6 +324,11 @@ public abstract class SlotLockScreenMixin extends Screen {
             cir.setReturnValue(true);
             return;
         }
+        // Creative ブラウザのスロットは drag でも触らない (= 下段プレイヤー側だけ通す)。
+        if (cits_slotLock$isCreativeNonPlayerSlot(hovered)) {
+            cir.setReturnValue(true);
+            return;
+        }
 
         AbstractContainerMenu menu = this.getMenu();
         boolean isPlayerSlot = (hovered.container instanceof Inventory);
@@ -356,22 +368,25 @@ public abstract class SlotLockScreenMixin extends Screen {
             at = @At("HEAD"))
     private void cits_slotLock$onMouseReleased(MouseButtonEvent event, CallbackInfoReturnable<Boolean> cir) {
         if (this.cits_slotLock$dragMode != DRAG_NONE) {
-            int n = this.cits_slotLock$dragTouched.size();
             this.cits_slotLock$dragMode = DRAG_NONE;
             this.cits_slotLock$dragTouched.clear();
-            if (n > 1) {
-                cits_slotLock$echoChat(
-                        "§a[SlotLock] §7" + n + " スロットに drag 操作を適用");
-            }
         }
     }
 
-    /** チャットに 1 行流す (= 診断・UI フィードバック共用)。 */
+    /**
+     * 「Creative インベントリの非プレイヤースロット」判定。
+     * 該当する場合は click / drag / overlay 描画を全て無視したい。
+     *
+     * <p>
+     * Creative インベントリのアイテムブラウザは無限供給スロットで、 menu の Slot Wrapper を介して
+     * ItemPickerMenu の特殊コンテナを参照する。プレイヤーインベントリ部分 (= 下段)
+     * は通常通り Inventory なので除外しない。
+     */
     @Unique
-    private void cits_slotLock$echoChat(String msg) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.gui != null) {
-            mc.gui.getChat().addMessage(Component.literal(msg));
-        }
+    private boolean cits_slotLock$isCreativeNonPlayerSlot(Slot slot) {
+        if (!(((Object) this) instanceof CreativeModeInventoryScreen))
+            return false;
+        return !(slot.container instanceof Inventory);
     }
+
 }
