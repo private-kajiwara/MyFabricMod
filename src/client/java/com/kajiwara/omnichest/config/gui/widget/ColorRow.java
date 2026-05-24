@@ -1,27 +1,36 @@
 package com.kajiwara.omnichest.config.gui.widget;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
-
 import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * 0xRRGGBB の色値 row。
+ * 0xRRGGBB の色値 row (パレット選択版)。
  *
  * <p>
- * フル機能のカラーピッカは実装が重いため、ここでは「プリセットパレット 16 色をサイクル」する
- * シンプルなボタンに留めている。 plus 「16 進入力」のテキスト入力にしたい場合は EditBox 派生に差替可能。
+ * 旧版はボタン 1 個で「クリックする度にパレット内の次の色へ進む」サイクル方式だったが、
+ * <ol>
+ * <li>欲しい色まで何度もクリックが必要で UX が悪い、</li>
+ * <li>パレットの全色を一覧できない、</li>
+ * </ol>
+ * を解消するため、本版では「パレット 16 色を行内に展開し、ユーザが任意の色を直接クリックする」
+ * 方式に作り直した。
  *
  * <p>
- * 右端コントロールの左半分には「現在色のスウォッチ」を描画する。
+ * クリック判定は {@link RowEntry#mouseClicked} に乗せ、 vanilla widget の登録は行わない
+ * (= スウォッチ数だけ Button を増やすコストを避けるため)。
+ *
+ * <p>
+ * row 高は 2 段 (= ラベル 12px + パレット 16px + 余白) を確保するため通常より高くしている。
  */
 public final class ColorRow extends RowEntry {
 
-    /** よく使う MOD ハイライト色 16 種。 */
+    /** よく使う MOD ハイライト色 16 種。バニラの 16 進カラーコードに沿った彩度高めのセット。 */
     private static final int[] PALETTE = {
             0xFFAA00, // orange (default)
             0xFFFF55, // yellow
@@ -35,11 +44,25 @@ public final class ColorRow extends RowEntry {
             0xAAAA00, 0x00AAAA, 0xAA00AA, 0x808080,
     };
 
+    // ─── レイアウト定数 ──────────────────────────────────────────────
+
+    /** スウォッチ 1 個の辺長 (px)。 */
+    private static final int SWATCH_SIZE = 14;
+    /** スウォッチ間の間隔 (px)。 */
+    private static final int SWATCH_GAP = 2;
+    /** ラベル行の高さ (px)。 */
+    private static final int LABEL_ROW_H = 12;
+    /** ラベル → パレット間の余白 (px)。 */
+    private static final int LABEL_PALETTE_GAP = 3;
+
+    // ─── 状態 ──────────────────────────────────────────────────────
+
     private final Consumer<Integer> saveConsumer;
     private int value;
-    private Button button;
-    /** swatch 描画用に row の content 左座標を覚えておく。 layout() で更新。 */
-    private int swatchX, swatchY;
+    /** layout() で算出: スウォッチ群の左端 X (= 1 個目のスウォッチの x)。 */
+    private int paletteLeft;
+    /** layout() で算出: スウォッチ群の上端 Y。 */
+    private int paletteTop;
 
     public ColorRow(Component label, @Nullable Component tooltip,
             int initial, Consumer<Integer> saveConsumer) {
@@ -48,34 +71,35 @@ public final class ColorRow extends RowEntry {
         this.saveConsumer = saveConsumer;
     }
 
+    /**
+     * ラベル + 16 スウォッチ + パレット下の余白を合計した高さ。
+     * 通常 row (24px) より高め。 row レイアウト計算で自動的に反映される。
+     */
+    @Override
+    public int getHeight() {
+        return LABEL_ROW_H + LABEL_PALETTE_GAP + SWATCH_SIZE + 4;
+    }
+
     @Override
     public void attachTo(ControlSize.WidgetSink sink) {
-        this.button = Button.builder(messageFor(this.value), b -> {
-            this.value = nextPaletteColor(this.value);
-            b.setMessage(messageFor(this.value));
-        }).bounds(0, 0, ControlSize.CONTROL_WIDTH, ControlSize.CONTROL_HEIGHT).build();
-        if (this.tooltip != null) {
-            this.button.setTooltip(Tooltip.create(this.tooltip));
-        }
-        sink.add(this.button);
+        // widget は持たない (= 16 個の Button を増やさない設計)。
+        // クリックは mouseClicked() で処理。
     }
 
     @Override
     public void layout(int x, int y, int width) {
         this.y = y;
-        if (this.button == null) return;
-        int bx = x + width - ControlSize.CONTROL_WIDTH - ControlSize.CONTROL_RIGHT_MARGIN;
-        int by = y + (getHeight() - ControlSize.CONTROL_HEIGHT) / 2;
-        this.button.setX(bx);
-        this.button.setY(by);
-        // swatch (= 色サンプル小さい四角) は label の右、 button の左に置く。
-        this.swatchX = bx - 16;
-        this.swatchY = by + (ControlSize.CONTROL_HEIGHT - 12) / 2;
+        // パレットを右寄せにする。 すべてのスウォッチ + gap の合計幅 + 「現在色」ラベル幅を計算。
+        int totalSwatchW = PALETTE.length * SWATCH_SIZE + (PALETTE.length - 1) * SWATCH_GAP;
+        // 右端から内側に向けて totalSwatchW ぶんを確保。 + 4px 右マージン。
+        this.paletteLeft = x + width - totalSwatchW - 4;
+        this.paletteTop = y + LABEL_ROW_H + LABEL_PALETTE_GAP;
     }
 
     @Override
     public void setVisible(boolean visible) {
-        if (this.button != null) this.button.visible = visible;
+        // widget 無しなので no-op。 描画スキップは render() 側で行わず、 Screen.render の
+        // scissor + 範囲チェックで吸収する。
     }
 
     @Override
@@ -84,33 +108,59 @@ public final class ColorRow extends RowEntry {
     }
 
     @Override
-    public List<Button> widgets() {
-        return this.button == null ? List.of() : List.of(this.button);
+    public List<? extends net.minecraft.client.gui.components.AbstractWidget> widgets() {
+        return List.of();
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button != 0) return false; // 左クリックのみ反応。
+        // パレット範囲外なら無視。
+        if (mouseY < this.paletteTop || mouseY >= this.paletteTop + SWATCH_SIZE) return false;
+        if (mouseX < this.paletteLeft) return false;
+        int relX = (int) (mouseX - this.paletteLeft);
+        int slot = SWATCH_SIZE + SWATCH_GAP;
+        int idx = relX / slot;
+        // gap 部分を踏んだクリックは無視する (= idx の中で SWATCH_SIZE を超えた位置)。
+        int withinCell = relX - idx * slot;
+        if (withinCell >= SWATCH_SIZE) return false;
+        if (idx < 0 || idx >= PALETTE.length) return false;
+        this.value = PALETTE[idx] & 0xFFFFFF;
+        return true;
     }
 
     @Override
     public void render(GuiGraphics g, int contentLeft, int rowY, int width,
             int mouseX, int mouseY, float partialTick) {
-        super.render(g, contentLeft, rowY, width, mouseX, mouseY, partialTick);
-        // swatch を描画 (= alpha 0xFF | rgb)。 枠は半透明黒。
-        int argb = 0xFF000000 | (this.value & 0xFFFFFF);
-        g.fill(this.swatchX, this.swatchY, this.swatchX + 12, this.swatchY + 12, argb);
-        g.renderOutline(this.swatchX - 1, this.swatchY - 1, 14, 14, 0xAA000000);
-    }
+        Font font = Minecraft.getInstance().font;
+        // 1) ラベル (左上)。
+        g.drawString(font, this.label, contentLeft + 4, rowY + 2, 0xFFFFFFFF, false);
+        // 1b) 現在値を 16 進で右に小さく出す。
+        Component hex = Component.literal(String.format("#%06X", this.value & 0xFFFFFF));
+        int hexW = font.width(hex);
+        g.drawString(font, hex, this.paletteLeft - hexW - 8, rowY + 2, 0xFFBBBBBB, false);
 
-    /** 現在色の直後にあるパレット色へ進む (= 簡易ピッカ)。 */
-    private static int nextPaletteColor(int current) {
-        int idx = 0;
-        for (int i = 0; i < PALETTE.length; i++) {
-            if ((PALETTE[i] & 0xFFFFFF) == (current & 0xFFFFFF)) {
-                idx = i;
-                break;
+        // 2) パレット スウォッチを横一列に描画。
+        int x = this.paletteLeft;
+        int y = this.paletteTop;
+        for (int idx = 0; idx < PALETTE.length; idx++) {
+            int color = PALETTE[idx];
+            int argb = 0xFF000000 | (color & 0xFFFFFF);
+            // 背景塗り。
+            g.fill(x, y, x + SWATCH_SIZE, y + SWATCH_SIZE, argb);
+            // 通常の枠 (暗色)。
+            g.renderOutline(x - 1, y - 1, SWATCH_SIZE + 2, SWATCH_SIZE + 2, 0xAA000000);
+            // 選択中: 白枠を加えて強調 (= 二重縁取り)。
+            if ((color & 0xFFFFFF) == (this.value & 0xFFFFFF)) {
+                g.renderOutline(x - 2, y - 2, SWATCH_SIZE + 4, SWATCH_SIZE + 4, 0xFFFFFFFF);
             }
+            // ホバー: ハイライト用に薄い白枠を加える。
+            boolean hovered = mouseX >= x && mouseX < x + SWATCH_SIZE
+                    && mouseY >= y && mouseY < y + SWATCH_SIZE;
+            if (hovered) {
+                g.renderOutline(x, y, SWATCH_SIZE, SWATCH_SIZE, 0xFFFFFFFF);
+            }
+            x += SWATCH_SIZE + SWATCH_GAP;
         }
-        return PALETTE[(idx + 1) % PALETTE.length];
-    }
-
-    private static Component messageFor(int rgb) {
-        return Component.literal(String.format("#%06X", rgb & 0xFFFFFF));
     }
 }

@@ -581,7 +581,22 @@ public final class OmniChestSettingsScreen extends Screen {
             }
         }
 
-        return super.mouseClicked(event, doubleClick);
+        // ─── widget 系の super.mouseClicked を先に消費させる ───
+        if (super.mouseClicked(event, doubleClick)) {
+            return true;
+        }
+
+        // ─── row 自前のクリック領域 (= ColorPaletteRow のスウォッチ等) を発火 ───
+        // widget には拾われなかったクリックだけがここに到達するので、 衝突しない。
+        if (!this.tabs.isEmpty()) {
+            TabModel tab = this.tabs.get(this.activeTab);
+            for (RowEntry row : tab.rows()) {
+                if (row.mouseClicked(mx, my, event.button())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override

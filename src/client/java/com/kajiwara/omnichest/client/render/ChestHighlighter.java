@@ -71,8 +71,15 @@ public final class ChestHighlighter {
      */
     private static final long SLOT_VIEW_REFRESH_MS = 10_000L;
 
-    /** ピン・ボックス共通のテーマカラー (RGB)。 */
-    private static final int THEME_RGB = 0xFFCC00;
+    /**
+     * ピン・ボックス共通のテーマカラー (RGB) のフォールバック値。
+     *
+     * <p>
+     * 実際の色は {@link #themeRgb()} 経由で
+     * {@code ConfigManager.get().render.highlightColorRgb} を読む。
+     * Config が読めない (= 起動直後 / IO 失敗 etc.) 場合のみこの値が使われる。
+     */
+    private static final int THEME_RGB_FALLBACK = 0xFFCC00;
 
     /** 線の太さ (lines shader が読む)。 */
     private static final float LINE_WIDTH = 3.5f;
@@ -281,9 +288,21 @@ public final class ChestHighlighter {
         return matched;
     }
 
-    /** スロット overlay に使うテーマ色 (RGB)。 ChestHighlighter のピン色と一致させる。 */
+    /**
+     * スロット overlay 等で使うテーマ色 (RGB)。
+     *
+     * <p>
+     * {@code ConfigManager.get().render.highlightColorRgb} を 1 次ソースとして読む。
+     * Config 読込前 / 失敗時は {@link #THEME_RGB_FALLBACK} を返す。
+     * 毎フレームの描画から呼ばれるが、 {@code ConfigManager.get()} は内部キャッシュ
+     * された singleton を返すだけなので軽量。
+     */
     public static int themeRgb() {
-        return THEME_RGB;
+        try {
+            return ConfigManager.get().render.highlightColorRgb & 0x00FFFFFF;
+        } catch (Throwable ignored) {
+            return THEME_RGB_FALLBACK;
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -316,6 +335,9 @@ public final class ChestHighlighter {
         SubmitNodeCollector queue = ctx.commandQueue();
         RenderType xray = xrayLines();
 
+        // 1 フレームに 1 回だけ Config を引いて使い回す (= ループ内で 重ねて get しない)。
+        final int themeRgb = themeRgb();
+
         for (ActiveHighlight h : active.values()) {
             // 「開封したのでピン/ボックスは消したい」が、 entry 自体はスロット overlay 用に
             // active へ残しているケース (= pinPersistUntilOpened ON 時の挙動)。
@@ -329,7 +351,7 @@ public final class ChestHighlighter {
             float alphaF = (remaining < FADE_TAIL_MS)
                     ? Math.max(0.0f, remaining / (float) FADE_TAIL_MS)
                     : 1.0f;
-            int color = packColor(THEME_RGB, alphaF);
+            int color = packColor(themeRgb, alphaF);
 
             // ─── ボックス (X-ray) ───
             submitBox(queue, matrices, xray, snap.pos(), camPos, color);
@@ -338,7 +360,7 @@ public final class ChestHighlighter {
             }
 
             // ─── ピン (ネームタグ) ───
-            submitPinStack(queue, matrices, camState, snap, camPos, h.entries);
+            submitPinStack(queue, matrices, camState, snap, camPos, h.entries, themeRgb);
         }
     }
 
@@ -409,7 +431,7 @@ public final class ChestHighlighter {
      */
     private static void submitPinStack(SubmitNodeCollector queue, PoseStack matrices,
             CameraRenderState camState, ContainerSnapshot snap, Vec3 camPos,
-            List<HighlightEntry> entries) {
+            List<HighlightEntry> entries, int themeRgb) {
         // 中心 (ラージチェストはその中点に置く)
         double cx, cz;
         BlockPos primary = snap.pos();
@@ -444,7 +466,7 @@ public final class ChestHighlighter {
 
         Component headerComp = Component.literal(
                 String.format(Locale.ROOT, "▼ %.1fm", distM))
-                .withColor(THEME_RGB);
+                .withColor(themeRgb);
         rowTexts[totalRows - 1] = headerComp; // 最上段
 
         for (int i = 0; i < entries.size(); i++) {

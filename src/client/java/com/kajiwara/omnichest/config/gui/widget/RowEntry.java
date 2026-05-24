@@ -93,6 +93,18 @@ public abstract class RowEntry {
         return List.of();
     }
 
+    /**
+     * row 内の「widget ではないクリック領域」(= 自前で描いたスウォッチなど) を扱うためのフック。
+     *
+     * <p>
+     * Screen 側 ({@code OmniChestSettingsScreen#mouseClicked}) は通常の widget クリックの後で
+     * 各 row にもクリックを伝達する。 row 側でハンドルしたら {@code true} を返して
+     * 後続処理 (= タブ切替判定など) を抑止すること。 既定では何もせず false。
+     */
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return false;
+    }
+
     public int getY() {
         return this.y;
     }
