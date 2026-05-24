@@ -15,6 +15,24 @@ cd C:\MyFabricMod
 ./gradlew :fabric:runClient
 ```
 
+## jar File build command
+推奨バージョン1つだけビルド (versions.json の recommended に従う)
+```txt
+.\gradlew buildRecommended
+```
+特定の MC バージョンをビルド (id の '.' は '_' に置換)
+```txt
+.\gradlew build1_21_11
+```
+登録されている全 MC バージョンをまとめてビルド
+```txt
+.\gradlew buildAll
+```
+各 fabric/build/libs/*.jar をルート build/libs/ に集約
+```txt
+.\gradlew collectArtifacts
+```
+
 ---
 
 ## 設計の要点
