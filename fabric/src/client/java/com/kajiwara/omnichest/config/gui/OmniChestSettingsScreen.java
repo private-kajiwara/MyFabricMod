@@ -9,6 +9,9 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -116,6 +119,14 @@ public final class OmniChestSettingsScreen extends Screen {
     /** スクロールバー thumb (= ドラッグ中)。 */
     private static final int COLOR_SB_THUMB_DRAG = 0xFFDDDDDD;
 
+    /**
+     * 「contentBottom 以下」の footer 帯背景。
+     * row 内 widget が content 領域からはみ出した時のマスクとして使うため、
+     * <b>必ず完全不透明 (alpha=FF)</b> にする (= 半透明だと overflow が透けてしまう)。
+     * 色味はサイドバーと近いダークトーンにし、視覚的に「footer area」を提示する。
+     */
+    private static final int COLOR_FOOTER_BG = 0xFF111111;
+
     // ════════════════════════════════════════════════════════════════════
     // 状態
     // ════════════════════════════════════════════════════════════════════
@@ -150,6 +161,38 @@ public final class OmniChestSettingsScreen extends Screen {
      */
     @Nullable
     private ColorPickerPopup activePopup = null;
+
+    /**
+     * 自前で保持する renderables のミラーリスト。
+     *
+     * <p>
+     * MC 1.21.11 で {@code Screen#renderables} は private に変更されており、 サブクラスから直接
+     * iterate できない。 一方で本 Screen では widget の描画を scissor で囲む必要がある
+     * (= ヘッダ領域へのはみ出しをカットする目的) ため、 widget リスト自体は読みたい。
+     *
+     * <p>
+     * 対策として {@link #addRenderableWidget} をオーバーライドして自前リストにも同じ widget を
+     * 積んでおき、 render 時はこちらを iterate する。 親の renderables は親が握ったまま、
+     * 自前ミラーは {@link #init()} 冒頭で毎回 clear して再構築する (= リサイズ時に重複しないように)。
+     */
+    private final List<Renderable> myRenderables = new ArrayList<>();
+
+    /**
+     * フッタの 3 ボタンへの直接参照。
+     *
+     * <p>
+     * row の widget が content 領域からはみ出した時に、 contentBottom 以下を
+     * mask の塗りで覆って 「文字と同じ位置で widget も切る」 ようにするため、
+     * その mask の <b>上に</b> フッタボタンを再描画する必要がある。
+     * super.render() で 1 回描かれた上に mask で覆われる → ここから再度
+     * {@code render()} を呼び直す、 という二段描画。
+     */
+    @Nullable
+    private Button footerResetBtn;
+    @Nullable
+    private Button footerSaveBtn;
+    @Nullable
+    private Button footerCancelBtn;
 
     public OmniChestSettingsScreen(@Nullable Screen parent, Component title,
             List<TabModel> tabs, Runnable onSave, Runnable onReset) {
@@ -206,9 +249,25 @@ public final class OmniChestSettingsScreen extends Screen {
     // Screen ライフサイクル
     // ════════════════════════════════════════════════════════════════════
 
+    /**
+     * Screen への widget 登録をフックして自前ミラーリストにも積む。
+     * resize 時に親 (Screen) は {@code clearWidgets} 経由で renderables をクリアして init を
+     * 呼び直すため、 自前リストは {@link #init()} 冒頭で clear する。
+     */
+    @Override
+    protected <T extends GuiEventListener & Renderable & NarratableEntry> T addRenderableWidget(T widget) {
+        T result = super.addRenderableWidget(widget);
+        this.myRenderables.add(result);
+        return result;
+    }
+
     @Override
     protected void init() {
         super.init();
+
+        // ★ リサイズ時の重複登録防止: 親の renderables は親が clearWidgets で消すが、
+        //   こちらのミラーは自前で持っているので明示的に空にする。
+        this.myRenderables.clear();
 
         // ─── 1) 各タブの全 row を Screen に登録 (init 内で 1 度だけ) ───
         ControlSize.WidgetSink sink = new ControlSize.WidgetSink() {
@@ -240,7 +299,8 @@ public final class OmniChestSettingsScreen extends Screen {
         int totalW = btnW * 3 + gap * 2;
         int startX = (this.width - totalW) / 2;
 
-        addRenderableWidget(Button.builder(Component.literal("Reset"),
+        // フッタボタンは「マスク再描画」のためフィールドにも保持する。
+        this.footerResetBtn = addRenderableWidget(Button.builder(Component.literal("Reset"),
                 b -> {
                     this.onReset.run();
                     // reset 直後の値を row に再注入する手段がないため、 Screen を作り直して反映する。
@@ -248,14 +308,14 @@ public final class OmniChestSettingsScreen extends Screen {
                 })
                 .bounds(startX, footerY, btnW, btnH).build());
 
-        addRenderableWidget(Button.builder(Component.literal("Save"),
+        this.footerSaveBtn = addRenderableWidget(Button.builder(Component.literal("Save"),
                 b -> {
                     saveAll();
                     Minecraft.getInstance().setScreen(this.parent);
                 })
                 .bounds(startX + (btnW + gap), footerY, btnW, btnH).build());
 
-        addRenderableWidget(Button.builder(Component.literal("Cancel"),
+        this.footerCancelBtn = addRenderableWidget(Button.builder(Component.literal("Cancel"),
                 b -> Minecraft.getInstance().setScreen(this.parent))
                 .bounds(startX + (btnW + gap) * 2, footerY, btnW, btnH).build());
 
@@ -299,8 +359,38 @@ public final class OmniChestSettingsScreen extends Screen {
         // widget の position が正しい座標に書き換わったため。
         prepareActiveTabLayout();
 
-        // バニラ背景 + 半透明オーバレイ + widget 群はここでまとめて描画される。
-        super.render(g, mouseX, mouseY, partialTick);
+        int contentTop = HEADER_HEIGHT + 4;
+
+        // ─── 背景描画について (重要) ───
+        //
+        // MC 1.21.5+ で {@code Screen#render} から {@code renderBackground} の呼び出しが消えた。
+        // 代わりに GameRenderer が screen render の <b>前</b> に外側から
+        // {@code screen.renderBackground} を 1 回だけ呼ぶ仕様に変更されている。
+        //
+        // よって Screen サブクラスの {@code render} 内で {@code this.renderBackground} を呼ぶと、
+        // GameRenderer の呼び出しと合わせて blur が 2 回起動して
+        // 「Can only blur once per frame」で確実にクラッシュする。 ここでは <b>呼ばない</b>。
+        //
+        // 同様に {@code super.render(...)} (= Screen.render) は 1.21.5+ では
+        // renderables の iterate しかしないので、 自前で iterate するか super を呼ぶかは
+        // どちらでも良い。 本実装は widget の描画範囲を scissor で contentTop に制限したいので、
+        // 自前 iterate を選択している。
+
+        // ─── widget を scissor で囲んで自前で iterate ───
+        //
+        // 旧実装は content からはみ出した widget を不透明色マスクで覆っていた。
+        // しかし上側 (= ヘッダ領域) にも widget がはみ出す (スクロール時の row 1 行目など) ため
+        // 同じことを上にもやろうとすると 「ヘッダ全幅を濃い色で塗る」 必要があり、
+        // チェストバナーの上下が真っ黒になってデザインが死ぬ。
+        //
+        // そこで上側は scissor のみで物理的に描画を止め、 塗り (= 背景色) は追加しない。
+        // 結果: widget は contentTop の真上で切れ、 切れた先には GameRenderer 側で既に敷かれた
+        // 半透明 backdrop がそのまま見える。
+        g.enableScissor(0, contentTop, this.width, this.height);
+        for (Renderable renderable : this.myRenderables) {
+            renderable.render(g, mouseX, mouseY, partialTick);
+        }
+        g.disableScissor();
 
         // ─── ヘッダ (= チェスト風バナー) ───
         renderChestHeader(g);
@@ -308,11 +398,25 @@ public final class OmniChestSettingsScreen extends Screen {
         // ─── サイドバー ───
         renderSidebar(g, mouseX, mouseY);
 
-        // ─── コンテンツ領域 ───
+        // ─── コンテンツ領域 (ラベル + スクロールバー) ───
         renderContent(g, mouseX, mouseY, partialTick);
 
-        // ─── フッタ separator ───
+        // ─── 下側はみ出しマスク + footer 再描画 ───
+        //
+        // 下側は scissor だけだと footer ボタンも切れてしまうため (= 全 widget が super.render
+        // 経由で 1 回描かれてしまっている) 、 塗りで footer 帯を上書きしてから footer ボタンを
+        // 再描画する二段方式を取る。
+        // マスクの開始位置は contentBottom (= this.height - FOOTER_HEIGHT) — グレーの区切り線と
+        // ぴったり同じ位置に揃えることで、 文字の切れ位置と widget の切れ位置を一致させる。
+        g.fill(0, this.height - FOOTER_HEIGHT, this.width, this.height, COLOR_FOOTER_BG);
+
+        // ─── フッタ separator (mask の上に置く) ───
         g.fill(0, this.height - FOOTER_HEIGHT, this.width, this.height - FOOTER_HEIGHT + 1, COLOR_SEP);
+
+        // ─── footer ボタンを mask の上から再描画 (= マスクで覆われたぶんを復元) ───
+        if (this.footerResetBtn != null) this.footerResetBtn.render(g, mouseX, mouseY, partialTick);
+        if (this.footerSaveBtn != null) this.footerSaveBtn.render(g, mouseX, mouseY, partialTick);
+        if (this.footerCancelBtn != null) this.footerCancelBtn.render(g, mouseX, mouseY, partialTick);
 
         // ─── ポップアップは最後に上から被せ描画する ───
         // closed フラグが立っていたら参照を切る (= popup 自身が cancel/commit で閉じる)。
@@ -505,7 +609,9 @@ public final class OmniChestSettingsScreen extends Screen {
         int contentLeft = SIDEBAR_WIDTH + 1 + SIDEBAR_GAP + CONTENT_PAD_X;
         int contentRight = this.width - CONTENT_PAD_X;
         int contentTop = HEADER_HEIGHT + 4;
-        int contentBottom = this.height - FOOTER_HEIGHT - 4;
+        // 下端はグレー区切り線 (= footer 上辺) にそのまま合わせる。
+        // 旧実装は -4 px のバッファを取っていたが、 「区切り線で切ってほしい」 という要求に合わせて廃止。
+        int contentBottom = this.height - FOOTER_HEIGHT;
         int contentWidth = contentRight - contentLeft;
         int viewportHeight = contentBottom - contentTop;
 
@@ -535,7 +641,8 @@ public final class OmniChestSettingsScreen extends Screen {
         int contentLeft = SIDEBAR_WIDTH + 1 + SIDEBAR_GAP + CONTENT_PAD_X;
         int contentRight = this.width - CONTENT_PAD_X;
         int contentTop = HEADER_HEIGHT + 4;
-        int contentBottom = this.height - FOOTER_HEIGHT - 4;
+        // grey 区切り線と切れ位置を合わせる (= prepareActiveTabLayout 側と同じ式)。
+        int contentBottom = this.height - FOOTER_HEIGHT;
         int contentWidth = contentRight - contentLeft;
         int viewportHeight = contentBottom - contentTop;
 
