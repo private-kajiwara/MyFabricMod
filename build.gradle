@@ -12,6 +12,17 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+
+	// Mod Menu (TerraformersMC) — Mod Menu の配信元
+	maven {
+		name = "TerraformersMC"
+		url = "https://maven.terraformersmc.com/releases/"
+	}
+	// Cloth Config (Shedaniel) — Cloth Config API の配信元
+	maven {
+		name = "Shedaniel"
+		url = "https://maven.shedaniel.me/"
+	}
 }
 
 loom {
@@ -34,7 +45,15 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	
+
+	// ─── Mod Menu ──────────────────────────────────────────────────────
+	// ゲーム内 MOD 一覧から本 MOD の Config Screen を開けるようにする。
+	modImplementation "com.terraformersmc:modmenu:${project.mod_menu_version}"
+
+	// ─── Cloth Config (廃止) ─────────────────────────────────────────────
+	// Iris ライクなサイドバー UI を実現するため、 Cloth Config は撤去し
+	// 自前 Screen ({@code OmniChestSettingsScreen}) で組み立てている。
+	// 設定ウィジェットはバニラ {@code AbstractWidget} 系で完結する。
 }
 
 processResources {

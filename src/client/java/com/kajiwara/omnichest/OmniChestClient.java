@@ -5,6 +5,7 @@ import com.kajiwara.omnichest.classify.ClassifyConfig;
 import com.kajiwara.omnichest.classify.StorageMemory;
 import com.kajiwara.omnichest.client.ClientKeyBindings;
 import com.kajiwara.omnichest.client.render.ChestHighlighter;
+import com.kajiwara.omnichest.config.ConfigManager;
 import com.kajiwara.omnichest.search.ChestCacheStorage;
 import com.kajiwara.omnichest.search.ContainerScanner;
 import com.kajiwara.omnichest.slotlock.SlotLockConfig;
@@ -46,6 +47,12 @@ public class OmniChestClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        // ─── Unified ModConfig (Mod Menu + Cloth Config GUI のデータソース) ───
+        // 起動時に 1 度だけ load しておくと、 JSON 破損があってもログがここで出る。
+        // ModConfig 本体の評価が必要なコードパスは GUI / Cloth Config 経由で
+        // ConfigManager.get() を呼ぶので、ここでは get() のみで十分。
+        ConfigManager.get();
+
         // ─── ChestCacheStorage: 開封済みコンテナを再ログイン時に復元 ───
         // ContainerScanner.register() の <b>前</b> に呼ぶこと。
         // Fabric event は登録順 (= FIFO) に発火するため:

@@ -1,0 +1,39 @@
+package com.kajiwara.omnichest.config.gui.widget;
+
+import net.minecraft.client.gui.components.AbstractWidget;
+
+/**
+ * 全 row が共有する「右端コントロールのサイズ」と Screen への widget 登録窓口。
+ *
+ * <p>
+ * row 内コードから直接 {@code Screen#addRenderableWidget} を呼ぼうとすると、 該当メソッドが
+ * {@code protected} なためサブクラスからしか触れない。そこで {@link WidgetSink} を間に挟み、
+ * Screen 側 (= {@code OmniChestSettingsScreen}) で 1 つの公開メソッドにラップする。
+ */
+public final class ControlSize {
+
+    /** 右端コントロール (= ボタン・スライダなど) の幅 (px)。 */
+    public static final int CONTROL_WIDTH = 90;
+
+    /** 右端コントロールの高さ (px)。 row 高 24px の中央に 20px を載せる。 */
+    public static final int CONTROL_HEIGHT = 20;
+
+    /** row 高さ (px)。 */
+    public static final int ROW_HEIGHT = 24;
+
+    /** ラベルとコントロールの間に空ける右マージン (px)。 */
+    public static final int CONTROL_RIGHT_MARGIN = 4;
+
+    private ControlSize() {
+    }
+
+    /**
+     * 「Screen に widget を生やす窓口」。
+     * Screen 側 (= OmniChestSettingsScreen) が impl を持ち、 row はこれを介して widget を渡す。
+     */
+    @FunctionalInterface
+    public interface WidgetSink {
+        /** widget を Screen に登録し、 同じ widget を返す (= fluent 用)。 */
+        <W extends AbstractWidget> W add(W widget);
+    }
+}
