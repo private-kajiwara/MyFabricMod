@@ -1,5 +1,9 @@
 package com.kajiwara.omnichest.classify;
 
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
+import net.minecraft.network.chat.Component;
+
 /**
  * 倉庫 (チェスト) の用途カテゴリ。
  *
@@ -50,9 +54,22 @@ public enum StorageCategory {
         this.rgb = rgb;
     }
 
-    /** GUI 用の日本語表示名。 */
+    /**
+     * GUI 用の表示名 (= fallback 文字列。 翻訳が無い環境ではこれがそのまま出る)。
+     * 翻訳対応版が必要な呼び出し側は {@link #displayComponent()} を使うこと。
+     */
     public String displayName() {
         return displayName;
+    }
+
+    /**
+     * GUI 用の表示名を翻訳キーで解決した {@link Component}。
+     * 翻訳キーは {@code omnichest.storage_category.<lower_name>}。
+     */
+    public Component displayComponent() {
+        return OmniChestLocale.get(
+                Keys.STORAGE_CATEGORY_PREFIX + name().toLowerCase(java.util.Locale.ROOT),
+                this.displayName);
     }
 
     /** カテゴリの代表色 (0x00RRGGBB)。 alpha は呼び出し側が付与する。 */

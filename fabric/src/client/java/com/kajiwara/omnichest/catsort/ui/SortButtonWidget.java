@@ -1,6 +1,8 @@
 package com.kajiwara.omnichest.catsort.ui;
 
 import com.kajiwara.omnichest.catsort.engine.CategorySortEngine;
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -44,7 +46,7 @@ public final class SortButtonWidget {
     public static Button create(AbstractContainerMenu menu, int containerSlotCount,
             int x, int y, int width, int height) {
         Button button = Button.builder(
-                Component.literal("カテゴリ整理"),
+                OmniChestLocale.get(Keys.BUTTON_CATEGORY_SORT, "Category Sort"),
                 btn -> onPress(menu, containerSlotCount))
                 .bounds(x, y, width, height)
                 .tooltip(Tooltip.create(defaultTooltip()))
@@ -66,14 +68,14 @@ public final class SortButtonWidget {
         }
     }
 
-    /** ボタン Tooltip (= 機能説明)。 */
+    /** ボタン Tooltip (= 機能説明)。 翻訳キー {@link Keys#CATEGORY_SORT_TOOLTIP}. */
     private static Component defaultTooltip() {
-        return Component.literal(
-                "チェストの中身を、種類ごとに整理します。\n"
+        return OmniChestLocale.get(Keys.CATEGORY_SORT_TOOLTIP,
+                "Sort chest contents by category.\n"
                         + "\n"
-                        + "建築・木材・鉱石・食料などの意味でグループ化し、\n"
-                        + "同じアイテムはひとつにまとめます。\n"
+                        + "Items are grouped by meaning — building / wood / ore / food …\n"
+                        + "and identical stacks are merged into one.\n"
                         + "\n"
-                        + "ロック中のスロットは動かしません。");
+                        + "Locked slots stay where they are.");
     }
 }

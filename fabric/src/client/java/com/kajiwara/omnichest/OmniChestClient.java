@@ -7,6 +7,9 @@ import com.kajiwara.omnichest.classify.StorageMemory;
 import com.kajiwara.omnichest.client.ClientKeyBindings;
 import com.kajiwara.omnichest.client.render.ChestHighlighter;
 import com.kajiwara.omnichest.config.ConfigManager;
+import com.kajiwara.omnichest.i18n.LanguageManager;
+import com.kajiwara.omnichest.i18n.LanguageOption;
+import com.kajiwara.omnichest.i18n.TranslationValidator;
 import com.kajiwara.omnichest.search.ChestCacheStorage;
 import com.kajiwara.omnichest.search.ContainerScanner;
 import com.kajiwara.omnichest.slotlock.SlotLockConfig;
@@ -53,6 +56,25 @@ public class OmniChestClient implements ClientModInitializer {
         // ModConfig 本体の評価が必要なコードパスは GUI / Cloth Config 経由で
         // ConfigManager.get() を呼ぶので、ここでは get() のみで十分。
         ConfigManager.get();
+
+        // ─── 表示言語の override を反映 ───
+        // GeneralConfig.languageOverride ("system" / "en_us" / ...) を LanguageManager に
+        // 渡すことで、 以降の OmniChestLocale.get(...) が正しい言語を返すようになる。
+        // SYSTEM_DEFAULT の場合は MC 本体の Language 解決経路にそのまま流す。
+        LanguageManager.get().setCurrent(
+                LanguageOption.fromCode(ConfigManager.get().general.languageOverride));
+
+        // ─── 翻訳ファイルの検証 ───
+        // 全 lang JSON を canonical (en_us) と比較し、 不足キー / 余分キー / 破損を warn ログに出す。
+        // ロジックに影響しない安全な検証で、 実ユーザーには一切見えない (= dev/翻訳者向けの補助)。
+        // 例外は安全に握りつぶしてゲーム起動を止めない。
+        try {
+            TranslationValidator.validateAll();
+        } catch (Throwable t) {
+            OmniChest.LOGGER.warn(
+                    "[omnichest][i18n] TranslationValidator が失敗しました (起動は続行): {}",
+                    t.toString());
+        }
 
         // ─── ChestCacheStorage: 開封済みコンテナを再ログイン時に復元 ───
         // ContainerScanner.register() の <b>前</b> に呼ぶこと。

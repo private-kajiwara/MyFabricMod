@@ -4,6 +4,8 @@ import com.kajiwara.omnichest.catsort.engine.CategorySortEngine;
 import com.kajiwara.omnichest.catsort.ui.SortButtonWidget;
 import com.kajiwara.omnichest.client.gui.CategoryBadgeRenderer;
 import com.kajiwara.omnichest.client.gui.SearchScreen;
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.search.ContainerScanner;
 import com.kajiwara.omnichest.template.config.TemplateConfig;
 import com.kajiwara.omnichest.template.gui.TemplateManagerScreen;
@@ -158,7 +160,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
         int containerSlotCount = DepositMatchingHelper.detectContainerSlotCount(anyMenu);
         if (containerSlotCount > 0) {
             this.cits$depositButton = Button.builder(
-                    Component.literal("同種預入"),
+                    OmniChestLocale.get(Keys.BUTTON_DEPOSIT, "Deposit Matching"),
                     btn -> DepositMatchingHelper.depositMatching(
                             Minecraft.getInstance(), anyMenu, containerSlotCount))
                     .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
@@ -171,7 +173,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
             // Shift+クリック: プレイヤーインベントリ側も併せて圧縮
             // ───────────────────────────────────────────────────────────
             this.cits$compactButton = Button.builder(
-                    Component.literal("スタック圧縮"),
+                    OmniChestLocale.get(Keys.BUTTON_COMPACT, "Compact"),
                     btn -> {
                         Minecraft mc = Minecraft.getInstance();
                         // Shift キー判定は InputConstants 経由で直接確認する (Mojang Mappings 環境差を回避)。
@@ -211,7 +213,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
             //   2) その上で SearchScreen を開く (parent は null = 戻り先はゲーム画面)。
             // ───────────────────────────────────────────────────────────
             this.cits$searchNetworkButton = Button.builder(
-                    Component.literal("倉庫検索"),
+                    OmniChestLocale.get(Keys.BUTTON_SEARCH_NETWORK, "Chest Search"),
                     btn -> {
                         Minecraft mc = Minecraft.getInstance();
                         if (mc.player != null) {
@@ -238,7 +240,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
                 Screen selfScreen = (Screen) (Object) this;
 
                 this.cits$saveTemplateButton = Button.builder(
-                        Component.literal("配置を保存"),
+                        OmniChestLocale.get(Keys.BUTTON_SAVE_TEMPLATE, "Save Layout"),
                         btn -> Minecraft.getInstance().setScreen(
                                 new TemplateSaveScreen(selfScreen, anyMenu, containerSlotCount)))
                         .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
@@ -246,7 +248,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
                 this.addRenderableWidget(this.cits$saveTemplateButton);
 
                 this.cits$applyTemplateButton = Button.builder(
-                        Component.literal("テンプレ適用"),
+                        OmniChestLocale.get(Keys.BUTTON_APPLY_TEMPLATE, "Apply Template"),
                         btn -> {
                             // Apply は Manager 画面経由で「どのテンプレートを使うか」を選んでもらう。
                             // (1 ボタンに「直近を再適用」を割り当てるのは別 issue。)
@@ -258,7 +260,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
                 this.addRenderableWidget(this.cits$applyTemplateButton);
 
                 this.cits$manageTemplateButton = Button.builder(
-                        Component.literal("テンプレ管理"),
+                        OmniChestLocale.get(Keys.BUTTON_MANAGE_TEMPLATES, "Manage Templates"),
                         btn -> Minecraft.getInstance().setScreen(
                                 new TemplateManagerScreen(selfScreen, anyMenu, containerSlotCount)))
                         .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
@@ -281,24 +283,26 @@ public abstract class GenericContainerScreenMixin extends Screen {
         int slotCount = menu.getRowCount() * 9;
         this.cits$isLargeChest = menu.getRowCount() == 6;
 
-        this.cits$searchBox = new EditBox(this.font, 0, 0, 100, 14, Component.literal("Search"));
+        this.cits$searchBox = new EditBox(this.font, 0, 0, 100, 14,
+                OmniChestLocale.get(Keys.EDITBOX_SEARCH_LABEL, "Search"));
         this.cits$searchBox.setMaxLength(50);
         this.cits$searchBox.setBordered(true);
-        this.cits$searchBox.setHint(Component.literal("検索..."));
+        this.cits$searchBox.setHint(OmniChestLocale.get(
+                Keys.EDITBOX_SEARCH_HINT_GENERIC, "Search..."));
         this.addRenderableWidget(this.cits$searchBox);
 
         // 「種類」 ショートカット: 新しい {@link CategorySortEngine} (タグベース 16 カテゴリ) を起動。
         // 旧 ContainerSorter.sortByCategory (= 7 種ハードコード) は ContainerSorter 側に互換用として残るが、
         // GUI からはこちらの本格的なエンジンを呼び出す。
         this.cits$sortByTypeButton = Button.builder(
-                Component.literal("種類"),
+                OmniChestLocale.get(Keys.BUTTON_SORT_BY_TYPE, "Type"),
                 btn -> CategorySortEngine.sort(Minecraft.getInstance(), menu, slotCount))
                 .bounds(0, 0, 26, 14)
                 .build();
         this.addRenderableWidget(this.cits$sortByTypeButton);
 
         this.cits$sortByCountButton = Button.builder(
-                Component.literal("数量"),
+                OmniChestLocale.get(Keys.BUTTON_SORT_BY_COUNT, "Count"),
                 btn -> ContainerSorter.sortByCount(Minecraft.getInstance(), menu, slotCount)).bounds(0, 0, 26, 14)
                 .build();
         this.addRenderableWidget(this.cits$sortByCountButton);
@@ -306,8 +310,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
         // ◀▶ レイアウト切替ボタンは「小型チェスト」「ラージチェスト」両方で生成する。
         // ラージチェストでは側面パネル全体の左右切替、
         // 小型チェストでは右列ボタン (同種預入/圧縮/倉庫検索/テンプレ系) の左右切替に使われる。
+        // 三角記号は文字ではなくレイアウト指示の図形なので翻訳は不要 (= literal を維持)。
         this.cits$layoutLeftButton = Button.builder(
-                Component.literal("◀"),
+                OmniChestLocale.get(Keys.BUTTON_LAYOUT_LEFT, "◀"),
                 btn -> {
                     this.cits$layoutRight = false;
                     this.cits$applyLayout();
@@ -315,7 +320,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
         this.addRenderableWidget(this.cits$layoutLeftButton);
 
         this.cits$layoutRightButton = Button.builder(
-                Component.literal("▶"),
+                OmniChestLocale.get(Keys.BUTTON_LAYOUT_RIGHT, "▶"),
                 btn -> {
                     this.cits$layoutRight = true;
                     this.cits$applyLayout();

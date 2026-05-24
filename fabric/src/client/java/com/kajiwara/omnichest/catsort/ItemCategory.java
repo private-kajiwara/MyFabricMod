@@ -1,5 +1,9 @@
 package com.kajiwara.omnichest.catsort;
 
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
+import net.minecraft.network.chat.Component;
+
 /**
  * 「Category Sort」のアイテム単位カテゴリ。
  *
@@ -82,9 +86,19 @@ public enum ItemCategory {
         this.rgb = rgb;
     }
 
-    /** GUI 用の日本語表示名 (Tooltip / Badge に使う)。 */
+    /** GUI 用の表示名 (= fallback 文字列)。 翻訳対応版は {@link #displayComponent()} を使う。 */
     public String displayName() {
         return displayName;
+    }
+
+    /**
+     * GUI 用の表示名を翻訳キーで解決した {@link Component}。
+     * 翻訳キーは {@code omnichest.item_category.<lower_name>}。
+     */
+    public Component displayComponent() {
+        return OmniChestLocale.get(
+                Keys.ITEM_CATEGORY_PREFIX + name().toLowerCase(java.util.Locale.ROOT),
+                this.displayName);
     }
 
     /** カテゴリ代表色 (0x00RRGGBB)。 alpha は描画側で決定する。 */

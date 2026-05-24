@@ -1,6 +1,8 @@
 package com.kajiwara.omnichest.client.gui;
 
 import com.kajiwara.omnichest.client.render.ChestHighlighter;
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.search.ChestNetworkManager;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
 import com.kajiwara.omnichest.search.SearchIndex;
@@ -108,7 +110,7 @@ public class SearchScreen extends Screen {
     private static final int LIST_SIDE_INSET = 16;
 
     public SearchScreen(Screen parent) {
-        super(Component.literal("倉庫検索"));
+        super(OmniChestLocale.get(Keys.SCREEN_SEARCH_TITLE, "Chest Network Search"));
         this.parent = parent;
     }
 
@@ -134,9 +136,11 @@ public class SearchScreen extends Screen {
 
         // 検索ボックス
         this.searchBox = new EditBox(this.font, LIST_SIDE_INSET, searchY,
-                Math.max(120, contentWidth - 270), 18, Component.literal("Search"));
+                Math.max(120, contentWidth - 270), 18,
+                OmniChestLocale.get(Keys.EDITBOX_SEARCH_LABEL, "Search"));
         this.searchBox.setMaxLength(64);
-        this.searchBox.setHint(Component.literal("検索 (例: diamond, food, mekanism)"));
+        this.searchBox.setHint(OmniChestLocale.get(Keys.EDITBOX_SEARCH_HINT_NETWORK,
+                "Search (e.g. diamond, food, mekanism)"));
         // 1 文字入力ごとに即フィルタ。
         this.searchBox.setResponder(text -> rebuildResults());
         this.addRenderableWidget(this.searchBox);
@@ -144,17 +148,20 @@ public class SearchScreen extends Screen {
 
         // ソートボタン (右上に横並び)
         int sortX = LIST_SIDE_INSET + this.searchBox.getWidth() + 6;
-        this.addRenderableWidget(Button.builder(Component.literal("距離順"), b -> {
+        this.addRenderableWidget(Button.builder(
+                OmniChestLocale.get(Keys.BUTTON_SORT_DISTANCE, "By Distance"), b -> {
             this.sortMode = SortMode.DISTANCE;
             rebuildResults();
         }).bounds(sortX, searchY, 80, 18).build());
 
-        this.addRenderableWidget(Button.builder(Component.literal("数量順"), b -> {
+        this.addRenderableWidget(Button.builder(
+                OmniChestLocale.get(Keys.BUTTON_SORT_COUNT, "By Count"), b -> {
             this.sortMode = SortMode.COUNT;
             rebuildResults();
         }).bounds(sortX + 86, searchY, 80, 18).build());
 
-        this.addRenderableWidget(Button.builder(Component.literal("名前順"), b -> {
+        this.addRenderableWidget(Button.builder(
+                OmniChestLocale.get(Keys.BUTTON_SORT_NAME, "By Name"), b -> {
             this.sortMode = SortMode.NAME;
             rebuildResults();
         }).bounds(sortX + 172, searchY, 80, 18).build());
@@ -165,12 +172,12 @@ public class SearchScreen extends Screen {
         // ───────────────────────────────────────────────────────────
         int actionY = searchY + 22;
         this.addRenderableWidget(Button.builder(
-                Component.literal("選択したアイテムを検索"),
+                OmniChestLocale.get(Keys.BUTTON_SEARCH_SELECTED, "Find Selected"),
                 b -> highlightSelectedAndClose())
                 .bounds(LIST_SIDE_INSET, actionY, 120, 18).build());
 
         this.addRenderableWidget(Button.builder(
-                Component.literal("選択解除"),
+                OmniChestLocale.get(Keys.BUTTON_CLEAR_SELECTION, "Clear Selection"),
                 b -> this.selectedRows.clear())
                 .bounds(LIST_SIDE_INSET + 126, actionY, 80, 18).build());
 
@@ -248,17 +255,17 @@ public class SearchScreen extends Screen {
 
         // 「総コンテナ数 / 該当ヒット数」を右上ぎみに小さく表示
         int total = ChestNetworkManager.get().size();
-        Component summary = Component.literal(
-                "登録 " + total + " 個 / ヒット " + this.results.size() + " 行 / 選択 "
-                        + this.selectedRows.size() + " 件");
+        Component summary = OmniChestLocale.get(Keys.SEARCH_SUMMARY,
+                "Registered: %1$d  /  Hits: %2$d  /  Selected: %3$d",
+                total, this.results.size(), this.selectedRows.size());
         g.drawString(font, summary, LIST_SIDE_INSET, 8, 0xFFAAAAAA, false);
 
         // 検索結果リスト本体
         renderList(g, mouseX, mouseY);
 
         // 下部ヒント
-        Component hint = Component.literal(
-                "行クリック=選択トグル  /  「選択したアイテムを検索」でピン表示  /  ESC でキャンセル");
+        Component hint = OmniChestLocale.get(Keys.SEARCH_HINT,
+                "Click row = toggle selection  /  Find Selected = pin  /  ESC = cancel");
         g.drawCenteredString(font, hint, this.width / 2, this.height - 18, 0xFFAAAAAA);
     }
 
@@ -341,8 +348,8 @@ public class SearchScreen extends Screen {
 
         // (3) 「コンテナ種別 (x, y, z)」
         String typeName = result.containerType() != null
-                ? result.containerType().displayName()
-                : "コンテナ";
+                ? result.containerType().displayString()
+                : OmniChestLocale.getString(Keys.CONTAINER_TYPE_OTHER, "Container");
         Component left2 = Component.literal(typeName
                 + "  (" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + ")");
         g.drawString(font, left2, iconX + 22, y + 12, 0xFFAAAAAA, false);

@@ -1,5 +1,7 @@
 package com.kajiwara.omnichest.mixin;
 
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.slotlock.InventoryProtectionLayer;
 import com.kajiwara.omnichest.slotlock.LockedSlotData;
 import com.kajiwara.omnichest.slotlock.MenuSlotLockSession;
@@ -144,7 +146,7 @@ public abstract class SlotLockScreenMixin extends Screen {
                     ? SlotOverlayRenderer.buildTooltipLine(data)
                     : SlotOverlayRenderer.buildDefaultProtectionTooltipLine(playerSlot);
         } else {
-            lockLine = Component.literal(
+            lockLine = OmniChestLocale.get(Keys.SLOT_LOCK_TOOLTIP_SESSION,
                     "§b§l[SESSION LOCK] §r§7Chest body slot (until close)");
         }
         if (lockLine == null)

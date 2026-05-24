@@ -9,6 +9,7 @@ import com.kajiwara.omnichest.config.gui.category.CompactCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.DepositCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.GeneralCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.KeybindCategoryBuilder;
+import com.kajiwara.omnichest.config.gui.category.LanguageCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.LockCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.RenderCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.SearchCategoryBuilder;
@@ -65,6 +66,10 @@ public final class ConfigScreenFactory {
         tabs.add(TemplateCategoryBuilder.build(cfg.template));
         tabs.add(RenderCategoryBuilder.build(cfg.render));
         tabs.add(KeybindCategoryBuilder.build());
+        // 「Language」 タブを末尾に追加 (= 視覚的に他カテゴリの後)。
+        // GeneralConfig.languageOverride を読み書きすることで、 MC 本体とは独立した
+        // 言語切替を実現する。
+        tabs.add(LanguageCategoryBuilder.build(cfg.general));
 
         return OmniChestSettingsScreen.create(
                 parent,

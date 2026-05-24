@@ -259,6 +259,158 @@ sourceSet に追加しているため、 段階的な移動が可能。
 
 ---
 
+## Localization (多言語対応)
+
+MOD はすべての UI 文字列を Minecraft 標準の lang JSON で配信する。 加えて
+**Minecraft 本体とは独立に MOD 表示言語を切り替えられる**ホットスワップ機構を持つ
+(例: MC 本体は英語 + OmniChest だけ日本語、 など)。
+
+### 対応言語
+
+| Code   | Language               | 備考                       |
+|--------|------------------------|----------------------------|
+| en_us  | English                | 既定の fallback             |
+| ja_jp  | 日本語                 | フル翻訳                    |
+| ko_kr  | 한국어                 | フル翻訳                    |
+| zh_cn  | 简体中文               | 簡体字のみ (繁体と分離)     |
+| zh_tw  | 繁體中文               | 繁体字のみ (簡体と分離)     |
+| es_es  | Español                | フル翻訳                    |
+| de_de  | Deutsch                | フル翻訳                    |
+| it_it  | Italiano               | フル翻訳                    |
+| fr_fr  | Français               | フル翻訳                    |
+| ru_ru  | Русский                | フル翻訳                    |
+| pt_br  | Português (Brasil)     | pt_br 系 (pt_pt とは別)     |
+| tr_tr  | Türkçe                 | フル翻訳                    |
+
+### 切替方法 (in-game)
+
+1. Mod Menu から OmniChest の Settings を開く
+2. 左サイドバー末尾の **「Language」** タブを選択
+3. **「Display Language」** から好きな言語を選ぶ
+   - `System Default` を選ぶと Minecraft 本体の選択言語に追従
+   - それ以外を選ぶと本体とは独立に MOD だけ言語が切り替わる
+4. Save → 大半の表記は次フレームで即時反映
+   (一部のタイトルは画面を開き直すと反映)
+
+### 翻訳の品質方針
+
+- **自然な短文**: ボタン幅を圧迫しないよう各言語で短縮表現を使用
+- **ゲームUIに馴染む語彙**: Minecraft 公式訳の言い回しに準拠
+- **直訳の禁止**: 「Smart Deposit」を機械的に「賢い預け入れ」と訳すのではなく、
+  各言語のゲーム文化圏で自然な表現を選ぶ
+- **簡体/繁体は完全分離**: `zh_cn` には簡体字のみ、 `zh_tw` には繁体字のみ
+- **フォールバック**: 翻訳が無いキーは自動で `en_us` にフォールバックし、
+  「missing translation」のような生キーは絶対に表示されない
+
+### Lang ファイルの場所
+
+```
+fabric/src/client/resources/assets/omnichest/lang/
+├── en_us.json   ← canonical (= ここに無いキーは他言語にも無い)
+├── ja_jp.json
+├── ko_kr.json
+├── zh_cn.json
+├── zh_tw.json
+├── es_es.json
+├── de_de.json
+├── it_it.json
+├── fr_fr.json
+├── ru_ru.json
+├── pt_br.json
+└── tr_tr.json
+```
+
+### 翻訳キーの命名規約
+
+```text
+omnichest.<group>.<subkey>[.<suffix>]
+config.omnichest.<category>.<entry>           ← 設定画面 (既存)
+config.omnichest.<category>.<entry>.tooltip   ← 設定画面の tooltip (既存)
+key.omnichest.<id>                            ← KeyMapping のラベル
+```
+
+主な `<group>` は:
+
+| group           | 用途                                 |
+|-----------------|--------------------------------------|
+| `screen`        | Screen のタイトル                    |
+| `button`        | ボタン文字                           |
+| `editbox`       | 入力欄のラベル / ヒント              |
+| `search`        | 検索画面のサマリ / ヒント            |
+| `template`      | テンプレ画面の各種ラベル             |
+| `slot_lock`     | Slot Lock の tooltip / chat メッセージ |
+| `smart_storage` | Auto Deposit の chat 出力            |
+| `category_badge`| カテゴリ バッジの表示                |
+| `container_type`| ContainerType enum の displayName    |
+| `storage_category`| StorageCategory enum の displayName |
+| `item_category` | ItemCategory enum の displayName     |
+| `toggle`        | ON / OFF ラベル                      |
+| `color_picker`  | カラーピッカー UI                    |
+| `keybind`       | Keybind 一覧の各行                   |
+| `language`      | 言語名の現地語表記                   |
+
+全キーは [`fabric/src/client/java/com/kajiwara/omnichest/i18n/Keys.java`](fabric/src/client/java/com/kajiwara/omnichest/i18n/Keys.java)
+に定数として集約しており、 IDE の「Find Usage」で利用箇所を一望できる。
+
+### 新しい言語を追加する手順
+
+1. **enum に追加**
+   `fabric/src/client/java/com/kajiwara/omnichest/i18n/LanguageOption.java` に
+   `FR_FR("fr_fr", "Français", "omnichest.language.fr_fr")` のような形で値を追加。
+2. **lang JSON を作る**
+   `fabric/src/client/resources/assets/omnichest/lang/fr_fr.json` を作成し、
+   `en_us.json` のキーを全件埋める。
+3. **言語名キーを追加** (任意)
+   全 lang ファイルに `"omnichest.language.fr_fr": "Français"` を足すと、
+   設定 GUI 上での言語名も翻訳される。
+
+既存クラスの編集は不要。 Config GUI の「Language」 タブが自動でこの選択肢を列挙する。
+
+### 翻訳の追加 / 修正 (PR ガイド)
+
+- 1 PR = 1 言語 を推奨 (= レビューしやすい粒度)
+- `en_us.json` を canonical として参照しながら全キーを訳す
+- プレースホルダ (`%1$d` / `%1$s` 等) は順序を守る (= 順序入替が必要なら `%2$d` を先に置く)
+- `§a` `§c` 等のカラーコードは必ずそのまま維持 (= 色情報を保ったまま訳す)
+- `\n` 改行は意味のある段落区切り — 改行位置はネイティブ視点で自然な位置に再配置して OK
+- 翻訳が無いキーは `en_us` にフォールバックするので「途中までの PR」でも安全
+
+### 実装の中核
+
+- [`OmniChestLocale`](fabric/src/client/java/com/kajiwara/omnichest/i18n/OmniChestLocale.java)
+  — 全ファイルから呼ばれる単一エントリポイント
+- [`LanguageManager`](fabric/src/client/java/com/kajiwara/omnichest/i18n/LanguageManager.java)
+  — JSON ロード + キャッシュ + ホットスワップ
+- [`LanguageOption`](fabric/src/client/java/com/kajiwara/omnichest/i18n/LanguageOption.java)
+  — 言語選択肢の enum (将来追加もここに 1 行)
+- [`Keys`](fabric/src/client/java/com/kajiwara/omnichest/i18n/Keys.java)
+  — 全翻訳キーの定数定義
+- [`LocaleRegistry`](fabric/src/client/java/com/kajiwara/omnichest/i18n/LocaleRegistry.java)
+  — 利用可能 locale 一覧 (= enum を機械的に列挙)
+- [`TranslationValidator`](fabric/src/client/java/com/kajiwara/omnichest/i18n/TranslationValidator.java)
+  + [`MissingKeyReporter`](fabric/src/client/java/com/kajiwara/omnichest/i18n/MissingKeyReporter.java)
+  — 起動時に en_us と各言語の差分を warn ログへ出力 (= 翻訳不足の早期検知)
+
+### 翻訳の検証
+
+クライアント起動時に `TranslationValidator.validateAll()` が自動実行され、
+ログに以下を出力する:
+
+```
+[omnichest][i18n] ja_jp: 312/312 (100%) — 0 missing, 0 extra
+[omnichest][i18n] fr_fr: 309/312 (99%) — 3 missing, 0 extra
+[omnichest][i18n]   missing in fr_fr: [omnichest.button.new_thing, ...]
+```
+
+検証は warn ログを残すだけで、 実行時挙動は変えない (= 翻訳不足キーは自動で
+en_us にフォールバックされる)。 翻訳者は手元で `runClient` を起動し、
+ログを見るだけでカバレッジを把握できる。
+
+ロジック / UI レイアウト / 機能挙動は **localization 導入前と完全に同一**。
+変更されたのは表示テキストのみ。
+
+---
+
 ## ライセンス
 
 CC0-1.0

@@ -1,5 +1,7 @@
 package com.kajiwara.omnichest.config.gui.widget;
 
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -145,7 +147,7 @@ public final class ColorPickerPopup {
         // ─── ヘッダ帯 ───
         g.fill(popupX, popupY, popupX + POPUP_W, popupY + HEADER_H, COLOR_HEADER_BG);
         Font font = Minecraft.getInstance().font;
-        g.drawString(font, Component.literal("Color Picker"),
+        g.drawString(font, OmniChestLocale.get(Keys.COLOR_PICKER_TITLE, "Color Picker"),
                 popupX + PAD, popupY + (HEADER_H - 8) / 2, COLOR_TEXT, false);
 
         // ─── SV グリッド ───
@@ -221,11 +223,13 @@ public final class ColorPickerPopup {
         int y = popupY + INFO_Y;
         int x = popupX + PAD;
 
-        String rgbText = String.format("R %3d  G %3d  B %3d", r, gg, b);
-        g.drawString(font, Component.literal(rgbText), x, y, COLOR_TEXT_MUTED, false);
+        Component rgbComp = OmniChestLocale.get(
+                Keys.COLOR_PICKER_RGB_LINE, "R %1$3d  G %2$3d  B %3$3d", r, gg, b);
+        g.drawString(font, rgbComp, x, y, COLOR_TEXT_MUTED, false);
 
-        String hexText = String.format("Hex  #%06X", rgb & 0xFFFFFF);
-        g.drawString(font, Component.literal(hexText), x, y + 10, COLOR_TEXT, false);
+        Component hexComp = OmniChestLocale.get(
+                Keys.COLOR_PICKER_HEX_LINE, "Hex  #%1$06X", rgb & 0xFFFFFF);
+        g.drawString(font, hexComp, x, y + 10, COLOR_TEXT, false);
 
         // プレビュー swatch (= 大きめの現在色サンプル)。 ヘックス文字の右に置く。
         int sw = 24, sh = 12;
@@ -249,11 +253,15 @@ public final class ColorPickerPopup {
         g.fill(okX, by, okX + BTN_W, by + BTN_H,
                 hoverOk ? COLOR_BTN_BG_OK_HOVER : COLOR_BTN_BG_OK);
         g.renderOutline(okX, by, BTN_W, BTN_H, COLOR_RIM);
-        drawCentered(g, font, "Cancel", cancelX, by, BTN_W, BTN_H, COLOR_TEXT);
-        drawCentered(g, font, "OK", okX, by, BTN_W, BTN_H, COLOR_TEXT);
+        drawCenteredComponent(g, font,
+                OmniChestLocale.get(Keys.COLOR_PICKER_CANCEL, "Cancel"),
+                cancelX, by, BTN_W, BTN_H, COLOR_TEXT);
+        drawCenteredComponent(g, font,
+                OmniChestLocale.get(Keys.COLOR_PICKER_OK, "OK"),
+                okX, by, BTN_W, BTN_H, COLOR_TEXT);
     }
 
-    private static void drawCentered(GuiGraphics g, Font font, String text,
+    private static void drawCenteredComponent(GuiGraphics g, Font font, Component text,
             int x, int y, int w, int h, int color) {
         int tw = font.width(text);
         g.drawString(font, text, x + (w - tw) / 2, y + (h - 8) / 2, color, false);

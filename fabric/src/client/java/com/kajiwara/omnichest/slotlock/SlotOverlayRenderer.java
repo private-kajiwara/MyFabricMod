@@ -1,5 +1,7 @@
 package com.kajiwara.omnichest.slotlock;
 
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -203,11 +205,13 @@ public final class SlotOverlayRenderer {
         if (!SlotLockConfig.get().showTooltipLine)
             return null;
         if (data.mode() == SlotLockMode.SLOT) {
-            return Component.literal("§9§l[LOCKED SLOT] §r§7Auto-sort protected");
+            return OmniChestLocale.get(Keys.SLOT_LOCK_TOOLTIP_LOCKED_SLOT,
+                    "§9§l[LOCKED SLOT] §r§7Auto-sort protected");
         }
         // ITEM モード
         String itemName = data.itemRegistryId() == null ? "?" : data.itemRegistryId().toString();
-        return Component.literal("§6§l[LOCKED ITEM] §r§7" + itemName + " protected");
+        return OmniChestLocale.get(Keys.SLOT_LOCK_TOOLTIP_LOCKED_ITEM,
+                "§6§l[LOCKED ITEM] §r§7%1$s protected", itemName);
     }
 
     /**
@@ -220,11 +224,14 @@ public final class SlotOverlayRenderer {
             return null;
         SlotLockConfig cfg = SlotLockConfig.get();
         if (cfg.protectHotbarByDefault && SlotIndexMapper.isHotbar(playerSlot))
-            return Component.literal("§b§l[PROTECTED] §r§7Hotbar default protection");
+            return OmniChestLocale.get(Keys.SLOT_LOCK_TOOLTIP_HOTBAR_DEFAULT,
+                    "§b§l[PROTECTED] §r§7Hotbar default protection");
         if (cfg.protectOffhandByDefault && SlotIndexMapper.isOffhand(playerSlot))
-            return Component.literal("§b§l[PROTECTED] §r§7Offhand default protection");
+            return OmniChestLocale.get(Keys.SLOT_LOCK_TOOLTIP_OFFHAND_DEFAULT,
+                    "§b§l[PROTECTED] §r§7Off-hand default protection");
         if (cfg.protectArmorByDefault && SlotIndexMapper.isArmor(playerSlot))
-            return Component.literal("§b§l[PROTECTED] §r§7Armor default protection");
+            return OmniChestLocale.get(Keys.SLOT_LOCK_TOOLTIP_ARMOR_DEFAULT,
+                    "§b§l[PROTECTED] §r§7Armor default protection");
         return null;
     }
 }

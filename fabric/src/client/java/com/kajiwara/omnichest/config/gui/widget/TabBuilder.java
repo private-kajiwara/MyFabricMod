@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.DoubleFunction;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 
 /**
@@ -52,6 +53,17 @@ public final class TabBuilder {
     public <E extends Enum<E>> TabBuilder enumSelect(Component label, Class<E> enumClass,
             E current, Consumer<E> save, @Nullable Component tooltip) {
         this.rows.add(new EnumRow<>(label, tooltip, enumClass, current, save));
+        return this;
+    }
+
+    /**
+     * 表示ラベルを enum 値から生成する関数を指定できる版。
+     * 例: {@code LanguageOption} 用に各値のネイティブ表記を返したいときに使う。
+     */
+    public <E extends Enum<E>> TabBuilder enumSelect(Component label, Class<E> enumClass,
+            E current, Consumer<E> save, @Nullable Component tooltip,
+            @Nullable Function<E, Component> labelFormatter) {
+        this.rows.add(new EnumRow<>(label, tooltip, enumClass, current, save, labelFormatter));
         return this;
     }
 

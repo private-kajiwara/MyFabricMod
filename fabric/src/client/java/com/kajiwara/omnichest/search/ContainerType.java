@@ -1,6 +1,9 @@
 package com.kajiwara.omnichest.search;
 
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.ChestBlock;
@@ -22,22 +25,38 @@ import net.minecraft.world.level.block.state.properties.ChestType;
  * isDouble() を持って判定できるようにする。
  */
 public enum ContainerType {
-    CHEST("チェスト"),
-    TRAPPED_CHEST("トラップ式チェスト"),
-    DOUBLE_CHEST("ラージチェスト"),
-    DOUBLE_TRAPPED_CHEST("ラージトラップ式チェスト"),
-    BARREL("樽"),
-    SHULKER_BOX("シュルカーボックス"),
-    OTHER("コンテナ");
+    CHEST("チェスト", Keys.CONTAINER_TYPE_CHEST, "Chest"),
+    TRAPPED_CHEST("トラップ式チェスト", Keys.CONTAINER_TYPE_TRAPPED_CHEST, "Trapped Chest"),
+    DOUBLE_CHEST("ラージチェスト", Keys.CONTAINER_TYPE_DOUBLE_CHEST, "Large Chest"),
+    DOUBLE_TRAPPED_CHEST("ラージトラップ式チェスト",
+            Keys.CONTAINER_TYPE_DOUBLE_TRAPPED_CHEST, "Large Trapped Chest"),
+    BARREL("樽", Keys.CONTAINER_TYPE_BARREL, "Barrel"),
+    SHULKER_BOX("シュルカーボックス", Keys.CONTAINER_TYPE_SHULKER_BOX, "Shulker Box"),
+    OTHER("コンテナ", Keys.CONTAINER_TYPE_OTHER, "Container");
 
     private final String displayName;
+    private final String translationKey;
+    private final String englishFallback;
 
-    ContainerType(String displayName) {
+    ContainerType(String displayName, String translationKey, String englishFallback) {
         this.displayName = displayName;
+        this.translationKey = translationKey;
+        this.englishFallback = englishFallback;
     }
 
+    /** 翻訳前提でない場面 (= 古い呼び出し側、 SearchResult.containerType().displayName() 等) のための raw 名。 */
     public String displayName() {
         return this.displayName;
+    }
+
+    /** 翻訳キー解決済みの {@link Component}。 */
+    public Component displayComponent() {
+        return OmniChestLocale.get(this.translationKey, this.englishFallback);
+    }
+
+    /** 翻訳キーで解決した String (描画前の format に組み込みたい時用)。 */
+    public String displayString() {
+        return OmniChestLocale.getString(this.translationKey, this.englishFallback);
     }
 
     public boolean isDouble() {

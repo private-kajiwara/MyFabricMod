@@ -1,5 +1,7 @@
 package com.kajiwara.omnichest.template.gui;
 
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.template.apply.MovePlan;
 import com.kajiwara.omnichest.template.apply.SlotPlanner;
 import com.kajiwara.omnichest.template.apply.TemplateApplyEngine;
@@ -11,8 +13,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-
-import java.util.Locale;
 
 /**
  * 「テンプレート適用」前の確認ダイアログ。
@@ -38,11 +38,19 @@ public class TemplatePreviewScreen extends Screen {
 
     public TemplatePreviewScreen(Screen parent, AbstractContainerMenu menu, int containerSlotCount,
             ChestTemplate template) {
-        super(Component.literal("プレビュー: " + (template != null ? template.name() : "(null)")));
+        super(buildTitle(template));
         this.parent = parent;
         this.menu = menu;
         this.containerSlotCount = containerSlotCount;
         this.template = template;
+    }
+
+    /** タイトル文字列を翻訳キーで組み立てる (= テンプレ名の差し込みに対応)。 */
+    private static net.minecraft.network.chat.Component buildTitle(ChestTemplate template) {
+        String name = template != null
+                ? template.name()
+                : OmniChestLocale.getString(Keys.TEMPLATE_PREVIEW_TITLE_NULL, "(null)");
+        return OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_TITLE_FORMAT, "Preview: %1$s", name);
     }
 
     /**
@@ -71,12 +79,12 @@ public class TemplatePreviewScreen extends Screen {
         int bottomY = this.height - 36;
 
         this.addRenderableWidget(Button.builder(
-                Component.literal("適用"),
+                OmniChestLocale.get(Keys.BUTTON_APPLY, "Apply"),
                 b -> doApply())
                 .bounds(cx - 120, bottomY, 115, 20).build());
 
         this.addRenderableWidget(Button.builder(
-                Component.literal("キャンセル"),
+                OmniChestLocale.get(Keys.BUTTON_CANCEL, "Cancel"),
                 b -> this.onClose())
                 .bounds(cx + 5, bottomY, 115, 20).build());
     }
@@ -93,7 +101,8 @@ public class TemplatePreviewScreen extends Screen {
         g.drawCenteredString(this.font, this.getTitle(), this.width / 2, 20, 0xFFFFFFFF);
 
         if (this.plan == null) {
-            g.drawCenteredString(this.font, Component.literal("計算中..."),
+            g.drawCenteredString(this.font,
+                    OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_COMPUTING, "Computing..."),
                     this.width / 2, this.height / 2, 0xFFAAAAAA);
             return;
         }
@@ -104,48 +113,56 @@ public class TemplatePreviewScreen extends Screen {
         int shortages = this.plan.shortages().size();
         int stranded = this.plan.stranded().size();
 
-        g.drawCenteredString(this.font, Component.literal(String.format(Locale.ROOT,
-                "実行する移動: %d 件 (合計 %d 個)", moves, totalItems)),
+        g.drawCenteredString(this.font,
+                OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_MOVES,
+                        "Moves to execute: %1$d (total %2$d items)", moves, totalItems),
                 this.width / 2, yLine, 0xFFFFFFFF);
         yLine += 14;
         if (shortages > 0) {
-            g.drawCenteredString(this.font, Component.literal(String.format(Locale.ROOT,
-                    "不足アイテム: %d 種 (在庫が足りないスロットがあります)", shortages)),
+            g.drawCenteredString(this.font,
+                    OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_SHORTAGES,
+                            "Short items: %1$d kinds (some slots cannot be filled)", shortages),
                     this.width / 2, yLine, 0xFFFFAA55);
             yLine += 14;
         }
         if (stranded > 0) {
-            g.drawCenteredString(this.font, Component.literal(String.format(Locale.ROOT,
-                    "空にできないスロット: %d 件 (置き場所が無いアイテムがあります)", stranded)),
+            g.drawCenteredString(this.font,
+                    OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_STRANDED,
+                            "Stranded slots: %1$d (no place to put these items)", stranded),
                     this.width / 2, yLine, 0xFFFF7777);
             yLine += 14;
         }
         if (moves == 0 && shortages == 0 && stranded == 0) {
-            g.drawCenteredString(this.font, Component.literal("既にテンプレート通りに整っています。"),
+            g.drawCenteredString(this.font,
+                    OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_NOTHING_TO_DO,
+                            "Already matches the template."),
                     this.width / 2, yLine, 0xFF88FF88);
             yLine += 14;
         }
 
-        // ─── 移動詳細 (最大 8 件) ───
+        // ─── 移動詳細 (最大 10 件) ───
         int detailY = yLine + 8;
         int maxRows = 10;
         int shown = 0;
+        String swapTag = OmniChestLocale.getString(Keys.TEMPLATE_PREVIEW_MOVE_SWAP, "(swap)");
         for (MovePlan.Move m : this.plan.moves()) {
             if (shown >= maxRows)
                 break;
             int rowY = detailY + shown * 18;
             // アイコン
             g.renderItem(m.icon(), this.width / 2 - 130, rowY);
-            // テキスト
-            String text = String.format(Locale.ROOT, "  スロット %d  →  スロット %d   ×%d %s",
-                    m.fromSlot(), m.toSlot(), m.count(), m.swap() ? "(入替)" : "");
+            // テキスト (= 翻訳キー駆動)
+            String text = OmniChestLocale.getString(Keys.TEMPLATE_PREVIEW_MOVE_ROW,
+                    "  slot %1$d  →  slot %2$d   ×%3$d %4$s",
+                    m.fromSlot(), m.toSlot(), m.count(), m.swap() ? swapTag : "");
             g.drawString(this.font, Component.literal(text),
                     this.width / 2 - 108, rowY + 4, 0xFFFFFFFF, false);
             shown++;
         }
         if (this.plan.moves().size() > maxRows) {
-            g.drawCenteredString(this.font, Component.literal(
-                    "...他 " + (this.plan.moves().size() - maxRows) + " 件"),
+            g.drawCenteredString(this.font,
+                    OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_MORE_ITEMS,
+                            "...and %1$d more", this.plan.moves().size() - maxRows),
                     this.width / 2, detailY + maxRows * 18 + 4, 0xFFAAAAAA);
         }
     }

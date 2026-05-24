@@ -1,5 +1,7 @@
 package com.kajiwara.omnichest.config.gui.widget;
 
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
@@ -73,6 +75,8 @@ public final class ToggleRow extends RowEntry {
 
     /** "ON" / "OFF" を緑/赤で表示する。 */
     private static Component messageFor(boolean v) {
-        return v ? Component.literal("§a✔ ON") : Component.literal("§c✘ OFF");
+        return v
+                ? OmniChestLocale.get(Keys.TOGGLE_ON, "§a✔ ON")
+                : OmniChestLocale.get(Keys.TOGGLE_OFF, "§c✘ OFF");
     }
 }

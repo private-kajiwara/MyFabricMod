@@ -1,5 +1,7 @@
 package com.kajiwara.omnichest.classify;
 
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
 import com.kajiwara.omnichest.slotlock.InventoryProtectionLayer;
 import com.kajiwara.omnichest.slotlock.SlotLockConfig;
@@ -94,7 +96,9 @@ public final class AutoDepositManager {
 
         List<SmartRoutingManager.RoutingPlan> plans = plan(player);
         if (plans.isEmpty()) {
-            mc.gui.getChat().addMessage(Component.literal("[Smart Storage] 投入プラン: アイテムなし / 機能 off"));
+            mc.gui.getChat().addMessage(OmniChestLocale.get(
+                    Keys.SMART_STORAGE_PLAN_EMPTY,
+                    "[Smart Storage] Deposit plan: no items / feature off"));
             return;
         }
 
@@ -106,22 +110,32 @@ public final class AutoDepositManager {
             agg.computeIfAbsent(k, kk -> new Aggregate(p.stack.copy(), p.destination, 0)).count += p.stack.getCount();
         }
 
-        mc.gui.getChat().addMessage(Component.literal("[Smart Storage] 投入プラン:"));
+        mc.gui.getChat().addMessage(OmniChestLocale.get(
+                Keys.SMART_STORAGE_PLAN_HEADER, "[Smart Storage] Deposit plan:"));
+        String noDest = OmniChestLocale.getString(
+                Keys.SMART_STORAGE_NO_DESTINATION, "§7no destination");
         ClientLevel level = mc.level;
         for (Aggregate a : agg.values()) {
             String name = a.stack.getHoverName().getString();
-            String line;
+            Component line;
             if (a.destination == null) {
-                line = "  " + name + " × " + a.count + " → §7行き先なし";
+                line = OmniChestLocale.get(Keys.SMART_STORAGE_PLAN_LINE_NO_DESTINATION,
+                        "  %1$s × %2$d → %3$s", name, a.count, noDest);
             } else {
                 ContainerSnapshot dst = a.destination;
                 Classification cl = ClassificationCache.get().get(dst);
-                String catName = cl == null ? "?" : cl.category().displayName();
-                line = String.format("  %s × %d → %s (%d, %d, %d)",
+                String catName = cl == null
+                        ? "?"
+                        : OmniChestLocale.getString(
+                                Keys.STORAGE_CATEGORY_PREFIX
+                                        + cl.category().name().toLowerCase(java.util.Locale.ROOT),
+                                cl.category().displayName());
+                line = OmniChestLocale.get(Keys.SMART_STORAGE_PLAN_LINE,
+                        "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
                         name, a.count, catName,
                         dst.pos().getX(), dst.pos().getY(), dst.pos().getZ());
             }
-            mc.gui.getChat().addMessage(Component.literal(line));
+            mc.gui.getChat().addMessage(line);
             // level 参照を保持 (将来 dimension 表記を足す余地)
             if (level == null)
                 break;

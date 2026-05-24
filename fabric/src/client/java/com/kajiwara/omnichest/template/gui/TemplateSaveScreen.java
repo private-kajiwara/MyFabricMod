@@ -1,5 +1,7 @@
 package com.kajiwara.omnichest.template.gui;
 
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.template.TemplateManager;
 import com.kajiwara.omnichest.template.data.ChestTemplate;
 import com.kajiwara.omnichest.template.data.TemplateKind;
@@ -37,7 +39,7 @@ public class TemplateSaveScreen extends Screen {
     private Button kindButton;
 
     public TemplateSaveScreen(Screen parent, AbstractContainerMenu menu, int containerSlotCount) {
-        super(Component.literal("テンプレートを保存"));
+        super(OmniChestLocale.get(Keys.SCREEN_TEMPLATE_SAVE_TITLE, "Save Template"));
         this.parent = parent;
         this.menu = menu;
         this.containerSlotCount = containerSlotCount;
@@ -51,12 +53,14 @@ public class TemplateSaveScreen extends Screen {
         int cy = this.height / 2;
 
         this.nameBox = new EditBox(this.font, cx - 120, cy - 30, 240, 20,
-                Component.literal("Name"));
+                OmniChestLocale.get(Keys.EDITBOX_NAME_LABEL, "Name"));
         this.nameBox.setMaxLength(64);
         // 既存テンプレート数 +1 をデフォルト名にする (毎回入れ直しを避ける QoL)。
         int suggested = TemplateManager.list().size() + 1;
-        this.nameBox.setValue("テンプレート " + suggested);
-        this.nameBox.setHint(Component.literal("テンプレート名"));
+        this.nameBox.setValue(OmniChestLocale.getString(
+                Keys.TEMPLATE_DEFAULT_NAME, "Template %1$d", suggested));
+        this.nameBox.setHint(OmniChestLocale.get(
+                Keys.EDITBOX_TEMPLATE_NAME_HINT, "Template name"));
         this.addRenderableWidget(this.nameBox);
         this.setInitialFocus(this.nameBox);
 
@@ -69,24 +73,30 @@ public class TemplateSaveScreen extends Screen {
 
         // 保存
         this.addRenderableWidget(Button.builder(
-                Component.literal("保存"),
+                OmniChestLocale.get(Keys.BUTTON_SAVE, "Save"),
                 b -> doSave())
                 .bounds(cx - 120, cy + 30, 115, 20).build());
 
         // キャンセル
         this.addRenderableWidget(Button.builder(
-                Component.literal("キャンセル"),
+                OmniChestLocale.get(Keys.BUTTON_CANCEL, "Cancel"),
                 b -> this.onClose())
                 .bounds(cx + 5, cy + 30, 115, 20).build());
     }
 
     private Component kindLabel() {
-        String body = switch (this.kind) {
-            case EXACT -> "完全一致 (アイテム固定)";
-            case CATEGORY -> "カテゴリ一致 (代替品許容)";
-            case HYBRID -> "ハイブリッド (推奨)";
+        String key = switch (this.kind) {
+            case EXACT -> Keys.TEMPLATE_KIND_EXACT;
+            case CATEGORY -> Keys.TEMPLATE_KIND_CATEGORY;
+            case HYBRID -> Keys.TEMPLATE_KIND_HYBRID;
         };
-        return Component.literal("種別: " + body);
+        String englishFallback = switch (this.kind) {
+            case EXACT -> "Exact (fixed items)";
+            case CATEGORY -> "Category (substitutes allowed)";
+            case HYBRID -> "Hybrid (recommended)";
+        };
+        String body = OmniChestLocale.getString(key, englishFallback);
+        return OmniChestLocale.get(Keys.TEMPLATE_KIND_LABEL, "Kind: %1$s", body);
     }
 
     private static TemplateKind nextKind(TemplateKind cur) {
@@ -100,7 +110,7 @@ public class TemplateSaveScreen extends Screen {
     private void doSave() {
         String name = this.nameBox == null ? "" : this.nameBox.getValue().trim();
         if (name.isEmpty())
-            name = "(無題)";
+            name = OmniChestLocale.getString(Keys.TEMPLATE_UNTITLED, "(untitled)");
         ChestTemplate t = TemplateManager.captureCurrentChest(this.menu, this.containerSlotCount, name, this.kind);
         TemplateManager.save(t);
         Minecraft.getInstance().setScreen(this.parent);
@@ -113,12 +123,17 @@ public class TemplateSaveScreen extends Screen {
         g.drawCenteredString(this.font, this.getTitle(), this.width / 2, this.height / 2 - 60, 0xFFFFFFFF);
 
         // 種別の補足説明 (現在の選択ヒント)。
-        String help = switch (this.kind) {
-            case EXACT -> "Oak Planks と Birch Planks を別物として扱います。";
-            case CATEGORY -> "同じカテゴリのアイテムなら代替できます。 (推奨: 素材倉庫向け)";
-            case HYBRID -> "希望は固定しつつ、無ければ同カテゴリで代用します。";
+        String helpKey = switch (this.kind) {
+            case EXACT -> Keys.TEMPLATE_KIND_HELP_EXACT;
+            case CATEGORY -> Keys.TEMPLATE_KIND_HELP_CATEGORY;
+            case HYBRID -> Keys.TEMPLATE_KIND_HELP_HYBRID;
         };
-        g.drawCenteredString(this.font, Component.literal(help),
+        String helpFallback = switch (this.kind) {
+            case EXACT -> "Oak Planks and Birch Planks are treated as different items.";
+            case CATEGORY -> "Items in the same category can substitute each other. (Best for material chests)";
+            case HYBRID -> "Prefers the original item, falls back to same-category substitutes.";
+        };
+        g.drawCenteredString(this.font, OmniChestLocale.get(helpKey, helpFallback),
                 this.width / 2, this.height / 2 + 55, 0xFFAAAAAA);
     }
 

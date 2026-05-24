@@ -4,6 +4,8 @@ import com.kajiwara.omnichest.classify.Classification;
 import com.kajiwara.omnichest.classify.ClassificationCache;
 import com.kajiwara.omnichest.classify.ClassifyConfig;
 import com.kajiwara.omnichest.classify.StorageCategory;
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -59,15 +61,15 @@ public final class CategoryBadgeRenderer {
         int rgb = cat.rgb();
         int bgArgb = (0x80 << 24) | (rgb & 0x00FFFFFF); // 半透明背景
 
-        String label = "[" + cat.displayName() + "]";
-        String confText = cat.isConcrete()
-                ? " Confidence: " + cl.confidencePercent() + "%"
-                : ""; // MIXED / UNKNOWN のときは confidence 表示はしない
-        String lockText = cl.locked() ? " [L]" : "";
-
-        Component left = Component.literal(label);
-        Component right = Component.literal(confText);
-        Component lockComp = Component.literal(lockText);
+        // カテゴリ名 (例: "[FOOD STORAGE]") — 各言語の displayName を [] で囲む。
+        Component left = Component.literal("[").append(cat.displayComponent()).append("]");
+        Component right = cat.isConcrete()
+                ? OmniChestLocale.get(Keys.CATEGORY_BADGE_CONFIDENCE,
+                        " Confidence: %1$d%%", cl.confidencePercent())
+                : Component.empty(); // MIXED / UNKNOWN のときは confidence 表示はしない
+        Component lockComp = cl.locked()
+                ? OmniChestLocale.get(Keys.CATEGORY_BADGE_LOCK, " [L]")
+                : Component.empty();
 
         int leftW = font.width(left);
         int rightW = font.width(right);
@@ -84,10 +86,10 @@ public final class CategoryBadgeRenderer {
         // テキスト: カテゴリ名は色付き / confidence は白 / lock はオレンジ
         int textColor = (0xFF << 24) | (rgb & 0x00FFFFFF);
         g.drawString(font, left, x, y, textColor, true);
-        if (!confText.isEmpty()) {
+        if (rightW > 0) {
             g.drawString(font, right, x + leftW, y, 0xFFFFFFFF, true);
         }
-        if (!lockText.isEmpty()) {
+        if (lockW > 0) {
             g.drawString(font, lockComp, x + leftW + rightW, y, 0xFFFFAA00, true);
         }
         return totalW + padX * 2;

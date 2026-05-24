@@ -1,5 +1,7 @@
 package com.kajiwara.omnichest.template.gui;
 
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.template.TemplateManager;
 import com.kajiwara.omnichest.template.data.ChestTemplate;
 import net.minecraft.client.Minecraft;
@@ -65,7 +67,7 @@ public class TemplateManagerScreen extends Screen {
 
     public TemplateManagerScreen(Screen parent,
             @Nullable AbstractContainerMenu menu, int containerSlotCount) {
-        super(Component.literal("テンプレート管理"));
+        super(OmniChestLocale.get(Keys.SCREEN_TEMPLATE_MANAGER_TITLE, "Templates"));
         this.parent = parent;
         this.menu = menu;
         this.containerSlotCount = containerSlotCount;
@@ -81,16 +83,17 @@ public class TemplateManagerScreen extends Screen {
 
         // ─── 検索ボックス ───
         this.searchBox = new EditBox(this.font, LIST_SIDE_INSET, 28, 240, 18,
-                Component.literal("Search"));
+                OmniChestLocale.get(Keys.EDITBOX_SEARCH_LABEL, "Search"));
         this.searchBox.setMaxLength(64);
-        this.searchBox.setHint(Component.literal("テンプレート名で絞り込み"));
+        this.searchBox.setHint(OmniChestLocale.get(
+                Keys.EDITBOX_SEARCH_HINT_TEMPLATE, "Filter by template name"));
         this.searchBox.setResponder(text -> rebuildList());
         this.addRenderableWidget(this.searchBox);
 
         // ─── 「現在のチェストを保存」(menu が分かっているときのみ) ───
         if (this.menu != null && this.containerSlotCount > 0) {
             this.addRenderableWidget(Button.builder(
-                    Component.literal("現チェストを保存"),
+                    OmniChestLocale.get(Keys.BUTTON_SAVE_CURRENT_CHEST, "Save Current Chest"),
                     b -> Minecraft.getInstance().setScreen(
                             new TemplateSaveScreen(this, this.menu, this.containerSlotCount)))
                     .bounds(LIST_SIDE_INSET + 246, 28, 110, 18).build());
@@ -98,7 +101,7 @@ public class TemplateManagerScreen extends Screen {
 
         // ─── 閉じる ───
         this.addRenderableWidget(Button.builder(
-                Component.literal("閉じる"),
+                OmniChestLocale.get(Keys.BUTTON_CLOSE, "Close"),
                 b -> this.onClose())
                 .bounds(this.width - LIST_SIDE_INSET - 80, 28, 80, 18).build());
 
@@ -145,15 +148,16 @@ public class TemplateManagerScreen extends Screen {
         g.drawCenteredString(this.font, this.getTitle(), this.width / 2, 8, 0xFFFFFFFF);
 
         Font font = this.font;
-        Component summary = Component.literal("登録 " + TemplateManager.list().size()
-                + " 件 / 表示 " + this.visible.size() + " 件");
+        Component summary = OmniChestLocale.get(Keys.TEMPLATE_MANAGER_SUMMARY,
+                "Saved: %1$d  /  Shown: %2$d",
+                TemplateManager.list().size(), this.visible.size());
         g.drawString(font, summary, LIST_SIDE_INSET, 50, 0xFFAAAAAA, false);
 
         renderList(g, mouseX, mouseY);
 
         // 下部ヒント
-        Component hint = Component.literal(
-                "行クリック=Apply（要チェスト連動） / 「複製/削除/↑↓」は行右側 / ESC で閉じる");
+        Component hint = OmniChestLocale.get(Keys.TEMPLATE_MANAGER_HINT,
+                "Click row = Apply (chest required) / Buttons on right / ESC = close");
         g.drawCenteredString(font, hint, this.width / 2, this.height - 18, 0xFFAAAAAA);
     }
 
@@ -201,16 +205,18 @@ public class TemplateManagerScreen extends Screen {
         String name = t.name();
         if (name.length() > 28)
             name = name.substring(0, 27) + "…";
-        String kindLabel = switch (t.kind()) {
-            case EXACT -> "[完全]";
-            case CATEGORY -> "[カテゴリ]";
-            case HYBRID -> "[ハイブリッド]";
+        Component kindLabel = switch (t.kind()) {
+            case EXACT -> OmniChestLocale.get(Keys.TEMPLATE_KIND_BADGE_EXACT, "[Exact]");
+            case CATEGORY -> OmniChestLocale.get(Keys.TEMPLATE_KIND_BADGE_CATEGORY, "[Category]");
+            case HYBRID -> OmniChestLocale.get(Keys.TEMPLATE_KIND_BADGE_HYBRID, "[Hybrid]");
         };
         g.drawString(font, Component.literal(name), iconX + 22, y + 4, 0xFFFFFFFF, false);
-        g.drawString(font, Component.literal(kindLabel),
+        g.drawString(font, kindLabel,
                 iconX + 22 + Math.min(180, font.width(name)) + 8, y + 4, 0xFFAAAACC, false);
-        g.drawString(font, Component.literal(t.containerSize() + " スロット / "
-                + t.slotRules().size() + " ルール"),
+        g.drawString(font,
+                OmniChestLocale.get(Keys.TEMPLATE_MANAGER_SLOT_RULE_COUNT,
+                        "%1$d slots / %2$d rules",
+                        t.containerSize(), t.slotRules().size()),
                 iconX + 22, y + 14, 0xFFAAAAAA, false);
 
         // ─── 右側ボタン群 (擬似ボタン: クリックは mouseClicked で位置判定) ───
@@ -219,20 +225,49 @@ public class TemplateManagerScreen extends Screen {
         int btnW = 56;
         int btnH = 16;
         int btnY = y + (ROW_HEIGHT - btnH) / 2;
-        String[] labels = labelsFor(t);
-        for (int i = 0; i < labels.length; i++) {
-            int bx = btnRight - (btnW + 4) * (labels.length - i);
+        RowAction[] actions = actionsFor(t);
+        for (int i = 0; i < actions.length; i++) {
+            int bx = btnRight - (btnW + 4) * (actions.length - i);
             g.fill(bx, btnY, bx + btnW, btnY + btnH, 0x88444466);
-            g.drawCenteredString(font, Component.literal(labels[i]),
+            g.drawCenteredString(font, actions[i].label(),
                     bx + btnW / 2, btnY + 4, 0xFFFFFFFF);
         }
     }
 
-    private String[] labelsFor(ChestTemplate t) {
-        // Apply ボタンは menu が無いと無意味なので、その場合は出さない。
-        if (this.menu != null && this.containerSlotCount > 0)
-            return new String[]{"適用", "複製", "削除", "↑", "↓"};
-        return new String[]{"複製", "削除", "↑", "↓"};
+    /**
+     * 1 行に表示する操作。 翻訳済み {@link Component} とハンドラ識別子をペアで持つ。
+     * 旧実装は String[] でラベルだけを持っていたが、 翻訳すると等価比較ができなくなるため
+     * enum で識別子を持たせる構造に変更した (= 表示と挙動を分離)。
+     */
+    private enum RowAction {
+        APPLY(Keys.TEMPLATE_ROW_ACTION_APPLY, "Apply"),
+        DUPLICATE(Keys.TEMPLATE_ROW_ACTION_DUPLICATE, "Duplicate"),
+        DELETE(Keys.TEMPLATE_ROW_ACTION_DELETE, "Delete"),
+        UP(Keys.TEMPLATE_ROW_ACTION_UP, "↑"),
+        DOWN(Keys.TEMPLATE_ROW_ACTION_DOWN, "↓");
+
+        private final String key;
+        private final String fallback;
+
+        RowAction(String key, String fallback) {
+            this.key = key;
+            this.fallback = fallback;
+        }
+
+        Component label() {
+            return OmniChestLocale.get(this.key, this.fallback);
+        }
+    }
+
+    private RowAction[] actionsFor(ChestTemplate t) {
+        // Apply は menu が無いと無意味なので、その場合は出さない。
+        if (this.menu != null && this.containerSlotCount > 0) {
+            return new RowAction[]{
+                    RowAction.APPLY, RowAction.DUPLICATE, RowAction.DELETE,
+                    RowAction.UP, RowAction.DOWN};
+        }
+        return new RowAction[]{
+                RowAction.DUPLICATE, RowAction.DELETE, RowAction.UP, RowAction.DOWN};
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -265,37 +300,34 @@ public class TemplateManagerScreen extends Screen {
         int btnW = 56;
         int btnH = 16;
         int btnY = rowY + (ROW_HEIGHT - btnH) / 2;
-        String[] labels = labelsFor(t);
-        for (int i = 0; i < labels.length; i++) {
-            int bx = btnRight - (btnW + 4) * (labels.length - i);
+        RowAction[] actions = actionsFor(t);
+        for (int i = 0; i < actions.length; i++) {
+            int bx = btnRight - (btnW + 4) * (actions.length - i);
             if (mouseX >= bx && mouseX <= bx + btnW && mouseY >= btnY && mouseY <= btnY + btnH) {
-                handleRowAction(labels[i], t, index);
+                handleRowAction(actions[i], t, index);
                 return true;
             }
         }
         return false;
     }
 
-    private void handleRowAction(String label, ChestTemplate t, int visibleIndex) {
-        switch (label) {
-            case "適用" -> {
+    private void handleRowAction(RowAction action, ChestTemplate t, int visibleIndex) {
+        switch (action) {
+            case APPLY -> {
                 if (this.menu != null && this.containerSlotCount > 0) {
                     TemplatePreviewScreen.openOrApply(this.parent, this.menu, this.containerSlotCount, t);
                 }
             }
-            case "複製" -> {
+            case DUPLICATE -> {
                 TemplateManager.duplicate(t.id());
                 rebuildList();
             }
-            case "削除" -> {
+            case DELETE -> {
                 TemplateManager.delete(t.id());
                 rebuildList();
             }
-            case "↑" -> moveInList(visibleIndex, -1);
-            case "↓" -> moveInList(visibleIndex, +1);
-            default -> {
-                // no-op
-            }
+            case UP -> moveInList(visibleIndex, -1);
+            case DOWN -> moveInList(visibleIndex, +1);
         }
     }
 

@@ -25,4 +25,16 @@ public final class GeneralConfig {
 
     /** MOD 内で発生する効果音 (例: 仕分け完了音) を再生するか。 */
     public boolean enableSounds = true;
+
+    /**
+     * 表示言語の override (= MC 本体言語とは独立に切替可能)。
+     * 値は {@link com.kajiwara.omnichest.i18n.LanguageOption} の {@code saveValue()} と一致する
+     * 文字列 ("system" / "en_us" / "ja_jp" / …)。
+     *
+     * <p>
+     * 既定値 {@code "system"} は「MC 本体の言語に追従」を意味する。
+     * 既存ユーザーの JSON にこのフィールドが存在しない場合は GSON によって "system" のまま残り、
+     * 挙動が変わらない (= 後方互換)。
+     */
+    public String languageOverride = "system";
 }

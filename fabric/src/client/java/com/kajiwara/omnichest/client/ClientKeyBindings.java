@@ -2,6 +2,8 @@ package com.kajiwara.omnichest.client;
 
 import com.kajiwara.omnichest.classify.AutoDepositManager;
 import com.kajiwara.omnichest.client.gui.SearchScreen;
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.mixin.AbstractContainerScreenAccessor;
 import com.kajiwara.omnichest.slotlock.MenuSlotLockSession;
 import com.kajiwara.omnichest.slotlock.SlotIndexMapper;
@@ -140,8 +142,9 @@ public final class ClientKeyBindings {
                                 && playerSlot <= SlotIndexMapper.PLAYER_INV_SLOT_MAX) {
                             SlotLockManager.get().toggleSlotLock(playerSlot);
                             if (mc.gui != null) {
-                                Component msg = Component.literal(
-                                        "[Slot Lock] toggled slot " + playerSlot);
+                                Component msg = OmniChestLocale.get(
+                                        Keys.SLOT_LOCK_CHAT_TOGGLED,
+                                        "[Slot Lock] toggled slot %1$d", playerSlot);
                                 mc.gui.getChat().addMessage(msg);
                             }
                         }
@@ -159,8 +162,9 @@ public final class ClientKeyBindings {
                 int total = totalPlayer + totalSession;
                 if (total == 0) {
                     if (mc.gui != null) {
-                        mc.gui.getChat().addMessage(Component.literal(
-                                "§7[Slot Lock] §o解除対象のロックはありません。"));
+                        mc.gui.getChat().addMessage(OmniChestLocale.get(
+                                Keys.SLOT_LOCK_CHAT_NOTHING_TO_CLEAR,
+                                "§7[Slot Lock] §oNo locks to clear."));
                     }
                     lastClearAllPressMs = 0L;
                     continue;
@@ -170,18 +174,20 @@ public final class ClientKeyBindings {
                     SlotLockManager.get().clearAll();
                     MenuSlotLockSession.get().clearAll();
                     if (mc.gui != null) {
-                        mc.gui.getChat().addMessage(Component.literal(
-                                "§a[Slot Lock] §r" + totalPlayer + " 件 (永続) + "
-                                        + totalSession + " 件 (セッション) を全解除しました。"));
+                        mc.gui.getChat().addMessage(OmniChestLocale.get(
+                                Keys.SLOT_LOCK_CHAT_CLEARED,
+                                "§a[Slot Lock] §rCleared %1$d persistent + %2$d session locks.",
+                                totalPlayer, totalSession));
                     }
                     lastClearAllPressMs = 0L;
                 } else {
                     // 1 回目の押下 → 警告のみ。
                     lastClearAllPressMs = now;
                     if (mc.gui != null) {
-                        mc.gui.getChat().addMessage(Component.literal(
-                                "§e[Slot Lock] §rもう一度押すと " + total
-                                        + " 件のロックを全解除します (1.5 秒以内)。"));
+                        mc.gui.getChat().addMessage(OmniChestLocale.get(
+                                Keys.SLOT_LOCK_CHAT_CONFIRM_CLEAR,
+                                "§e[Slot Lock] §rPress again within 1.5s to clear %1$d locks.",
+                                total));
                     }
                 }
             }
