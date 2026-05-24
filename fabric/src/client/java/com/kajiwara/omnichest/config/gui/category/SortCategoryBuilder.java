@@ -6,7 +6,7 @@ import com.kajiwara.omnichest.config.gui.ConfigLabels;
 import com.kajiwara.omnichest.config.gui.widget.TabBuilder;
 import com.kajiwara.omnichest.config.gui.widget.TabModel;
 
-/** 「Category Sort」タブの組み立て役。 */
+/** 「Category Sort」 タブの組み立て役。 */
 public final class SortCategoryBuilder {
 
     private SortCategoryBuilder() {
@@ -42,6 +42,16 @@ public final class SortCategoryBuilder {
                 cfg.autoCompactAfterSort, v -> cfg.autoCompactAfterSort = v,
                 ConfigLabels.tooltip("sort.autoCompactAfterSort",
                         "After sorting, automatically merge partial stacks."));
+
+        b.intSlider(ConfigLabels.entry("sort.clickIntervalTicks", "Click Interval (ticks)"),
+                1, 10, cfg.clickIntervalTicks, v -> cfg.clickIntervalTicks = v,
+                ConfigLabels.tooltip("sort.clickIntervalTicks",
+                        "Ticks between batches. Larger = slower but safer on strict servers."));
+
+        b.intSlider(ConfigLabels.entry("sort.clicksPerTickCap", "Clicks per Tick"),
+                1, 16, cfg.clicksPerTickCap, v -> cfg.clicksPerTickCap = v,
+                ConfigLabels.tooltip("sort.clicksPerTickCap",
+                        "Max clicks per dispatched batch. Higher = faster, but risks anti-cheat."));
 
         return b.build();
     }

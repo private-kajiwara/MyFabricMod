@@ -1,5 +1,7 @@
 package com.kajiwara.omnichest.mixin;
 
+import com.kajiwara.omnichest.catsort.engine.CategorySortEngine;
+import com.kajiwara.omnichest.catsort.ui.SortButtonWidget;
 import com.kajiwara.omnichest.client.gui.CategoryBadgeRenderer;
 import com.kajiwara.omnichest.client.gui.SearchScreen;
 import com.kajiwara.omnichest.search.ContainerScanner;
@@ -84,6 +86,12 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
     @Unique
     private Button cits$manageTemplateButton;
+
+    // 「カテゴリ整理 (Category Sort)」 ボタン本体。 対応 GUI のときのみ生成される。
+    // 既存の「種類」 ボタン (= 簡易ハードコードソート) とは別系統で、 タグベースの
+    // 16 カテゴリ分類 + tick 安全移動を行う {@link CategorySortEngine} を呼ぶ。
+    @Unique
+    private Button cits$categorySortButton;
 
     // Deposit / Compact ボタン用の寸法定数 (ボタン右上配置の右端基準)
     @Unique
@@ -181,6 +189,18 @@ public abstract class GenericContainerScreenMixin extends Screen {
             this.addRenderableWidget(this.cits$compactButton);
 
             // ───────────────────────────────────────────────────────────
+            // 「カテゴリ整理 (Category Sort)」 ボタン。
+            // Compact の直下、 倉庫検索の上に、 Tooltip 付き標準ボタンとして生成する。
+            // クリックで {@link CategorySortEngine#sort} を発火し、 tick 分散で安全に整列する。
+            // ───────────────────────────────────────────────────────────
+            if (CategorySortEngine.detectContainerSlotCount(anyMenu) > 0) {
+                this.cits$categorySortButton = SortButtonWidget.create(
+                        anyMenu, containerSlotCount,
+                        0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT);
+                this.addRenderableWidget(this.cits$categorySortButton);
+            }
+
+            // ───────────────────────────────────────────────────────────
             // 「倉庫検索 (Chest Network Search)」ボタン。 Compact の直下に同サイズで配置。
             //
             // 押下の流れ:
@@ -267,9 +287,13 @@ public abstract class GenericContainerScreenMixin extends Screen {
         this.cits$searchBox.setHint(Component.literal("検索..."));
         this.addRenderableWidget(this.cits$searchBox);
 
+        // 「種類」 ショートカット: 新しい {@link CategorySortEngine} (タグベース 16 カテゴリ) を起動。
+        // 旧 ContainerSorter.sortByCategory (= 7 種ハードコード) は ContainerSorter 側に互換用として残るが、
+        // GUI からはこちらの本格的なエンジンを呼び出す。
         this.cits$sortByTypeButton = Button.builder(
                 Component.literal("種類"),
-                btn -> ContainerSorter.sortByCategory(Minecraft.getInstance(), menu, slotCount)).bounds(0, 0, 26, 14)
+                btn -> CategorySortEngine.sort(Minecraft.getInstance(), menu, slotCount))
+                .bounds(0, 0, 26, 14)
                 .build();
         this.addRenderableWidget(this.cits$sortByTypeButton);
 
@@ -434,27 +458,35 @@ public abstract class GenericContainerScreenMixin extends Screen {
             this.cits$compactButton.setWidth(width);
         }
 
-        // 倉庫検索ボタンは Compact ボタンの真下に「同じサイズ・同じ X」で配置する。
+        // カテゴリ整理 ボタンを Compact の直下に配置 (= 倉庫検索より上)。
+        // 縦並び順: Deposit (+0) → Compact (+18) → カテゴリ整理 (+36) → 倉庫検索 (+54) → Save/Apply/Manage
+        if (this.cits$categorySortButton != null) {
+            this.cits$categorySortButton.setX(x);
+            this.cits$categorySortButton.setY(y + 36);
+            this.cits$categorySortButton.setWidth(width);
+        }
+
+        // 倉庫検索ボタンは カテゴリ整理 ボタンの真下に「同じサイズ・同じ X」で配置する。
         if (this.cits$searchNetworkButton != null) {
             this.cits$searchNetworkButton.setX(x);
-            this.cits$searchNetworkButton.setY(y + 36);
+            this.cits$searchNetworkButton.setY(y + 54);
             this.cits$searchNetworkButton.setWidth(width);
         }
 
         // Chest Template System 3 連: 倉庫検索の更に下に縦並び。
         if (this.cits$saveTemplateButton != null) {
             this.cits$saveTemplateButton.setX(x);
-            this.cits$saveTemplateButton.setY(y + 54);
+            this.cits$saveTemplateButton.setY(y + 72);
             this.cits$saveTemplateButton.setWidth(width);
         }
         if (this.cits$applyTemplateButton != null) {
             this.cits$applyTemplateButton.setX(x);
-            this.cits$applyTemplateButton.setY(y + 72);
+            this.cits$applyTemplateButton.setY(y + 90);
             this.cits$applyTemplateButton.setWidth(width);
         }
         if (this.cits$manageTemplateButton != null) {
             this.cits$manageTemplateButton.setX(x);
-            this.cits$manageTemplateButton.setY(y + 90);
+            this.cits$manageTemplateButton.setY(y + 108);
             this.cits$manageTemplateButton.setWidth(width);
         }
     }

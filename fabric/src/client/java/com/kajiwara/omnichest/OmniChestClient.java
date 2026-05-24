@@ -1,5 +1,6 @@
 package com.kajiwara.omnichest;
 
+import com.kajiwara.omnichest.catsort.move.SortMoveQueue;
 import com.kajiwara.omnichest.classify.ClassificationCache;
 import com.kajiwara.omnichest.classify.ClassifyConfig;
 import com.kajiwara.omnichest.classify.StorageMemory;
@@ -86,6 +87,11 @@ public class OmniChestClient implements ClientModInitializer {
         // 設定 + ストレージ初回ロード、 MoveQueue の tick 購読をまとめて登録。
         // 配置データ (templates.json) は遅延ロードされる (= 初回 list() 呼び出し時)。
         TemplateManager.register();
+
+        // ─── Category Sort System ───
+        // tick ベースで {@link com.kajiwara.omnichest.catsort.engine.SortPlan} を発火する
+        // {@link SortMoveQueue} を起動。 二重登録は内部でガードされる。
+        SortMoveQueue.get().register();
 
         // ─── Favorite Slot Lock System ───
         // (1) Config を引いてデフォルト値を初期化 (load 失敗時のログを起動時に出す)。
