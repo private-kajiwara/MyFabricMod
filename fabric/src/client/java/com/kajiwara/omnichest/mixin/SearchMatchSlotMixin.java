@@ -1,5 +1,8 @@
 package com.kajiwara.omnichest.mixin;
 
+import com.kajiwara.omnichest.client.compat.CompatManager;
+import com.kajiwara.omnichest.client.compat.OverlayRenderer;
+import com.kajiwara.omnichest.client.compat.SafeRenderDispatcher;
 import com.kajiwara.omnichest.client.render.SearchMatchSlotRenderer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -34,6 +37,15 @@ public abstract class SearchMatchSlotMixin extends Screen {
     @Inject(method = "renderSlot", at = @At("TAIL"))
     private void cits_searchMatch$overlay(GuiGraphics g, Slot slot, int mouseX, int mouseY,
             CallbackInfo ci) {
-        SearchMatchSlotRenderer.renderSlot(g, slot);
+        // 互換層: Safe Overlay 設定が ON の場合は OverlayRenderer で PoseStack を隔離する。
+        // OFF の場合は素のまま (= 既存挙動) で呼び、 ただし例外だけは SafeRenderDispatcher で握る。
+        // どちらの経路でも描画位置・色・タイミングは変わらない (= 視覚的に不変)。
+        if (CompatManager.useSafeOverlay()) {
+            OverlayRenderer.runSafeFlat(g, "slot-overlay",
+                    () -> SearchMatchSlotRenderer.renderSlot(g, slot));
+        } else {
+            SafeRenderDispatcher.safeRun("slot-overlay-direct",
+                    () -> SearchMatchSlotRenderer.renderSlot(g, slot));
+        }
     }
 }

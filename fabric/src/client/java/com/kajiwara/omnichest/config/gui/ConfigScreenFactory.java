@@ -6,6 +6,7 @@ import com.kajiwara.omnichest.config.ConfigManager;
 import com.kajiwara.omnichest.config.ModConfig;
 import com.kajiwara.omnichest.config.gui.category.AICategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.CompactCategoryBuilder;
+import com.kajiwara.omnichest.config.gui.category.CompatCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.DepositCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.GeneralCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.KeybindCategoryBuilder;
@@ -85,6 +86,9 @@ public final class ConfigScreenFactory {
                 OmniChestLocale.get(Keys.CONFIG_GROUP_APPEARANCE_INPUT, "Appearance & Input"),
                 List.of(
                         RenderCategoryBuilder.build(cfg.render),
+                        // Compatibility タブ (Shader / Iris / Sodium / Optional integration の ON/OFF)。
+                        // 既存タブ群と独立しているため、 ここに追加するだけで他カテゴリに影響しない。
+                        CompatCategoryBuilder.build(cfg.compat),
                         KeybindCategoryBuilder.build(),
                         LanguageCategoryBuilder.build(cfg.general))));
 

@@ -2,6 +2,7 @@ package com.kajiwara.omnichest.config;
 
 import com.kajiwara.omnichest.config.data.AIConfig;
 import com.kajiwara.omnichest.config.data.CompactConfig;
+import com.kajiwara.omnichest.config.data.CompatConfig;
 import com.kajiwara.omnichest.config.data.DepositConfig;
 import com.kajiwara.omnichest.config.data.GeneralConfig;
 import com.kajiwara.omnichest.config.data.KeybindConfig;
@@ -51,6 +52,13 @@ public final class ModConfig {
     public TemplateUiConfig template = new TemplateUiConfig();
     public RenderConfig render = new RenderConfig();
     public KeybindConfig keybind = new KeybindConfig();
+    /**
+     * 互換性 (= 他 MOD / shader 共存) のための設定。
+     * 既存ロジック・UI は変更せず、 描画/Mixin/Optional Integration の安全側パスを ON/OFF する用途。
+     * 詳細は {@link CompatConfig} および
+     * {@link com.kajiwara.omnichest.client.compat.CompatManager} 参照。
+     */
+    public CompatConfig compat = new CompatConfig();
 
     /**
      * デフォルト値で初期化された ModConfig を返す。

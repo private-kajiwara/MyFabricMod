@@ -1,5 +1,6 @@
 package com.kajiwara.omnichest.client.render;
 
+import com.kajiwara.omnichest.client.compat.SafeRenderDispatcher;
 import com.kajiwara.omnichest.config.ConfigManager;
 import com.kajiwara.omnichest.mixin.RenderTypeAccessor;
 import com.kajiwara.omnichest.search.ContainerScanner;
@@ -126,7 +127,11 @@ public final class ChestHighlighter {
     }
 
     public static void register() {
-        WorldRenderEvents.BEFORE_ENTITIES.register(INSTANCE::onWorldRender);
+        // 互換層 ({@link SafeRenderDispatcher}) を挟み、 他 MOD の shader/state 不整合が原因で
+        // {@link #onWorldRender} が例外を投げてもゲーム本体をクラッシュさせないようにする。
+        // 正常系では try/catch 1 段ぶんしか overhead を足さないので既存の描画挙動は変わらない。
+        WorldRenderEvents.BEFORE_ENTITIES.register(ctx ->
+                SafeRenderDispatcher.safeRun("chest-highlight-world", () -> INSTANCE.onWorldRender(ctx)));
 
         // ────────────────────────────────────────────────────────────
         // 「ピン永続表示 (= チェストを開くまで残す)」設定用のフック。

@@ -5,6 +5,7 @@ import com.kajiwara.omnichest.classify.ClassificationCache;
 import com.kajiwara.omnichest.classify.ClassifyConfig;
 import com.kajiwara.omnichest.classify.StorageMemory;
 import com.kajiwara.omnichest.client.ClientKeyBindings;
+import com.kajiwara.omnichest.client.compat.CompatManager;
 import com.kajiwara.omnichest.client.render.ChestHighlighter;
 import com.kajiwara.omnichest.config.ConfigManager;
 import com.kajiwara.omnichest.i18n.LanguageManager;
@@ -56,6 +57,13 @@ public class OmniChestClient implements ClientModInitializer {
         // ModConfig 本体の評価が必要なコードパスは GUI / Cloth Config 経由で
         // ConfigManager.get() を呼ぶので、ここでは get() のみで十分。
         ConfigManager.get();
+
+        // ─── Compatibility Layer (passive) ───
+        // 他 MOD (Iris / Sodium / REI / Inventory Profiles 等) の検出と、
+        // OptionalIntegration の起動、 Mixin 共存メモのログ出力を 1 か所で済ませる。
+        // 既存サブシステムの挙動には影響しない (= 検出 + ログ + 設定読み取りのみ)。
+        // 例外時はクラスタ内部で握り潰してログに落とすので、 ここで try/catch しなくても安全。
+        CompatManager.initialize();
 
         // ─── 表示言語の override を反映 ───
         // GeneralConfig.languageOverride ("system" / "en_us" / ...) を LanguageManager に
