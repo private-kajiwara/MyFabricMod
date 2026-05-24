@@ -22,6 +22,7 @@ import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
@@ -514,7 +515,6 @@ public final class ChestHighlighter {
         // アイテム アイコン解決用 (= バニラのアイテム描画パイプラインに乗せる)。
         Minecraft mc = Minecraft.getInstance();
         ItemModelResolver itemModelResolver = mc.getItemModelResolver();
-        net.minecraft.client.multiplayer.ClientLevel level = mc.level;
 
         matrices.pushPose();
         try {
@@ -537,14 +537,31 @@ public final class ChestHighlighter {
                 float rowY = -(rowIndex + 1) * (float) rowSpacing + 1.0f;
 
                 Component body = entryTexts[i];
-                // アイコン描画用に独立 push (item 描画は内部で pose を変えるため隔離)。
                 HighlightEntry e = entries.get(i);
-                submitPinIcon(matrices, queue, itemModelResolver, level,
+
+                // ─── 行頭 (= アイコン位置) の黒帯背景 ───
+                //
+                // submitText に bg を渡すと「テキストのちょうど後ろ」 にしか黒帯が出ないため、
+                // 行頭のアイテム アイコンの後ろは素通しになってしまっていた。
+                // ここで「アイコン領域 + ギャップ + テキスト bg と 1px 重ね」 を覆う bg 四角を
+                // submitCustomGeometry + textBackgroundSeeThrough で先に出して、
+                // 「アイコン → テキスト」が 1 本の黒帯に乗っているように見せる。
+                //
+                // X 範囲: leftX-1 .. textX+1 (テキスト bg は textX-1 から始まる想定で 2px 重ねる)
+                // Y 範囲: rowY-1 .. rowY+lineHeight-1 (= MC 標準のテキスト bg の縦範囲と一致)
+                float textX = entryBlockLeftX + entryIconSize + entryIconGap;
+                submitPinRowBg(matrices, queue,
+                        entryBlockLeftX - 1, rowY - 1,
+                        (textX + 1) - (entryBlockLeftX - 1),
+                        (float) lineHeight,
+                        PIN_BG_ARGB);
+
+                // アイコン描画用に独立 push (item 描画は内部で pose を変えるため隔離)。
+                submitPinIcon(matrices, queue, itemModelResolver,
                         e.stack, entryBlockLeftX, rowY, entryIconSize);
 
                 // テキストはアイコンの右隣 (icon size + gap だけずらす)。
                 FormattedCharSequence seq = body.getVisualOrderText();
-                float textX = entryBlockLeftX + entryIconSize + entryIconGap;
                 queue.submitText(matrices, textX, rowY, seq,
                         false, Font.DisplayMode.SEE_THROUGH,
                         0xF000F0, 0xFFFFFFFF, PIN_BG_ARGB, 0);
@@ -572,24 +589,26 @@ public final class ChestHighlighter {
      * Z 方向には微小に手前 (+Z) へ寄せて、 同じ pose 内でテキスト背景と Z-fight するのを避ける。
      *
      * <p>
-     * {@link ItemDisplayContext#GUI} を選んだ理由: 「2D アイコンを 1 枚ペタッと貼る」描画になる。
-     * GROUND など他の context は 3D モデルが回って見え、 「アイコン横並び」用途には不向き。
+     * <b>解決メソッドの選び方 (= 「インベントリと同じ見た目」 のため)</b>:
+     * バニラ {@code GuiGraphics.renderItem} は内部で
+     * {@code ItemModelResolver.updateForTopItem(state, stack, ItemDisplayContext.GUI,
+     * level, player, 0)} を呼んでいる (= バイトコード確認済み)。
+     * 旧実装は {@code updateForNonLiving + FIXED} (= アイテム フレーム用) を使っており、
+     * 木材のように形は出るが <b>テクスチャの 2D 投影</b> がインベントリと違う
+     * ("立体的に転がった" ように見える) ため、 「インベントリと同じ平面アイコン」 にならない。
+     * GUI context + updateForTopItem に揃えれば、 インベントリの 1 スロットを切り取って
+     * ワールドにビルボード貼ったような見た目になる。
      */
     private static void submitPinIcon(PoseStack matrices, SubmitNodeCollector queue,
             ItemModelResolver itemModelResolver,
-            net.minecraft.client.multiplayer.ClientLevel level,
             ItemStack stack, float leftX, float topY, int iconSize) {
         if (stack == null || stack.isEmpty() || itemModelResolver == null) return;
         ItemStackRenderState state = new ItemStackRenderState();
-        // ─── DisplayContext は FIXED を使う ───
-        // 旧 GUI 指定では、 アイテム アトラス テクスチャが GUI 描画パイプライン専用に
-        // バインドされる前提でレンダリングされ、 ワールド描画 (= SubmitNodeCollector) 経由では
-        // テクスチャが当たらず真っ白なジオメトリだけが出ていた。
-        // FIXED はアイテム フレームと同じ「平面 2D 風」 をワールドで描く前提のコンテキストで、
-        // SubmitNodeCollector でもテクスチャが正しく当たる。
-        // owner には mc.player を渡す (= バニラの GuiGraphics.renderItem も player を owner にしている)。
         net.minecraft.client.player.LocalPlayer player = Minecraft.getInstance().player;
-        itemModelResolver.updateForTopItem(state, stack, ItemDisplayContext.FIXED,
+        if (player == null) return;
+        net.minecraft.world.level.Level level = player.level();
+        if (level == null) return;
+        itemModelResolver.updateForTopItem(state, stack, ItemDisplayContext.GUI,
                 level, player, 0);
         if (state.isEmpty()) return;
 
@@ -605,10 +624,51 @@ public final class ChestHighlighter {
             //   アイテム ジオメトリは 1 単位幅 → scale(iconSize) で iconSize ピクセル幅。
             //   Y 反転は GUI item 描画の慣例 (バニラ GuiGraphics と同様)。
             matrices.scale((float) iconSize, -(float) iconSize, (float) iconSize);
-            state.submit(matrices, queue, 0xF000F0, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
+            // ★ submit の第5引数は 「アイテムを覆う tint カラー」 ではなく <b>outlineColor</b>
+            //   (= SubmitNodeStorage$ItemSubmit のフィールド名がそうなっている)。
+            //   非 0 を渡すと光ったアイテムの「縁取りシルエット」 パスが走り、 アイテム本体の上に
+            //   そのカラーのべた塗りシルエットが被さる。 旧コードで 0xFFFFFFFF を渡していたのが
+            //   「真っ白なアイテム」の正体 (= 白縁取りシルエットが全体を塗りつぶしていた)。
+            //   通常描画 (= 縁取りなし) は 0 を渡す。
+            state.submit(matrices, queue, 0xF000F0, OverlayTexture.NO_OVERLAY, 0);
         } finally {
             matrices.popPose();
         }
+    }
+
+    /**
+     * ピン行頭 (= アイコンを置く領域) に「テキスト bg と同色 / 同じ blend モード」 の四角を出す。
+     *
+     * <p>
+     * {@link SubmitNodeCollector#submitText} が描く bg はテキスト文字列の rect しか覆わないので、
+     * その左に並ぶアイテム アイコン領域の後ろは素通しになっていた。
+     * これを補うため、 {@link RenderTypes#textBackgroundSeeThrough()} の RenderType で
+     * カスタム ジオメトリの四角を直接 submit する。
+     * <ul>
+     *   <li>テキスト bg と同じ shader を使うので blend / depth の振る舞いが揃う
+     *       (= SEE_THROUGH = ブロック越しでも見える)。</li>
+     *   <li>頂点フォーマットは {@code POSITION_COLOR_LIGHTMAP} のため
+     *       {@code .setColor + .setLight(0xF000F0)} で十分 (= 法線 / テクスチャ不要)。</li>
+     * </ul>
+     *
+     * <p>
+     * 与える矩形は <b>原点起点</b> (= 呼び出し側が matrices を pin の billboard pose に揃えた状態)
+     * で、 x は右、 y は下が正、 z は手前 (worldScale で -Y 反転済み)。
+     */
+    private static void submitPinRowBg(PoseStack matrices, SubmitNodeCollector queue,
+            float x, float y, float width, float height, int argb) {
+        final float x1 = x;
+        final float y1 = y;
+        final float x2 = x + width;
+        final float y2 = y + height;
+        queue.submitCustomGeometry(matrices, RenderTypes.textBackgroundSeeThrough(),
+                (pose, consumer) -> {
+                    // テキスト bg と同じ z=0 平面に置く (= submitText の bg と Z fight しない)。
+                    consumer.addVertex(pose, x1, y1, 0).setColor(argb).setLight(0xF000F0);
+                    consumer.addVertex(pose, x1, y2, 0).setColor(argb).setLight(0xF000F0);
+                    consumer.addVertex(pose, x2, y2, 0).setColor(argb).setLight(0xF000F0);
+                    consumer.addVertex(pose, x2, y1, 0).setColor(argb).setLight(0xF000F0);
+                });
     }
 
     // ════════════════════════════════════════════════════════════════════

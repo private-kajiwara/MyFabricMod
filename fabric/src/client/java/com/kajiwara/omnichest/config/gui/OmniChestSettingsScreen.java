@@ -76,7 +76,9 @@ public final class OmniChestSettingsScreen extends Screen {
     /** グループ ヘッダの「上に開ける余白」(= 直前のグループとの間の空白行)。 */
     private static final int GROUP_HEADER_TOP_GAP = 6;
     /** ヘッダ (= 木目バナーを置く領域) の高さ (px)。 */
-    private static final int HEADER_HEIGHT = 38;
+    private static final int HEADER_HEIGHT = 48;
+    /** タイトル文字の拡大倍率 (= フォントを {@code n}倍にスケールして描画する)。 */
+    private static final float HEADER_TITLE_SCALE = 1.6f;
     /** フッタ (= Save / Cancel / Reset ボタン) の高さ (px)。 */
     private static final int FOOTER_HEIGHT = 36;
     /** コンテンツ領域とサイドバーの間に空ける余白 (px)。 */
@@ -141,9 +143,8 @@ public final class OmniChestSettingsScreen extends Screen {
      *
      * <p>
      * フッタ ボタン ({@link com.kajiwara.omnichest.config.gui.widget.NavyFooterButton}) の紺
-     * ({@code 0xFF0D1B3D}) <b>より暗い</b> 紺を使うことで、 ボタンと背景帯が同じ紺系統で
+     * <b>より暗い</b> 紺を使うことで、 ボタンと背景帯が同じ紺系統で
      * グラデーションのように重なり、 ボタンが浮き出て見える。
-     * 旧 {@code 0xFF111111} (濃灰) は紺系ボタンと合わない違和感があったので置き換えた。
      */
     private static final int COLOR_FOOTER_BG = 0xFF03081A;
 
@@ -534,10 +535,14 @@ public final class OmniChestSettingsScreen extends Screen {
      */
     private void renderChestHeader(GuiGraphics g) {
         Font font = this.font;
-        int titleW = font.width(this.title);
-        // バナーの内側 (鉄帯の内側) の幅は タイトル幅 + 余白 60 px。 最小幅 220 px。
-        int innerW = Math.max(220, titleW + 60);
-        int innerH = 20;
+        // 太字 + 拡大表示するので、 バナー サイズ計算は スケール後 の幅 / 高さ で行う。
+        Component boldTitle = this.title.copy().withStyle(ChatFormatting.BOLD);
+        int rawTitleW = font.width(boldTitle);
+        int scaledTitleW = Math.round(rawTitleW * HEADER_TITLE_SCALE);
+        int scaledTitleH = Math.round(8 * HEADER_TITLE_SCALE);
+        // バナーの内側 (鉄帯の内側) の幅は タイトル幅 + 余白 80 px。 最小幅 240 px。
+        int innerW = Math.max(240, scaledTitleW + 80);
+        int innerH = scaledTitleH + 8;
         int rim = 2; // 鉄帯の厚み
         int totalW = innerW + rim * 2;
         int totalH = innerH + rim * 2;
@@ -572,10 +577,18 @@ public final class OmniChestSettingsScreen extends Screen {
         g.fill(lockX - 2, lockY, lockX + 2, lockY + 4, COLOR_CHEST_LOCK);
         g.fill(lockX - 1, lockY - 2, lockX + 1, lockY, COLOR_CHEST_LOCK);
 
-        // ─── 5) タイトル文字を中央に (= 影付きで読みやすく) ───
-        int textX = x + (totalW - titleW) / 2;
-        int textY = y + (totalH - 8) / 2;
-        g.drawString(font, this.title, textX, textY, COLOR_CHEST_LOCK, true);
+        // ─── 5) タイトル文字を中央に (= 太字 + 拡大 + 影付き) ───
+        // Matrix3x2fStack で scale を掛けて描画する。 翻訳後にスケールする標準パターン:
+        //   translate(centerX, centerY) → scale(s, s) → drawString(-rawW/2, -8/2)
+        // とすると、 (centerX, centerY) を中心とした s 倍の文字描画になる。
+        int cx = x + totalW / 2;
+        int cy = y + totalH / 2;
+        g.pose().pushMatrix();
+        g.pose().translate(cx, cy);
+        g.pose().scale(HEADER_TITLE_SCALE, HEADER_TITLE_SCALE);
+        g.drawString(font, boldTitle, -rawTitleW / 2, -4 /* font height 8 / 2 */,
+                COLOR_CHEST_LOCK, true);
+        g.pose().popMatrix();
 
         // ─── 6) バナー下に区切り線 (= サイドバー / コンテンツとの境界) ───
         g.fill(0, HEADER_HEIGHT - 1, this.width, HEADER_HEIGHT, COLOR_SEP);

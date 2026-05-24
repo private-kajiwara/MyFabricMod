@@ -1,5 +1,6 @@
 package com.kajiwara.omnichest.config.gui.widget;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -21,18 +22,23 @@ import net.minecraft.network.chat.Component;
  */
 public final class NavyFooterButton extends Button {
 
-    /** 通常時の紺塗り (= 設定ヘッダ {@code COLOR_CHEST_WOOD} と同色)。 hover でも色は変えない。 */
-    private static final int COLOR_BG = 0xFF0D1B3D;
-    /** 通常時の縁取り (= 黒紺で締める)。 */
-    private static final int COLOR_OUTLINE = 0xFF050B1F;
     /**
-     * ホバー時の縁取り色: 文字と揃えた黄金。
-     * ホバーで「背景を明るくする」 旧挙動を止め、 ラベルと同じ黄金の縁を出すことで
-     * 反応を伝える (= 全体トーンを変えずアクセント色だけで強調)。
+     * 通常時の紺塗り。
+     *
+     * <p>
+     * 値はユーザー指定の濃紺サンプル ({@code RGB(13, 26, 53) = #0D1A35}) を採用。
+     * ヘッダ バナー ({@code OmniChestSettingsScreen#COLOR_CHEST_WOOD = 0xFF0D1B3D}) と
+     * <b>異なる</b> 一段暗い紺にすることで、 タイトル バナーとフッタ ボタンが別パネルとして
+     * 視認できるようにする (= 旧版で両者を同色にしたところ「ボタンの色をヘッダと変えてほしい」
+     * とフィードバックがあったため)。
      */
-    private static final int COLOR_OUTLINE_HOVER = 0xFFFFD700;
-    /** ラベル色 (= 黄金、 設定タイトル文字色と統一)。 */
-    private static final int COLOR_TEXT = 0xFFFFD700;
+    private static final int COLOR_NAVY = 0xFF0D1A35;
+    /**
+     * 縁取りは <b>常に</b> 黄金で出す (= 旧「黒紺 → ホバーで黄金」の段階的強調を廃止)。
+     * 黄金枠は通常 / ホバー どちらでも変えず、 ホバー時は中身の色 (背景 ↔ 文字) を反転させて
+     * 「インバート」 表現で反応を伝える。
+     */
+    private static final int COLOR_GOLD = 0xFFFFD700;
 
     public NavyFooterButton(int x, int y, int w, int h, Component label, OnPress onPress) {
         super(x, y, w, h, label, onPress, DEFAULT_NARRATION);
@@ -40,30 +46,33 @@ public final class NavyFooterButton extends Button {
 
     @Override
     protected void renderContents(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // バニラの renderDefaultSprite が描いたスプライトを完全に上書きする。
-        // (= alpha 0xFF で不透過。 紺の単色面を被せる。 hover でも色は変えない)
         int x = this.getX();
         int y = this.getY();
         int w = this.getWidth();
         int h = this.getHeight();
-        g.fill(x, y, x + w, y + h, COLOR_BG);
-
-        // 縁取り: 通常は黒紺、 ホバー時のみ「文字と同じ黄金」で 1 段太く描いて反応を伝える。
         boolean hover = this.isHoveredOrFocused();
-        if (hover) {
-            // 黄金縁 2 重 (= 内側 1 px + 外側 1 px) で太く見せる。
-            g.renderOutline(x, y, w, h, COLOR_OUTLINE_HOVER);
-            g.renderOutline(x - 1, y - 1, w + 2, h + 2, COLOR_OUTLINE_HOVER);
-        } else {
-            g.renderOutline(x, y, w, h, COLOR_OUTLINE);
-        }
 
-        // ラベルを中央に描画。 黄金 + 影付きでコントラスト確保。
+        // ホバー時は前景 / 背景を反転させる (= インバート)。
+        // 通常: 紺塗り + 黄金文字
+        // ホバ: 黄金塗り + 紺文字
+        int bg = hover ? COLOR_GOLD : COLOR_NAVY;
+        int textColor = hover ? COLOR_NAVY : COLOR_GOLD;
+
+        // バニラの renderDefaultSprite が描いたボタン素地を完全に上書きする
+        // (= alpha 0xFF で不透過)。
+        g.fill(x, y, x + w, y + h, bg);
+
+        // 縁取りは <b>常に</b> 黄金 1 重。 hover でも線種は変えない (= 「ホバー枠が増える」 旧挙動は廃止)。
+        g.renderOutline(x, y, w, h, COLOR_GOLD);
+
+        // ラベル描画。 影は通常時のみ (= ホバー時の黄金背景上で影を出すと汚くなるのでカット)。
+        // 太字: 「Reset / Save / Cancel」 は重要操作なので BOLD スタイルで強調する。
+        //       ChatFormatting.BOLD はバニラ Font 側で多言語 (Latin/CJK) 共に太字グリフを出す。
         Font font = Minecraft.getInstance().font;
-        Component msg = this.getMessage();
+        Component msg = this.getMessage().copy().withStyle(ChatFormatting.BOLD);
         int tw = font.width(msg);
         int textX = x + (w - tw) / 2;
         int textY = y + (h - 8) / 2;
-        g.drawString(font, msg, textX, textY, COLOR_TEXT, true);
+        g.drawString(font, msg, textX, textY, textColor, !hover);
     }
 }
