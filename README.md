@@ -4,7 +4,7 @@
 
 For setup instructions, please see the [Fabric Documentation page](https://docs.fabricmc.net/develop/getting-started/creating-a-project#setting-up) related to the IDE that you are using.
 
-## build command
+## Build command
 ```txt
 cd C:\MyFabricMod
 .\run-client.bat   # ゲーム起動
@@ -16,7 +16,7 @@ cd C:\MyFabricMod
 .\gradlew runClient
 ```
 
-## jar file build command
+## jar File build command
 ```txt
 .\gradlew.bat build
 ```
