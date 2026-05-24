@@ -8,10 +8,8 @@ Minecraft Fabric MOD「OmniChest」のリポジトリ。
 
 ---
 
-## 構成
+## Build command
 
-```
-または
 ```txt
 cd C:\MyFabricMod
 ./gradlew :fabric:runClient
