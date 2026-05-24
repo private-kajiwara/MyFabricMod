@@ -1,0 +1,176 @@
+// =====================================================================
+// omnichest.fabric-version (convention plugin)
+// ---------------------------------------------------------------------
+//   :fabric サブプロジェクトで apply される共通設定。
+//   versions/versions.json と -Pmc=<MC> から VersionRegistry.Entry を解決し、
+//   その結果を以下に反映する:
+//
+//     - Java 21 toolchain
+//     - sources jar 生成
+//     - LICENSE バンドル
+//     - fabric.mod.json への version 埋め込み
+//     - 出力 jar 名 (modid-mc<MC>-fabric<LOADER>-api<API>.jar)
+//     - maven publish の artifactId
+//
+//   解決された Entry は project.ext.omniRegistryEntry に格納され、
+//   :fabric/build.gradle 側からは plugins{} ブロック直後に取り出せる。
+// =====================================================================
+
+import com.kajiwara.omnichest.build.VersionRegistry
+
+plugins {
+    id 'java'
+    id 'base'
+    id 'maven-publish'
+}
+
+// ---------------------------------------------------------------------
+// 1) Registry を読み、 -Pmc または policy.default で対象 Entry を解決
+// ---------------------------------------------------------------------
+def registry = VersionRegistry.load(rootProject.file('versions'))
+def mcParam = providers.gradleProperty('mc').orNull
+def targetMcVersion = mcParam ?: registry.policy.defaultVersion
+if (targetMcVersion == null) {
+    throw new GradleException(
+        "[${project.path}] ビルド対象 MC を決定できません。 " +
+        "-Pmc=<MC> を指定するか versions.json の policy.default を設定してください。")
+}
+
+def entry = registry.findByMinecraftVersion(targetMcVersion)
+if (entry == null) {
+    throw new GradleException(
+        "[${project.path}] MC '${targetMcVersion}' は versions.json に登録されていません。 " +
+        "登録済み: ${registry.entries*.minecraftVersion}")
+}
+
+project.ext.omniRegistryEntry = entry
+logger.lifecycle("[${project.path}] target = MC ${entry.minecraftVersion} (loader=${entry.loaderVersion}, " +
+    "api=${entry.fabricApiVersion}, yarn='${entry.yarnMappings}')")
+
+// ---------------------------------------------------------------------
+// 2) Mod メタデータ
+// ---------------------------------------------------------------------
+def modId      = project.findProperty('mod_id')      ?: rootProject.findProperty('mod_id')      ?: 'omnichest'
+def modVersion = project.findProperty('mod_version') ?: rootProject.findProperty('mod_version') ?: '0.0.0'
+def mavenGroup = project.findProperty('maven_group') ?: rootProject.findProperty('maven_group') ?: 'com.kajiwara'
+
+version = modVersion
+group   = mavenGroup
+base {
+    archivesName = modId
+}
+
+// ---------------------------------------------------------------------
+// 3) Java toolchain
+// ---------------------------------------------------------------------
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
+}
+
+// ---------------------------------------------------------------------
+// 4) 共通 maven
+// ---------------------------------------------------------------------
+repositories {
+    maven { name = 'TerraformersMC'; url = 'https://maven.terraformersmc.com/releases/' }
+    maven { name = 'Shedaniel';      url = 'https://maven.shedaniel.me/' }
+    maven { name = 'Fabric';         url = 'https://maven.fabricmc.net/' }
+}
+
+// ---------------------------------------------------------------------
+// 5) fabric.mod.json の version プレースホルダ置換
+// ---------------------------------------------------------------------
+tasks.named('processResources') {
+    def replacements = [
+        version            : modVersion,
+        minecraft_version  : entry.minecraftVersion,
+        loader_version     : entry.loaderVersion,
+        fabric_api_version : entry.fabricApiVersion
+    ]
+    inputs.properties(replacements)
+    filesMatching('fabric.mod.json') {
+        expand(replacements)
+    }
+}
+
+// ---------------------------------------------------------------------
+// 6) LICENSE バンドル
+// ---------------------------------------------------------------------
+tasks.named('jar') {
+    def licenseFile = rootProject.file('LICENSE')
+    if (licenseFile.exists()) {
+        from(licenseFile) {
+            rename { "${it}_${modId}" }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------
+// 7) 出力 jar 名を統一
+// ---------------------------------------------------------------------
+def buildJarName = { String classifier ->
+    String apiClean = entry.fabricApiVersion.contains('+')
+        ? entry.fabricApiVersion.tokenize('+')[0]
+        : entry.fabricApiVersion
+    String base = "${modId}-mc${entry.minecraftVersion}-fabric${entry.loaderVersion}-api${apiClean}"
+    return classifier ? "${base}-${classifier}.jar" : "${base}.jar"
+}
+
+// MC ごとに別の出力ディレクトリへ吐く (最終 remap 済み jar のみ)。
+//   build/libs/<MC>/omnichest-mc<MC>-...jar
+// → buildAll で連続ビルドしても互いに上書きしない。
+//
+// 重要: Loom の jar → remapJar チェーンは
+//   1. jar      ... unmapped な中間 jar を build/libs/ に出す
+//   2. remapJar ... 1 を読んで remap 済み最終 jar を出す
+// もし両者が「同じディレクトリ・同じファイル名」 を共有すると
+// remapJar が自分の出力に上書きしようとして "Archive is not a ZIP" になる。
+//
+// 対策:
+//   - jar / sourcesJar は default 位置 + 'dev' classifier に残す
+//     (Loom の dev インストールにも使われるためファイル自体は必要)
+//   - remapJar / remapSourcesJar だけ "build/libs/<MC>/" にリネーム配置
+//     (= ユーザー配布用の最終成果物)
+def perMcLibsDir = layout.buildDirectory.dir("libs/${entry.minecraftVersion}")
+
+afterEvaluate {
+    // 中間 jar は default 位置 + classifier=dev
+    tasks.named('jar').configure {
+        archiveClassifier.set('dev')
+    }
+    if (tasks.findByName('sourcesJar')) {
+        tasks.named('sourcesJar').configure {
+            archiveClassifier.set('dev-sources')
+        }
+    }
+    // 最終 (remap 済み) jar は per-MC ディレクトリ + 最終ファイル名
+    if (tasks.findByName('remapJar')) {
+        tasks.named('remapJar').configure {
+            destinationDirectory.set(perMcLibsDir)
+            archiveFileName.set(buildJarName(null))
+        }
+    }
+    if (tasks.findByName('remapSourcesJar')) {
+        tasks.named('remapSourcesJar').configure {
+            destinationDirectory.set(perMcLibsDir)
+            archiveFileName.set(buildJarName('sources'))
+        }
+    }
+}
+
+// ---------------------------------------------------------------------
+// 8) maven publication
+// ---------------------------------------------------------------------
+publishing {
+    publications {
+        create('mavenJava', MavenPublication) {
+            artifactId = "${modId}-mc${entry.minecraftVersion}"
+            from components.java
+        }
+    }
+}

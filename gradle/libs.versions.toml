@@ -1,0 +1,27 @@
+# =====================================================================
+# Gradle Version Catalog
+# ---------------------------------------------------------------------
+#   依存ライブラリの "デフォルト" バージョンを 1 箇所に集約する。
+#   Minecraft / Loader / Fabric API は per-version モジュール側で
+#   override されるため、ここでは「指定がなければ使う」フォールバック
+#   または「全バージョン共通の補助ライブラリ」のみを管理する。
+# =====================================================================
+
+[versions]
+# 全バージョン共通の補助ライブラリ
+slf4j     = "2.0.13"
+jetbrains = "26.0.1"
+
+# Mod Menu / Cloth Config の "デフォルト" バージョン
+# (per-version gradle.properties で上書きできる)
+modmenu      = "17.0.0"
+cloth-config = "21.11.153"
+
+[libraries]
+slf4j-api          = { module = "org.slf4j:slf4j-api",                version.ref = "slf4j" }
+jetbrains-annotations = { module = "org.jetbrains:annotations",        version.ref = "jetbrains" }
+modmenu            = { module = "com.terraformersmc:modmenu",         version.ref = "modmenu" }
+cloth-config       = { module = "me.shedaniel.cloth:cloth-config-fabric", version.ref = "cloth-config" }
+
+[plugins]
+fabric-loom = { id = "net.fabricmc.fabric-loom-remap", version = "1.16-SNAPSHOT" }

@@ -1,0 +1,31 @@
+{
+  "$comment": [
+    "Minecraft Java Edition の '実在する正式リリース' のみを列挙する。",
+    "',1.22','1.23' 等の未公開バージョンは禁止。",
+    "新しいパッチを追加するときは:",
+    "  1. このファイルの 'versions' 配列に追記",
+    "  2. versions/<MC>.properties を作成",
+    "  3. ./gradlew validateVersions で Mojang / Fabric Meta の解決可否を検証",
+    "Mojang manifest:  https://launchermeta.mojang.com/mc/game/version_manifest_v2.json",
+    "Fabric Meta API:  https://meta.fabricmc.net/v2/versions"
+  ],
+
+  "schema": 1,
+
+  "versions": [
+    {
+      "minecraft": "1.21.11",
+      "properties": "1.21.11.properties",
+      "stable": true,
+      "recommended": true,
+      "notes": "OmniChest の基準バージョン (current default)。"
+    }
+  ],
+
+  "policy": {
+    "default": "1.21.11",
+    "build_only_validated": true,
+    "warn_on_deprecated_loader": true,
+    "warn_on_unsupported_version": true
+  }
+}

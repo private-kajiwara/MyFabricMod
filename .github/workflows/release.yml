@@ -1,0 +1,91 @@
+# =====================================================================
+# .github/workflows/release.yml
+# ---------------------------------------------------------------------
+#   v* tag push で、 versions/versions.json に登録された全 MC バージョンの
+#   jar をビルドし、 1 つの draft GitHub Release に添付する。
+#
+#   タグ命名: v1.2.3 (semver)
+# =====================================================================
+
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-matrix:
+    runs-on: ubuntu-24.04
+    outputs:
+      versions: ${{ steps.read.outputs.versions }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: read
+        shell: bash
+        run: |
+          MATRIX=$(jq -c '[.versions[].minecraft]' versions/versions.json)
+          echo "versions=$MATRIX" >> "$GITHUB_OUTPUT"
+
+  validate:
+    needs: prepare-matrix
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: gradle/actions/wrapper-validation@v6
+      - uses: actions/setup-java@v5
+        with: { java-version: '21', distribution: 'temurin' }
+      - run: chmod +x ./gradlew
+      - run: ./gradlew validateVersions --stacktrace
+
+  build:
+    needs: [prepare-matrix, validate]
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        minecraft: ${{ fromJson(needs.prepare-matrix.outputs.versions) }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: gradle/actions/wrapper-validation@v6
+      - uses: actions/setup-java@v5
+        with: { java-version: '21', distribution: 'temurin' }
+      - run: chmod +x ./gradlew
+
+      - name: build MC ${{ matrix.minecraft }}
+        run: |
+          TASK="build$(echo '${{ matrix.minecraft }}' | tr '.' '_')"
+          ./gradlew "$TASK" --stacktrace
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: jars-${{ matrix.minecraft }}
+          path: fabric/build/libs/*.jar
+
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: download all jars
+        uses: actions/download-artifact@v6
+        with:
+          path: dist
+          pattern: jars-*
+          merge-multiple: true
+
+      - name: list collected jars
+        run: ls -lah dist
+
+      - name: create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          draft: true
+          files: |
+            dist/*.jar

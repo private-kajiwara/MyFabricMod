@@ -1,106 +1,211 @@
+// =====================================================================
+// build.gradle (root)
+// ---------------------------------------------------------------------
+//   versions/versions.json に登録された "実在する MC" だけを対象に
+//   下記のタスクを提供する:
+//
+//     ./gradlew validateVersions     — Mojang & Fabric Meta で実在性検証
+//     ./gradlew build<MC>            — 1 バージョンビルド (例: build1_21_11)
+//     ./gradlew buildAll             — 登録済み全 MC を別 invocation で順次ビルド
+//     ./gradlew buildRecommended     — 推奨ビルドを別 invocation で実行
+//     ./gradlew printVersions        — 登録バージョン一覧 (1 行 1 件)
+//     ./gradlew printVersionsJson    — CI matrix 用 JSON 配列
+//     ./gradlew printRecommended     — 推奨ビルドの MC を表示
+//     ./gradlew collectArtifacts     — fabric/build/libs/*/ の jar を集約
+// =====================================================================
+
+import com.kajiwara.omnichest.build.VersionRegistry
+import com.kajiwara.omnichest.build.VersionValidator
+import org.gradle.internal.os.OperatingSystem
+
 plugins {
-	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
-	id 'maven-publish'
+    id 'base'
 }
 
-version = project.mod_version
-group = project.maven_group
+version = project.findProperty('mod_version') ?: '0.0.0'
+group   = project.findProperty('maven_group') ?: 'com.kajiwara'
 
-repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
-
-	// Mod Menu (TerraformersMC) — Mod Menu の配信元
-	maven {
-		name = "TerraformersMC"
-		url = "https://maven.terraformersmc.com/releases/"
-	}
-	// Cloth Config (Shedaniel) — Cloth Config API の配信元
-	maven {
-		name = "Shedaniel"
-		url = "https://maven.shedaniel.me/"
-	}
+// ---------------------------------------------------------------------
+// root の `clean` を全 subproject の clean に伝播させる。
+//
+// Gradle のデフォルトでは ./gradlew clean は root project の build/ しか
+// 消さない。 fabric/build/ に過去の compile output が残っていると、
+// incremental Java compile が「変更なし」 と判定して新規ファイルだけ
+// recompile しようとし、 Loom の classpath 構築が間に合わずに
+// "package net.minecraft.* does not exist" が出るケースを防ぐ。
+// ---------------------------------------------------------------------
+gradle.projectsEvaluated {
+    tasks.named('clean').configure {
+        subprojects.each { sub ->
+            def subClean = sub.tasks.findByName('clean')
+            if (subClean != null) {
+                dependsOn subClean
+            }
+        }
+    }
 }
 
-loom {
-	splitEnvironmentSourceSets()
+// ---------------------------------------------------------------------
+// Registry をロード
+// ---------------------------------------------------------------------
+def registry = VersionRegistry.load(rootProject.file('versions'))
+ext.omniRegistry = registry
 
-	mods {
-		"omnichest" {
-			sourceSet sourceSets.main
-			sourceSet sourceSets.client
-		}
-	}
-
+if (registry.entries.isEmpty()) {
+    throw new GradleException(
+        "versions/versions.json に有効なエントリがありません。 " +
+        "実在する Minecraft バージョンを少なくとも 1 件登録してください。")
 }
 
-dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+// ---------------------------------------------------------------------
+// プラットフォーム別の gradle wrapper コマンド
+// ---------------------------------------------------------------------
+def isWindows = OperatingSystem.current().isWindows()
+def wrapperCmd = isWindows
+    ? ['cmd', '/c', 'gradlew.bat']
+    : ['./gradlew']
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+// ---------------------------------------------------------------------
+// validateVersions
+// ---------------------------------------------------------------------
+def validationCacheDir = layout.buildDirectory.dir('version-validation-cache').get().asFile
 
-	// ─── Mod Menu ──────────────────────────────────────────────────────
-	// ゲーム内 MOD 一覧から本 MOD の Config Screen を開けるようにする。
-	modImplementation "com.terraformersmc:modmenu:${project.mod_menu_version}"
-
-	// ─── Cloth Config (廃止) ─────────────────────────────────────────────
-	// Iris ライクなサイドバー UI を実現するため、 Cloth Config は撤去し
-	// 自前 Screen ({@code OmniChestSettingsScreen}) で組み立てている。
-	// 設定ウィジェットはバニラ {@code AbstractWidget} 系で完結する。
+tasks.register('validateVersions') {
+    group = 'verification'
+    description = 'versions.json の各エントリが Mojang / Fabric Meta API で解決可能か検証する'
+    def offline = providers.gradleProperty('validation.offline').getOrElse('false').toBoolean()
+    doLast {
+        def report = VersionValidator.validate(registry, validationCacheDir, offline)
+        logger.lifecycle('\n' + report.format())
+        logger.lifecycle("→ errors=${report.errors()}, warnings=${report.warns()}")
+        file(layout.buildDirectory.file('version-validation-summary.txt')).
+            tap { it.parentFile.mkdirs() }.text =
+            "errors=${report.errors()}\nwarnings=${report.warns()}\n"
+        if (!report.ok()) {
+            throw new GradleException(
+                "validateVersions: ${report.errors()} 件のエラー。 " +
+                "実在しない、 もしくは Fabric ecosystem で解決できないバージョンが含まれています。")
+        }
+    }
 }
 
-processResources {
-	def version = project.version
-	inputs.property "version", version
-
-	filesMatching("fabric.mod.json") {
-		expand "version": version
-	}
+// ---------------------------------------------------------------------
+// build<MC> — settings.gradle が事前に -Pmc=<MC> を自動注入しているので、
+// ここでは :fabric:build に依存させるだけの簡単なエイリアス。
+// ---------------------------------------------------------------------
+registry.entries.each { VersionRegistry.Entry e ->
+    String taskName = "build${e.id}"
+    tasks.register(taskName) {
+        group = 'mod build'
+        description = "MC ${e.minecraftVersion} 向け jar をビルド"
+        // policy で要求されていれば検証を先行させる
+        if (registry.policy.buildOnlyValidated) {
+            dependsOn 'validateVersions'
+        }
+        dependsOn ':fabric:build'
+    }
 }
 
-tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+// ---------------------------------------------------------------------
+// buildAll — 各 MC を独立した gradle invocation で順次ビルド
+//   :fabric は 1 invocation あたり 1 つの mc しか持てないため、
+//   per-MC に gradlew を fork する以外の方法はない。
+// ---------------------------------------------------------------------
+def buildAllSequence = []
+registry.entries.eachWithIndex { VersionRegistry.Entry e, int idx ->
+    def execTaskName = "_execBuild${e.id}"
+    tasks.register(execTaskName, Exec) {
+        group = 'mod build'
+        description = "[internal] gradlew build${e.id} を別プロセスで起動"
+        workingDir = rootProject.projectDir
+        commandLine wrapperCmd + ["build${e.id}"]
+        // 直前の exec が終わってから走らせる (Gradle 並列実行を避ける)
+        if (idx > 0) {
+            mustRunAfter buildAllSequence.last()
+        }
+    }
+    buildAllSequence << ":${execTaskName}"
 }
 
-java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
-	withSourcesJar()
-
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+tasks.register('buildAll') {
+    group = 'mod build'
+    description = 'versions.json に登録された全 MC を別プロセスで順次ビルド'
+    dependsOn buildAllSequence
 }
 
-jar {
-	def projectName = project.name
-	inputs.property "projectName", projectName
-
-	from("LICENSE") {
-		rename { "${it}_$projectName"}
-	}
+// ---------------------------------------------------------------------
+// buildRecommended
+// ---------------------------------------------------------------------
+def recommended = registry.recommendedStable()
+if (recommended != null) {
+    tasks.register('buildRecommended', Exec) {
+        group = 'mod build'
+        description = "推奨ビルド (MC ${recommended.minecraftVersion}) を別プロセスで生成"
+        workingDir = rootProject.projectDir
+        commandLine wrapperCmd + ["build${recommended.id}"]
+    }
 }
 
-// configure the maven publication
-publishing {
-	publications {
-		create("mavenJava", MavenPublication) {
-			from components.java
-		}
-	}
+// ---------------------------------------------------------------------
+// printVersions / printVersionsJson / printRecommended
+// ---------------------------------------------------------------------
+tasks.register('printVersions') {
+    group = 'mod build'
+    description = '登録済み MC バージョンを 1 行 1 件で出力'
+    doLast {
+        registry.entries.each { println it.minecraftVersion }
+    }
+}
 
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
-	}
+tasks.register('printVersionsJson') {
+    group = 'mod build'
+    description = 'CI matrix 用に登録 MC を JSON 配列で出力'
+    doLast {
+        println '[' + registry.entries.collect { "\"${it.minecraftVersion}\"" }.join(',') + ']'
+    }
+}
+
+tasks.register('printRecommended') {
+    group = 'mod build'
+    description = '推奨 (stable & recommended) MC を表示'
+    doLast {
+        def r = registry.recommendedStable()
+        println r == null ? '' : r.minecraftVersion
+    }
+}
+
+// ---------------------------------------------------------------------
+// collectArtifacts — fabric/build/libs/<MC>/ 配下の jar を root build/libs に集約
+// ---------------------------------------------------------------------
+tasks.register('collectArtifacts', Copy) {
+    group = 'mod build'
+    description = 'fabric/build/libs/<MC>/ の jar を root/build/libs/ に集約'
+    destinationDir = layout.buildDirectory.dir('libs').get().asFile
+    from(project(':fabric').layout.buildDirectory.dir('libs')) {
+        include '**/*.jar'
+        // ディレクトリ階層を平坦化
+        eachFile { it.path = it.name }
+        includeEmptyDirs = false
+    }
+}
+
+// ---------------------------------------------------------------------
+// :common のみ Java 設定を root から強制する。
+//
+// :fabric は fabric-loom-remap が自分で java plugin を apply し、
+// splitEnvironmentSourceSets() で client sourceSet を構成する。
+// root から `apply plugin: 'java'` を重ねがけすると sourceSet 初期化
+// 順序と衝突して compileClientJava の classpath が壊れる事例があるため、
+// :fabric には触らない。
+// ---------------------------------------------------------------------
+configure(subprojects.findAll { it.name == 'common' }) {
+    apply plugin: 'java'
+    java {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+    tasks.withType(JavaCompile).configureEach {
+        it.options.release = 21
+        it.options.encoding = 'UTF-8'
+    }
 }

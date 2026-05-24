@@ -1,13 +1,58 @@
+// =====================================================================
+// settings.gradle (root)
+// ---------------------------------------------------------------------
+//   サブプロジェクト構成:
+//     :common  — Minecraft 非依存の共有ロジック / 抽象 interface
+//     :fabric  — Fabric ターゲットの "汎用ビルダ"。
+//                -Pmc=<MC> で対象 MC を切り替える単一モジュール。
+//
+//   "versions/" には ".properties" と "versions.json" だけが置かれる。
+//   Minecraft バージョンごとの Gradle サブプロジェクトは作らない。
+// =====================================================================
+
 pluginManagement {
-	repositories {
-		maven {
-			name = 'Fabric'
-			url = 'https://maven.fabricmc.net/'
-		}
-		mavenCentral()
-		gradlePluginPortal()
-	}
+    repositories {
+        maven { name = 'Fabric';       url = 'https://maven.fabricmc.net/' }
+        maven { name = 'Architectury'; url = 'https://maven.architectury.dev/' }
+        maven { name = 'NeoForge';     url = 'https://maven.neoforged.net/releases' }
+        mavenCentral()
+        gradlePluginPortal()
+    }
 }
 
-// Should match your modid
 rootProject.name = 'omnichest'
+
+include 'common'
+include 'fabric'
+
+// ---------------------------------------------------------------------
+// `build<MC>` 形式のタスク名から -Pmc=<MC> を自動注入する。
+//
+//   例: ./gradlew build1_21_11
+//        → startParameter.projectProperties['mc'] = '1.21.11'
+//        → :fabric の convention plugin がこの mc を読んで構成
+//
+//   ユーザーが明示的に -Pmc を渡している場合はそれを優先する。
+//   複数の異なる build<MC> を同一 invocation で並べた場合は
+//   :fabric の構成が 1 つしかできないため明示的に拒否する。
+// ---------------------------------------------------------------------
+def buildTaskPattern = ~/^build(\d+(?:_\d+){1,2})$/
+def matchedMCs = startParameter.taskNames.findResults { String name ->
+    def m = (name =~ buildTaskPattern)
+    m.matches() ? m.group(1).replace('_', '.') : null
+}.unique()
+
+if (matchedMCs.size() > 1) {
+    throw new GradleException(
+        "複数の build<MC> タスクを同一 invocation で指定することはできません: ${matchedMCs}. " +
+        "別々に invoke するか、 ./gradlew buildAll を使ってください。")
+}
+
+if (matchedMCs.size() == 1 && !startParameter.projectProperties.containsKey('mc')) {
+    // startParameter.projectProperties は ImmutableMap なので直接 put 不可。
+    // コピーを作って setter 経由で差し替える。
+    def newProps = new LinkedHashMap(startParameter.projectProperties)
+    newProps['mc'] = matchedMCs[0]
+    startParameter.projectProperties = newProps
+    println "[settings] task name から -Pmc=${matchedMCs[0]} を自動注入しました"
+}
