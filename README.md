@@ -6,8 +6,14 @@ For setup instructions, please see the [Fabric Documentation page](https://docs.
 
 ## build command
 ```txt
+cd C:.\MyFabricMod
 .\run-client.bat   # ゲーム起動
 .\build-mod.bat    # ビルド
+```
+または
+```txt
+cd C:.\MyFabricMod
+.\gradlew runClient
 ```
 
 ## jar file build command
