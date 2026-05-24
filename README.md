@@ -13,7 +13,7 @@ cd C:\MyFabricMod
 または
 ```txt
 cd C:\MyFabricMod
-.\gradlew runClient
+./gradlew :fabric:runClient
 ```
 
 ## jar File build command
