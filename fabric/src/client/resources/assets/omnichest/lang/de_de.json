@@ -124,6 +124,12 @@
   "config.omnichest.language.override.tooltip": "Übersteuert die Mod-Sprache. \"System Default\" folgt Minecraft.",
   "config.omnichest.language.restart_hint": "Die meisten Texte aktualisieren sich sofort. Manche Titel erst nach erneutem Öffnen.",
 
+  "config.omnichest.group.basics": "Grundlagen",
+  "config.omnichest.group.item_sorting": "Sortierung",
+  "config.omnichest.group.protection_search": "Schutz & Suche",
+  "config.omnichest.group.appearance_input": "Darstellung & Steuerung",
+
+
   "omnichest.language.system_default": "System-Standard",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -162,6 +168,13 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Sortieren",
   "omnichest.button.category_sort.tooltip": "Sortiert den Truheninhalt nach Kategorie.\n\nGruppiert nach Bedeutung – Bau, Holz, Erz, Nahrung …\nund fasst gleiche Stapel zusammen.\n\nGesperrte Slots bleiben unberührt.",
+
+  "omnichest.controls.title": "Steuerung",
+  "omnichest.controls.line.slot_lock_alt_click": "Alt+Klick: Slot sperren",
+  "omnichest.controls.line.slot_lock_middle_click": "Mittelklick: Slot sperren",
+  "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klick: Item sperren",
+  "omnichest.controls.line.alt_drag": "Alt+Ziehen: Reihen sperren",
+  "omnichest.controls.line.shift_compact": "Shift+Stapeln: Auch Spieler",
 
   "omnichest.button.sort_distance": "Distanz",
   "omnichest.button.sort_count": "Anzahl",

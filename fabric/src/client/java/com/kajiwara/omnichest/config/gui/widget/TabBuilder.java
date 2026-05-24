@@ -67,6 +67,22 @@ public final class TabBuilder {
         return this;
     }
 
+    /**
+     * プルダウン形式で選ぶ enum 用 row を追加する。 ボタンをクリックすると下に
+     * メニューが降りてきて、 1 クリックで目的の値を選べる ({@link EnumRow} のサイクル方式とは別系統)。
+     *
+     * <p>
+     * 選択肢が多い (= 14 言語のような) ケース向け。 選択肢 1〜3 個程度ならサイクル方式の方が速いので、
+     * その場合は素直に {@link #enumSelect} を使うこと。
+     */
+    public <E extends Enum<E>> TabBuilder dropdownSelect(Component label, Class<E> enumClass,
+            E current, Consumer<E> save, @Nullable Component tooltip,
+            @Nullable Function<E, Component> labelFormatter) {
+        java.util.List<E> values = java.util.List.of(enumClass.getEnumConstants());
+        this.rows.add(new DropdownRow<>(label, tooltip, values, current, save, labelFormatter));
+        return this;
+    }
+
     public TabBuilder intSlider(Component label, int min, int max, int current,
             Consumer<Integer> save, @Nullable Component tooltip) {
         return intSlider(label, min, max, current, save, tooltip, null);

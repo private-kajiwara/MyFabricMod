@@ -28,8 +28,12 @@ public final class ColorRow extends RowEntry {
     /** {@link #attachTo} で受け取り、 ボタン押下時の popup 起動に使う。 */
     private ControlSize.WidgetSink sink;
 
-    /** ボタンの幅は常に固定 (= ヘックス文字が伸縮しない 7 桁分 "#FFFFFF")。 */
-    private static final int BUTTON_W = 100;
+    /**
+     * ボタン幅は他の row (Toggle / Slider / Enum / Dropdown) と <b>必ず一致</b> させる。
+     * 揃えないと右端ラインが行ごとにガタつき、 ColorRow だけ左に大きく出っ張って見える。
+     * {@code "#FFFFFF"} のヘックス 7 文字も {@link ControlSize#CONTROL_WIDTH} (90 px) に収まる。
+     */
+    private static final int BUTTON_W = ControlSize.CONTROL_WIDTH;
     private static final int BUTTON_H = ControlSize.CONTROL_HEIGHT;
     /** 左に置く swatch の辺長 (px)。 */
     private static final int SWATCH_SIZE = 12;

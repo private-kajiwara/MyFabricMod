@@ -124,6 +124,12 @@
   "config.omnichest.language.override.tooltip": "Mod dilini geçersiz kılar. Minecraft'ı izlemek için \"System Default\" seçin.",
   "config.omnichest.language.restart_hint": "Çoğu yazı anında güncellenir. Bazı başlıklar için ekranı yeniden açmanız gerekir.",
 
+  "config.omnichest.group.basics": "Temel",
+  "config.omnichest.group.item_sorting": "Düzenleme",
+  "config.omnichest.group.protection_search": "Koruma ve arama",
+  "config.omnichest.group.appearance_input": "Görünüm ve denetim",
+
+
   "omnichest.language.system_default": "Sistem varsayılanı",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -162,6 +168,13 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Sırala",
   "omnichest.button.category_sort.tooltip": "Sandık içeriğini kategoriye göre sıralar.\n\nYapı, odun, cevher, yemek gibi anlam gruplarına ayırır\nve aynı yığınları tek bir yığınta birleştirir.\n\nKilitli slotlara dokunulmaz.",
+
+  "omnichest.controls.title": "Kontroller",
+  "omnichest.controls.line.slot_lock_alt_click": "Alt+Tık: Yuva kilitle",
+  "omnichest.controls.line.slot_lock_middle_click": "Orta Tık: Yuva kilitle",
+  "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Tık: Eşya kilidi",
+  "omnichest.controls.line.alt_drag": "Alt+Sürükle: Sürekli kilit",
+  "omnichest.controls.line.shift_compact": "Shift+Sıkıştır: Envanter de",
 
   "omnichest.button.sort_distance": "Mesafe",
   "omnichest.button.sort_count": "Adet",

@@ -1,7 +1,11 @@
 package com.kajiwara.omnichest.config.gui.widget;
 
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.network.chat.Component;
 
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 
 /**
@@ -48,6 +52,29 @@ public final class ControlSize {
          * popup 非対応 Screen では何もしない (= default 実装)。
          */
         default void openColorPicker(int initialRgb, IntConsumer onConfirm) {
+            // no-op
+        }
+
+        /**
+         * プルダウン (dropdown) ポップアップを開く。
+         *
+         * <p>
+         * ユーザが項目をクリックしたら {@code onSelect} がその値で呼ばれる。
+         * 外側クリック / ESC で閉じた時は呼ばれない。
+         * popup 非対応 Screen では何もしない (= default 実装)。
+         *
+         * @param values     並べる選択肢 (= 順序保持)。
+         * @param current    現在値 (= 強調表示する)。 リストに含まれていなくても可。
+         * @param labelFn    各値の表示ラベルを返す関数。
+         * @param onSelect   選択確定時のコールバック。
+         * @param anchorX    popup を寄せる X 座標 (= 通常はボタンの x)。
+         * @param anchorY    popup を寄せる Y 座標 (= 通常はボタンの y)。
+         * @param anchorW    アンカーの幅 (= popup の最小幅に使う)。
+         * @param anchorH    アンカーの高さ (= popup を「真下」に出す時の上端 = anchorY + anchorH)。
+         */
+        default <E> void openDropdown(List<E> values, E current,
+                Function<E, Component> labelFn, Consumer<E> onSelect,
+                int anchorX, int anchorY, int anchorW, int anchorH) {
             // no-op
         }
     }

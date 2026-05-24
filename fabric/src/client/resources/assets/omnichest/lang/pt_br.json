@@ -124,6 +124,12 @@
   "config.omnichest.language.override.tooltip": "Substitui o idioma do mod. Selecione \"System Default\" para seguir o Minecraft.",
   "config.omnichest.language.restart_hint": "A maior parte dos textos atualiza na hora. Alguns títulos pedem reabrir a tela.",
 
+  "config.omnichest.group.basics": "Geral",
+  "config.omnichest.group.item_sorting": "Organização",
+  "config.omnichest.group.protection_search": "Proteção e busca",
+  "config.omnichest.group.appearance_input": "Aparência e controles",
+
+
   "omnichest.language.system_default": "Padrão do sistema",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -162,6 +168,13 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Ordenar",
   "omnichest.button.category_sort.tooltip": "Ordena o conteúdo do baú por categoria.\n\nAgrupa por sentido — construção, madeira, minério, comida…\ne junta pilhas iguais em uma só.\n\nSlots travados não saem do lugar.",
+
+  "omnichest.controls.title": "Controles",
+  "omnichest.controls.line.slot_lock_alt_click": "Alt+Clique: Travar slot",
+  "omnichest.controls.line.slot_lock_middle_click": "Clique do meio: Travar slot",
+  "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Clique: Travar item",
+  "omnichest.controls.line.alt_drag": "Alt+Arrastar: Trava contínua",
+  "omnichest.controls.line.shift_compact": "Shift+Compactar: Inv. também",
 
   "omnichest.button.sort_distance": "Distância",
   "omnichest.button.sort_count": "Quantidade",

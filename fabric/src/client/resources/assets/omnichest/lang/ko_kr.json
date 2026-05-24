@@ -124,6 +124,12 @@
   "config.omnichest.language.override.tooltip": "모드 내부 언어를 덮어씁니다. 마인크래프트에 맞추려면 \"System Default\" 를 선택하세요.",
   "config.omnichest.language.restart_hint": "대부분의 항목은 즉시 바뀝니다. 일부 제목은 화면을 다시 열어야 반영됩니다.",
 
+  "config.omnichest.group.basics": "기본",
+  "config.omnichest.group.item_sorting": "아이템 정리",
+  "config.omnichest.group.protection_search": "보호와 검색",
+  "config.omnichest.group.appearance_input": "모양과 조작",
+
+
   "omnichest.language.system_default": "시스템 기본값",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -162,6 +168,13 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "카테고리 정리",
   "omnichest.button.category_sort.tooltip": "상자 안을 종류별로 정리합니다.\n\n건축·목재·광물·식량 등으로 묶고,\n같은 아이템은 하나로 합칩니다.\n\n잠긴 칸은 그대로 둡니다.",
+
+  "omnichest.controls.title": "조작 방법",
+  "omnichest.controls.line.slot_lock_alt_click": "Alt+클릭: 슬롯 잠금",
+  "omnichest.controls.line.slot_lock_middle_click": "휠 클릭: 슬롯 잠금",
+  "omnichest.controls.line.item_lock_cycle": "Shift+Alt+클릭: 아이템 잠금",
+  "omnichest.controls.line.alt_drag": "Alt+드래그: 연속 잠금",
+  "omnichest.controls.line.shift_compact": "Shift+압축: 인벤토리도",
 
   "omnichest.button.sort_distance": "거리순",
   "omnichest.button.sort_count": "수량순",

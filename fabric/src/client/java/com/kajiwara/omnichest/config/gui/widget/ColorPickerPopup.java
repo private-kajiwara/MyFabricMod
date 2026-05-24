@@ -52,7 +52,7 @@ import java.util.function.IntConsumer;
  * <li>{@link #isClosed()} が true になったら参照を破棄。</li>
  * </ol>
  */
-public final class ColorPickerPopup {
+public final class ColorPickerPopup implements OverlayPopup {
 
     // ─── レイアウト定数 ──────────────────────────────────────────────
 
@@ -86,8 +86,15 @@ public final class ColorPickerPopup {
     private static final int COLOR_TEXT_MUTED = 0xFFAAAAAA;
     private static final int COLOR_BTN_BG = 0xFF404040;
     private static final int COLOR_BTN_BG_HOVER = 0xFF5A5A5A;
-    private static final int COLOR_BTN_BG_OK = 0xFF3A6F3A;
-    private static final int COLOR_BTN_BG_OK_HOVER = 0xFF4F8F4F;
+    /**
+     * OK ボタン背景: 設定画面ヘッダ ({@code COLOR_CHEST_WOOD}) と同じ濃紺。
+     * カラーピッカー全体を「OmniChest = 紺 + 金」 のテーマで統一する意図。
+     */
+    private static final int COLOR_BTN_BG_OK = 0xFF0D1B3D;
+    /** OK ボタン hover 時: 紺を 1 段明るくして反応を明示。 */
+    private static final int COLOR_BTN_BG_OK_HOVER = 0xFF1E305C;
+    /** OK ボタンのラベル色: 設定画面の鍵 (= タイトル) 色と同じ黄金色。 */
+    private static final int COLOR_BTN_OK_TEXT = 0xFFFFD700;
     private static final int COLOR_PICKER_RING = 0xFFFFFFFF;
     private static final int COLOR_PICKER_RING_SHADOW = 0xFF000000;
 
@@ -258,7 +265,7 @@ public final class ColorPickerPopup {
                 cancelX, by, BTN_W, BTN_H, COLOR_TEXT);
         drawCenteredComponent(g, font,
                 OmniChestLocale.get(Keys.COLOR_PICKER_OK, "OK"),
-                okX, by, BTN_W, BTN_H, COLOR_TEXT);
+                okX, by, BTN_W, BTN_H, COLOR_BTN_OK_TEXT);
     }
 
     private static void drawCenteredComponent(GuiGraphics g, Font font, Component text,

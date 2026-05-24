@@ -124,6 +124,12 @@
   "config.omnichest.language.override.tooltip": "Override the in-mod language. Use \"System Default\" to follow Minecraft.",
   "config.omnichest.language.restart_hint": "Most labels update immediately. A few cached titles may need re-opening the screen.",
 
+  "config.omnichest.group.basics": "Basics",
+  "config.omnichest.group.item_sorting": "Item Sorting",
+  "config.omnichest.group.protection_search": "Protection & Search",
+  "config.omnichest.group.appearance_input": "Appearance & Input",
+
+
   "omnichest.language.system_default": "System Default",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "Japanese",
@@ -162,6 +168,13 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Sort by Category",
   "omnichest.button.category_sort.tooltip": "Sort chest contents by category.\n\nItems are grouped by meaning — building, wood, ore, food, and so on —\nand identical stacks are merged into one.\n\nLocked slots stay where they are.",
+
+  "omnichest.controls.title": "Controls",
+  "omnichest.controls.line.slot_lock_alt_click": "Alt+Click: Lock slot",
+  "omnichest.controls.line.slot_lock_middle_click": "Middle Click: Lock slot",
+  "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Click: Item lock",
+  "omnichest.controls.line.alt_drag": "Alt+Drag: Continuous lock",
+  "omnichest.controls.line.shift_compact": "Shift+Compact: Player too",
 
   "omnichest.button.sort_distance": "By Distance",
   "omnichest.button.sort_count": "By Count",

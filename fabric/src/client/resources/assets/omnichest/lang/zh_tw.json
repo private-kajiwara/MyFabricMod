@@ -124,6 +124,12 @@
   "config.omnichest.language.override.tooltip": "覆寫模組內顯示語言。 想跟隨 Minecraft 請選 \"System Default\"。",
   "config.omnichest.language.restart_hint": "大多數文字會立即更新。 少數標題需要重新打開畫面才會生效。",
 
+  "config.omnichest.group.basics": "基本",
+  "config.omnichest.group.item_sorting": "物品整理",
+  "config.omnichest.group.protection_search": "保護與搜尋",
+  "config.omnichest.group.appearance_input": "外觀與操作",
+
+
   "omnichest.language.system_default": "跟隨系統",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -162,6 +168,13 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "分類整理",
   "omnichest.button.category_sort.tooltip": "依種類整理儲物箱內的物品。\n\n依 建築·木材·礦物·食物 等含義分組,\n相同物品自動合併。\n\n已鎖定的欄位不會被移動。",
+
+  "omnichest.controls.title": "操作方法",
+  "omnichest.controls.line.slot_lock_alt_click": "Alt+左鍵: 鎖定欄位",
+  "omnichest.controls.line.slot_lock_middle_click": "中鍵: 鎖定欄位",
+  "omnichest.controls.line.item_lock_cycle": "Shift+Alt+左鍵: 物品鎖定",
+  "omnichest.controls.line.alt_drag": "Alt+拖動: 連續鎖定",
+  "omnichest.controls.line.shift_compact": "Shift+壓縮: 含背包",
 
   "omnichest.button.sort_distance": "距離",
   "omnichest.button.sort_count": "數量",

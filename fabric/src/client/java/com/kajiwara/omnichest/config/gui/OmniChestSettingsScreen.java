@@ -2,8 +2,15 @@ package com.kajiwara.omnichest.config.gui;
 
 import com.kajiwara.omnichest.config.gui.widget.ColorPickerPopup;
 import com.kajiwara.omnichest.config.gui.widget.ControlSize;
+import com.kajiwara.omnichest.config.gui.widget.DropdownPopup;
+import com.kajiwara.omnichest.config.gui.widget.NavyFooterButton;
+import com.kajiwara.omnichest.config.gui.widget.OverlayPopup;
 import com.kajiwara.omnichest.config.gui.widget.RowEntry;
+import com.kajiwara.omnichest.config.gui.widget.TabGroup;
 import com.kajiwara.omnichest.config.gui.widget.TabModel;
+import com.kajiwara.omnichest.i18n.Keys;
+import com.kajiwara.omnichest.i18n.OmniChestLocale;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -64,6 +71,10 @@ public final class OmniChestSettingsScreen extends Screen {
     private static final int SIDEBAR_WIDTH = 120;
     /** サイドバー内のタブ 1 個の高さ (px)。 */
     private static final int TAB_HEIGHT = 22;
+    /** サイドバー内のグループ ヘッダ (= カテゴリ見出し) の高さ (px)。 */
+    private static final int GROUP_HEADER_HEIGHT = 18;
+    /** グループ ヘッダの「上に開ける余白」(= 直前のグループとの間の空白行)。 */
+    private static final int GROUP_HEADER_TOP_GAP = 6;
     /** ヘッダ (= 木目バナーを置く領域) の高さ (px)。 */
     private static final int HEADER_HEIGHT = 38;
     /** フッタ (= Save / Cancel / Reset ボタン) の高さ (px)。 */
@@ -88,21 +99,21 @@ public final class OmniChestSettingsScreen extends Screen {
     /** チェスト木目: 外周 (= 鉄帯)。 */
     private static final int COLOR_CHEST_RIM = 0xFFD4AF37;
     /**
-     * チェスト木目: メイン (=「板」)。
-     * 暗めに振って金色文字とのコントラストを上げた色。
-     * 旧 0xFF7C5A3A (薄茶) は文字とハイコントラストにならなかったので 0xFF2E1F12 (濃茶) に変更。
+     * バナー本体: 濃い紺色。
+     * 旧実装は濃茶 (0xFF2E1F12) だったが、 金色タイトル文字との対比を保ちつつ
+     * もう少し涼しげな印象にするため紺色 (= 深い navy) に変更。
      */
-    private static final int COLOR_CHEST_WOOD = 0xFF2E1F12;
+    private static final int COLOR_CHEST_WOOD = 0xFF0D1B3D;
     /**
-     * チェスト木目: 板継ぎ目。
-     * 板の上にさらに暗いラインで「板 3 枚」表現を維持しつつ全体は黒に近いトーン。
+     * バナー縦継ぎ目ライン。 旧 plank の「板 3 枚」表現を、 紺バージョンでは
+     * もう一段暗い紺で代用 (= 文字の視認性を落とさないように非常に控えめ)。
      */
-    private static final int COLOR_CHEST_PLANK = 0xFF150D07;
+    private static final int COLOR_CHEST_PLANK = 0xFF050B1F;
     /**
-     * チェスト木目: ハイライト (= 上辺 1 px のみ)。
-     * 木目を完全に黒く潰さないために、 ほのかな茶を 1 行だけ残す。
+     * バナー ハイライト (= 上辺 1 px のみ)。
+     * 上から光が当たっている感を残すために、 やや明るい青みグレーを 1 行だけ。
      */
-    private static final int COLOR_CHEST_HIGHLIGHT = 0xFF4A331C;
+    private static final int COLOR_CHEST_HIGHLIGHT = 0xFF1E305C;
     /** チェスト鍵 (鋲) 色 + タイトル文字色。 */
     private static final int COLOR_CHEST_LOCK = 0xFFFFD700;
 
@@ -112,6 +123,10 @@ public final class OmniChestSettingsScreen extends Screen {
     private static final int COLOR_TAB_ACTIVE_LINE = 0xFFFFD700;
     /** タブ hover 背景。 */
     private static final int COLOR_TAB_HOVER_BG = 0x33FFFFFF;
+    /** グループ ヘッダのラベル色 (= 薄い青みグレー、 タブ ラベルとは別系統で区別)。 */
+    private static final int COLOR_GROUP_HEADER_TEXT = 0xFF8A9DCC;
+    /** グループ ヘッダ下のアンダーライン色 (= グループ間の視覚的な区切り)。 */
+    private static final int COLOR_GROUP_HEADER_UNDERLINE = 0xFF333E5C;
     /** スクロールバー track。 */
     private static final int COLOR_SB_TRACK = 0x66000000;
     /** スクロールバー thumb (= 通常)。 */
@@ -123,9 +138,14 @@ public final class OmniChestSettingsScreen extends Screen {
      * 「contentBottom 以下」の footer 帯背景。
      * row 内 widget が content 領域からはみ出した時のマスクとして使うため、
      * <b>必ず完全不透明 (alpha=FF)</b> にする (= 半透明だと overflow が透けてしまう)。
-     * 色味はサイドバーと近いダークトーンにし、視覚的に「footer area」を提示する。
+     *
+     * <p>
+     * フッタ ボタン ({@link com.kajiwara.omnichest.config.gui.widget.NavyFooterButton}) の紺
+     * ({@code 0xFF0D1B3D}) <b>より暗い</b> 紺を使うことで、 ボタンと背景帯が同じ紺系統で
+     * グラデーションのように重なり、 ボタンが浮き出て見える。
+     * 旧 {@code 0xFF111111} (濃灰) は紺系ボタンと合わない違和感があったので置き換えた。
      */
-    private static final int COLOR_FOOTER_BG = 0xFF111111;
+    private static final int COLOR_FOOTER_BG = 0xFF03081A;
 
     // ════════════════════════════════════════════════════════════════════
     // 状態
@@ -133,11 +153,16 @@ public final class OmniChestSettingsScreen extends Screen {
 
     @Nullable
     private final Screen parent;
+    /** カテゴリ別にまとめた tab の入れ物。 サイドバー描画 / クリック判定の元データ。 */
+    private final List<TabGroup> tabGroups;
+    /** 上のグループから順に並べた flat tab list (= {@link #activeTab} の索引対象)。 */
     private final List<TabModel> tabs;
+    /** サイドバーに「ヘッダ → タブ → ヘッダ → タブ ...」 と並べるための描画 / クリック判定エントリ列。 */
+    private final List<SidebarEntry> sidebarEntries;
     private final Runnable onSave;
     private final Runnable onReset;
 
-    /** 現在選択中のタブ index。 */
+    /** 現在選択中のタブ index (= {@link #tabs} 内の flat index)。 */
     private int activeTab = 0;
 
     /** コンテンツ領域のスクロール量 (px、 0 = 最上段)。 */
@@ -156,11 +181,12 @@ public final class OmniChestSettingsScreen extends Screen {
     private double sbDragOffset = 0.0;
 
     /**
-     * カラーピッカー ポップアップ (= 表示中のみ非 null)。
+     * 上から被せて入力を独占するポップアップ (= 表示中のみ非 null)。
+     * カラーピッカー / ドロップダウン両対応 — どちらも {@link OverlayPopup} を実装する。
      * 表示中はすべての入力をこちらに優先ルーティングし、 widget / タブクリックを抑止する。
      */
     @Nullable
-    private ColorPickerPopup activePopup = null;
+    private OverlayPopup activePopup = null;
 
     /**
      * 自前で保持する renderables のミラーリスト。
@@ -195,12 +221,58 @@ public final class OmniChestSettingsScreen extends Screen {
     private Button footerCancelBtn;
 
     public OmniChestSettingsScreen(@Nullable Screen parent, Component title,
-            List<TabModel> tabs, Runnable onSave, Runnable onReset) {
+            List<TabGroup> groups, Runnable onSave, Runnable onReset) {
         super(title);
         this.parent = parent;
-        this.tabs = List.copyOf(tabs);
+        this.tabGroups = List.copyOf(groups);
+        // ─── group → 「flat tab list + sidebar entry list」へ展開 ───
+        // tabs は activeTab の index 用にフラット化。
+        // sidebarEntries は描画/クリック用に「ヘッダ / タブ」を順番に並べる。
+        List<TabModel> flatTabs = new ArrayList<>();
+        List<SidebarEntry> entries = new ArrayList<>();
+        int flatIdx = 0;
+        for (int gi = 0; gi < this.tabGroups.size(); gi++) {
+            TabGroup group = this.tabGroups.get(gi);
+            entries.add(new HeaderEntry(group.title(), gi == 0));
+            for (TabModel tab : group.tabs()) {
+                entries.add(new TabEntry(tab, flatIdx));
+                flatTabs.add(tab);
+                flatIdx++;
+            }
+        }
+        this.tabs = List.copyOf(flatTabs);
+        this.sidebarEntries = List.copyOf(entries);
         this.onSave = onSave;
         this.onReset = onReset;
+    }
+
+    /**
+     * サイドバーに並ぶ 1 要素。 グループ ヘッダ ({@link HeaderEntry}) かタブ ({@link TabEntry}) のどちらか。
+     * 描画ループ / クリック判定はこの sealed 階層の上を一様に歩く。
+     */
+    private sealed interface SidebarEntry {
+        int height();
+    }
+
+    /**
+     * グループ ヘッダ (カテゴリ見出し)。 クリック不可。
+     *
+     * @param title カテゴリ名 (= 翻訳済み Component)
+     * @param first リスト先頭のグループか (= 上の隙間を取らない)
+     */
+    private record HeaderEntry(Component title, boolean first) implements SidebarEntry {
+        @Override
+        public int height() {
+            return GROUP_HEADER_HEIGHT + (first ? 0 : GROUP_HEADER_TOP_GAP);
+        }
+    }
+
+    /** タブ 1 件。 クリックで {@link #activeTab} を {@code flatIndex} に切り替える。 */
+    private record TabEntry(TabModel tab, int flatIndex) implements SidebarEntry {
+        @Override
+        public int height() {
+            return TAB_HEIGHT;
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -220,16 +292,23 @@ public final class OmniChestSettingsScreen extends Screen {
     private int sidebarTabViewportH() {
         return sidebarBottom() - sidebarTop() - SB_H_H;
     }
-    /** タブを全部縦に並べた時の高さ。 */
+    /** タブ + グループ ヘッダ を全部縦に並べた時の高さ。 */
     private int sidebarContentTotalH() {
-        return this.tabs.size() * TAB_HEIGHT;
+        int total = 0;
+        for (SidebarEntry e : this.sidebarEntries) total += e.height();
+        return total;
     }
-    /** タブ ラベルが必要とする最大幅 (= 横スクロールの logical 幅)。 */
+    /**
+     * ラベルが必要とする最大幅 (= 横スクロールの logical 幅)。
+     * タブ ラベルとグループ ヘッダのラベル両方を見る。
+     */
     private int sidebarContentTotalW() {
         Font font = Minecraft.getInstance().font;
         int maxLabelW = 0;
-        for (TabModel t : this.tabs) {
-            int w = font.width(t.title());
+        for (SidebarEntry e : this.sidebarEntries) {
+            Component label = (e instanceof TabEntry t) ? t.tab().title()
+                    : ((HeaderEntry) e).title();
+            int w = font.width(label);
             if (w > maxLabelW) maxLabelW = w;
         }
         // active indicator (2px) + label padding (左 8px + 右 8px) を含める。
@@ -284,6 +363,18 @@ public final class OmniChestSettingsScreen extends Screen {
                         OmniChestSettingsScreen.this.height,
                         initialRgb, onConfirm);
             }
+
+            @Override
+            public <E> void openDropdown(java.util.List<E> values, E current,
+                    java.util.function.Function<E, Component> labelFn,
+                    java.util.function.Consumer<E> onSelect,
+                    int anchorX, int anchorY, int anchorW, int anchorH) {
+                OmniChestSettingsScreen.this.activePopup = new DropdownPopup<>(
+                        OmniChestSettingsScreen.this.width,
+                        OmniChestSettingsScreen.this.height,
+                        values, current, labelFn, onSelect,
+                        anchorX, anchorY, anchorW, anchorH);
+            }
         };
         for (TabModel tab : this.tabs) {
             for (RowEntry row : tab.rows()) {
@@ -300,24 +391,29 @@ public final class OmniChestSettingsScreen extends Screen {
         int startX = (this.width - totalW) / 2;
 
         // フッタボタンは「マスク再描画」のためフィールドにも保持する。
-        this.footerResetBtn = addRenderableWidget(Button.builder(Component.literal("Reset"),
+        // バニラ Button の代わりに NavyFooterButton を使い、 背景を不透明な濃紺で描く。
+        // ラベルは Keys.BUTTON_RESET / SAVE / CANCEL を OmniChestLocale で解決して多言語対応。
+        this.footerResetBtn = addRenderableWidget(new NavyFooterButton(
+                startX, footerY, btnW, btnH,
+                OmniChestLocale.get(Keys.BUTTON_RESET, "Reset"),
                 b -> {
                     this.onReset.run();
                     // reset 直後の値を row に再注入する手段がないため、 Screen を作り直して反映する。
                     Minecraft.getInstance().setScreen(this.parent);
-                })
-                .bounds(startX, footerY, btnW, btnH).build());
+                }));
 
-        this.footerSaveBtn = addRenderableWidget(Button.builder(Component.literal("Save"),
+        this.footerSaveBtn = addRenderableWidget(new NavyFooterButton(
+                startX + (btnW + gap), footerY, btnW, btnH,
+                OmniChestLocale.get(Keys.BUTTON_SAVE, "Save"),
                 b -> {
                     saveAll();
                     Minecraft.getInstance().setScreen(this.parent);
-                })
-                .bounds(startX + (btnW + gap), footerY, btnW, btnH).build());
+                }));
 
-        this.footerCancelBtn = addRenderableWidget(Button.builder(Component.literal("Cancel"),
-                b -> Minecraft.getInstance().setScreen(this.parent))
-                .bounds(startX + (btnW + gap) * 2, footerY, btnW, btnH).build());
+        this.footerCancelBtn = addRenderableWidget(new NavyFooterButton(
+                startX + (btnW + gap) * 2, footerY, btnW, btnH,
+                OmniChestLocale.get(Keys.BUTTON_CANCEL, "Cancel"),
+                b -> Minecraft.getInstance().setScreen(this.parent)));
 
         // 初期表示: 選択中以外のタブを隠す。
         applyTabVisibility();
@@ -506,39 +602,27 @@ public final class OmniChestSettingsScreen extends Screen {
 
         clampSidebarScroll();
 
-        // ─── タブ描画 (scissor でクリップ) ───
+        // ─── サイドバー エントリ描画 (scissor でクリップ) ───
         g.enableScissor(viewportLeft, viewportTop, viewportRight, viewportBottom);
         Font font = this.font;
         int yCursor = viewportTop - (int) Math.round(this.sidebarScrollY);
         int xBase = viewportLeft - (int) Math.round(this.sidebarScrollX);
 
-        for (int i = 0; i < this.tabs.size(); i++) {
-            int tabY = yCursor + i * TAB_HEIGHT;
-            // 完全に画面外なら描画スキップ (= 入力イベントは別途座標で判定するため安全)。
-            if (tabY + TAB_HEIGHT < viewportTop || tabY > viewportBottom) continue;
+        for (SidebarEntry entry : this.sidebarEntries) {
+            int entryTop = yCursor;
+            int entryH = entry.height();
+            yCursor += entryH;
 
-            int tabX = xBase;
-            int tabW = sidebarContentTotalW();
-            boolean active = (i == this.activeTab);
-            // hover 判定は viewport 内に絞る。
-            boolean hovered = mouseX >= viewportLeft && mouseX < viewportRight
-                    && mouseY >= tabY && mouseY < tabY + TAB_HEIGHT
-                    && mouseY >= viewportTop && mouseY < viewportBottom;
+            // 完全に画面外なら描画スキップ (= 入力判定は別途座標で行う)。
+            if (entryTop + entryH < viewportTop || entryTop > viewportBottom) continue;
 
-            // タブ背景。
-            int bg = active ? COLOR_TAB_ACTIVE_BG : (hovered ? COLOR_TAB_HOVER_BG : 0);
-            if (bg != 0) {
-                g.fill(viewportLeft, tabY, viewportRight, tabY + TAB_HEIGHT, bg);
+            if (entry instanceof HeaderEntry h) {
+                renderGroupHeader(g, font, h, entryTop, entryH, xBase, viewportLeft, viewportRight);
+            } else if (entry instanceof TabEntry t) {
+                renderTabEntry(g, font, t, entryTop, entryH, xBase,
+                        viewportLeft, viewportRight, viewportTop, viewportBottom,
+                        mouseX, mouseY);
             }
-            // active 左ライン。
-            if (active) {
-                g.fill(viewportLeft, tabY, viewportLeft + 2, tabY + TAB_HEIGHT, COLOR_TAB_ACTIVE_LINE);
-            }
-
-            int textColor = active ? COLOR_TAB_ACTIVE_LINE : (hovered ? 0xFFFFFFFF : 0xFFCCCCCC);
-            int textY = tabY + (TAB_HEIGHT - 8) / 2;
-            int textX = tabX + TAB_LABEL_PAD_LEFT;
-            g.drawString(font, this.tabs.get(i).title(), textX, textY, textColor, false);
         }
         g.disableScissor();
 
@@ -548,6 +632,55 @@ public final class OmniChestSettingsScreen extends Screen {
 
         // 右端の縦区切り (= サイドバーとコンテンツの境界を明確に)。
         g.fill(SIDEBAR_WIDTH, top, SIDEBAR_WIDTH + 1, bottom, COLOR_SEP);
+    }
+
+    /**
+     * グループ ヘッダ (= カテゴリ見出し) を 1 件描画する。
+     * 配下のタブと色 / 形状を変えて「見出し」と分かるようにする。
+     *
+     * <p>
+     * <b>太字</b>: タイトル Component を {@link ChatFormatting#BOLD} で包んで描画する。
+     * Minecraft の bold スタイルは Latin / CJK 両方でフォント側が太字グリフ
+     * (= 1px シフト重ね描き) を出してくれるため、 多言語で同じく太く見える。
+     */
+    private void renderGroupHeader(GuiGraphics g, Font font, HeaderEntry h,
+            int entryTop, int entryH, int xBase, int viewportLeft, int viewportRight) {
+        // 「上の隙間」は描画しない (= 透明にして区切りとして機能させる)。
+        int textAreaTop = entryTop + (h.first() ? 0 : GROUP_HEADER_TOP_GAP);
+        int textAreaH = entryH - (h.first() ? 0 : GROUP_HEADER_TOP_GAP);
+        int textY = textAreaTop + (textAreaH - 8) / 2;
+        int textX = xBase + TAB_LABEL_PAD_LEFT;
+        Component boldTitle = h.title().copy().withStyle(ChatFormatting.BOLD);
+        g.drawString(font, boldTitle, textX, textY, COLOR_GROUP_HEADER_TEXT, false);
+        // ヘッダ下に薄い水平ライン (= タブとの区切りを視覚化)。
+        int lineY = textAreaTop + textAreaH - 1;
+        g.fill(viewportLeft + TAB_LABEL_PAD_LEFT, lineY,
+                viewportRight - 4, lineY + 1,
+                COLOR_GROUP_HEADER_UNDERLINE);
+    }
+
+    /** タブ 1 件を描画する (= 旧 renderSidebar の 1 イテレーション分を関数化)。 */
+    private void renderTabEntry(GuiGraphics g, Font font, TabEntry t,
+            int entryTop, int entryH, int xBase,
+            int viewportLeft, int viewportRight, int viewportTop, int viewportBottom,
+            int mouseX, int mouseY) {
+        boolean active = (t.flatIndex() == this.activeTab);
+        boolean hovered = mouseX >= viewportLeft && mouseX < viewportRight
+                && mouseY >= entryTop && mouseY < entryTop + entryH
+                && mouseY >= viewportTop && mouseY < viewportBottom;
+
+        int bg = active ? COLOR_TAB_ACTIVE_BG : (hovered ? COLOR_TAB_HOVER_BG : 0);
+        if (bg != 0) {
+            g.fill(viewportLeft, entryTop, viewportRight, entryTop + entryH, bg);
+        }
+        if (active) {
+            g.fill(viewportLeft, entryTop, viewportLeft + 2, entryTop + entryH,
+                    COLOR_TAB_ACTIVE_LINE);
+        }
+        int textColor = active ? COLOR_TAB_ACTIVE_LINE : (hovered ? 0xFFFFFFFF : 0xFFCCCCCC);
+        int textY = entryTop + (entryH - 8) / 2;
+        int textX = xBase + TAB_LABEL_PAD_LEFT;
+        g.drawString(font, t.tab().title(), textX, textY, textColor, false);
     }
 
     private void renderSidebarVScrollbar(GuiGraphics g, int mouseX, int mouseY) {
@@ -713,18 +846,26 @@ public final class OmniChestSettingsScreen extends Screen {
             return true;
         }
 
-        // ─── サイドバー タブ クリック (= viewport 内のみ判定) ───
+        // ─── サイドバー クリック (= viewport 内のみ判定) ───
+        // tab / group-header どちらの上にあるかを線形にスキャンして決定する。
         if (mx >= 0 && mx < SIDEBAR_WIDTH - SB_V_W
                 && my >= sidebarTop() && my < sidebarBottom() - SB_H_H) {
             int relY = (int) (my - sidebarTop() + this.sidebarScrollY);
-            int idx = relY / TAB_HEIGHT;
-            if (idx >= 0 && idx < this.tabs.size()) {
-                if (idx != this.activeTab) {
-                    this.activeTab = idx;
-                    this.scrollPx = 0.0;
-                    applyTabVisibility();
+            int yWalk = 0;
+            for (SidebarEntry entry : this.sidebarEntries) {
+                int entryH = entry.height();
+                if (relY >= yWalk && relY < yWalk + entryH) {
+                    if (entry instanceof TabEntry t) {
+                        if (t.flatIndex() != this.activeTab) {
+                            this.activeTab = t.flatIndex();
+                            this.scrollPx = 0.0;
+                            applyTabVisibility();
+                        }
+                    }
+                    // グループ ヘッダクリックは consume するだけ (= no-op)。
+                    return true;
                 }
-                return true;
+                yWalk += entryH;
             }
         }
 
@@ -780,6 +921,11 @@ public final class OmniChestSettingsScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        // ポップアップが開いている時はホイールもそちらへ (= dropdown のリスト スクロール用)。
+        if (this.activePopup instanceof DropdownPopup<?> dd
+                && dd.mouseScrolled(mouseX, mouseY, scrollY)) {
+            return true;
+        }
         // サイドバー領域でのホイールはサイドバー縦スクロール。
         if (mouseX >= 0 && mouseX < SIDEBAR_WIDTH
                 && mouseY >= sidebarTop() && mouseY < sidebarBottom()) {
@@ -901,14 +1047,7 @@ public final class OmniChestSettingsScreen extends Screen {
 
     /** タブ追加・差し替え用の簡易ファクトリ。 */
     public static OmniChestSettingsScreen create(@Nullable Screen parent, Component title,
-            List<TabModel> tabs, Runnable onSave, Runnable onReset) {
-        return new OmniChestSettingsScreen(parent, title, tabs, onSave, onReset);
-    }
-
-    /** 「List で渡したい呼び出し側」向けの薄い util。 */
-    public static List<TabModel> toList(java.util.function.Consumer<List<TabModel>> filler) {
-        List<TabModel> out = new ArrayList<>();
-        filler.accept(out);
-        return out;
+            List<TabGroup> groups, Runnable onSave, Runnable onReset) {
+        return new OmniChestSettingsScreen(parent, title, groups, onSave, onReset);
     }
 }

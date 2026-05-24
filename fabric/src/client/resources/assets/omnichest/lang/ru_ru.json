@@ -124,6 +124,12 @@
   "config.omnichest.language.override.tooltip": "Переопределяет язык мода. Чтобы следовать Minecraft, выберите «System Default».",
   "config.omnichest.language.restart_hint": "Большинство надписей обновляется сразу. Некоторые заголовки требуют переоткрытия экрана.",
 
+  "config.omnichest.group.basics": "Основное",
+  "config.omnichest.group.item_sorting": "Сортировка",
+  "config.omnichest.group.protection_search": "Защита и поиск",
+  "config.omnichest.group.appearance_input": "Вид и управление",
+
+
   "omnichest.language.system_default": "Как в системе",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -162,6 +168,13 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Сортировать",
   "omnichest.button.category_sort.tooltip": "Сортирует содержимое сундука по категориям.\n\nГруппирует по смыслу — стройка, дерево, руда, еда…\nодинаковые стопки объединяются.\n\nЗаблокированные слоты не двигаются.",
+
+  "omnichest.controls.title": "Управление",
+  "omnichest.controls.line.slot_lock_alt_click": "Alt+ЛКМ: Блок. слот",
+  "omnichest.controls.line.slot_lock_middle_click": "СКМ: Блок. слот",
+  "omnichest.controls.line.item_lock_cycle": "Shift+Alt+ЛКМ: Блок. предмет",
+  "omnichest.controls.line.alt_drag": "Alt+Тащить: Серия блок.",
+  "omnichest.controls.line.shift_compact": "Shift+Сжать: И инв.",
 
   "omnichest.button.sort_distance": "По расстоянию",
   "omnichest.button.sort_count": "По кол-ву",

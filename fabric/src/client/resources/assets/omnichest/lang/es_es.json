@@ -124,6 +124,12 @@
   "config.omnichest.language.override.tooltip": "Anula el idioma del mod. Selecciona \"System Default\" para seguir a Minecraft.",
   "config.omnichest.language.restart_hint": "La mayoría de textos cambia al instante. Algunos títulos requieren reabrir la pantalla.",
 
+  "config.omnichest.group.basics": "General",
+  "config.omnichest.group.item_sorting": "Organización",
+  "config.omnichest.group.protection_search": "Protección y búsqueda",
+  "config.omnichest.group.appearance_input": "Apariencia y controles",
+
+
   "omnichest.language.system_default": "Predeterminado del sistema",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -162,6 +168,13 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Ordenar",
   "omnichest.button.category_sort.tooltip": "Ordena el cofre por categorías.\n\nAgrupa por significado — construcción, madera, mineral, comida…\ny fusiona pilas iguales en una sola.\n\nLos huecos bloqueados no se mueven.",
+
+  "omnichest.controls.title": "Controles",
+  "omnichest.controls.line.slot_lock_alt_click": "Alt+Clic: Bloquear hueco",
+  "omnichest.controls.line.slot_lock_middle_click": "Clic central: Bloquear hueco",
+  "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Clic: Bloqueo de objeto",
+  "omnichest.controls.line.alt_drag": "Alt+Arrastrar: Bloqueo continuo",
+  "omnichest.controls.line.shift_compact": "Shift+Compactar: Inv. tamb.",
 
   "omnichest.button.sort_distance": "Distancia",
   "omnichest.button.sort_count": "Cantidad",

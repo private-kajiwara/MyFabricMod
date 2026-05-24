@@ -42,7 +42,10 @@ public final class LanguageCategoryBuilder {
         // 現在保存されている値を enum に解釈し、 EnumRow に渡す。
         LanguageOption current = LanguageOption.fromCode(cfg.languageOverride);
 
-        b.enumSelect(
+        // 言語は 14 種類あるためサイクル方式 (= enumSelect) ではなく
+        // 1 クリック確定のプルダウン (= dropdownSelect) を使う。
+        // tooltip は不要 (= プルダウンを開けば全選択肢が見えるので冗長)。
+        b.dropdownSelect(
                 OmniChestLocale.get(Keys.CONFIG_LANGUAGE_OVERRIDE, "Display Language"),
                 LanguageOption.class,
                 current,
@@ -53,8 +56,7 @@ public final class LanguageCategoryBuilder {
                     // (= ホットスワップ。 Screen の再生成は不要)。
                     LanguageManager.get().setCurrent(v);
                 },
-                OmniChestLocale.get(Keys.CONFIG_LANGUAGE_OVERRIDE_TOOLTIP,
-                        "Override the in-mod language. Use \"System Default\" to follow Minecraft."),
+                null,
                 LanguageOption::displayName);
 
         // 補足説明 (= 即時反映のしくみと再起動不要のヒント)。

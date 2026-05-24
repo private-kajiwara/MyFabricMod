@@ -124,6 +124,12 @@
   "config.omnichest.language.override.tooltip": "MOD 内の表示言語を上書きします。 Minecraft に合わせたいときは 「System Default」 を選んでください。",
   "config.omnichest.language.restart_hint": "変更は即座に反映されます。 一部のタイトルは画面を開き直すと反映されます。",
 
+  "config.omnichest.group.basics": "基本",
+  "config.omnichest.group.item_sorting": "アイテム整理",
+  "config.omnichest.group.protection_search": "保護と検索",
+  "config.omnichest.group.appearance_input": "見た目と操作",
+
+
   "omnichest.language.system_default": "システム標準",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -162,6 +168,13 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "カテゴリ整理",
   "omnichest.button.category_sort.tooltip": "チェストの中身を、種類ごとに整理します。\n\n建築・木材・鉱石・食料などの意味でグループ化し、\n同じアイテムはひとつにまとめます。\n\nロック中のスロットは動せません。",
+
+  "omnichest.controls.title": "操作方法",
+  "omnichest.controls.line.slot_lock_alt_click": "Alt+左クリック: スロットロック",
+  "omnichest.controls.line.slot_lock_middle_click": "中クリック: スロットロック",
+  "omnichest.controls.line.item_lock_cycle": "Shift+Alt+クリック: アイテムロック",
+  "omnichest.controls.line.alt_drag": "Alt+ドラッグ: 連続ロック",
+  "omnichest.controls.line.shift_compact": "Shift+圧縮: プレイヤーも",
 
   "omnichest.button.sort_distance": "距離順",
   "omnichest.button.sort_count": "数量順",

@@ -18,14 +18,18 @@ import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.item.ItemModelResolver;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.state.CameraRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -427,6 +431,17 @@ public final class ChestHighlighter {
      * {@link SubmitNodeCollector#submitText} に直接濃いめの bg を指定する。
      *
      * <p>
+     * <b>レイアウト</b>:
+     * <ul>
+     * <li>最上段は「▼ 距離」(中央揃え, 黄色)。 アイコンは付かない。</li>
+     * <li>その下のエントリ行は <b>左揃え</b>。 各行は「[アイテム アイコン] アイテム名 ×個数」 の順で並ぶ。
+     *     アイテム アイコンは {@link ItemStackRenderState} 経由でビルボード描画する
+     *     (= テキストと同じ pose 内で 1 行ぶんの高さに収まるよう scale)。</li>
+     * </ul>
+     * すべての本文行の左端を揃えるため、 全エントリの最大幅 (= アイコン幅 + ギャップ + テキスト幅) を
+     * 計算してから、 ブロック全体を中央寄せした位置の左端から描画する。
+     *
+     * <p>
      * DisplayMode は {@code SEE_THROUGH} なのでブロック越しでも視認できる (X-ray ボックスと一致)。
      */
     private static void submitPinStack(SubmitNodeCollector queue, PoseStack matrices,
@@ -462,21 +477,26 @@ public final class ChestHighlighter {
         // その下にエントリを上から entries[0], entries[1], ..., entries[N-1] と並べる
         //   (画面上の縦順序: 上→下 = ▼距離, 1番目, 2番目, ..., 最後)
         int totalRows = (entries.isEmpty() ? 1 : entries.size() + 1);
-        Component[] rowTexts = new Component[totalRows];
 
         Component headerComp = Component.literal(
                 String.format(Locale.ROOT, "▼ %.1fm", distM))
                 .withColor(themeRgb);
-        rowTexts[totalRows - 1] = headerComp; // 最上段
 
+        // エントリ本文の Component を 1 度だけ作って配列化する。
+        // 同時に「本文 + アイコン」を含む左揃えブロックの最大幅も算出する。
+        // アイコンは「行の高さに合わせた正方形 (= lineHeight x lineHeight)」として扱う。
+        Component[] entryTexts = new Component[entries.size()];
+        int entryIconSize = lineHeight;
+        int entryIconGap = 2;
+        int maxBlockWidth = 0;
         for (int i = 0; i < entries.size(); i++) {
             HighlightEntry e = entries.get(i);
             Component body = Component.literal(
                     e.stack.getHoverName().getString() + " ×" + e.count).withColor(0xFFFFFF);
-            // entries[0] → ▼ の直下 (totalRows - 2)
-            // entries[N-1] → 最下段 (rowIndex 0)
-            int rowIndex = totalRows - 2 - i;
-            rowTexts[rowIndex] = body;
+            entryTexts[i] = body;
+            int textW = font.width(body);
+            int blockW = entryIconSize + entryIconGap + textW;
+            if (blockW > maxBlockWidth) maxBlockWidth = blockW;
         }
 
         // ─── pose 変換 (バニラ NameTagFeatureRenderer.Storage.add と等価) ───
@@ -487,36 +507,105 @@ public final class ChestHighlighter {
                 / PIN_SCALE_REF_DISTANCE);
         float worldScale = PIN_TEXT_SCALE * distScaleFactor;
 
+        // 本文行はブロック (アイコン + テキスト) を画面中央に置きたいので、
+        // 左端 X = -maxBlockWidth / 2 とする。 行ごとに左端からアイコン → テキストを並べる。
+        float entryBlockLeftX = -maxBlockWidth / 2.0f;
+
+        // アイテム アイコン解決用 (= バニラのアイテム描画パイプラインに乗せる)。
+        Minecraft mc = Minecraft.getInstance();
+        ItemModelResolver itemModelResolver = mc.getItemModelResolver();
+        net.minecraft.client.multiplayer.ClientLevel level = mc.level;
+
         matrices.pushPose();
         try {
             matrices.translate(dx, dy, dz);
             matrices.mulPose(camState.orientation);
             matrices.scale(worldScale, -worldScale, worldScale);
 
-            // rowIndex=0 (最下段) の text 下端を pose Y=0 に合わせる。
-            // → text の top-left を fy = -(rowIndex+1)*rowSpacing + 1 に置く (1 px の上端余白)。
-            // 上段ほど fy が小さく (= 画面で上に) なる。
-            for (int rowIndex = 0; rowIndex < totalRows; rowIndex++) {
-                Component c = rowTexts[rowIndex];
-                if (c == null)
-                    continue;
-                FormattedCharSequence seq = c.getVisualOrderText();
-                int textWidth = font.width(c);
-                float fx = -textWidth / 2.0f;
-                float fy = -(rowIndex + 1) * (float) rowSpacing + 1.0f;
+            // ─── (a) ヘッダ「▼ 距離」 — 中央揃え、 最上段 ───
+            int headerRowIndex = totalRows - 1;
+            float headerY = -(headerRowIndex + 1) * (float) rowSpacing + 1.0f;
+            int headerWidth = font.width(headerComp);
+            queue.submitText(matrices, -headerWidth / 2.0f, headerY,
+                    headerComp.getVisualOrderText(),
+                    false, Font.DisplayMode.SEE_THROUGH,
+                    0xF000F0, 0xFFFFFFFF, PIN_BG_ARGB, 0);
 
-                // submitText(ps, x, y, text, dropShadow, displayMode,
-                //            packedLight, textColor, backgroundColor, outlineColor)
-                // ※ TextSubmit レコードの順序 (lightCoords → color → backgroundColor → outlineColor)
-                //   を踏まえた正しい引数並び。第8 引数が背景なので、ここを 0 にすると bg が描かれない。
-                queue.submitText(matrices, fx, fy, seq,
-                        /* dropShadow */ false,
-                        Font.DisplayMode.SEE_THROUGH,
-                        /* packedLight */ 0xF000F0,
-                        /* textColor */ 0xFFFFFFFF,
-                        /* backgroundColor */ PIN_BG_ARGB,
-                        /* outlineColor */ 0);
+            // ─── (b) エントリ行 — 左揃え、 行ごとに [アイコン] [テキスト] ───
+            for (int i = 0; i < entries.size(); i++) {
+                int rowIndex = totalRows - 2 - i; // entries[0] が ▼ の直下
+                float rowY = -(rowIndex + 1) * (float) rowSpacing + 1.0f;
+
+                Component body = entryTexts[i];
+                // アイコン描画用に独立 push (item 描画は内部で pose を変えるため隔離)。
+                HighlightEntry e = entries.get(i);
+                submitPinIcon(matrices, queue, itemModelResolver, level,
+                        e.stack, entryBlockLeftX, rowY, entryIconSize);
+
+                // テキストはアイコンの右隣 (icon size + gap だけずらす)。
+                FormattedCharSequence seq = body.getVisualOrderText();
+                float textX = entryBlockLeftX + entryIconSize + entryIconGap;
+                queue.submitText(matrices, textX, rowY, seq,
+                        false, Font.DisplayMode.SEE_THROUGH,
+                        0xF000F0, 0xFFFFFFFF, PIN_BG_ARGB, 0);
             }
+        } finally {
+            matrices.popPose();
+        }
+    }
+
+    /**
+     * ピン 1 行ぶんの位置にアイテムアイコンをビルボード描画する。
+     *
+     * <p>
+     * 呼び出し時点で matrices は「ピン billboard + worldScale (= font ピクセル単位, Y 下向き)」まで
+     * 適用済みなので、 ここではバニラ {@code GuiGraphics.renderItem} と同じ追加変換を行う:
+     * <ol>
+     *   <li>アイコンの <b>中心</b> へ translate (アイテム ジオメトリは中心原点なので、 左上ではない)。</li>
+     *   <li>Y 軸を反転 (= バニラ GUI 描画と同じ。 親の Y 反転と二重で正味は正の Y 上方向、
+     *       これでアイテム テクスチャが正しい向きで描かれる)。</li>
+     *   <li>{@code iconSize} に scale (アイテム ジオメトリは 1 単位幅 [-0.5, 0.5] なので
+     *       これで {@code iconSize} font ピクセル幅の正方形に収まる)。</li>
+     * </ol>
+     *
+     * <p>
+     * Z 方向には微小に手前 (+Z) へ寄せて、 同じ pose 内でテキスト背景と Z-fight するのを避ける。
+     *
+     * <p>
+     * {@link ItemDisplayContext#GUI} を選んだ理由: 「2D アイコンを 1 枚ペタッと貼る」描画になる。
+     * GROUND など他の context は 3D モデルが回って見え、 「アイコン横並び」用途には不向き。
+     */
+    private static void submitPinIcon(PoseStack matrices, SubmitNodeCollector queue,
+            ItemModelResolver itemModelResolver,
+            net.minecraft.client.multiplayer.ClientLevel level,
+            ItemStack stack, float leftX, float topY, int iconSize) {
+        if (stack == null || stack.isEmpty() || itemModelResolver == null) return;
+        ItemStackRenderState state = new ItemStackRenderState();
+        // ─── DisplayContext は FIXED を使う ───
+        // 旧 GUI 指定では、 アイテム アトラス テクスチャが GUI 描画パイプライン専用に
+        // バインドされる前提でレンダリングされ、 ワールド描画 (= SubmitNodeCollector) 経由では
+        // テクスチャが当たらず真っ白なジオメトリだけが出ていた。
+        // FIXED はアイテム フレームと同じ「平面 2D 風」 をワールドで描く前提のコンテキストで、
+        // SubmitNodeCollector でもテクスチャが正しく当たる。
+        // owner には mc.player を渡す (= バニラの GuiGraphics.renderItem も player を owner にしている)。
+        net.minecraft.client.player.LocalPlayer player = Minecraft.getInstance().player;
+        itemModelResolver.updateForTopItem(state, stack, ItemDisplayContext.FIXED,
+                level, player, 0);
+        if (state.isEmpty()) return;
+
+        matrices.pushPose();
+        try {
+            // (1) アイコン中心へ移動。 中心 = 左上 + iconSize/2。 Z は手前 (= +Z は親 worldScale 後では
+            //     カメラ方向) に少しだけ寄せて、 テキスト背景 (Z=0) より前面に出す。
+            matrices.translate(
+                    leftX + iconSize / 2.0f,
+                    topY + iconSize / 2.0f,
+                    0.5f);
+            // (2)(3) Y 軸反転 + サイズ調整を 1 回の scale で適用。
+            //   アイテム ジオメトリは 1 単位幅 → scale(iconSize) で iconSize ピクセル幅。
+            //   Y 反転は GUI item 描画の慣例 (バニラ GuiGraphics と同様)。
+            matrices.scale((float) iconSize, -(float) iconSize, (float) iconSize);
+            state.submit(matrices, queue, 0xF000F0, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
         } finally {
             matrices.popPose();
         }

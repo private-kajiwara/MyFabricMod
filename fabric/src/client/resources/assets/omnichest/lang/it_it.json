@@ -124,6 +124,12 @@
   "config.omnichest.language.override.tooltip": "Sovrascrive la lingua interna alla mod. Usa \"System Default\" per seguire Minecraft.",
   "config.omnichest.language.restart_hint": "La maggior parte dei testi si aggiorna subito. Alcuni titoli richiedono di riaprire la schermata.",
 
+  "config.omnichest.group.basics": "Generale",
+  "config.omnichest.group.item_sorting": "Ordinamento",
+  "config.omnichest.group.protection_search": "Protezione e ricerca",
+  "config.omnichest.group.appearance_input": "Aspetto e comandi",
+
+
   "omnichest.language.system_default": "Predefinita di sistema",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -162,6 +168,13 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Ordina",
   "omnichest.button.category_sort.tooltip": "Ordina il contenuto della cassa per categoria.\n\nRaggruppa per significato — costruzione, legno, minerali, cibo…\ne unisce le pile uguali in una sola.\n\nGli slot bloccati restano fermi.",
+
+  "omnichest.controls.title": "Comandi",
+  "omnichest.controls.line.slot_lock_alt_click": "Alt+Clic: Blocca slot",
+  "omnichest.controls.line.slot_lock_middle_click": "Clic centrale: Blocca slot",
+  "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Clic: Blocca oggetto",
+  "omnichest.controls.line.alt_drag": "Alt+Trascina: Blocco continuo",
+  "omnichest.controls.line.shift_compact": "Shift+Compatta: Anche giocatore",
 
   "omnichest.button.sort_distance": "Distanza",
   "omnichest.button.sort_count": "Quantità",

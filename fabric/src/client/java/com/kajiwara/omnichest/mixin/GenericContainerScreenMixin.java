@@ -7,6 +7,7 @@ import com.kajiwara.omnichest.client.gui.SearchScreen;
 import com.kajiwara.omnichest.i18n.Keys;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.search.ContainerScanner;
+import com.kajiwara.omnichest.slotlock.SlotLockConfig;
 import com.kajiwara.omnichest.template.config.TemplateConfig;
 import com.kajiwara.omnichest.template.gui.TemplateManagerScreen;
 import com.kajiwara.omnichest.template.gui.TemplateSaveScreen;
@@ -135,6 +136,173 @@ public abstract class GenericContainerScreenMixin extends Screen {
             CallbackInfo ci) {
         int badgeY = cits$badgeY();
         CategoryBadgeRenderer.renderBadge(g, this.leftPos + 4, badgeY, ContainerScanner.currentActiveKey());
+    }
+
+    // ───────────────────────────────────────────────────────────
+    // 操作方法ヘルプパネル (チェスト GUI の脇に、 ボタン群と反対側に出す)
+    // ───────────────────────────────────────────────────────────
+    /** 折り返しで生じた「同じ操作の続き」行の行送り (= 改行を含めない素のフォント行高)。 */
+    @Unique
+    private static final int CITS_HELP_LINE_HEIGHT = 10;
+    /** 別操作の「項目間」の行送り (= 視覚的に項目を区切るため少し広めに取る)。 */
+    @Unique
+    private static final int CITS_HELP_ENTRY_SPACING = 13;
+    /** パネル内の左右パディング (px)。 */
+    @Unique
+    private static final int CITS_HELP_PADDING = 4;
+    /**
+     * パネル描画を試みる最小幅 (px)。 これ未満の余白しか取れない GUI スケールでは
+     * チェストに被るのを避けて描画自体スキップする (= 「無い」が「壊れる」より優先)。
+     */
+    @Unique
+    private static final int CITS_HELP_MIN_WIDTH = 60;
+    /** 本文用の控えめなグレー (ARGB)。 */
+    @Unique
+    private static final int CITS_HELP_COLOR_BODY = 0xFF888888;
+    /** タイトル用の少し明るいグレー (ARGB)。 */
+    @Unique
+    private static final int CITS_HELP_COLOR_TITLE = 0xFFAAAAAA;
+    /** 区切り線用の暗めのグレー (ARGB)。 */
+    @Unique
+    private static final int CITS_HELP_COLOR_RULE = 0x66888888;
+
+    /**
+     * チェスト GUI を開いている間、 マウス/キー操作の早見表を脇に小さく出す。
+     *
+     * <p>
+     * <b>レイアウト破綻防止</b>: パネル幅は GUI の脇に <b>残っている隙間</b> から動的に算出する。
+     * 余ったスペースが狭ければテキストを自動折り返し ({@link Font#split}) して詰める。
+     * 残スペースが {@link #CITS_HELP_MIN_WIDTH} 未満なら描画しない (= チェストのアイテム上には
+     * 絶対に被せない)。
+     *
+     * <p>
+     * 配置順位:
+     * <ol>
+     * <li>ボタン群と反対側 ({@code cits$layoutRight = true} なら左、 false なら右)。</li>
+     * <li>1) の残スペースが狭すぎる場合はボタン側 (= ボタン列の <b>更に外側</b>) にフォールバック。</li>
+     * <li>どちらにも入らないほど狭い GUI スケールでは何も描画しない。</li>
+     * </ol>
+     *
+     * <p>
+     * 表示条件: 右列ボタンが生成された (= deposit ボタンが存在する) 画面のみ。
+     */
+    @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", at = @At("TAIL"))
+    private void cits$renderControlsHelp(GuiGraphics g, int mouseX, int mouseY, float partialTick,
+            CallbackInfo ci) {
+        // 対応画面 (= 右列ボタン生成済み) でのみ表示。
+        if (this.cits$depositButton == null)
+            return;
+
+        // ─── 1) 表示する行を組み立て (SlotLockConfig の個別フラグを尊重) ───
+        SlotLockConfig lockCfg = SlotLockConfig.get();
+        java.util.List<Component> lines = new java.util.ArrayList<>(5);
+        if (lockCfg.toggleWithAltClick) {
+            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_SLOT_LOCK_ALT_CLICK, "Alt+Click: Lock slot"));
+        }
+        if (lockCfg.toggleWithMiddleClick) {
+            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_SLOT_LOCK_MIDDLE_CLICK, "Middle Click: Lock slot"));
+        }
+        if (lockCfg.cycleWithShiftAltClick) {
+            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_ITEM_LOCK_CYCLE, "Shift+Alt+Click: Item lock"));
+        }
+        if (lockCfg.toggleWithAltClick) {
+            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_ALT_DRAG, "Alt+Drag: Continuous lock"));
+        }
+        if (this.cits$compactButton != null) {
+            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_SHIFT_COMPACT, "Shift+Compact: Player too"));
+        }
+        if (lines.isEmpty())
+            return;
+
+        // ─── 2) 配置サイドを決める: 「GUI の脇に残ってる余白」から算出 ───
+        // ボタン列の幅 (= CITS_DEPOSIT_WIDTH) も計算に含め、 同じ側に置く場合は
+        // ボタンの外側 (= screen 端寄り) に追いやる。
+        int margin = 4;
+        int edgePad = 2;
+        // 反対側 (= ボタンと逆) に取れる幅。
+        int oppositeAvail = this.cits$layoutRight
+                ? this.leftPos - margin - edgePad
+                : this.width - (this.leftPos + this.imageWidth) - margin - edgePad;
+        // 同じ側 (= ボタンの外側) に取れる幅。 ボタン領域を除外する。
+        int sameSideAvail = (this.cits$layoutRight
+                ? this.width - (this.leftPos + this.imageWidth) - margin - CITS_DEPOSIT_WIDTH - margin
+                : this.leftPos - margin - CITS_DEPOSIT_WIDTH - margin) - edgePad;
+
+        boolean placeOpposite;
+        int avail;
+        if (oppositeAvail >= CITS_HELP_MIN_WIDTH) {
+            placeOpposite = true;
+            avail = oppositeAvail;
+        } else if (sameSideAvail >= CITS_HELP_MIN_WIDTH) {
+            placeOpposite = false;
+            avail = sameSideAvail;
+        } else {
+            return; // どちらの脇にも収まらない → 描画しない (= チェストには絶対に被せない)。
+        }
+
+        // パネル幅は「テキスト最大幅 + パディング」と「残スペース」の小さい方。
+        Component title = OmniChestLocale.get(Keys.CONTROLS_TITLE, "Controls");
+        int textMaxW = this.font.width(title);
+        for (Component line : lines) {
+            textMaxW = Math.max(textMaxW, this.font.width(line));
+        }
+        int desiredW = textMaxW + CITS_HELP_PADDING * 2;
+        int panelWidth = Math.min(desiredW, avail);
+
+        // ─── 3) 配置 X 座標 ───
+        int x;
+        if (placeOpposite) {
+            x = this.cits$layoutRight
+                    ? this.leftPos - panelWidth - margin
+                    : this.leftPos + this.imageWidth + margin;
+        } else {
+            // 同じ側: ボタン列の外側にずらす。
+            x = this.cits$layoutRight
+                    ? this.leftPos + this.imageWidth + margin + CITS_DEPOSIT_WIDTH + margin
+                    : this.leftPos - margin - CITS_DEPOSIT_WIDTH - margin - panelWidth;
+        }
+        int y = this.topPos;
+
+        // ─── 4) 全行をパネル幅で折り返してから描画 ───
+        // Font.split は 1 行を複数の FormattedCharSequence に分割する (= スタイル保持)。
+        int wrapWidth = panelWidth - CITS_HELP_PADDING * 2;
+        if (wrapWidth < 20) return; // パディング控除で 20 px 未満になるなら諦める。
+
+        int textX = x + CITS_HELP_PADDING;
+        java.util.List<net.minecraft.util.FormattedCharSequence> titleLines =
+                this.font.split(title, wrapWidth);
+        int lineY = y;
+        for (net.minecraft.util.FormattedCharSequence tl : titleLines) {
+            g.drawString(this.font, tl, textX, lineY, CITS_HELP_COLOR_TITLE, false);
+            lineY += CITS_HELP_LINE_HEIGHT;
+        }
+        // 区切り線。
+        g.fill(x, lineY, x + panelWidth, lineY + 1, CITS_HELP_COLOR_RULE);
+        lineY += 4;
+
+        // 「異なる操作 (= 別の lines[i])」 の間だけ広めの spacing を取る。
+        // 折り返しで増えた continuation 行は元の行送り (LINE_HEIGHT) のまま — 1 項目内の改行が
+        // 不自然に広がるのを避ける。
+        for (int i = 0; i < lines.size(); i++) {
+            Component line = lines.get(i);
+            java.util.List<net.minecraft.util.FormattedCharSequence> wrapped =
+                    this.font.split(line, wrapWidth);
+            for (int w = 0; w < wrapped.size(); w++) {
+                g.drawString(this.font, wrapped.get(w), textX, lineY,
+                        CITS_HELP_COLOR_BODY, false);
+                // 同じ項目内の continuation は LINE_HEIGHT、 最後の行 → 次の項目は ENTRY_SPACING。
+                boolean lastWrapInEntry = (w == wrapped.size() - 1);
+                boolean lastEntry = (i == lines.size() - 1);
+                if (lastEntry && lastWrapInEntry) {
+                    // 最終行は行送り不要 (= ループ終了)。
+                    lineY += CITS_HELP_LINE_HEIGHT;
+                } else if (lastWrapInEntry) {
+                    lineY += CITS_HELP_ENTRY_SPACING;
+                } else {
+                    lineY += CITS_HELP_LINE_HEIGHT;
+                }
+            }
+        }
     }
 
     /**

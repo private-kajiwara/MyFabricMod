@@ -79,6 +79,14 @@ public final class Keys {
     // ─── Category Sort ボタン Tooltip ────────────────────────────
     public static final String CATEGORY_SORT_TOOLTIP = "omnichest.button.category_sort.tooltip";
 
+    // ─── Controls Help Panel (チェスト GUI の脇に出す操作方法一覧) ──────
+    public static final String CONTROLS_TITLE = "omnichest.controls.title";
+    public static final String CONTROLS_LINE_SLOT_LOCK_ALT_CLICK = "omnichest.controls.line.slot_lock_alt_click";
+    public static final String CONTROLS_LINE_SLOT_LOCK_MIDDLE_CLICK = "omnichest.controls.line.slot_lock_middle_click";
+    public static final String CONTROLS_LINE_ITEM_LOCK_CYCLE = "omnichest.controls.line.item_lock_cycle";
+    public static final String CONTROLS_LINE_ALT_DRAG = "omnichest.controls.line.alt_drag";
+    public static final String CONTROLS_LINE_SHIFT_COMPACT = "omnichest.controls.line.shift_compact";
+
     // ─── テンプレート関連 ─────────────────────────────────────
     public static final String TEMPLATE_DEFAULT_NAME = "omnichest.template.default_name";
     public static final String TEMPLATE_UNTITLED = "omnichest.template.untitled";
@@ -185,4 +193,10 @@ public final class Keys {
     public static final String CONFIG_LANGUAGE_OVERRIDE_TOOLTIP = "config.omnichest.language.override.tooltip";
     public static final String CONFIG_LANGUAGE_INTRO = "config.omnichest.language.intro";
     public static final String CONFIG_LANGUAGE_RESTART_HINT = "config.omnichest.language.restart_hint";
+
+    // ─── Config GUI Sidebar Group (カテゴリ見出し) ───────────────
+    public static final String CONFIG_GROUP_BASICS = "config.omnichest.group.basics";
+    public static final String CONFIG_GROUP_ITEM_SORTING = "config.omnichest.group.item_sorting";
+    public static final String CONFIG_GROUP_PROTECTION_SEARCH = "config.omnichest.group.protection_search";
+    public static final String CONFIG_GROUP_APPEARANCE_INPUT = "config.omnichest.group.appearance_input";
 }
