@@ -5,6 +5,7 @@ import com.kajiwara.omnichest.classify.ClassifyConfig;
 import com.kajiwara.omnichest.classify.StorageMemory;
 import com.kajiwara.omnichest.client.ClientKeyBindings;
 import com.kajiwara.omnichest.client.render.ChestHighlighter;
+import com.kajiwara.omnichest.search.ChestCacheStorage;
 import com.kajiwara.omnichest.search.ContainerScanner;
 import com.kajiwara.omnichest.slotlock.SlotLockConfig;
 import com.kajiwara.omnichest.slotlock.SlotLockStorage;
@@ -45,6 +46,15 @@ public class OmniChestClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        // ─── ChestCacheStorage: 開封済みコンテナを再ログイン時に復元 ───
+        // ContainerScanner.register() の <b>前</b> に呼ぶこと。
+        // Fabric event は登録順 (= FIFO) に発火するため:
+        //   先登録の ChestCacheStorage.DISCONNECT  → manager の中身を save (full data)
+        //   後登録の ContainerScanner.DISCONNECT  → manager.clear()
+        // 過去はこの順序を逆にしていて、 空 manager を save してしまい
+        // 「ゲーム再起動で履歴がリセットされる」バグになっていた。
+        ChestCacheStorage.register();
+
         ContainerScanner.register();
         ChestHighlighter.register();
         ClientKeyBindings.register();

@@ -58,6 +58,12 @@ public class SearchScreen extends Screen {
     /** スクロール量 (px)。 0 = 最上段。 */
     private double scrollPx = 0.0;
 
+    /** スクロールバーをドラッグ中か。 mouseClicked で true、 mouseReleased で false に戻す。 */
+    private boolean draggingScroll = false;
+
+    /** ドラッグ開始時に「ハンドル上端からカーソルまでの距離 (px)」。 drag 中はこの距離を保ったまま追従する。 */
+    private double scrollDragOffsetY = 0.0;
+
     /**
      * 選択中の行データ。 key = (チェスト × アイテム種) を表す行識別子 (String)、
      * value = ハイライト発火時に必要な (snapshot, ItemStack, 個数) のスナップショット。
@@ -355,14 +361,82 @@ public class SearchScreen extends Screen {
         int viewH = bottom - top;
         if (contentH <= viewH)
             return;
-        int barX = right - 4;
-        int trackH = viewH;
-        // バー長さは「表示割合」に比例
-        int barH = Math.max(20, (int) ((long) viewH * viewH / contentH));
+        int barX = scrollbarBarX();
+        int barH = scrollbarHandleHeight();
+        int barY = scrollbarHandleY();
+        // トラック (背景帯)
+        g.fill(barX, top, barX + SCROLLBAR_BAR_WIDTH, bottom, 0x66000000);
+        // ハンドル (ドラッグ中は明るく)
+        int handleColor = this.draggingScroll ? 0xFFFFFFFF : 0xFFAAAAAA;
+        g.fill(barX, barY, barX + SCROLLBAR_BAR_WIDTH, barY + barH, handleColor);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // スクロールバー: 形状計算ヘルパ
+    // ════════════════════════════════════════════════════════════════════
+
+    /** 描画バーの幅 (px)。クリック判定エリアはこの倍ぶん広く取る。 */
+    private static final int SCROLLBAR_BAR_WIDTH = 4;
+    /** クリック判定の左右マージン (px)。バーの左右にこの幅ぶん広げてヒット領域とする。 */
+    private static final int SCROLLBAR_CLICK_MARGIN = 4;
+
+    private int scrollbarBarX() {
+        return (this.width - LIST_SIDE_INSET) - SCROLLBAR_BAR_WIDTH;
+    }
+
+    /** ハンドル (= 動く方のバー) の高さ。表示割合に比例。 0 はスクロール不要を意味する。 */
+    private int scrollbarHandleHeight() {
+        int contentH = contentHeight();
+        int viewH = listHeight();
+        if (contentH <= viewH)
+            return 0;
+        return Math.max(20, (int) ((long) viewH * viewH / contentH));
+    }
+
+    /** ハンドル上端 Y。スクロール不要のときは listTop() を返す (safe fallback)。 */
+    private int scrollbarHandleY() {
+        int barH = scrollbarHandleHeight();
+        int viewH = listHeight();
+        int contentH = contentHeight();
+        if (barH == 0)
+            return listTop();
         int maxScroll = contentH - viewH;
-        int barY = top + (int) ((this.scrollPx / maxScroll) * (trackH - barH));
-        g.fill(barX, top, barX + 3, bottom, 0x66000000);
-        g.fill(barX, barY, barX + 3, barY + barH, 0xFFAAAAAA);
+        int trackH = viewH;
+        return listTop() + (int) ((this.scrollPx / maxScroll) * (trackH - barH));
+    }
+
+    /** マウスがスクロールバーのクリック領域 (バー本体 + 左右マージン) にあるか。 */
+    private boolean isMouseOverScrollbar(double mouseX, double mouseY) {
+        if (scrollbarHandleHeight() == 0)
+            return false;
+        int barX = scrollbarBarX();
+        return mouseX >= (barX - SCROLLBAR_CLICK_MARGIN)
+                && mouseX <= (barX + SCROLLBAR_BAR_WIDTH + SCROLLBAR_CLICK_MARGIN)
+                && mouseY >= listTop()
+                && mouseY <= listBottom();
+    }
+
+    /**
+     * ハンドル上端をマウスの希望位置に合わせるよう scrollPx を再計算する。
+     * desiredHandleTopY はトラック内 (= listTop()〜listBottom()-barH) 範囲外なら自動でクランプ。
+     */
+    private void setScrollFromHandleTopY(double desiredHandleTopY) {
+        int barH = scrollbarHandleHeight();
+        int viewH = listHeight();
+        int contentH = contentHeight();
+        if (barH == 0 || contentH <= viewH)
+            return;
+        int trackRange = viewH - barH;
+        if (trackRange <= 0)
+            return;
+        double frac = (desiredHandleTopY - listTop()) / trackRange;
+        if (frac < 0)
+            frac = 0;
+        if (frac > 1)
+            frac = 1;
+        int maxScroll = contentH - viewH;
+        this.scrollPx = frac * maxScroll;
+        clampScroll();
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -377,6 +451,25 @@ public class SearchScreen extends Screen {
 
         double mouseX = event.x();
         double mouseY = event.y();
+
+        // ───────────────────────────────────────────────────────
+        // スクロールバー処理 (左クリックのみ、行クリックより先)
+        // ───────────────────────────────────────────────────────
+        if (event.button() == 0 && isMouseOverScrollbar(mouseX, mouseY)) {
+            int handleY = scrollbarHandleY();
+            int handleH = scrollbarHandleHeight();
+            if (mouseY >= handleY && mouseY < handleY + handleH) {
+                // ハンドル本体をクリック: drag 開始。「ハンドル内のどこを掴んだか」を保存。
+                this.draggingScroll = true;
+                this.scrollDragOffsetY = mouseY - handleY;
+            } else {
+                // トラック上 (ハンドル以外) をクリック: そこへハンドルの中心を瞬間移動 + drag 継続。
+                setScrollFromHandleTopY(mouseY - handleH / 2.0);
+                this.draggingScroll = true;
+                this.scrollDragOffsetY = handleH / 2.0;
+            }
+            return true;
+        }
 
         // 行クリック判定
         int top = listTop();
@@ -403,6 +496,26 @@ public class SearchScreen extends Screen {
                     new SelectedRow(clicked.snapshot(), clicked.stack().copy(), clicked.count()));
         }
         return true;
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        // ドラッグ中なら scrollPx を追従更新。 ボタン番号は問わない (drag 開始した button が押下中)。
+        if (this.draggingScroll) {
+            double mouseY = event.y();
+            setScrollFromHandleTopY(mouseY - this.scrollDragOffsetY);
+            return true;
+        }
+        return super.mouseDragged(event, dx, dy);
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == 0 && this.draggingScroll) {
+            this.draggingScroll = false;
+            // super も呼んでおく (= 内部 widget 系の release 処理を阻害しない)。
+        }
+        return super.mouseReleased(event);
     }
 
     @Override

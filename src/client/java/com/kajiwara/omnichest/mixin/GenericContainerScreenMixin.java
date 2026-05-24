@@ -195,6 +195,11 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     btn -> {
                         Minecraft mc = Minecraft.getInstance();
                         if (mc.player != null) {
+                            // 直後に来る CHEST_CLOSE 等のコンテナ閉じ効果音を 1.5 秒間ミュートする。
+                            // (サーバ側で発生する → client に packet が届く → SoundManager.play で
+                            //  SoundSuppressor が検知してキャンセル) という流れ。
+                            com.kajiwara.omnichest.client.render.SoundSuppressor
+                                    .suppressContainerSoundsFor(1500L);
                             // ContainerClose を送信し、 client 側の containerMenu を inventoryMenu に戻す。
                             mc.player.closeContainer();
                         }

@@ -5,7 +5,10 @@
 	"client": [
 		"GenericContainerScreenMixin",
 		"SlotLockScreenMixin",
-		"AbstractContainerScreenAccessor"
+		"AbstractContainerScreenAccessor",
+		"SoundManagerMixin",
+		"RenderTypeAccessor",
+		"SearchMatchSlotMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -1,21 +1,31 @@
 package com.kajiwara.omnichest.client.render;
 
+import com.kajiwara.omnichest.mixin.RenderTypeAccessor;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.minecraft.client.DeltaTracker;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderSetup;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
-import org.joml.Vector4f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,43 +37,60 @@ import java.util.concurrent.ConcurrentHashMap;
  * 検索結果クリック時に「対象コンテナを世界中で目立たせる」レンダラ。
  *
  * <p>
- * 描画方式: <b>HUD オーバーレイ</b> (ワールド座標 → スクリーン座標投影)
+ * 二段構成のハイライト (すべてワールド座標系):
+ * <ol>
+ * <li><b>X-ray ボックス</b>: チェスト本体を囲む黄色いワイヤーフレーム。
+ * カスタム RenderPipeline で {@code NO_DEPTH_TEST} を指定しているため、
+ * ブロック越しでも常に視認できる。</li>
+ * <li><b>名前タグピン</b>: チェストの上空にビルボード描画される
+ * 「アイテム名 × 数量 (距離)」テキスト。
+ * バニラの {@link SubmitNodeCollector#submitNameTag} 経路を使うため
+ * エンティティのネームタグと同じ自然な描画になり、画面に張り付かない。</li>
+ * </ol>
  *
  * <p>
- * 1.21.11 の submit node pipeline で世界座標テキスト描画が flush されないため、
- * 「ワールド座標を画面座標に投影 → HUD レイヤで描画」の方式を採る。これにより
- * 確実に最前面で描画され、壁越し視認も成立する。
- *
- * <p>
- * 設計:
- * <ul>
- * <li>1 チェストあたり 1 個の {@code ActiveHighlight} を保持。</li>
- * <li>同じチェストに複数アイテムを highlight すると、 entries に追加蓄積される
- * (= 「選択したアイテムを検索」で複数選択した場合、全アイテムが 1 つのチェスト上に
- * 縦並びで表示される)。</li>
- * <li>ピン「▼」はチェストの投影位置 (sp.x, sp.y) に「先端が刺さる」ように配置。
- * 画面外でなければクランプしないため、視点を動かすとピンが画面上を「滑る」感じになり、
- * 自然な「チェストに張り付いてる」見た目になる。</li>
- * <li>カメラ後方は画面下部にクランプ + 「↓」矢印。</li>
- * </ul>
+ * 描画タイミングは {@link WorldRenderEvents#BEFORE_ENTITIES}。
+ * SubmitNodeCollector はエンティティ pass で集計・描画されるため、
+ * その手前 = entities 開始前に submit を完了させておく必要がある。
  */
 public final class ChestHighlighter {
 
     private static final ChestHighlighter INSTANCE = new ChestHighlighter();
 
-    public static final long DEFAULT_HIGHLIGHT_DURATION_MS = 10_000L;
-    private static final long FADE_TAIL_MS = 1000L;
-    private static final String PIN_GLYPH = "▼";
-    private static final int PIN_RGB = 0xFFCC00;
-    private static final int LABEL_RGB = 0xFFFFFF;
-    private static final int LABEL_BG = 0xB0000000;
-    private static final int EDGE_MARGIN_PX = 16;
+    public static final long DEFAULT_HIGHLIGHT_DURATION_MS = 15_000L;
+    private static final long FADE_TAIL_MS = 1500L;
 
     /**
-     * 現在有効なハイライト。 1 entry = 1 チェスト。
-     * 同チェスト内の複数アイテム選択は entries リスト追加で表現する。
+     * 開いているコンテナで対象アイテムを表示している間、最低限保証するハイライト残存時間 (ms)。
+     * GUI で {@link #isHighlightedItem(ItemStack)} がヒットする度に
+     * {@code expiresAt} をこの時間ぶん再延長するため、 GUI を閉じた後も約 10 秒間は
+     * スロット overlay と (ワールド側の) ピン/ボックスが残る。
      */
+    private static final long SLOT_VIEW_REFRESH_MS = 10_000L;
+
+    /** ピン・ボックス共通のテーマカラー (RGB)。 */
+    private static final int THEME_RGB = 0xFFCC00;
+
+    /** 線の太さ (lines shader が読む)。 */
+    private static final float LINE_WIDTH = 3.5f;
+
+    /** ボックスを実ブロックよりわずかに膨らませて z-fighting を回避する量。 */
+    private static final float BOX_INFLATE = 0.0025f;
+
+    /** ピンの最下段がチェスト天面より上に何ブロック浮くか。 */
+    private static final double PIN_BASE_HEIGHT = 1.25;
+
+    /** ピンテキストのワールドスケール (= 1 font-pixel あたりのワールド単位)。 */
+    private static final float PIN_TEXT_SCALE = 0.025f;
+
+    /** ピン背景色 (ARGB)。バニラのネームタグ (alpha ~0x40) より大幅に濃くする (alpha 0xE0)。 */
+    private static final int PIN_BG_ARGB = 0xE0000000;
+
+    /** 現在有効なハイライト。 1 entry = 1 チェスト。 */
     private final Map<ContainerSnapshot.Key, ActiveHighlight> active = new ConcurrentHashMap<>();
+
+    /** X-ray 用 lines RenderType (初回参照時に lazy 構築)。 */
+    private static volatile RenderType xrayLinesType;
 
     private ChestHighlighter() {
     }
@@ -73,20 +100,16 @@ public final class ChestHighlighter {
     }
 
     public static void register() {
-        HudRenderCallback.EVENT.register(INSTANCE::onHudRender);
+        WorldRenderEvents.BEFORE_ENTITIES.register(INSTANCE::onWorldRender);
     }
 
     // ════════════════════════════════════════════════════════════════════
-    // 登録 API
+    // 登録 API (SearchScreen から呼ばれる)
     // ════════════════════════════════════════════════════════════════════
 
     /**
-     * チェストにハイライトを登録する。
-     *
-     * <p>
-     * 同じ {@link ContainerSnapshot.Key} で既に entry がある場合、
-     * 新しいアイテム情報を <b>追記</b> する (上書きしない)。
-     * これで「同じチェストの複数アイテムを選択」したケースで全件表示される。
+     * チェストにハイライトを登録する。同じ {@link ContainerSnapshot.Key} に
+     * 複数アイテムを登録すると entries に追記される。
      */
     public void highlight(ContainerSnapshot snapshot, ItemStack labelItem, int labelCount, long durationMs) {
         if (snapshot == null)
@@ -99,10 +122,9 @@ public final class ChestHighlighter {
             ActiveHighlight target = (existing != null)
                     ? existing
                     : new ActiveHighlight(snapshot, new ArrayList<>(), expiresAt);
-            target.expiresAt = expiresAt; // 期限は最新に更新
+            target.expiresAt = expiresAt;
 
             if (hasLabel) {
-                // 同一アイテム+個数の重複追加を防ぐ。
                 boolean dup = false;
                 for (HighlightEntry e : target.entries) {
                     if (e.count == labelCount
@@ -131,16 +153,58 @@ public final class ChestHighlighter {
         active.clear();
     }
 
+    /**
+     * 任意の {@link ItemStack} が、現在アクティブなハイライト対象アイテムのいずれかに
+     * (同一アイテム + 同一 Components) として該当するかを返す。
+     *
+     * <p>
+     * GUI 側 ({@code AbstractContainerScreen#renderSlot}) からスロット毎に呼ばれ、
+     * 該当した場合に黄色 overlay を描画する用途。
+     *
+     * <p>
+     * <b>副作用</b>: ヒットしたハイライトの {@code expiresAt} を
+     * {@code now + SLOT_VIEW_REFRESH_MS} に延長する (= 既にそれより先ならそのまま)。
+     * これにより GUI を開いている間は常に最新フレームで時計がリセットされ続け、
+     * GUI を閉じた後も少なくとも 10 秒間はピン/ボックス/スロット overlay が残る。
+     */
+    public boolean isHighlightedItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty())
+            return false;
+        if (active.isEmpty())
+            return false;
+        long now = System.currentTimeMillis();
+        long refreshTo = now + SLOT_VIEW_REFRESH_MS;
+        boolean matched = false;
+        for (ActiveHighlight h : active.values()) {
+            if (h.expiresAt < now)
+                continue;
+            boolean hitThis = false;
+            for (HighlightEntry e : h.entries) {
+                if (ItemStack.isSameItemSameComponents(e.stack, stack)) {
+                    hitThis = true;
+                    break;
+                }
+            }
+            if (hitThis) {
+                matched = true;
+                if (h.expiresAt < refreshTo)
+                    h.expiresAt = refreshTo;
+            }
+        }
+        return matched;
+    }
+
+    /** スロット overlay に使うテーマ色 (RGB)。 ChestHighlighter のピン色と一致させる。 */
+    public static int themeRgb() {
+        return THEME_RGB;
+    }
+
     // ════════════════════════════════════════════════════════════════════
-    // 描画
+    // ワールド描画
     // ════════════════════════════════════════════════════════════════════
 
-    private void onHudRender(GuiGraphics g, DeltaTracker deltaTracker) {
+    private void onWorldRender(WorldRenderContext ctx) {
         if (active.isEmpty())
-            return;
-        Minecraft mc = Minecraft.getInstance();
-        ClientLevel level = mc.level;
-        if (level == null || mc.player == null)
             return;
 
         long now = System.currentTimeMillis();
@@ -148,19 +212,22 @@ public final class ChestHighlighter {
         if (active.isEmpty())
             return;
 
+        CameraRenderState camState = ctx.worldState().cameraRenderState;
+        if (camState == null || camState.pos == null)
+            return;
+        Vec3 camPos = camState.pos;
+
+        // 現在 dimension をフィルタするための ResourceKey。
+        // worldState 経由で取りたいが API 公開されていないので Minecraft.level から拾う。
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        net.minecraft.client.multiplayer.ClientLevel level = mc.level;
+        if (level == null)
+            return;
         ResourceKey<Level> currentDim = level.dimension();
-        Font font = mc.font;
 
-        Vec3 cam = mc.player.getEyePosition(deltaTracker.getGameTimeDeltaPartialTick(true));
-        Quaternionf cameraRot = mc.gameRenderer.getMainCamera().rotation();
-        Quaternionf rotInv = new Quaternionf(cameraRot).invert();
-
-        int screenW = g.guiWidth();
-        int screenH = g.guiHeight();
-        float fov = (float) (double) mc.options.fov().get();
-        float aspect = (float) screenW / Math.max(1, screenH);
-        Matrix4f proj = new Matrix4f().perspective(
-                (float) Math.toRadians(fov), aspect, 0.05f, 1024.0f);
+        PoseStack matrices = ctx.matrices();
+        SubmitNodeCollector queue = ctx.commandQueue();
+        RenderType xray = xrayLines();
 
         for (ActiveHighlight h : active.values()) {
             ContainerSnapshot snap = h.snapshot;
@@ -168,252 +235,231 @@ public final class ChestHighlighter {
                 continue;
 
             long remaining = h.expiresAt - now;
-            float alphaF = 1.0f;
-            if (remaining < FADE_TAIL_MS) {
-                alphaF = Math.max(0.0f, remaining / (float) FADE_TAIL_MS);
+            float alphaF = (remaining < FADE_TAIL_MS)
+                    ? Math.max(0.0f, remaining / (float) FADE_TAIL_MS)
+                    : 1.0f;
+            int color = packColor(THEME_RGB, alphaF);
+
+            // ─── ボックス (X-ray) ───
+            submitBox(queue, matrices, xray, snap.pos(), camPos, color);
+            if (snap.secondaryPos() != null && snap.type() != null && snap.type().isDouble()) {
+                submitBox(queue, matrices, xray, snap.secondaryPos(), camPos, color);
             }
 
-            BlockPos pos = snap.pos();
-            // ピン先端の世界座標: チェスト上面より少し上 (Y+1.2 程度。 +0.5 だと埋まる)。
-            double wx = pos.getX() + 0.5;
-            double wy = pos.getY() + 1.2;
-            double wz = pos.getZ() + 0.5;
-
-            ScreenProjection sp = projectToScreen(wx, wy, wz, cam, rotInv, proj, screenW, screenH);
-            if (sp == null)
-                continue;
-
-            double dx = wx - cam.x;
-            double dy = wy - cam.y;
-            double dz = wz - cam.z;
-            double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-            drawChestStack(g, font, sp, h.entries, dist, alphaF, screenW, screenH);
+            // ─── ピン (ネームタグ) ───
+            submitPinStack(queue, matrices, camState, snap, camPos, h.entries);
         }
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // X-ray ボックス
+    // ════════════════════════════════════════════════════════════════════
+
     /**
-     * 1 つのチェストに紐づく「ピン + 複数アイテム」を描画する。
+     * 1 ブロック分の wireframe box を camera-relative 座標で submit する。
+     */
+    private static void submitBox(SubmitNodeCollector queue, PoseStack matrices, RenderType type,
+            BlockPos pos, Vec3 camPos, int color) {
+        // camera-relative 座標 (matrices は camera 原点で来る)
+        float x0 = (float) (pos.getX() - camPos.x) - BOX_INFLATE;
+        float y0 = (float) (pos.getY() - camPos.y) - BOX_INFLATE;
+        float z0 = (float) (pos.getZ() - camPos.z) - BOX_INFLATE;
+        float x1 = x0 + 1.0f + BOX_INFLATE * 2.0f;
+        float y1 = y0 + 1.0f + BOX_INFLATE * 2.0f;
+        float z1 = z0 + 1.0f + BOX_INFLATE * 2.0f;
+
+        queue.submitCustomGeometry(matrices, type, (pose, consumer) -> {
+            // 底面 4 辺
+            addLine(consumer, pose, x0, y0, z0, x1, y0, z0, color);
+            addLine(consumer, pose, x1, y0, z0, x1, y0, z1, color);
+            addLine(consumer, pose, x1, y0, z1, x0, y0, z1, color);
+            addLine(consumer, pose, x0, y0, z1, x0, y0, z0, color);
+            // 上面 4 辺
+            addLine(consumer, pose, x0, y1, z0, x1, y1, z0, color);
+            addLine(consumer, pose, x1, y1, z0, x1, y1, z1, color);
+            addLine(consumer, pose, x1, y1, z1, x0, y1, z1, color);
+            addLine(consumer, pose, x0, y1, z1, x0, y1, z0, color);
+            // 垂直 4 辺
+            addLine(consumer, pose, x0, y0, z0, x0, y1, z0, color);
+            addLine(consumer, pose, x1, y0, z0, x1, y1, z0, color);
+            addLine(consumer, pose, x1, y0, z1, x1, y1, z1, color);
+            addLine(consumer, pose, x0, y0, z1, x0, y1, z1, color);
+        });
+    }
+
+    private static void addLine(VertexConsumer c, PoseStack.Pose pose,
+            float x1, float y1, float z1, float x2, float y2, float z2, int color) {
+        float nx = x2 - x1, ny = y2 - y1, nz = z2 - z1;
+        float len = Mth.sqrt(nx * nx + ny * ny + nz * nz);
+        if (len > 1e-6f) {
+            nx /= len;
+            ny /= len;
+            nz /= len;
+        }
+        c.addVertex(pose, x1, y1, z1).setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(LINE_WIDTH);
+        c.addVertex(pose, x2, y2, z2).setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(LINE_WIDTH);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // ピン (テキスト, X-ray, 濃いめ背景)
+    // ════════════════════════════════════════════════════════════════════
+
+    /**
+     * チェストの「真上 (PIN_BASE_HEIGHT)」を起点に、複数 entry を縦積みで描画する。
      *
      * <p>
-     * レイアウト (チェストの上に縦並び):
-     * <pre>
-     *    Iron ×32       ← 上 (続きアイテム)
-     *    Gold ×5
-     * ▼ Diamond ×18 5.2m ← 下 (最初の選択 + 距離 + ピン)
-     *    [チェスト本体]
-     * </pre>
-     * ピン「▼」は「先端の縦座標 = sp.y (= チェスト上面の投影)」になるように配置。
+     * バニラの {@code submitNameTag} は背景透明度を {@code Options.getBackgroundOpacity(0.25f)}
+     * に固定しており、ユーザー設定 (1/4) では薄すぎて視認性が悪い。
+     * そこで本実装ではバニラ NameTag と同じ pose 変換 (translate → billboard → scale) を自前で行い、
+     * {@link SubmitNodeCollector#submitText} に直接濃いめの bg を指定する。
+     *
+     * <p>
+     * DisplayMode は {@code SEE_THROUGH} なのでブロック越しでも視認できる (X-ray ボックスと一致)。
      */
-    private static void drawChestStack(GuiGraphics g, Font font, ScreenProjection sp,
-            List<HighlightEntry> entries, double distMeters, float alphaF,
-            int screenW, int screenH) {
-        int alphaByte = Math.min(255, Math.max(0, Math.round(alphaF * 255)));
-        int pinColor = (alphaByte << 24) | (PIN_RGB & 0x00FFFFFF);
-        int labelColor = (alphaByte << 24) | (LABEL_RGB & 0x00FFFFFF);
-        int distColor = (alphaByte << 24) | 0x00AAAAAA;
-        int labelBg = applyAlphaToBg(LABEL_BG, alphaF);
+    private static void submitPinStack(SubmitNodeCollector queue, PoseStack matrices,
+            CameraRenderState camState, ContainerSnapshot snap, Vec3 camPos,
+            List<HighlightEntry> entries) {
+        // 中心 (ラージチェストはその中点に置く)
+        double cx, cz;
+        BlockPos primary = snap.pos();
+        BlockPos secondary = snap.secondaryPos();
+        if (secondary != null && snap.type() != null && snap.type().isDouble()) {
+            cx = (primary.getX() + secondary.getX()) * 0.5 + 0.5;
+            cz = (primary.getZ() + secondary.getZ()) * 0.5 + 0.5;
+        } else {
+            cx = primary.getX() + 0.5;
+            cz = primary.getZ() + 0.5;
+        }
+        // ピン下端の世界 Y = チェスト天面 (y + 1) + PIN_BASE_HEIGHT
+        double baseY = primary.getY() + 1.0 + PIN_BASE_HEIGHT;
 
-        int lineH = font.lineHeight;
-        int rowSpacing = lineH + 1;
-        int padX = 3;
-        int padY = 2;
-        int gap = 4;
+        Font font = Minecraft.getInstance().font;
+        int lineHeight = font.lineHeight;        // 通常 9
+        int rowSpacing = lineHeight + 1;         // 行間 1 px
 
-        Component pinComp = Component.literal(PIN_GLYPH);
-        int pinW = font.width(pinComp);
+        // 行内容を rowIndex=0 (最下段) から順に組み立て
+        int totalRows = Math.max(1, entries.size());
+        Component[] rowTexts = new Component[totalRows];
 
-        // ─── ラベル文字列を生成 ───
-        // entries が空 (ラベル無しの highlight) でも「▼ + 距離」のミニ表示はする。
-        String distLabel = String.format(Locale.ROOT, "%.1fm", distMeters);
+        // 距離は最下段にだけ付ける (= bottom row のみアイテム名 + 距離、上段はアイテム名のみ)
+        double dx = cx - camPos.x;
+        double dy = baseY - camPos.y;
+        double dz = cz - camPos.z;
+        double distSq = dx * dx + dy * dy + dz * dz;
+        double distM = Math.sqrt(distSq);
+        Component distComp = Component.literal(String.format(Locale.ROOT, "  %.1fm", distM))
+                .withColor(0xAAAAAA);
 
-        List<String> displayLines = new ArrayList<>();
         if (entries.isEmpty()) {
-            displayLines.add(""); // bottom-only with pin+dist, no item label
+            rowTexts[0] = Component.literal("▼ ").withColor(THEME_RGB).append(distComp);
         } else {
-            for (HighlightEntry e : entries) {
-                displayLines.add(e.stack.getHoverName().getString() + " ×" + e.count);
-            }
-        }
-
-        // bottom (チェスト直上) 行 = entries の最初のもの (= 配列末尾を bottom に置く)
-        // ここでは entries の表示順を「先頭が一番下 = チェスト直上」とする。
-        // (= 視覚的にプライマリ選択が一番下に来て pin と同じ行になる)
-        // entries.get(0) → bottom 行へ。 entries.get(last) → top 行へ。
-
-        // ─── 各行の幅を計測 ───
-        int firstLineW; // bottom 行 = pin + item + dist
-        if (entries.isEmpty()) {
-            firstLineW = pinW + gap + font.width(distLabel);
-        } else {
-            firstLineW = pinW + gap + font.width(displayLines.get(0)) + gap + font.width(distLabel);
-        }
-        int contIndent = pinW + gap;
-        int maxContW = 0;
-        for (int i = 1; i < displayLines.size(); i++) {
-            maxContW = Math.max(maxContW, font.width(displayLines.get(i)));
-        }
-        int blockW = Math.max(firstLineW, contIndent + maxContW);
-
-        // ─── 配置 ───
-        // ピン (▼) の先端が sp.y に来るように、ピン左上を (sp.x - pinW/2, sp.y - lineH) に置く。
-        int blockX = sp.x - pinW / 2;
-        // 一番下の行 (= ピン行) の y。
-        int bottomY = sp.y - lineH;
-        // 一番上の行の y。
-        int topY = bottomY - (displayLines.size() - 1) * rowSpacing;
-
-        // ─── 画面外時のみクランプ (= 視点固定っぽい挙動を回避) ───
-        if (sp.offscreen) {
-            // 画面外なら端に貼り付ける。
-            int rightEdge = blockX + blockW;
-            if (rightEdge > screenW - EDGE_MARGIN_PX)
-                blockX = screenW - blockW - EDGE_MARGIN_PX;
-            if (blockX < EDGE_MARGIN_PX)
-                blockX = EDGE_MARGIN_PX;
-            int bottomEdge = bottomY + lineH;
-            if (bottomEdge > screenH - EDGE_MARGIN_PX) {
-                int shift = bottomEdge - (screenH - EDGE_MARGIN_PX);
-                bottomY -= shift;
-                topY -= shift;
-            }
-            if (topY < EDGE_MARGIN_PX) {
-                int shift = EDGE_MARGIN_PX - topY;
-                bottomY += shift;
-                topY += shift;
-            }
-        } else {
-            // 画面内: 「上下が画面外にはみ出さないように」だけ最低限のソフト調整。
-            // 左右は「チェストに張り付いてる」感を維持するためクランプしない (はみ出し OK)。
-            if (topY < 1)
-                topY = 1;
-            int bottomEdge = bottomY + lineH;
-            if (bottomEdge > screenH - 1) {
-                int shift = bottomEdge - (screenH - 1);
-                bottomY -= shift;
-                topY -= shift;
-            }
-        }
-
-        // ─── 背景帯 ───
-        g.fill(blockX - padX, topY - padY,
-                blockX + blockW + padX, bottomY + lineH + padY,
-                labelBg);
-
-        // ─── 描画 ───
-        // 行を上から下へ描画。表示順: entries[last]=top → entries[0]=bottom。
-        for (int displayIdx = 0; displayIdx < displayLines.size(); displayIdx++) {
-            int y = topY + displayIdx * rowSpacing;
-            // displayIdx の意味: 0 = 一番上、 last = 一番下 (= ピン行)
-            // entries 配列との対応:
-            //   displayIdx = displayLines.size() - 1 - entriesIdx
-            //   → entriesIdx = displayLines.size() - 1 - displayIdx
-            int entriesIdx = displayLines.size() - 1 - displayIdx;
-            String text = displayLines.get(entriesIdx);
-
-            boolean isBottom = (displayIdx == displayLines.size() - 1);
-            if (isBottom) {
-                // ピン + アイテム + 距離
-                g.drawString(font, pinComp, blockX, y, pinColor, true);
-                int textX = blockX + pinW + gap;
-                if (!text.isEmpty()) {
-                    g.drawString(font, text, textX, y, labelColor, true);
-                    int distX = textX + font.width(text) + gap;
-                    g.drawString(font, distLabel, distX, y, distColor, true);
+            for (int i = 0; i < entries.size(); i++) {
+                HighlightEntry e = entries.get(i);
+                Component body = Component.literal(
+                        e.stack.getHoverName().getString() + " ×" + e.count).withColor(0xFFFFFF);
+                if (i == 0) {
+                    rowTexts[0] = Component.literal("▼ ").withColor(THEME_RGB)
+                            .append(body).append(distComp);
                 } else {
-                    g.drawString(font, distLabel, textX, y, distColor, true);
+                    rowTexts[i] = body;
                 }
-            } else {
-                // 続き行 (ピンの真下にインデントしてアイテムだけ)
-                g.drawString(font, text, blockX + contIndent, y, labelColor, true);
             }
         }
 
-        // ─── 画面外矢印 ───
-        if (sp.offscreen && sp.arrowGlyph != null && !sp.arrowGlyph.isEmpty()) {
-            int arrowX = blockX + blockW + padX + 2;
-            if (arrowX + 8 > screenW)
-                arrowX = screenW - 10;
-            g.drawString(font, sp.arrowGlyph, arrowX, bottomY, pinColor, true);
+        // ─── pose 変換 (バニラ NameTagFeatureRenderer.Storage.add と等価) ───
+        matrices.pushPose();
+        try {
+            matrices.translate(dx, dy, dz);
+            matrices.mulPose(camState.orientation);
+            matrices.scale(PIN_TEXT_SCALE, -PIN_TEXT_SCALE, PIN_TEXT_SCALE);
+
+            // rowIndex=0 (最下段) の text 下端を pose Y=0 に合わせる。
+            // → text の top-left を fy = -(rowIndex+1)*rowSpacing + 1 に置く (1 px の上端余白)。
+            // 上段ほど fy が小さく (= 画面で上に) なる。
+            for (int rowIndex = 0; rowIndex < totalRows; rowIndex++) {
+                Component c = rowTexts[rowIndex];
+                if (c == null)
+                    continue;
+                FormattedCharSequence seq = c.getVisualOrderText();
+                int textWidth = font.width(c);
+                float fx = -textWidth / 2.0f;
+                float fy = -(rowIndex + 1) * (float) rowSpacing + 1.0f;
+
+                // submitText(ps, x, y, text, dropShadow, displayMode,
+                //            packedLight, textColor, backgroundColor, outlineColor)
+                // ※ TextSubmit レコードの順序 (lightCoords → color → backgroundColor → outlineColor)
+                //   を踏まえた正しい引数並び。第8 引数が背景なので、ここを 0 にすると bg が描かれない。
+                queue.submitText(matrices, fx, fy, seq,
+                        /* dropShadow */ false,
+                        Font.DisplayMode.SEE_THROUGH,
+                        /* packedLight */ 0xF000F0,
+                        /* textColor */ 0xFFFFFFFF,
+                        /* backgroundColor */ PIN_BG_ARGB,
+                        /* outlineColor */ 0);
+            }
+        } finally {
+            matrices.popPose();
         }
     }
+
+    // ════════════════════════════════════════════════════════════════════
+    // X-ray RenderType (lines, NO_DEPTH_TEST)
+    // ════════════════════════════════════════════════════════════════════
 
     /**
-     * ワールド座標 → スクリーン座標 (GUI スケール) 投影。
+     * 「ブロック越しでも見える」線描画用の RenderType を構築する。
+     * バニラの {@code core/rendertype_lines} シェーダをそのまま使い、
+     * pipeline 設定のみ depth test を {@code NO_DEPTH_TEST} に差し替える。
      */
-    private static ScreenProjection projectToScreen(double wx, double wy, double wz,
-            Vec3 cam, Quaternionf rotInv, Matrix4f proj, int screenW, int screenH) {
-        Vector4f vec = new Vector4f(
-                (float) (wx - cam.x),
-                (float) (wy - cam.y),
-                (float) (wz - cam.z),
-                1.0f);
-        // world → camera-local ("+Z forward" 慣例)
-        rotInv.transform(vec);
+    private static RenderType xrayLines() {
+        RenderType cached = xrayLinesType;
+        if (cached != null)
+            return cached;
+        synchronized (ChestHighlighter.class) {
+            if (xrayLinesType != null)
+                return xrayLinesType;
 
-        float camLocalX = vec.x;
-        float camLocalZ = vec.z;
+            // lines シェーダが要求する uniform バッファ群を snippet として束ねる。
+            RenderPipeline.Snippet uniformsSnippet = RenderPipeline.builder()
+                    .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+                    .withUniform("Projection", UniformType.UNIFORM_BUFFER)
+                    .withUniform("Fog", UniformType.UNIFORM_BUFFER)
+                    .withUniform("Globals", UniformType.UNIFORM_BUFFER)
+                    .buildSnippet();
 
-        // カメラ後方 (z <= 0): 画面下部に専用配置。
-        if (camLocalZ <= 0.01f) {
-            int sx;
-            if (camLocalX > 0.5f)
-                sx = screenW * 3 / 4;
-            else if (camLocalX < -0.5f)
-                sx = screenW / 4;
-            else
-                sx = screenW / 2;
-            int sy = screenH - EDGE_MARGIN_PX * 5;
-            return new ScreenProjection(sx, sy, true, "↓");
+            RenderPipeline pipeline = RenderPipeline.builder(uniformsSnippet)
+                    .withLocation(net.minecraft.resources.Identifier.fromNamespaceAndPath(
+                            "omnichest", "pipeline/xray_lines"))
+                    .withVertexShader("core/rendertype_lines")
+                    .withFragmentShader("core/rendertype_lines")
+                    .withBlend(BlendFunction.TRANSLUCENT)
+                    .withCull(false)
+                    .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+                    .withDepthWrite(false)
+                    .withVertexFormat(
+                            DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH,
+                            VertexFormat.Mode.LINES)
+                    .build();
+
+            RenderSetup setup = RenderSetup.builder(pipeline).createRenderSetup();
+            RenderType rt = RenderTypeAccessor.omnichest$create("omnichest_xray_lines", setup);
+            xrayLinesType = rt;
+            return rt;
         }
-
-        // 前方: 透視投影 (-Z forward) に合わせて z 反転して project。
-        vec.z = -camLocalZ;
-        proj.transform(vec);
-
-        if (vec.w <= 1e-5f) {
-            return new ScreenProjection(screenW / 2, screenH - EDGE_MARGIN_PX * 5, true, "↓");
-        }
-
-        float ndcX = vec.x / vec.w;
-        float ndcY = vec.y / vec.w;
-
-        boolean offscreen = (ndcX < -1.0f || ndcX > 1.0f || ndcY < -1.0f || ndcY > 1.0f);
-        if (offscreen) {
-            ndcX = Math.max(-1.0f, Math.min(1.0f, ndcX));
-            ndcY = Math.max(-1.0f, Math.min(1.0f, ndcY));
-        }
-
-        int sx = Math.round((ndcX + 1.0f) * 0.5f * screenW);
-        int sy = Math.round((1.0f - ndcY) * 0.5f * screenH);
-
-        String arrow = "";
-        if (offscreen) {
-            if (sx <= EDGE_MARGIN_PX)
-                arrow = "←";
-            else if (sx >= screenW - EDGE_MARGIN_PX)
-                arrow = "→";
-            else if (sy <= EDGE_MARGIN_PX)
-                arrow = "↑";
-            else
-                arrow = "↓";
-        }
-        return new ScreenProjection(sx, sy, offscreen, arrow);
     }
 
-    private static int applyAlphaToBg(int bgArgb, float alphaScale) {
-        int origA = (bgArgb >>> 24) & 0xFF;
-        int newA = Math.max(0, Math.min(255, Math.round(origA * alphaScale)));
-        return (newA << 24) | (bgArgb & 0x00FFFFFF);
-    }
+    // ════════════════════════════════════════════════════════════════════
+    // ヘルパ
+    // ════════════════════════════════════════════════════════════════════
 
-    private record ScreenProjection(int x, int y, boolean offscreen, String arrowGlyph) {
+    private static int packColor(int rgb, float alphaF) {
+        int a = Mth.clamp(Math.round(alphaF * 255), 0, 255);
+        return (a << 24) | (rgb & 0x00FFFFFF);
     }
 
     private record HighlightEntry(ItemStack stack, int count) {
     }
 
-    /** 1 チェストに対するハイライト entry。 entries は mutable で追記される。 */
     private static final class ActiveHighlight {
         final ContainerSnapshot snapshot;
         final List<HighlightEntry> entries;
