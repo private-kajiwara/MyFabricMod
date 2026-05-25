@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest Nederlands (nl_nl) — Korte, natuurlijke zinnen passend bij de officiële NL-vertaling van Minecraft.",
-
   "config.omnichest.title": "OmniChest-instellingen",
-
   "config.omnichest.category.general": "Algemeen",
   "config.omnichest.category.sort": "Sorteren op categorie",
   "config.omnichest.category.compact": "Stapels samenvoegen",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "Compatibiliteit",
   "config.omnichest.category.keybind": "Toetsen",
   "config.omnichest.category.language": "Taal",
-
   "config.omnichest.sub.lock.overlay": "Overlay & visueel",
   "config.omnichest.sub.lock.protect": "Standaardbescherming",
   "config.omnichest.sub.ai.advanced": "Geavanceerd (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Geavanceerd (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "Gedetecteerde mods",
-
   "config.omnichest.general.enableMod": "Mod inschakelen",
   "config.omnichest.general.enableMod.tooltip": "Hoofdschakelaar. Uitschakelen blokkeert alle functies van de mod.",
   "config.omnichest.general.debugMode": "Debug-modus",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = geen, 1.0 = standaard, 2.0 = dubbel.",
   "config.omnichest.general.enableSounds": "Geluiden aan",
   "config.omnichest.general.enableSounds.tooltip": "Speelt eigen UI-geluiden af (sorteren, opbergen, enz.).",
-
   "config.omnichest.sort.enable": "Sorteren inschakelen",
   "config.omnichest.sort.enable.tooltip": "Schakelt de hele categorie-sortering aan of uit.",
   "config.omnichest.sort.insertEmptySeparator": "Leeg vak als scheiding",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "Volgt de volgorde van de creatieve tabbladen.",
   "config.omnichest.sort.autoCompactAfterSort": "Samenvoegen na sorteren",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "Voegt deeltapels automatisch samen na het sorteren.",
-
   "config.omnichest.compact.enable": "Samenvoegen aan",
   "config.omnichest.compact.compactPlayerInventory": "Ook inventaris",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "Voegt ook stapels in het spelers­inventaris samen.",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "Samenvoeg-animatie",
   "config.omnichest.compact.maxActionsPerTick": "Acties per tick (max)",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "Maximaal aantal kliks per tick.",
-
   "config.omnichest.deposit.enable": "Slim opbergen aan",
   "config.omnichest.deposit.matchNbtComponents": "NBT / componenten matchen",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "Strikte modus: betoverde items stapelen alleen bij gelijke betoveringen.",
   "config.omnichest.deposit.ignoreEmptySlots": "Lege vakken negeren",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "Bergt alleen op in kisten die het item al bevatten.",
   "config.omnichest.deposit.hotkey.notice": "Sneltoets voor auto-opbergen: Besturing → categorie 'OmniChest'.",
-
   "config.omnichest.lock.enable": "Slot vergrendelen aan",
   "config.omnichest.lock.enableItemLockMode": "Vergrendeling per item",
   "config.omnichest.lock.enableItemLockMode.tooltip": "Volgt een specifiek item over vakken (bv. diamanten houweel).",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "Off-hand standaard beschermen",
   "config.omnichest.lock.protectArmorByDefault": "Armor standaard beschermen",
   "config.omnichest.lock.hotkey.notice": "Vergrendel­sneltoetsen staan in Besturing → categorie 'OmniChest'.",
-
   "config.omnichest.search.enable": "Zoeken inschakelen",
   "config.omnichest.search.searchRadius": "Bereik (blokken)",
   "config.omnichest.search.searchRadius.tooltip": "Groter = meer kisten gevonden, maar zwaardere scan.",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "Sorteer­volgorde resultaten",
   "config.omnichest.search.pinPersistUntilOpened": "Speld tot openen",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "Speld en markering blijven tot je de kist daadwerkelijk opent. Overschrijft Markeertijd.",
-
   "config.omnichest.ai.enableClassification": "Classificatie aan",
   "config.omnichest.ai.learningMode": "Leermodus",
   "config.omnichest.ai.learningMode.tooltip": "Past categorie­gewichten aan op basis van je opberg­historie.",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "Sta gemengde kisten toe",
   "config.omnichest.ai.autoDepositMaxDistance": "Max. afstand",
   "config.omnichest.ai.persistEnabled": "Leergegevens opslaan",
-
   "config.omnichest.template.enable": "Sjablonen aan",
   "config.omnichest.template.autoApplyTemplate": "Automatisch toepassen",
   "config.omnichest.template.autoApplyTemplate.tooltip": "Past het passende sjabloon automatisch toe bij openen van een kist.",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "Opbergen + samenvoegen meenemen",
   "config.omnichest.template.lockHotbar": "Hotbar vergrendelen",
   "config.omnichest.template.skipPreview": "Bevestiging overslaan",
-
   "config.omnichest.render.enableOverlay": "Overlay aan",
   "config.omnichest.render.highlightColorRgb": "Markeerkleur",
   "config.omnichest.render.highlightColorRgb.tooltip": "Randkleur voor gemarkeerde kisten.",
   "config.omnichest.render.showCategoryLabels": "Categorie­labels",
   "config.omnichest.render.enableTooltips": "Tooltips aan",
   "config.omnichest.render.guiAnimation": "GUI-animaties",
-
   "config.omnichest.compat.enableShaderCompatibility": "Shader-compatibiliteit",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Gebruikt een shader-veilig render-pad bij Iris of Oculus.",
   "config.omnichest.compat.safeOverlayRendering": "Veilig overlay-renderen",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "ja",
   "config.omnichest.compat.status.no": "nee",
   "config.omnichest.compat.detection.shader_active": "Shader-pack actief",
-
   "config.omnichest.sub.compat_resourcepack": "Resource pack-compatibiliteit",
   "config.omnichest.compat.enableResourcePackCompatibility": "Resource pack-compatibiliteit aan",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "Hoofdschakelaar voor textuur- / atlas- / lettertype-veiligheidslagen. Layout, kleuren en animaties blijven gelijk.",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "Knipt of vouwt tekst veilig zodat Unicode-/CJK-/bitmap-lettertypen niet overlopen. UI-afmetingen blijven gelijk.",
   "config.omnichest.compat.debugTextureLogs": "Textuur-logs",
   "config.omnichest.compat.debugTextureLogs.tooltip": "Schrijft uitgebreide logs bij elke textuur-/lettertype-fallback. Alleen aanbevolen bij diagnose van een pack.",
-
   "config.omnichest.keybind.intro": "Alle sneltoetsen vind je in Besturing → Toetsen → categorie 'OmniChest'.",
-
   "config.omnichest.language.intro": "Kies de weergavetaal van de mod. \"System Default\" volgt Minecraft.",
   "config.omnichest.language.override": "Weergavetaal",
   "config.omnichest.language.override.tooltip": "Overschrijft de modtaal. Kies \"System Default\" om Minecraft te volgen.",
@@ -158,7 +142,6 @@
   "config.omnichest.language.unicode_font_safety": "Unicode-fontveiligheid",
   "config.omnichest.language.unicode_font_safety.tooltip": "Knipt niet-ASCII-tekst veilig af zodat deze nooit buiten een widget loopt.",
   "config.omnichest.language.restart_hint": "Meeste teksten verversen direct. Sommige titels vereisen het scherm opnieuw te openen.",
-
   "omnichest.language.system_default": "Systeemstandaard",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -188,19 +171,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "Kistzoeken",
   "omnichest.screen.template.save.title": "Sjabloon opslaan",
   "omnichest.screen.template.manager.title": "Sjablonen",
   "omnichest.screen.template.preview.title": "Sjabloon-voorbeeld",
-
   "omnichest.button.reset": "Reset",
   "omnichest.button.save": "Opslaan",
   "omnichest.button.cancel": "Annuleren",
   "omnichest.button.apply": "Toepassen",
   "omnichest.button.close": "Sluiten",
   "omnichest.button.ok": "OK",
-
   "omnichest.button.deposit": "Gelijke opbergen",
   "omnichest.button.compact": "Samenvoegen",
   "omnichest.button.search_network": "Kistzoeken",
@@ -213,50 +193,40 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Sorteren",
   "omnichest.button.category_sort.tooltip": "Sorteert de inhoud van de kist op categorie.\n\nGroepeert op betekenis — bouw, hout, erts, voedsel…\nen voegt identieke stapels samen.\n\nVergrendelde vakken blijven staan.",
-
   "omnichest.button.sort_distance": "Afstand",
   "omnichest.button.sort_count": "Aantal",
   "omnichest.button.sort_name": "Naam",
   "omnichest.button.search_selected": "Selectie zoeken",
   "omnichest.button.clear_selection": "Selectie wissen",
   "omnichest.button.save_current_chest": "Deze kist opslaan",
-
   "omnichest.editbox.search.label": "Zoeken",
   "omnichest.editbox.name.label": "Naam",
   "omnichest.editbox.search.hint.generic": "Zoeken...",
   "omnichest.editbox.search.hint.network": "Zoeken (bv. diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "Filter op naam",
   "omnichest.editbox.template_name.hint": "Sjabloonnaam",
-
   "omnichest.search.summary": "Gereg.: %1$d  /  Treffers: %2$d  /  Selectie: %3$d",
   "omnichest.search.hint": "Klik op rij = selecteren  /  \"Selectie zoeken\" = vastpinnen  /  ESC = annuleren",
-
   "omnichest.template.default_name": "Sjabloon %1$d",
   "omnichest.template.untitled": "(naamloos)",
-
   "omnichest.template.kind.label": "Type: %1$s",
   "omnichest.template.kind.exact": "Exact (item vast)",
   "omnichest.template.kind.category": "Categorie (vervanger toegestaan)",
   "omnichest.template.kind.hybrid": "Hybride (aanbevolen)",
-
   "omnichest.template.kind.badge.exact": "[Exact]",
   "omnichest.template.kind.badge.category": "[Cat.]",
   "omnichest.template.kind.badge.hybrid": "[Hybr.]",
-
   "omnichest.template.kind.help.exact": "Eiken- en berken-planken gelden als verschillende items.",
   "omnichest.template.kind.help.category": "Items in dezelfde categorie mogen elkaar vervangen. (Goed voor materiaal-kisten)",
   "omnichest.template.kind.help.hybrid": "Prefereert het origineel; valt anders terug op een vervanger uit dezelfde categorie.",
-
   "omnichest.template.manager.summary": "Opgeslagen: %1$d  /  Zichtbaar: %2$d",
   "omnichest.template.manager.hint": "Klik = Toepassen (kist nodig) / Knoppen rechts / ESC = sluiten",
   "omnichest.template.manager.slot_rule_count": "%1$d vakken / %2$d regels",
-
   "omnichest.template.row.action.apply": "Toepassen",
   "omnichest.template.row.action.duplicate": "Dupliceren",
   "omnichest.template.row.action.delete": "Verwijderen",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "Voorbeeld: %1$s",
   "omnichest.template.preview.title_null": "(geen)",
   "omnichest.template.preview.computing": "Berekenen...",
@@ -267,29 +237,24 @@
   "omnichest.template.preview.move_row": "  vak %1$d  →  vak %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(wissel)",
   "omnichest.template.preview.more_items": "...en %1$d meer",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[VERGRENDELD] §r§7Beschermd tegen sorteren",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[ITEM VERGRENDELD] §r§7%1$s beschermd",
   "omnichest.slot_lock.tooltip.session": "§b§l[SESSIE-LOCK] §r§7Kistvak (tot sluiten)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[BESCHERMD] §r§7Hotbar (standaard)",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[BESCHERMD] §r§7Off-hand (standaard)",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[BESCHERMD] §r§7Armor (standaard)",
-
   "omnichest.slot_lock.chat.toggled": "[Vergrendelen] vak %1$d omgeschakeld",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[Vergrendelen] §oGeen sloten om te wissen.",
   "omnichest.slot_lock.chat.cleared": "§a[Vergrendelen] §r%1$d (perm.) + %2$d (sessie) gewist.",
   "omnichest.slot_lock.chat.confirm_clear": "§e[Vergrendelen] §rDruk binnen 1,5 s nogmaals voor %1$d sloten.",
-
   "omnichest.smart_storage.prefix": "[Slim opbergen]",
   "omnichest.smart_storage.plan_empty": "[Slim opbergen] Plan: geen items / functie uit",
   "omnichest.smart_storage.plan_header": "[Slim opbergen] Plan:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7geen bestemming",
-
   "omnichest.category_badge.confidence": " Zekerheid: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "Kist",
   "omnichest.container_type.trapped_chest": "Valstrikkist",
   "omnichest.container_type.double_chest": "Grote kist",
@@ -297,7 +262,6 @@
   "omnichest.container_type.barrel": "Vat",
   "omnichest.container_type.shulker_box": "Shulker-doos",
   "omnichest.container_type.other": "Houder",
-
   "omnichest.storage_category.building": "Bouwmateriaal",
   "omnichest.storage_category.wood": "Hout",
   "omnichest.storage_category.ore": "Ertsen",
@@ -314,7 +278,6 @@
   "omnichest.storage_category.decoration": "Decoratie",
   "omnichest.storage_category.mixed": "Gemengd",
   "omnichest.storage_category.unknown": "Ongesorteerd",
-
   "omnichest.item_category.building": "Bouw",
   "omnichest.item_category.wood": "Hout",
   "omnichest.item_category.stone": "Steen",
@@ -331,35 +294,67 @@
   "omnichest.item_category.mob_drop": "Drops",
   "omnichest.item_category.decoration": "Deco",
   "omnichest.item_category.misc": "Overig",
-
   "omnichest.toggle.on": "§a✔ AAN",
   "omnichest.toggle.off": "§c✘ UIT",
-
   "omnichest.color_picker.title": "Kleur kiezen",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "OK",
   "omnichest.color_picker.cancel": "Annuleren",
-
   "key.omnichest.open_search": "Kistzoeken openen",
   "key.omnichest.smart_deposit": "Plan voor slim opbergen tonen",
   "key.omnichest.toggle_slot_lock": "Vak onder cursor vergrendelen",
   "key.omnichest.clear_all_slot_locks": "Alle slot-vergrendelingen wissen",
-
   "omnichest.keybind.line.open_search": "• Zoeken openen: %1$s",
   "omnichest.keybind.line.smart_deposit": "• Slim opbergen: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• Slot-vergrendeling: %1$s",
   "omnichest.keybind.line.clear_all_locks": "• Alle sloten wissen: %1$s",
-
   "omnichest.controls.title": "Besturing",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+Klik: vak vergrendelen",
   "omnichest.controls.line.slot_lock_middle_click": "Middelste klik: vak vergrendelen",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klik: item vergrendelen",
   "omnichest.controls.line.alt_drag": "Alt+Slepen: doorlopend vergrendelen",
   "omnichest.controls.line.shift_compact": "Shift+Samenvoegen: ook speler",
-
   "config.omnichest.group.basics": "Basis",
   "config.omnichest.group.item_sorting": "Itemsortering",
   "config.omnichest.group.protection_search": "Bescherming & zoeken",
-  "config.omnichest.group.appearance_input": "Uiterlijk & invoer"
+  "config.omnichest.group.appearance_input": "Uiterlijk & invoer",
+  "config.omnichest.search.enableCategoryTabs": "Categorietabs inschakelen",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "Toon Creative Inventory-achtige tabs bovenaan het zoekscherm.",
+  "config.omnichest.search.enableFavorites": "Favorieten inschakelen",
+  "config.omnichest.search.enableFavorites.tooltip": "Markeer items met ★ om bovenaan te sorteren of in Favorieten te filteren.",
+  "config.omnichest.search.favoriteHighlight": "Favorieten markeren",
+  "config.omnichest.search.favoriteHighlight.tooltip": "Voeg een gouden gloed toe aan favoriete items.",
+  "config.omnichest.search.rememberLastDisplayMode": "Laatste weergavemodus onthouden",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "Indien aan, wordt de laatst gekozen modus de volgende keer hersteld.",
+  "config.omnichest.search.compactTabMode": "Compacte tabmodus",
+  "config.omnichest.search.compactTabMode.tooltip": "Toon tabs alleen als icoon, ook de geselecteerde.",
+  "config.omnichest.search.defaultDisplayMode": "Standaardweergave",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "Beginmodus bij het openen van het zoekscherm.",
+  "omnichest.search_category.all": "Alles",
+  "omnichest.search_category.favorites": "Favorieten",
+  "omnichest.search_category.building": "Bouwen",
+  "omnichest.search_category.wood": "Hout",
+  "omnichest.search_category.stone": "Steen",
+  "omnichest.search_category.ore": "Erts",
+  "omnichest.search_category.redstone": "Redstone",
+  "omnichest.search_category.farming": "Landbouw",
+  "omnichest.search_category.food": "Voedsel",
+  "omnichest.search_category.combat": "Gevecht",
+  "omnichest.search_category.tool": "Gereedschap",
+  "omnichest.search_category.enchant": "Betoveren",
+  "omnichest.search_category.potion": "Toverdranken",
+  "omnichest.search_category.decoration": "Decoratie",
+  "omnichest.search_category.nether": "Nether",
+  "omnichest.search_category.end": "End",
+  "omnichest.search_category.misc": "Overig",
+  "omnichest.search.display_mode.label": "Weergavemodus",
+  "omnichest.search.display_mode.compact_grid": "Compact raster",
+  "omnichest.search.display_mode.large_grid": "Groot raster",
+  "omnichest.search.display_mode.list": "Lijst",
+  "omnichest.search.display_mode.detailed": "Gedetailleerd",
+  "omnichest.search.display_mode.icon_only": "Alleen iconen",
+  "omnichest.search.favorites.add_tooltip": "Rechtermuisklik of Alt+klik om toe te voegen aan favorieten",
+  "omnichest.search.favorites.remove_tooltip": "Rechtermuisklik of Alt+klik om te verwijderen uit favorieten",
+  "omnichest.search.favorites.empty": "Nog geen favorieten. Klik met rechts om een item te markeren."
 }

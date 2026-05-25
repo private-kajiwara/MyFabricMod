@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest Bahasa Indonesia (id_id) — Kalimat ringkas mengikuti gaya terjemahan resmi Minecraft.",
-
   "config.omnichest.title": "Pengaturan OmniChest",
-
   "config.omnichest.category.general": "Umum",
   "config.omnichest.category.sort": "Urut per kategori",
   "config.omnichest.category.compact": "Pemampatan tumpukan",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "Kompatibilitas",
   "config.omnichest.category.keybind": "Tombol",
   "config.omnichest.category.language": "Bahasa",
-
   "config.omnichest.sub.lock.overlay": "Overlay & visual",
   "config.omnichest.sub.lock.protect": "Proteksi bawaan",
   "config.omnichest.sub.ai.advanced": "Lanjutan (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Lanjutan (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "Mod terdeteksi",
-
   "config.omnichest.general.enableMod": "Aktifkan mod",
   "config.omnichest.general.enableMod.tooltip": "Sakelar utama. Mati = semua fitur mod dimatikan.",
   "config.omnichest.general.debugMode": "Mode debug",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = tidak ada, 1.0 = standar, 2.0 = dua kali lipat.",
   "config.omnichest.general.enableSounds": "Aktifkan suara",
   "config.omnichest.general.enableSounds.tooltip": "Memutar suara UI khusus mod (sortir, simpan, dll.).",
-
   "config.omnichest.sort.enable": "Aktifkan pengurutan",
   "config.omnichest.sort.enable.tooltip": "Menyalakan/mematikan seluruh fitur urut per kategori.",
   "config.omnichest.sort.insertEmptySeparator": "Slot kosong sebagai pemisah",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "Mengurut sesuai urutan tab inventaris kreatif.",
   "config.omnichest.sort.autoCompactAfterSort": "Mampatkan setelah sortir",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "Setelah sortir, otomatis menggabungkan tumpukan sebagian.",
-
   "config.omnichest.compact.enable": "Aktifkan pemampatan",
   "config.omnichest.compact.compactPlayerInventory": "Juga inventaris",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "Menggabungkan tumpukan di inventaris pemain juga.",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "Animasi gabung",
   "config.omnichest.compact.maxActionsPerTick": "Aksi / tick (maks)",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "Batas klik yang dikirim per tick.",
-
   "config.omnichest.deposit.enable": "Aktifkan penyimpanan pintar",
   "config.omnichest.deposit.matchNbtComponents": "Cocokkan NBT / komponen",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "Mode ketat: item berenchant hanya menumpuk jika enchant sama.",
   "config.omnichest.deposit.ignoreEmptySlots": "Abaikan slot kosong",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "Hanya menyimpan ke peti yang sudah memiliki item tersebut.",
   "config.omnichest.deposit.hotkey.notice": "Tombol simpan otomatis: Kontrol → kategori 'OmniChest'.",
-
   "config.omnichest.lock.enable": "Aktifkan kunci slot",
   "config.omnichest.lock.enableItemLockMode": "Kunci per item",
   "config.omnichest.lock.enableItemLockMode.tooltip": "Mengikuti item tertentu antar slot (mis. beliung berlian).",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "Lindungi tangan kedua",
   "config.omnichest.lock.protectArmorByDefault": "Lindungi zirah",
   "config.omnichest.lock.hotkey.notice": "Tombol kunci: Kontrol → kategori 'OmniChest'.",
-
   "config.omnichest.search.enable": "Aktifkan pencarian",
   "config.omnichest.search.searchRadius": "Radius (blok)",
   "config.omnichest.search.searchRadius.tooltip": "Lebih besar = lebih banyak peti, tapi pemindaian lebih berat.",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "Urutan hasil",
   "config.omnichest.search.pinPersistUntilOpened": "Pin sampai dibuka",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "Pin dan sorot tetap sampai peti benar-benar dibuka. Mengabaikan durasi sorot.",
-
   "config.omnichest.ai.enableClassification": "Aktifkan klasifikasi",
   "config.omnichest.ai.learningMode": "Mode belajar",
   "config.omnichest.ai.learningMode.tooltip": "Menyesuaikan bobot kategori dari riwayat simpan kamu.",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "Izinkan peti campuran",
   "config.omnichest.ai.autoDepositMaxDistance": "Jarak maks.",
   "config.omnichest.ai.persistEnabled": "Simpan data belajar",
-
   "config.omnichest.template.enable": "Aktifkan templat",
   "config.omnichest.template.autoApplyTemplate": "Terapkan otomatis",
   "config.omnichest.template.autoApplyTemplate.tooltip": "Terapkan templat yang cocok otomatis saat peti dibuka.",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "Sertakan simpan + mampatkan",
   "config.omnichest.template.lockHotbar": "Kunci hotbar",
   "config.omnichest.template.skipPreview": "Lewati konfirmasi",
-
   "config.omnichest.render.enableOverlay": "Aktifkan overlay",
   "config.omnichest.render.highlightColorRgb": "Warna sorot",
   "config.omnichest.render.highlightColorRgb.tooltip": "Warna garis bingkai peti yang disorot.",
   "config.omnichest.render.showCategoryLabels": "Label kategori",
   "config.omnichest.render.enableTooltips": "Tooltip aktif",
   "config.omnichest.render.guiAnimation": "Animasi UI",
-
   "config.omnichest.compat.enableShaderCompatibility": "Kompat. shader",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Menggunakan jalur render aman shader saat Iris/Oculus terpasang.",
   "config.omnichest.compat.safeOverlayRendering": "Render overlay aman",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "ya",
   "config.omnichest.compat.status.no": "tidak",
   "config.omnichest.compat.detection.shader_active": "Paket shader aktif",
-
   "config.omnichest.sub.compat_resourcepack": "Kompatibilitas resource pack",
   "config.omnichest.compat.enableResourcePackCompatibility": "Aktifkan kompat. resource pack",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "Sakelar utama untuk lapisan keamanan tekstur/atlas/font. Tata letak, warna dan animasi tidak terpengaruh.",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "Memotong atau membungkus teks dengan aman agar font Unicode/CJK/bitmap tidak meluap. Ukuran UI tidak berubah.",
   "config.omnichest.compat.debugTextureLogs": "Log tekstur",
   "config.omnichest.compat.debugTextureLogs.tooltip": "Menulis log rinci setiap kali tekstur/font fallback. Direkomendasikan hanya untuk diagnosa.",
-
   "config.omnichest.keybind.intro": "Semua tombol ada di Kontrol → Tombol → kategori 'OmniChest'.",
-
   "config.omnichest.language.intro": "Pilih bahasa tampilan mod. \"System Default\" mengikuti bahasa Minecraft.",
   "config.omnichest.language.override": "Bahasa tampilan",
   "config.omnichest.language.override.tooltip": "Mengganti bahasa mod. Pilih \"System Default\" untuk mengikuti Minecraft.",
@@ -158,7 +142,6 @@
   "config.omnichest.language.unicode_font_safety": "Keamanan font Unicode",
   "config.omnichest.language.unicode_font_safety.tooltip": "Memotong teks non-ASCII dengan aman agar tidak melimpah keluar widget.",
   "config.omnichest.language.restart_hint": "Sebagian besar teks segera diperbarui. Beberapa judul perlu menutup dan membuka layar.",
-
   "omnichest.language.system_default": "Bawaan sistem",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -188,19 +171,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "Pencarian peti",
   "omnichest.screen.template.save.title": "Simpan templat",
   "omnichest.screen.template.manager.title": "Templat",
   "omnichest.screen.template.preview.title": "Pratinjau templat",
-
   "omnichest.button.reset": "Reset",
   "omnichest.button.save": "Simpan",
   "omnichest.button.cancel": "Batal",
   "omnichest.button.apply": "Terapkan",
   "omnichest.button.close": "Tutup",
   "omnichest.button.ok": "OK",
-
   "omnichest.button.deposit": "Simpan serupa",
   "omnichest.button.compact": "Mampatkan",
   "omnichest.button.search_network": "Pencarian peti",
@@ -213,50 +193,40 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Urutkan",
   "omnichest.button.category_sort.tooltip": "Urutkan isi peti per kategori.\n\nMengelompokkan berdasarkan arti — bangunan, kayu, bijih, makanan…\ntumpukan sama digabung.\n\nSlot terkunci tidak bergerak.",
-
   "omnichest.button.sort_distance": "Jarak",
   "omnichest.button.sort_count": "Jumlah",
   "omnichest.button.sort_name": "Nama",
   "omnichest.button.search_selected": "Cari terpilih",
   "omnichest.button.clear_selection": "Bersihkan pilihan",
   "omnichest.button.save_current_chest": "Simpan peti ini",
-
   "omnichest.editbox.search.label": "Cari",
   "omnichest.editbox.name.label": "Nama",
   "omnichest.editbox.search.hint.generic": "Cari...",
   "omnichest.editbox.search.hint.network": "Cari (mis. diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "Saring per nama templat",
   "omnichest.editbox.template_name.hint": "Nama templat",
-
   "omnichest.search.summary": "Terdaftar: %1$d  /  Hasil: %2$d  /  Dipilih: %3$d",
   "omnichest.search.hint": "Klik baris = pilih  /  \"Cari terpilih\" = pin  /  ESC = batal",
-
   "omnichest.template.default_name": "Templat %1$d",
   "omnichest.template.untitled": "(tanpa judul)",
-
   "omnichest.template.kind.label": "Jenis: %1$s",
   "omnichest.template.kind.exact": "Tepat (item dikunci)",
   "omnichest.template.kind.category": "Kategori (pengganti diizinkan)",
   "omnichest.template.kind.hybrid": "Hibrid (disarankan)",
-
   "omnichest.template.kind.badge.exact": "[Tepat]",
   "omnichest.template.kind.badge.category": "[Kat.]",
   "omnichest.template.kind.badge.hybrid": "[Hibrid]",
-
   "omnichest.template.kind.help.exact": "Papan oak dan birch dianggap item berbeda.",
   "omnichest.template.kind.help.category": "Item dalam kategori sama bisa saling menggantikan. (Cocok untuk peti bahan)",
   "omnichest.template.kind.help.hybrid": "Lebih suka aslinya, jika tidak ada pakai pengganti dari kategori sama.",
-
   "omnichest.template.manager.summary": "Tersimpan: %1$d  /  Terlihat: %2$d",
   "omnichest.template.manager.hint": "Klik = Terapkan (butuh peti) / Tombol di kanan / ESC = tutup",
   "omnichest.template.manager.slot_rule_count": "%1$d slot / %2$d aturan",
-
   "omnichest.template.row.action.apply": "Terapkan",
   "omnichest.template.row.action.duplicate": "Duplikat",
   "omnichest.template.row.action.delete": "Hapus",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "Pratinjau: %1$s",
   "omnichest.template.preview.title_null": "(tidak ada)",
   "omnichest.template.preview.computing": "Menghitung...",
@@ -267,29 +237,24 @@
   "omnichest.template.preview.move_row": "  slot %1$d  →  slot %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(tukar)",
   "omnichest.template.preview.more_items": "...dan %1$d lainnya",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[TERKUNCI] §r§7Dilindungi dari sortir otomatis",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[ITEM TERKUNCI] §r§7%1$s dilindungi",
   "omnichest.slot_lock.tooltip.session": "§b§l[KUNCI SESI] §r§7Slot peti (sampai ditutup)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[TERLINDUNGI] §r§7Hotbar (bawaan)",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[TERLINDUNGI] §r§7Tangan kedua (bawaan)",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[TERLINDUNGI] §r§7Zirah (bawaan)",
-
   "omnichest.slot_lock.chat.toggled": "[Kunci slot] slot %1$d dialihkan",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[Kunci slot] §oTidak ada kunci untuk dihapus.",
   "omnichest.slot_lock.chat.cleared": "§a[Kunci slot] §rDihapus %1$d (perm.) + %2$d (sesi).",
   "omnichest.slot_lock.chat.confirm_clear": "§e[Kunci slot] §rTekan lagi dalam 1,5 dtk untuk menghapus %1$d kunci.",
-
   "omnichest.smart_storage.prefix": "[Penyimpanan]",
   "omnichest.smart_storage.plan_empty": "[Penyimpanan] Rencana: tidak ada item / fitur mati",
   "omnichest.smart_storage.plan_header": "[Penyimpanan] Rencana:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7tanpa tujuan",
-
   "omnichest.category_badge.confidence": " Keyakinan: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "Peti",
   "omnichest.container_type.trapped_chest": "Peti jebakan",
   "omnichest.container_type.double_chest": "Peti besar",
@@ -297,7 +262,6 @@
   "omnichest.container_type.barrel": "Tong",
   "omnichest.container_type.shulker_box": "Kotak shulker",
   "omnichest.container_type.other": "Wadah",
-
   "omnichest.storage_category.building": "Bahan bangunan",
   "omnichest.storage_category.wood": "Kayu",
   "omnichest.storage_category.ore": "Bijih",
@@ -314,7 +278,6 @@
   "omnichest.storage_category.decoration": "Dekorasi",
   "omnichest.storage_category.mixed": "Campuran",
   "omnichest.storage_category.unknown": "Tak tersortir",
-
   "omnichest.item_category.building": "Bangunan",
   "omnichest.item_category.wood": "Kayu",
   "omnichest.item_category.stone": "Batu",
@@ -331,35 +294,67 @@
   "omnichest.item_category.mob_drop": "Loot",
   "omnichest.item_category.decoration": "Dekor",
   "omnichest.item_category.misc": "Lainnya",
-
   "omnichest.toggle.on": "§a✔ AKTIF",
   "omnichest.toggle.off": "§c✘ NONAKTIF",
-
   "omnichest.color_picker.title": "Pemilih warna",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "OK",
   "omnichest.color_picker.cancel": "Batal",
-
   "key.omnichest.open_search": "Buka pencarian peti",
   "key.omnichest.smart_deposit": "Tampilkan rencana simpan",
   "key.omnichest.toggle_slot_lock": "Kunci slot di kursor",
   "key.omnichest.clear_all_slot_locks": "Hapus semua kunci slot",
-
   "omnichest.keybind.line.open_search": "• Buka pencarian: %1$s",
   "omnichest.keybind.line.smart_deposit": "• Penyimpanan pintar: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• Kunci slot: %1$s",
   "omnichest.keybind.line.clear_all_locks": "• Hapus semua kunci: %1$s",
-
   "omnichest.controls.title": "Kontrol",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+Klik: kunci slot",
   "omnichest.controls.line.slot_lock_middle_click": "Klik tengah: kunci slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klik: kunci item",
   "omnichest.controls.line.alt_drag": "Alt+Seret: kunci berurutan",
   "omnichest.controls.line.shift_compact": "Shift+Mampatkan: juga pemain",
-
   "config.omnichest.group.basics": "Dasar",
   "config.omnichest.group.item_sorting": "Pengurutan item",
   "config.omnichest.group.protection_search": "Proteksi & cari",
-  "config.omnichest.group.appearance_input": "Tampilan & input"
+  "config.omnichest.group.appearance_input": "Tampilan & input",
+  "config.omnichest.search.enableCategoryTabs": "Aktifkan tab kategori",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "Menampilkan tab gaya Inventaris Kreatif di atas layar pencarian.",
+  "config.omnichest.search.enableFavorites": "Aktifkan favorit",
+  "config.omnichest.search.enableFavorites.tooltip": "Beri ★ pada item untuk diurutkan ke atas atau difilter di tab Favorit.",
+  "config.omnichest.search.favoriteHighlight": "Sorot favorit",
+  "config.omnichest.search.favoriteHighlight.tooltip": "Menambahkan cahaya emas pada item favorit.",
+  "config.omnichest.search.rememberLastDisplayMode": "Ingat mode terakhir",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "Jika aktif, mode tampilan terakhir akan dipulihkan saat dibuka kembali.",
+  "config.omnichest.search.compactTabMode": "Mode tab ringkas",
+  "config.omnichest.search.compactTabMode.tooltip": "Tampilkan tab hanya sebagai ikon, termasuk yang dipilih.",
+  "config.omnichest.search.defaultDisplayMode": "Mode tampilan default",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "Mode awal saat layar pencarian dibuka.",
+  "omnichest.search_category.all": "Semua",
+  "omnichest.search_category.favorites": "Favorit",
+  "omnichest.search_category.building": "Bangunan",
+  "omnichest.search_category.wood": "Kayu",
+  "omnichest.search_category.stone": "Batu",
+  "omnichest.search_category.ore": "Bijih",
+  "omnichest.search_category.redstone": "Redstone",
+  "omnichest.search_category.farming": "Pertanian",
+  "omnichest.search_category.food": "Makanan",
+  "omnichest.search_category.combat": "Tempur",
+  "omnichest.search_category.tool": "Alat",
+  "omnichest.search_category.enchant": "Enchant",
+  "omnichest.search_category.potion": "Ramuan",
+  "omnichest.search_category.decoration": "Dekorasi",
+  "omnichest.search_category.nether": "Nether",
+  "omnichest.search_category.end": "End",
+  "omnichest.search_category.misc": "Lainnya",
+  "omnichest.search.display_mode.label": "Mode tampilan",
+  "omnichest.search.display_mode.compact_grid": "Grid ringkas",
+  "omnichest.search.display_mode.large_grid": "Grid besar",
+  "omnichest.search.display_mode.list": "Daftar",
+  "omnichest.search.display_mode.detailed": "Rinci",
+  "omnichest.search.display_mode.icon_only": "Hanya ikon",
+  "omnichest.search.favorites.add_tooltip": "Klik kanan atau Alt+klik untuk menambah favorit",
+  "omnichest.search.favorites.remove_tooltip": "Klik kanan atau Alt+klik untuk menghapus dari favorit",
+  "omnichest.search.favorites.empty": "Belum ada favorit. Klik kanan untuk menandai ★."
 }

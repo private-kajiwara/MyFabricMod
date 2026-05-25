@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest Русский (ru_ru) — Короткие фразы в стиле официальной русской локализации Minecraft.",
-
   "config.omnichest.title": "Настройки OmniChest",
-
   "config.omnichest.category.general": "Общие",
   "config.omnichest.category.sort": "Сортировка",
   "config.omnichest.category.compact": "Слияние стопок",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "Совместимость",
   "config.omnichest.category.keybind": "Клавиши",
   "config.omnichest.category.language": "Язык",
-
   "config.omnichest.sub.lock.overlay": "Подсветка и визуал",
   "config.omnichest.sub.lock.protect": "Защита по умолчанию",
   "config.omnichest.sub.ai.advanced": "Расширенно (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Расширенно (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "Обнаруженные моды",
-
   "config.omnichest.general.enableMod": "Включить мод",
   "config.omnichest.general.enableMod.tooltip": "Главный переключатель. При выключении отключаются все функции мода.",
   "config.omnichest.general.debugMode": "Режим отладки",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = выкл., 1.0 = обычно, 2.0 = двойная скорость.",
   "config.omnichest.general.enableSounds": "Включить звуки",
   "config.omnichest.general.enableSounds.tooltip": "Воспроизводит собственные звуки мода (сортировка, передача и др.).",
-
   "config.omnichest.sort.enable": "Включить сортировку",
   "config.omnichest.sort.enable.tooltip": "Включает или выключает всю сортировку по категориям.",
   "config.omnichest.sort.insertEmptySeparator": "Разделитель — пустой слот",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "Порядок такой же, как у вкладок творческого инвентаря.",
   "config.omnichest.sort.autoCompactAfterSort": "Сжимать после сортировки",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "После сортировки автоматически объединяет неполные стопки.",
-
   "config.omnichest.compact.enable": "Включить слияние",
   "config.omnichest.compact.compactPlayerInventory": "Сжимать инвентарь",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "Объединяет также стопки в инвентаре игрока.",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "Анимация слияния",
   "config.omnichest.compact.maxActionsPerTick": "Действий за тик (макс.)",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "Верхняя граница кликов, отправляемых за тик.",
-
   "config.omnichest.deposit.enable": "Включить умное хранение",
   "config.omnichest.deposit.matchNbtComponents": "Учитывать NBT / компоненты",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "Строгий режим: зачарованные предметы складываются только при идентичных чарах.",
   "config.omnichest.deposit.ignoreEmptySlots": "Пропускать пустые слоты",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "Класть только в сундуки, где уже есть такой предмет.",
   "config.omnichest.deposit.hotkey.notice": "Клавишу автохранения задайте в Управление → раздел 'OmniChest'.",
-
   "config.omnichest.lock.enable": "Включить блокировку",
   "config.omnichest.lock.enableItemLockMode": "Блок по предмету",
   "config.omnichest.lock.enableItemLockMode.tooltip": "Следит за конкретным предметом при смене слота (например, за алмазной киркой).",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "Защищать вторую руку",
   "config.omnichest.lock.protectArmorByDefault": "Защищать броню",
   "config.omnichest.lock.hotkey.notice": "Клавиши блокировки находятся в Управление → раздел 'OmniChest'.",
-
   "config.omnichest.search.enable": "Включить поиск",
   "config.omnichest.search.searchRadius": "Радиус (блоков)",
   "config.omnichest.search.searchRadius.tooltip": "Больше = найдётся больше сундуков, но и нагрузка выше.",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "Сортировка результатов",
   "config.omnichest.search.pinPersistUntilOpened": "Метка до открытия",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "Сохраняет метку и подсветку, пока сундук не будет открыт. Игнорирует длительность подсветки.",
-
   "config.omnichest.ai.enableClassification": "Включить классификацию",
   "config.omnichest.ai.learningMode": "Режим обучения",
   "config.omnichest.ai.learningMode.tooltip": "Подстраивает веса категорий по вашим прошлым укладкам.",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "Смешанные сундуки тоже",
   "config.omnichest.ai.autoDepositMaxDistance": "Макс. дистанция укладки",
   "config.omnichest.ai.persistEnabled": "Сохранять данные обучения",
-
   "config.omnichest.template.enable": "Включить шаблоны",
   "config.omnichest.template.autoApplyTemplate": "Применять автоматически",
   "config.omnichest.template.autoApplyTemplate.tooltip": "При открытии сундука применяет подходящий сохранённый шаблон.",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "Включать укладку + слияние",
   "config.omnichest.template.lockHotbar": "Блокировать хотбар",
   "config.omnichest.template.skipPreview": "Без подтверждения",
-
   "config.omnichest.render.enableOverlay": "Подсветка включена",
   "config.omnichest.render.highlightColorRgb": "Цвет подсветки",
   "config.omnichest.render.highlightColorRgb.tooltip": "Цвет рамки выделенных сундуков.",
   "config.omnichest.render.showCategoryLabels": "Метки категорий",
   "config.omnichest.render.enableTooltips": "Подсказки",
   "config.omnichest.render.guiAnimation": "Анимации интерфейса",
-
   "config.omnichest.compat.enableShaderCompatibility": "Совместимость с шейдерами",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Переключает на безопасный путь отрисовки, когда установлены Iris или Oculus.",
   "config.omnichest.compat.safeOverlayRendering": "Безопасная отрисовка наложений",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "да",
   "config.omnichest.compat.status.no": "нет",
   "config.omnichest.compat.detection.shader_active": "Шейдер-пак активен",
-
   "config.omnichest.sub.compat_resourcepack": "Совместимость с ресурс-паками",
   "config.omnichest.compat.enableResourcePackCompatibility": "Включить совместимость с паками",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "Главный переключатель для слоёв защиты текстур / атласов / шрифтов. Раскладка, цвета и анимации не меняются.",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "Обрезает или переносит текст, чтобы Unicode / CJK / bitmap-шрифты не вылезали. Размеры UI не меняются.",
   "config.omnichest.compat.debugTextureLogs": "Логи текстур",
   "config.omnichest.compat.debugTextureLogs.tooltip": "Печатает подробные логи при каждом фолбэке текстуры / шрифта. Использовать при диагностике пака.",
-
   "config.omnichest.keybind.intro": "Все клавиши находятся в Управление → Клавиши → раздел 'OmniChest'.",
-
   "config.omnichest.language.intro": "Выберите язык отображения мода. «System Default» использует язык Minecraft.",
   "config.omnichest.language.override": "Язык интерфейса",
   "config.omnichest.language.override.tooltip": "Переопределяет язык мода. Чтобы следовать Minecraft, выберите «System Default».",
@@ -158,13 +142,10 @@
   "config.omnichest.language.unicode_font_safety": "Безопасность Unicode",
   "config.omnichest.language.unicode_font_safety.tooltip": "Аккуратно обрезает текст вне ASCII, чтобы он не вылезал за пределы виджетов.",
   "config.omnichest.language.restart_hint": "Большинство надписей обновляется сразу. Некоторые заголовки требуют переоткрытия экрана.",
-
   "config.omnichest.group.basics": "Основное",
   "config.omnichest.group.item_sorting": "Сортировка",
   "config.omnichest.group.protection_search": "Защита и поиск",
   "config.omnichest.group.appearance_input": "Вид и управление",
-
-
   "omnichest.language.system_default": "Как в системе",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -194,19 +175,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "Поиск сундуков",
   "omnichest.screen.template.save.title": "Сохранить шаблон",
   "omnichest.screen.template.manager.title": "Шаблоны",
   "omnichest.screen.template.preview.title": "Предпросмотр",
-
   "omnichest.button.reset": "Сброс",
   "omnichest.button.save": "Сохр.",
   "omnichest.button.cancel": "Отмена",
   "omnichest.button.apply": "Применить",
   "omnichest.button.close": "Закрыть",
   "omnichest.button.ok": "OK",
-
   "omnichest.button.deposit": "Сложить одинаковые",
   "omnichest.button.compact": "Сжать стопки",
   "omnichest.button.search_network": "Поиск сундуков",
@@ -219,57 +197,46 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Сортировать",
   "omnichest.button.category_sort.tooltip": "Сортирует содержимое сундука по категориям.\n\nГруппирует по смыслу — стройка, дерево, руда, еда…\nодинаковые стопки объединяются.\n\nЗаблокированные слоты не двигаются.",
-
   "omnichest.controls.title": "Управление",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+ЛКМ: Блок. слот",
   "omnichest.controls.line.slot_lock_middle_click": "СКМ: Блок. слот",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+ЛКМ: Блок. предмет",
   "omnichest.controls.line.alt_drag": "Alt+Тащить: Серия блок.",
   "omnichest.controls.line.shift_compact": "Shift+Сжать: И инв.",
-
   "omnichest.button.sort_distance": "По расстоянию",
   "omnichest.button.sort_count": "По кол-ву",
   "omnichest.button.sort_name": "По имени",
   "omnichest.button.search_selected": "Искать выбранное",
   "omnichest.button.clear_selection": "Сбросить выбор",
   "omnichest.button.save_current_chest": "Сохранить этот сундук",
-
   "omnichest.editbox.search.label": "Поиск",
   "omnichest.editbox.name.label": "Имя",
   "omnichest.editbox.search.hint.generic": "Поиск...",
   "omnichest.editbox.search.hint.network": "Поиск (например diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "Фильтр по имени шаблона",
   "omnichest.editbox.template_name.hint": "Имя шаблона",
-
   "omnichest.search.summary": "Зарегистр.: %1$d  /  Найдено: %2$d  /  Выбрано: %3$d",
   "omnichest.search.hint": "Клик по строке = выбор  /  «Искать выбранное» = метка  /  ESC = отмена",
-
   "omnichest.template.default_name": "Шаблон %1$d",
   "omnichest.template.untitled": "(без имени)",
-
   "omnichest.template.kind.label": "Тип: %1$s",
   "omnichest.template.kind.exact": "Точно (предмет закреплён)",
   "omnichest.template.kind.category": "Категория (замены допустимы)",
   "omnichest.template.kind.hybrid": "Смешанный (рекоменд.)",
-
   "omnichest.template.kind.badge.exact": "[Точно]",
   "omnichest.template.kind.badge.category": "[Категория]",
   "omnichest.template.kind.badge.hybrid": "[Смешанный]",
-
   "omnichest.template.kind.help.exact": "Дубовые и берёзовые доски считаются разными предметами.",
   "omnichest.template.kind.help.category": "Предметы одной категории взаимозаменяемы. (Удобно для сундуков с материалами)",
   "omnichest.template.kind.help.hybrid": "Сначала ищет точный предмет, при отсутствии — замену из той же категории.",
-
   "omnichest.template.manager.summary": "Сохранено: %1$d  /  Показано: %2$d",
   "omnichest.template.manager.hint": "Клик = Применить (нужен сундук) / Кнопки справа / ESC = закрыть",
   "omnichest.template.manager.slot_rule_count": "%1$d слотов / %2$d правил",
-
   "omnichest.template.row.action.apply": "Применить",
   "omnichest.template.row.action.duplicate": "Копия",
   "omnichest.template.row.action.delete": "Удалить",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "Предпросмотр: %1$s",
   "omnichest.template.preview.title_null": "(нет)",
   "omnichest.template.preview.computing": "Расчёт...",
@@ -280,29 +247,24 @@
   "omnichest.template.preview.move_row": "  слот %1$d  →  слот %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(обмен)",
   "omnichest.template.preview.more_items": "...и ещё %1$d",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[СЛОТ ЗАБЛОК.] §r§7Защищён от автосортировки",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[ПРЕДМЕТ ЗАБЛОК.] §r§7%1$s защищён",
   "omnichest.slot_lock.tooltip.session": "§b§l[БЛОК СЕССИИ] §r§7Слот сундука (до закрытия)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[ЗАЩИЩЁН] §r§7Хотбар (по умолч.)",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[ЗАЩИЩЁН] §r§7Вторая рука (по умолч.)",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[ЗАЩИЩЁН] §r§7Броня (по умолч.)",
-
   "omnichest.slot_lock.chat.toggled": "[Блок слотов] слот %1$d переключён",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[Блок слотов] §oСнимать нечего.",
   "omnichest.slot_lock.chat.cleared": "§a[Блок слотов] §rСнято %1$d (постоянных) + %2$d (сессии).",
   "omnichest.slot_lock.chat.confirm_clear": "§e[Блок слотов] §rНажмите ещё раз за 1,5 сек., чтобы снять %1$d блоков.",
-
   "omnichest.smart_storage.prefix": "[Умн. хран.]",
   "omnichest.smart_storage.plan_empty": "[Умн. хран.] План: нет предметов / функция выкл.",
   "omnichest.smart_storage.plan_header": "[Умн. хран.] План:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7нет места",
-
   "omnichest.category_badge.confidence": " Уверенность: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "Сундук",
   "omnichest.container_type.trapped_chest": "Сундук-ловушка",
   "omnichest.container_type.double_chest": "Большой сундук",
@@ -310,7 +272,6 @@
   "omnichest.container_type.barrel": "Бочка",
   "omnichest.container_type.shulker_box": "Ящик шалкера",
   "omnichest.container_type.other": "Контейнер",
-
   "omnichest.storage_category.building": "Стройматериалы",
   "omnichest.storage_category.wood": "Дерево",
   "omnichest.storage_category.ore": "Руды",
@@ -327,7 +288,6 @@
   "omnichest.storage_category.decoration": "Декор",
   "omnichest.storage_category.mixed": "Смешанное",
   "omnichest.storage_category.unknown": "Без категории",
-
   "omnichest.item_category.building": "Стройка",
   "omnichest.item_category.wood": "Дерево",
   "omnichest.item_category.stone": "Камень",
@@ -344,23 +304,57 @@
   "omnichest.item_category.mob_drop": "Дроп",
   "omnichest.item_category.decoration": "Декор",
   "omnichest.item_category.misc": "Прочее",
-
   "omnichest.toggle.on": "§a✔ ВКЛ",
   "omnichest.toggle.off": "§c✘ ВЫКЛ",
-
   "omnichest.color_picker.title": "Выбор цвета",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "OK",
   "omnichest.color_picker.cancel": "Отмена",
-
   "key.omnichest.open_search": "Открыть поиск сундуков",
   "key.omnichest.smart_deposit": "Показать план укладки",
   "key.omnichest.toggle_slot_lock": "Блок наведённого слота",
   "key.omnichest.clear_all_slot_locks": "Снять все блоки слотов",
-
   "omnichest.keybind.line.open_search": "• Открыть поиск: %1$s",
   "omnichest.keybind.line.smart_deposit": "• Умное хранение: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• Блок слота: %1$s",
-  "omnichest.keybind.line.clear_all_locks": "• Снять все блоки: %1$s"
+  "omnichest.keybind.line.clear_all_locks": "• Снять все блоки: %1$s",
+  "config.omnichest.search.enableCategoryTabs": "Вкладки категорий",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "Показывает вкладки в стиле творческого инвентаря в верхней части поиска.",
+  "config.omnichest.search.enableFavorites": "Включить избранное",
+  "config.omnichest.search.enableFavorites.tooltip": "Помечайте предметы ★ для сортировки наверх или фильтра во вкладке Избранное.",
+  "config.omnichest.search.favoriteHighlight": "Подсветка избранного",
+  "config.omnichest.search.favoriteHighlight.tooltip": "Добавляет золотое свечение к избранным предметам в списке.",
+  "config.omnichest.search.rememberLastDisplayMode": "Запоминать режим",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "Если включено, восстанавливает последний выбранный режим при следующем открытии.",
+  "config.omnichest.search.compactTabMode": "Компактные вкладки",
+  "config.omnichest.search.compactTabMode.tooltip": "Вкладки только в виде иконок, даже выбранная.",
+  "config.omnichest.search.defaultDisplayMode": "Режим по умолчанию",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "Начальный режим при открытии экрана поиска.",
+  "omnichest.search_category.all": "Все",
+  "omnichest.search_category.favorites": "Избранное",
+  "omnichest.search_category.building": "Строительство",
+  "omnichest.search_category.wood": "Дерево",
+  "omnichest.search_category.stone": "Камень",
+  "omnichest.search_category.ore": "Руды",
+  "omnichest.search_category.redstone": "Редстоун",
+  "omnichest.search_category.farming": "Земледелие",
+  "omnichest.search_category.food": "Еда",
+  "omnichest.search_category.combat": "Бой",
+  "omnichest.search_category.tool": "Инструменты",
+  "omnichest.search_category.enchant": "Чары",
+  "omnichest.search_category.potion": "Зелья",
+  "omnichest.search_category.decoration": "Декор",
+  "omnichest.search_category.nether": "Незер",
+  "omnichest.search_category.end": "Край",
+  "omnichest.search_category.misc": "Прочее",
+  "omnichest.search.display_mode.label": "Режим отображения",
+  "omnichest.search.display_mode.compact_grid": "Компактная сетка",
+  "omnichest.search.display_mode.large_grid": "Крупная сетка",
+  "omnichest.search.display_mode.list": "Список",
+  "omnichest.search.display_mode.detailed": "Подробно",
+  "omnichest.search.display_mode.icon_only": "Только значки",
+  "omnichest.search.favorites.add_tooltip": "ПКМ или Alt+клик чтобы добавить в избранное",
+  "omnichest.search.favorites.remove_tooltip": "ПКМ или Alt+клик чтобы убрать из избранного",
+  "omnichest.search.favorites.empty": "Нет избранного. Кликните ПКМ по предмету, чтобы добавить ★."
 }

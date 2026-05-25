@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest Tiếng Việt (vi_vn) — Câu ngắn gọn, theo phong cách dịch chính thức của Minecraft.",
-
   "config.omnichest.title": "Cài đặt OmniChest",
-
   "config.omnichest.category.general": "Chung",
   "config.omnichest.category.sort": "Sắp xếp theo loại",
   "config.omnichest.category.compact": "Gộp ngăn xếp",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "Tương thích",
   "config.omnichest.category.keybind": "Phím tắt",
   "config.omnichest.category.language": "Ngôn ngữ",
-
   "config.omnichest.sub.lock.overlay": "Lớp phủ & trực quan",
   "config.omnichest.sub.lock.protect": "Bảo vệ mặc định",
   "config.omnichest.sub.ai.advanced": "Nâng cao (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Nâng cao (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "Mod được phát hiện",
-
   "config.omnichest.general.enableMod": "Bật mod",
   "config.omnichest.general.enableMod.tooltip": "Công tắc chính. Tắt = tất cả tính năng mod bị tắt.",
   "config.omnichest.general.debugMode": "Chế độ gỡ lỗi",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = tắt, 1.0 = mặc định, 2.0 = gấp đôi.",
   "config.omnichest.general.enableSounds": "Bật âm thanh",
   "config.omnichest.general.enableSounds.tooltip": "Phát âm thanh UI riêng của mod (sắp xếp, lưu trữ…).",
-
   "config.omnichest.sort.enable": "Bật sắp xếp",
   "config.omnichest.sort.enable.tooltip": "Bật/tắt toàn bộ tính năng sắp xếp theo loại.",
   "config.omnichest.sort.insertEmptySeparator": "Ô trống làm phân cách",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "Cùng thứ tự với tab kho sáng tạo.",
   "config.omnichest.sort.autoCompactAfterSort": "Gộp sau khi xếp",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "Sau khi xếp, tự gộp các xếp dở.",
-
   "config.omnichest.compact.enable": "Bật gộp",
   "config.omnichest.compact.compactPlayerInventory": "Cả kho người chơi",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "Cũng gộp các xếp trong kho người chơi.",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "Animation gộp",
   "config.omnichest.compact.maxActionsPerTick": "Thao tác / tick (tối đa)",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "Giới hạn nhấp gửi mỗi tick.",
-
   "config.omnichest.deposit.enable": "Bật lưu trữ thông minh",
   "config.omnichest.deposit.matchNbtComponents": "So khớp NBT / thành phần",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "Chế độ nghiêm: vật phẩm phù phép chỉ xếp khi phù phép giống hệt.",
   "config.omnichest.deposit.ignoreEmptySlots": "Bỏ qua ô trống",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "Chỉ cất vào rương đã có sẵn vật phẩm.",
   "config.omnichest.deposit.hotkey.notice": "Phím tắt lưu tự động: Điều khiển → mục 'OmniChest'.",
-
   "config.omnichest.lock.enable": "Bật khóa ô",
   "config.omnichest.lock.enableItemLockMode": "Khóa theo vật phẩm",
   "config.omnichest.lock.enableItemLockMode.tooltip": "Theo dõi một vật phẩm cụ thể qua các ô (vd. cuốc kim cương).",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "Bảo vệ tay phụ",
   "config.omnichest.lock.protectArmorByDefault": "Bảo vệ áo giáp",
   "config.omnichest.lock.hotkey.notice": "Phím khóa nằm ở Điều khiển → mục 'OmniChest'.",
-
   "config.omnichest.search.enable": "Bật tìm kiếm",
   "config.omnichest.search.searchRadius": "Bán kính (khối)",
   "config.omnichest.search.searchRadius.tooltip": "Lớn hơn = nhiều rương hơn, nhưng quét tốn hơn.",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "Sắp xếp kết quả",
   "config.omnichest.search.pinPersistUntilOpened": "Ghim đến khi mở",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "Ghim và làm nổi bật được giữ đến khi rương thực sự được mở. Bỏ qua thời gian sáng.",
-
   "config.omnichest.ai.enableClassification": "Bật phân loại",
   "config.omnichest.ai.learningMode": "Chế độ học",
   "config.omnichest.ai.learningMode.tooltip": "Điều chỉnh trọng số loại dựa trên lịch sử lưu trữ.",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "Cho phép rương hỗn hợp",
   "config.omnichest.ai.autoDepositMaxDistance": "Khoảng cách tối đa",
   "config.omnichest.ai.persistEnabled": "Lưu dữ liệu học",
-
   "config.omnichest.template.enable": "Bật mẫu",
   "config.omnichest.template.autoApplyTemplate": "Áp dụng tự động",
   "config.omnichest.template.autoApplyTemplate.tooltip": "Tự động áp dụng mẫu khớp khi mở rương.",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "Gồm lưu + gộp",
   "config.omnichest.template.lockHotbar": "Khóa hotbar",
   "config.omnichest.template.skipPreview": "Bỏ qua xác nhận",
-
   "config.omnichest.render.enableOverlay": "Bật lớp phủ",
   "config.omnichest.render.highlightColorRgb": "Màu làm nổi bật",
   "config.omnichest.render.highlightColorRgb.tooltip": "Màu viền cho rương được tô sáng.",
   "config.omnichest.render.showCategoryLabels": "Nhãn loại",
   "config.omnichest.render.enableTooltips": "Tooltip bật",
   "config.omnichest.render.guiAnimation": "Animation UI",
-
   "config.omnichest.compat.enableShaderCompatibility": "Tương thích shader",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Dùng đường render an toàn cho shader khi có Iris hoặc Oculus.",
   "config.omnichest.compat.safeOverlayRendering": "Render lớp phủ an toàn",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "có",
   "config.omnichest.compat.status.no": "không",
   "config.omnichest.compat.detection.shader_active": "Gói shader đang dùng",
-
   "config.omnichest.sub.compat_resourcepack": "Tương thích gói tài nguyên",
   "config.omnichest.compat.enableResourcePackCompatibility": "Bật tương thích gói",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "Công tắc chính cho lớp an toàn texture/atlas/font. Bố cục, màu sắc, animation không bị ảnh hưởng.",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "Cắt hoặc xuống dòng văn bản an toàn để font Unicode/CJK/bitmap không tràn. Kích thước UI không đổi.",
   "config.omnichest.compat.debugTextureLogs": "Log texture",
   "config.omnichest.compat.debugTextureLogs.tooltip": "Ghi log chi tiết mỗi khi texture/font fallback. Chỉ khuyến nghị khi chẩn đoán gói.",
-
   "config.omnichest.keybind.intro": "Mọi phím tắt nằm ở Điều khiển → Phím → mục 'OmniChest'.",
-
   "config.omnichest.language.intro": "Chọn ngôn ngữ hiển thị của mod. \"System Default\" theo ngôn ngữ Minecraft.",
   "config.omnichest.language.override": "Ngôn ngữ hiển thị",
   "config.omnichest.language.override.tooltip": "Ghi đè ngôn ngữ mod. Chọn \"System Default\" để theo Minecraft.",
@@ -158,7 +142,6 @@
   "config.omnichest.language.unicode_font_safety": "An toàn font Unicode",
   "config.omnichest.language.unicode_font_safety.tooltip": "Cắt văn bản ngoài ASCII an toàn để không tràn ra ngoài widget.",
   "config.omnichest.language.restart_hint": "Phần lớn văn bản cập nhật ngay. Một vài tiêu đề cần mở lại màn hình.",
-
   "omnichest.language.system_default": "Mặc định hệ thống",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -188,19 +171,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "Tìm rương",
   "omnichest.screen.template.save.title": "Lưu mẫu",
   "omnichest.screen.template.manager.title": "Mẫu",
   "omnichest.screen.template.preview.title": "Xem trước mẫu",
-
   "omnichest.button.reset": "Đặt lại",
   "omnichest.button.save": "Lưu",
   "omnichest.button.cancel": "Hủy",
   "omnichest.button.apply": "Áp dụng",
   "omnichest.button.close": "Đóng",
   "omnichest.button.ok": "OK",
-
   "omnichest.button.deposit": "Lưu cùng loại",
   "omnichest.button.compact": "Gộp",
   "omnichest.button.search_network": "Tìm rương",
@@ -213,50 +193,40 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Sắp xếp",
   "omnichest.button.category_sort.tooltip": "Sắp xếp nội dung rương theo loại.\n\nNhóm theo ý nghĩa — xây dựng, gỗ, quặng, thức ăn…\nxếp giống nhau được gộp.\n\nÔ bị khóa không di chuyển.",
-
   "omnichest.button.sort_distance": "Khoảng cách",
   "omnichest.button.sort_count": "Số lượng",
   "omnichest.button.sort_name": "Tên",
   "omnichest.button.search_selected": "Tìm đã chọn",
   "omnichest.button.clear_selection": "Bỏ chọn",
   "omnichest.button.save_current_chest": "Lưu rương này",
-
   "omnichest.editbox.search.label": "Tìm",
   "omnichest.editbox.name.label": "Tên",
   "omnichest.editbox.search.hint.generic": "Tìm...",
   "omnichest.editbox.search.hint.network": "Tìm (vd. diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "Lọc theo tên mẫu",
   "omnichest.editbox.template_name.hint": "Tên mẫu",
-
   "omnichest.search.summary": "Đăng ký: %1$d  /  Kết quả: %2$d  /  Đã chọn: %3$d",
   "omnichest.search.hint": "Nhấp dòng = chọn  /  \"Tìm đã chọn\" = ghim  /  ESC = hủy",
-
   "omnichest.template.default_name": "Mẫu %1$d",
   "omnichest.template.untitled": "(chưa đặt tên)",
-
   "omnichest.template.kind.label": "Loại: %1$s",
   "omnichest.template.kind.exact": "Chính xác (vật phẩm cố định)",
   "omnichest.template.kind.category": "Theo loại (cho phép thay thế)",
   "omnichest.template.kind.hybrid": "Lai (khuyến nghị)",
-
   "omnichest.template.kind.badge.exact": "[Ch.xác]",
   "omnichest.template.kind.badge.category": "[Loại]",
   "omnichest.template.kind.badge.hybrid": "[Lai]",
-
   "omnichest.template.kind.help.exact": "Ván sồi và bạch dương được xem là vật phẩm khác nhau.",
   "omnichest.template.kind.help.category": "Vật phẩm cùng loại có thể thay thế lẫn nhau. (Hợp cho rương vật liệu)",
   "omnichest.template.kind.help.hybrid": "Ưu tiên bản gốc, nếu thiếu thì dùng thay thế cùng loại.",
-
   "omnichest.template.manager.summary": "Đã lưu: %1$d  /  Hiển thị: %2$d",
   "omnichest.template.manager.hint": "Nhấp = Áp dụng (cần rương) / Nút bên phải / ESC = đóng",
   "omnichest.template.manager.slot_rule_count": "%1$d ô / %2$d quy tắc",
-
   "omnichest.template.row.action.apply": "Áp dụng",
   "omnichest.template.row.action.duplicate": "Sao chép",
   "omnichest.template.row.action.delete": "Xóa",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "Xem trước: %1$s",
   "omnichest.template.preview.title_null": "(không có)",
   "omnichest.template.preview.computing": "Đang tính...",
@@ -267,29 +237,24 @@
   "omnichest.template.preview.move_row": "  ô %1$d  →  ô %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(đổi)",
   "omnichest.template.preview.more_items": "...và %1$d nữa",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[Ô KHÓA] §r§7Bảo vệ khỏi sắp xếp tự động",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[VẬT PHẨM KHÓA] §r§7%1$s được bảo vệ",
   "omnichest.slot_lock.tooltip.session": "§b§l[KHÓA PHIÊN] §r§7Ô rương (đến khi đóng)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[BẢO VỆ] §r§7Hotbar (mặc định)",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[BẢO VỆ] §r§7Tay phụ (mặc định)",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[BẢO VỆ] §r§7Áo giáp (mặc định)",
-
   "omnichest.slot_lock.chat.toggled": "[Khóa ô] ô %1$d đã chuyển",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[Khóa ô] §oKhông có khóa để gỡ.",
   "omnichest.slot_lock.chat.cleared": "§a[Khóa ô] §rĐã gỡ %1$d (vĩnh viễn) + %2$d (phiên).",
   "omnichest.slot_lock.chat.confirm_clear": "§e[Khóa ô] §rNhấn lại trong 1,5s để gỡ %1$d khóa.",
-
   "omnichest.smart_storage.prefix": "[Kho]",
   "omnichest.smart_storage.plan_empty": "[Kho] Kế hoạch: không có vật phẩm / tính năng tắt",
   "omnichest.smart_storage.plan_header": "[Kho] Kế hoạch:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7không có đích",
-
   "omnichest.category_badge.confidence": " Độ tin cậy: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "Rương",
   "omnichest.container_type.trapped_chest": "Rương bẫy",
   "omnichest.container_type.double_chest": "Rương lớn",
@@ -297,7 +262,6 @@
   "omnichest.container_type.barrel": "Thùng",
   "omnichest.container_type.shulker_box": "Hộp shulker",
   "omnichest.container_type.other": "Vật chứa",
-
   "omnichest.storage_category.building": "Vật liệu xây dựng",
   "omnichest.storage_category.wood": "Gỗ",
   "omnichest.storage_category.ore": "Quặng",
@@ -314,7 +278,6 @@
   "omnichest.storage_category.decoration": "Trang trí",
   "omnichest.storage_category.mixed": "Hỗn hợp",
   "omnichest.storage_category.unknown": "Chưa phân loại",
-
   "omnichest.item_category.building": "Xây",
   "omnichest.item_category.wood": "Gỗ",
   "omnichest.item_category.stone": "Đá",
@@ -331,35 +294,67 @@
   "omnichest.item_category.mob_drop": "Đồ rơi",
   "omnichest.item_category.decoration": "Trang trí",
   "omnichest.item_category.misc": "Khác",
-
   "omnichest.toggle.on": "§a✔ BẬT",
   "omnichest.toggle.off": "§c✘ TẮT",
-
   "omnichest.color_picker.title": "Chọn màu",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "OK",
   "omnichest.color_picker.cancel": "Hủy",
-
   "key.omnichest.open_search": "Mở tìm rương",
   "key.omnichest.smart_deposit": "Xem kế hoạch lưu",
   "key.omnichest.toggle_slot_lock": "Khóa ô đang trỏ",
   "key.omnichest.clear_all_slot_locks": "Gỡ tất cả khóa ô",
-
   "omnichest.keybind.line.open_search": "• Mở tìm: %1$s",
   "omnichest.keybind.line.smart_deposit": "• Lưu thông minh: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• Khóa ô: %1$s",
   "omnichest.keybind.line.clear_all_locks": "• Gỡ tất cả khóa: %1$s",
-
   "omnichest.controls.title": "Điều khiển",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+Nhấp: khóa ô",
   "omnichest.controls.line.slot_lock_middle_click": "Nhấp giữa: khóa ô",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Nhấp: khóa vật phẩm",
   "omnichest.controls.line.alt_drag": "Alt+Kéo: khóa liên tục",
   "omnichest.controls.line.shift_compact": "Shift+Gộp: cả người chơi",
-
   "config.omnichest.group.basics": "Cơ bản",
   "config.omnichest.group.item_sorting": "Sắp xếp vật phẩm",
   "config.omnichest.group.protection_search": "Bảo vệ & tìm",
-  "config.omnichest.group.appearance_input": "Giao diện & nhập"
+  "config.omnichest.group.appearance_input": "Giao diện & nhập",
+  "config.omnichest.search.enableCategoryTabs": "Bật thẻ phân loại",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "Hiển thị thẻ phong cách Sáng tạo phía trên màn hình tìm kiếm.",
+  "config.omnichest.search.enableFavorites": "Bật yêu thích",
+  "config.omnichest.search.enableFavorites.tooltip": "Đánh dấu ★ để sắp xếp lên đầu hoặc lọc trong thẻ Yêu thích.",
+  "config.omnichest.search.favoriteHighlight": "Làm nổi bật yêu thích",
+  "config.omnichest.search.favoriteHighlight.tooltip": "Thêm ánh vàng cho các vật yêu thích.",
+  "config.omnichest.search.rememberLastDisplayMode": "Nhớ chế độ trước",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "Nếu bật, khôi phục chế độ hiển thị lần trước khi mở lại.",
+  "config.omnichest.search.compactTabMode": "Chế độ thẻ thu gọn",
+  "config.omnichest.search.compactTabMode.tooltip": "Hiển thị thẻ chỉ là biểu tượng, kể cả thẻ đã chọn.",
+  "config.omnichest.search.defaultDisplayMode": "Chế độ mặc định",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "Chế độ ban đầu khi mở màn hình tìm kiếm.",
+  "omnichest.search_category.all": "Tất cả",
+  "omnichest.search_category.favorites": "Yêu thích",
+  "omnichest.search_category.building": "Xây dựng",
+  "omnichest.search_category.wood": "Gỗ",
+  "omnichest.search_category.stone": "Đá",
+  "omnichest.search_category.ore": "Quặng",
+  "omnichest.search_category.redstone": "Redstone",
+  "omnichest.search_category.farming": "Nông nghiệp",
+  "omnichest.search_category.food": "Thực phẩm",
+  "omnichest.search_category.combat": "Chiến đấu",
+  "omnichest.search_category.tool": "Công cụ",
+  "omnichest.search_category.enchant": "Phù phép",
+  "omnichest.search_category.potion": "Thuốc",
+  "omnichest.search_category.decoration": "Trang trí",
+  "omnichest.search_category.nether": "Nether",
+  "omnichest.search_category.end": "End",
+  "omnichest.search_category.misc": "Khác",
+  "omnichest.search.display_mode.label": "Chế độ hiển thị",
+  "omnichest.search.display_mode.compact_grid": "Lưới gọn",
+  "omnichest.search.display_mode.large_grid": "Lưới lớn",
+  "omnichest.search.display_mode.list": "Danh sách",
+  "omnichest.search.display_mode.detailed": "Chi tiết",
+  "omnichest.search.display_mode.icon_only": "Chỉ biểu tượng",
+  "omnichest.search.favorites.add_tooltip": "Chuột phải hoặc Alt+click để thêm yêu thích",
+  "omnichest.search.favorites.remove_tooltip": "Chuột phải hoặc Alt+click để bỏ yêu thích",
+  "omnichest.search.favorites.empty": "Chưa có yêu thích. Chuột phải vào vật để gắn ★."
 }

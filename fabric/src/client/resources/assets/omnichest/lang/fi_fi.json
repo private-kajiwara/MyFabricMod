@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest Suomi (fi_fi) — Lyhyitä lauseita Minecraftin virallisen suomenkielisen käännöksen tyyliin.",
-
   "config.omnichest.title": "OmniChest-asetukset",
-
   "config.omnichest.category.general": "Yleinen",
   "config.omnichest.category.sort": "Lajittele luokittain",
   "config.omnichest.category.compact": "Pakkaa pinot",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "Yhteensopivuus",
   "config.omnichest.category.keybind": "Pikanäppäimet",
   "config.omnichest.category.language": "Kieli",
-
   "config.omnichest.sub.lock.overlay": "Peittokuva & ulkoasu",
   "config.omnichest.sub.lock.protect": "Oletussuojaus",
   "config.omnichest.sub.ai.advanced": "Edistynyt (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Edistynyt (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "Tunnistetut modit",
-
   "config.omnichest.general.enableMod": "Ota modi käyttöön",
   "config.omnichest.general.enableMod.tooltip": "Pääkytkin. Pois = kaikki modin toiminnot pois käytöstä.",
   "config.omnichest.general.debugMode": "Vianetsintätila",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = ei animaatiota, 1.0 = oletus, 2.0 = kaksinkertainen.",
   "config.omnichest.general.enableSounds": "Äänet käyttöön",
   "config.omnichest.general.enableSounds.tooltip": "Toistaa modin omat UI-äänet (lajittelu, varastointi ym.).",
-
   "config.omnichest.sort.enable": "Ota lajittelu käyttöön",
   "config.omnichest.sort.enable.tooltip": "Kytkee koko luokkalajittelun päälle/pois.",
   "config.omnichest.sort.insertEmptySeparator": "Tyhjä paikka erottimena",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "Käyttää samaa järjestystä kuin luovan inventory.",
   "config.omnichest.sort.autoCompactAfterSort": "Pakkaa lajittelun jälkeen",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "Yhdistää osittaiset pinot automaattisesti lajittelun jälkeen.",
-
   "config.omnichest.compact.enable": "Pakkaaminen käyttöön",
   "config.omnichest.compact.compactPlayerInventory": "Myös pelaajan inventory",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "Yhdistää myös pinot pelaajan inventaariossa.",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "Yhdistämisanimaatio",
   "config.omnichest.compact.maxActionsPerTick": "Toiminnot per tikki (max)",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "Tikissä lähetettävien klikkien yläraja.",
-
   "config.omnichest.deposit.enable": "Älykäs varastointi",
   "config.omnichest.deposit.matchNbtComponents": "Vertaa NBT / komponentteja",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "Tiukka tila: lumotut esineet pinoutuvat vain identtisillä lumouksilla.",
   "config.omnichest.deposit.ignoreEmptySlots": "Ohita tyhjät paikat",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "Varastoi vain arkkuihin, joissa esine on jo.",
   "config.omnichest.deposit.hotkey.notice": "Pikanäppäin autom. varastointiin: Säätimet → kategoria 'OmniChest'.",
-
   "config.omnichest.lock.enable": "Paikan lukitus käyttöön",
   "config.omnichest.lock.enableItemLockMode": "Lukko esinekohtaisesti",
   "config.omnichest.lock.enableItemLockMode.tooltip": "Seuraa tiettyä esinettä paikkojen välillä (esim. timanttihakku).",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "Suojaa toinen käsi",
   "config.omnichest.lock.protectArmorByDefault": "Suojaa haarniska",
   "config.omnichest.lock.hotkey.notice": "Lukituksen pikanäppäimet: Säätimet → kategoria 'OmniChest'.",
-
   "config.omnichest.search.enable": "Haku käyttöön",
   "config.omnichest.search.searchRadius": "Etsintäalue (blokit)",
   "config.omnichest.search.searchRadius.tooltip": "Isompi = enemmän arkkuja, mutta raskaampi skannaus.",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "Tulosten järjestys",
   "config.omnichest.search.pinPersistUntilOpened": "Nasta avaukseen asti",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "Nasta ja korostus säilyvät kunnes arkku avataan. Ohittaa korostusajan.",
-
   "config.omnichest.ai.enableClassification": "Luokittelu käyttöön",
   "config.omnichest.ai.learningMode": "Oppimistila",
   "config.omnichest.ai.learningMode.tooltip": "Säätää luokkapainoja varastointihistoriasi perusteella.",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "Salli sekoitetut arkut",
   "config.omnichest.ai.autoDepositMaxDistance": "Maksimi etäisyys",
   "config.omnichest.ai.persistEnabled": "Tallenna oppimisdata",
-
   "config.omnichest.template.enable": "Mallit käyttöön",
   "config.omnichest.template.autoApplyTemplate": "Käytä autom.",
   "config.omnichest.template.autoApplyTemplate.tooltip": "Käyttää sopivan mallin automaattisesti kun arkku avataan.",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "Sisällytä varastointi + pakkaus",
   "config.omnichest.template.lockHotbar": "Lukitse hotbar",
   "config.omnichest.template.skipPreview": "Ohita vahvistus",
-
   "config.omnichest.render.enableOverlay": "Peittokuva käyttöön",
   "config.omnichest.render.highlightColorRgb": "Korostusväri",
   "config.omnichest.render.highlightColorRgb.tooltip": "Korostetun arkun reunaväri.",
   "config.omnichest.render.showCategoryLabels": "Luokkamerkinnät",
   "config.omnichest.render.enableTooltips": "Vihjeet käytössä",
   "config.omnichest.render.guiAnimation": "UI-animaatiot",
-
   "config.omnichest.compat.enableShaderCompatibility": "Shader-yhteensopivuus",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Käyttää shader-turvallista renderointia Iriksen tai Oculuksen kanssa.",
   "config.omnichest.compat.safeOverlayRendering": "Turvallinen peittokuvarenderointi",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "kyllä",
   "config.omnichest.compat.status.no": "ei",
   "config.omnichest.compat.detection.shader_active": "Shader-paketti aktiivinen",
-
   "config.omnichest.sub.compat_resourcepack": "Resurssipakkauksen yhteensopivuus",
   "config.omnichest.compat.enableResourcePackCompatibility": "Resurssipakkaus käyttöön",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "Pääkytkin tekstuuri-/atlas-/fonttiturvakerroksille. Asettelu, värit ja animaatiot eivät muutu.",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "Leikkaa tai rivittää tekstin turvallisesti, ettei Unicode-/CJK-/bitmap-fontit valu yli. UI-koot eivät muutu.",
   "config.omnichest.compat.debugTextureLogs": "Tekstuurilokit",
   "config.omnichest.compat.debugTextureLogs.tooltip": "Kirjoittaa tarkkoja lokeja jokaisesta tekstuuri-/fonttipalautuksesta. Vain pakkauksen diagnoosiin.",
-
   "config.omnichest.keybind.intro": "Kaikki pikanäppäimet löytyvät Säätimet → Näppäimet → kategoria 'OmniChest'.",
-
   "config.omnichest.language.intro": "Valitse modin näyttökieli. \"System Default\" seuraa Minecraftin kieltä.",
   "config.omnichest.language.override": "Näyttökieli",
   "config.omnichest.language.override.tooltip": "Ohittaa modin kielen. Valitse \"System Default\" seurataksesi Minecraftia.",
@@ -158,7 +142,6 @@
   "config.omnichest.language.unicode_font_safety": "Unicode-fonttiturva",
   "config.omnichest.language.unicode_font_safety.tooltip": "Leikkaa muun kuin ASCII-tekstin turvallisesti, ettei se valu widget-laatikoiden yli.",
   "config.omnichest.language.restart_hint": "Useimmat tekstit päivittyvät heti. Joitakin otsikoita varten näyttö on avattava uudelleen.",
-
   "omnichest.language.system_default": "Järjestelmän oletus",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -188,19 +171,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "Arkun haku",
   "omnichest.screen.template.save.title": "Tallenna malli",
   "omnichest.screen.template.manager.title": "Mallit",
   "omnichest.screen.template.preview.title": "Esikatsele malli",
-
   "omnichest.button.reset": "Nollaa",
   "omnichest.button.save": "Tallenna",
   "omnichest.button.cancel": "Peruuta",
   "omnichest.button.apply": "Käytä",
   "omnichest.button.close": "Sulje",
   "omnichest.button.ok": "OK",
-
   "omnichest.button.deposit": "Talleta samat",
   "omnichest.button.compact": "Pakkaa",
   "omnichest.button.search_network": "Arkun haku",
@@ -213,50 +193,40 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Lajittele",
   "omnichest.button.category_sort.tooltip": "Lajittelee arkun sisällön luokittain.\n\nRyhmittelee merkityksen mukaan — rakennus, puu, malmi, ruoka…\nidenttiset pinot yhdistetään.\n\nLukitut paikat eivät liiku.",
-
   "omnichest.button.sort_distance": "Etäisyys",
   "omnichest.button.sort_count": "Määrä",
   "omnichest.button.sort_name": "Nimi",
   "omnichest.button.search_selected": "Etsi valitut",
   "omnichest.button.clear_selection": "Tyhjennä valinta",
   "omnichest.button.save_current_chest": "Tallenna tämä arkku",
-
   "omnichest.editbox.search.label": "Haku",
   "omnichest.editbox.name.label": "Nimi",
   "omnichest.editbox.search.hint.generic": "Hae...",
   "omnichest.editbox.search.hint.network": "Hae (esim. diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "Suodata nimellä",
   "omnichest.editbox.template_name.hint": "Mallin nimi",
-
   "omnichest.search.summary": "Rek.: %1$d  /  Osumat: %2$d  /  Valittu: %3$d",
   "omnichest.search.hint": "Klikkaus = valitse  /  \"Etsi valitut\" = kiinnitä  /  ESC = peruuta",
-
   "omnichest.template.default_name": "Malli %1$d",
   "omnichest.template.untitled": "(nimetön)",
-
   "omnichest.template.kind.label": "Tyyppi: %1$s",
   "omnichest.template.kind.exact": "Tarkka (esine lukittu)",
   "omnichest.template.kind.category": "Luokka (korvaajat sallittu)",
   "omnichest.template.kind.hybrid": "Yhdistelmä (suositus)",
-
   "omnichest.template.kind.badge.exact": "[Tark.]",
   "omnichest.template.kind.badge.category": "[Luok.]",
   "omnichest.template.kind.badge.hybrid": "[Yhd.]",
-
   "omnichest.template.kind.help.exact": "Tammi- ja koivulankut lasketaan eri esineiksi.",
   "omnichest.template.kind.help.category": "Saman luokan esineet voivat korvata toisensa. (Materiaaliarkuille ihanteellinen)",
   "omnichest.template.kind.help.hybrid": "Suosii alkuperäistä, muuten käyttää saman luokan korviketta.",
-
   "omnichest.template.manager.summary": "Tallennettu: %1$d  /  Näkyvissä: %2$d",
   "omnichest.template.manager.hint": "Klikkaus = Käytä (vaatii arkun) / Painikkeet oikealla / ESC = sulje",
   "omnichest.template.manager.slot_rule_count": "%1$d paikkaa / %2$d sääntöä",
-
   "omnichest.template.row.action.apply": "Käytä",
   "omnichest.template.row.action.duplicate": "Monista",
   "omnichest.template.row.action.delete": "Poista",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "Esikatselu: %1$s",
   "omnichest.template.preview.title_null": "(ei mitään)",
   "omnichest.template.preview.computing": "Lasketaan...",
@@ -267,29 +237,24 @@
   "omnichest.template.preview.move_row": "  paikka %1$d  →  paikka %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(vaihto)",
   "omnichest.template.preview.more_items": "...ja %1$d lisää",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[LUKITTU] §r§7Suojattu lajittelulta",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[ESINELUKKO] §r§7%1$s suojattu",
   "omnichest.slot_lock.tooltip.session": "§b§l[ISTUNNON LUKKO] §r§7Arkun paikka (sulkemiseen asti)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[SUOJATTU] §r§7Hotbar (oletus)",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[SUOJATTU] §r§7Toinen käsi (oletus)",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[SUOJATTU] §r§7Haarniska (oletus)",
-
   "omnichest.slot_lock.chat.toggled": "[Paikan lukitus] paikka %1$d vaihdettu",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[Paikan lukitus] §oEi lukkoja poistettavaksi.",
   "omnichest.slot_lock.chat.cleared": "§a[Paikan lukitus] §rPoistettu %1$d (pys.) + %2$d (istunto).",
   "omnichest.slot_lock.chat.confirm_clear": "§e[Paikan lukitus] §rPaina uudelleen 1,5 s sisällä poistaaksesi %1$d lukkoa.",
-
   "omnichest.smart_storage.prefix": "[Varasto]",
   "omnichest.smart_storage.plan_empty": "[Varasto] Suunnitelma: ei esineitä / toiminto pois",
   "omnichest.smart_storage.plan_header": "[Varasto] Suunnitelma:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7ei kohdetta",
-
   "omnichest.category_badge.confidence": " Varmuus: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "Arkku",
   "omnichest.container_type.trapped_chest": "Ansaarkku",
   "omnichest.container_type.double_chest": "Iso arkku",
@@ -297,7 +262,6 @@
   "omnichest.container_type.barrel": "Tynnyri",
   "omnichest.container_type.shulker_box": "Shulker-laatikko",
   "omnichest.container_type.other": "Säiliö",
-
   "omnichest.storage_category.building": "Rakennusmateriaali",
   "omnichest.storage_category.wood": "Puu",
   "omnichest.storage_category.ore": "Malmit",
@@ -314,7 +278,6 @@
   "omnichest.storage_category.decoration": "Koriste",
   "omnichest.storage_category.mixed": "Sekoitettu",
   "omnichest.storage_category.unknown": "Lajittelematon",
-
   "omnichest.item_category.building": "Rakennus",
   "omnichest.item_category.wood": "Puu",
   "omnichest.item_category.stone": "Kivi",
@@ -331,35 +294,67 @@
   "omnichest.item_category.mob_drop": "Drops",
   "omnichest.item_category.decoration": "Koriste",
   "omnichest.item_category.misc": "Muut",
-
   "omnichest.toggle.on": "§a✔ PÄÄLLÄ",
   "omnichest.toggle.off": "§c✘ POIS",
-
   "omnichest.color_picker.title": "Värinvalitsin",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "OK",
   "omnichest.color_picker.cancel": "Peruuta",
-
   "key.omnichest.open_search": "Avaa arkun haku",
   "key.omnichest.smart_deposit": "Näytä varastointisuunnitelma",
   "key.omnichest.toggle_slot_lock": "Lukitse osoitettu paikka",
   "key.omnichest.clear_all_slot_locks": "Poista kaikki paikan lukot",
-
   "omnichest.keybind.line.open_search": "• Avaa haku: %1$s",
   "omnichest.keybind.line.smart_deposit": "• Älykäs varastointi: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• Paikan lukitus: %1$s",
   "omnichest.keybind.line.clear_all_locks": "• Poista kaikki lukot: %1$s",
-
   "omnichest.controls.title": "Säätimet",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+Klikkaus: lukitse paikka",
   "omnichest.controls.line.slot_lock_middle_click": "Keskiklikkaus: lukitse paikka",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klikkaus: esinelukko",
   "omnichest.controls.line.alt_drag": "Alt+Vedä: jatkuva lukitus",
   "omnichest.controls.line.shift_compact": "Shift+Pakkaa: myös pelaaja",
-
   "config.omnichest.group.basics": "Perusasiat",
   "config.omnichest.group.item_sorting": "Esineiden lajittelu",
   "config.omnichest.group.protection_search": "Suojaus & haku",
-  "config.omnichest.group.appearance_input": "Ulkoasu & syöttö"
+  "config.omnichest.group.appearance_input": "Ulkoasu & syöttö",
+  "config.omnichest.search.enableCategoryTabs": "Ota kategorialehdet käyttöön",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "Näytä luovan inventaarion tyyliset välilehdet hakunäytön yläosassa.",
+  "config.omnichest.search.enableFavorites": "Ota suosikit käyttöön",
+  "config.omnichest.search.enableFavorites.tooltip": "Merkitse esineet ★:lla nostaaksesi ne ylös tai suodattaaksesi Suosikit-välilehdellä.",
+  "config.omnichest.search.favoriteHighlight": "Korosta suosikit",
+  "config.omnichest.search.favoriteHighlight.tooltip": "Lisää kultainen hehku suosikkiesineisiin.",
+  "config.omnichest.search.rememberLastDisplayMode": "Muista viimeinen näkymä",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "Käytössä palauttaa edellisen näkymätilan ensi avauksella.",
+  "config.omnichest.search.compactTabMode": "Tiivis välilehtitila",
+  "config.omnichest.search.compactTabMode.tooltip": "Näytä välilehdet vain kuvakkeina, myös valittu.",
+  "config.omnichest.search.defaultDisplayMode": "Oletusnäkymä",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "Aloitusnäkymä hakunäyttöä avattaessa.",
+  "omnichest.search_category.all": "Kaikki",
+  "omnichest.search_category.favorites": "Suosikit",
+  "omnichest.search_category.building": "Rakentaminen",
+  "omnichest.search_category.wood": "Puu",
+  "omnichest.search_category.stone": "Kivi",
+  "omnichest.search_category.ore": "Malmi",
+  "omnichest.search_category.redstone": "Redstone",
+  "omnichest.search_category.farming": "Maatalous",
+  "omnichest.search_category.food": "Ruoka",
+  "omnichest.search_category.combat": "Taistelu",
+  "omnichest.search_category.tool": "Työkalut",
+  "omnichest.search_category.enchant": "Lumous",
+  "omnichest.search_category.potion": "Juomat",
+  "omnichest.search_category.decoration": "Sisustus",
+  "omnichest.search_category.nether": "Nether",
+  "omnichest.search_category.end": "End",
+  "omnichest.search_category.misc": "Muut",
+  "omnichest.search.display_mode.label": "Näkymä",
+  "omnichest.search.display_mode.compact_grid": "Tiivis ruudukko",
+  "omnichest.search.display_mode.large_grid": "Suuri ruudukko",
+  "omnichest.search.display_mode.list": "Lista",
+  "omnichest.search.display_mode.detailed": "Yksityiskohtainen",
+  "omnichest.search.display_mode.icon_only": "Vain kuvakkeet",
+  "omnichest.search.favorites.add_tooltip": "Hiiren oikealla tai Alt+klik lisätäksesi suosikkeihin",
+  "omnichest.search.favorites.remove_tooltip": "Hiiren oikealla tai Alt+klik poistaaksesi suosikeista",
+  "omnichest.search.favorites.empty": "Ei suosikkeja. Klikkaa hiiren oikealla lisätäksesi ★."
 }

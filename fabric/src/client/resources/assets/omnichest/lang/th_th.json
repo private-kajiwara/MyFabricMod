@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest ภาษาไทย (th_th) — ประโยคสั้นสไตล์การแปลทางการของ Minecraft.",
-
   "config.omnichest.title": "ตั้งค่า OmniChest",
-
   "config.omnichest.category.general": "ทั่วไป",
   "config.omnichest.category.sort": "จัดเรียงตามหมวด",
   "config.omnichest.category.compact": "ยุบสแต็ก",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "ความเข้ากันได้",
   "config.omnichest.category.keybind": "ปุ่มลัด",
   "config.omnichest.category.language": "ภาษา",
-
   "config.omnichest.sub.lock.overlay": "โอเวอร์เลย์และภาพ",
   "config.omnichest.sub.lock.protect": "การป้องกันเริ่มต้น",
   "config.omnichest.sub.ai.advanced": "ขั้นสูง (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "ขั้นสูง (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "ม็อดที่ตรวจพบ",
-
   "config.omnichest.general.enableMod": "เปิดใช้งานม็อด",
   "config.omnichest.general.enableMod.tooltip": "สวิตช์หลัก ปิด = ปิดทุกฟีเจอร์ของม็อด",
   "config.omnichest.general.debugMode": "โหมดดีบัก",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = ไม่มี, 1.0 = ปกติ, 2.0 = สองเท่า",
   "config.omnichest.general.enableSounds": "เปิดเสียง",
   "config.omnichest.general.enableSounds.tooltip": "เล่นเสียง UI ของม็อด (จัดเรียง, จัดเก็บ ฯลฯ)",
-
   "config.omnichest.sort.enable": "เปิดการจัดเรียง",
   "config.omnichest.sort.enable.tooltip": "เปิด/ปิดฟีเจอร์จัดเรียงตามหมวดทั้งหมด",
   "config.omnichest.sort.insertEmptySeparator": "ช่องว่างเป็นตัวคั่น",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "เรียงเหมือนแท็บอินเวนทอรีครีเอทีฟ",
   "config.omnichest.sort.autoCompactAfterSort": "ยุบหลังจัดเรียง",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "หลังจัดเรียง รวมสแต็กบางส่วนอัตโนมัติ",
-
   "config.omnichest.compact.enable": "เปิดการยุบ",
   "config.omnichest.compact.compactPlayerInventory": "ยุบในอินเวนทอรีด้วย",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "รวมสแต็กในอินเวนทอรีของผู้เล่นด้วย",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "อนิเมชันรวม",
   "config.omnichest.compact.maxActionsPerTick": "การกระทำ / tick (สูงสุด)",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "ขีดจำกัดสูงสุดของคลิกต่อ tick",
-
   "config.omnichest.deposit.enable": "เปิดการจัดเก็บอัจฉริยะ",
   "config.omnichest.deposit.matchNbtComponents": "เทียบ NBT / ส่วนประกอบ",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "โหมดเข้มงวด: ไอเทมร่ายเวทจะซ้อนกันก็ต่อเมื่อเวทเหมือนกันเท่านั้น",
   "config.omnichest.deposit.ignoreEmptySlots": "ไม่สนใจช่องว่าง",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "เก็บเฉพาะหีบที่มีไอเทมนั้นอยู่แล้ว",
   "config.omnichest.deposit.hotkey.notice": "ปุ่มจัดเก็บอัตโนมัติ: ควบคุม → หมวด 'OmniChest'",
-
   "config.omnichest.lock.enable": "เปิดการล็อกช่อง",
   "config.omnichest.lock.enableItemLockMode": "ล็อกตามไอเทม",
   "config.omnichest.lock.enableItemLockMode.tooltip": "ตามไอเทมเฉพาะข้ามช่อง (เช่น พลั่วเพชร)",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "ป้องกันมือรอง",
   "config.omnichest.lock.protectArmorByDefault": "ป้องกันชุดเกราะ",
   "config.omnichest.lock.hotkey.notice": "ปุ่มล็อก: ควบคุม → หมวด 'OmniChest'",
-
   "config.omnichest.search.enable": "เปิดการค้นหา",
   "config.omnichest.search.searchRadius": "รัศมี (บล็อก)",
   "config.omnichest.search.searchRadius.tooltip": "มากกว่า = เจอหีบมากกว่า แต่สแกนหนักขึ้น",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "เรียงผลลัพธ์",
   "config.omnichest.search.pinPersistUntilOpened": "ปักหมุดจนเปิด",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "ปักหมุดและไฮไลต์ค้างไว้จนกว่าจะเปิดหีบจริง ๆ ไม่สนใจเวลาไฮไลต์",
-
   "config.omnichest.ai.enableClassification": "เปิดการแยกประเภท",
   "config.omnichest.ai.learningMode": "โหมดเรียนรู้",
   "config.omnichest.ai.learningMode.tooltip": "ปรับน้ำหนักหมวดตามประวัติการจัดเก็บ",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "อนุญาตหีบผสม",
   "config.omnichest.ai.autoDepositMaxDistance": "ระยะสูงสุด",
   "config.omnichest.ai.persistEnabled": "บันทึกข้อมูลการเรียนรู้",
-
   "config.omnichest.template.enable": "เปิดแม่แบบ",
   "config.omnichest.template.autoApplyTemplate": "ใช้อัตโนมัติ",
   "config.omnichest.template.autoApplyTemplate.tooltip": "ใช้แม่แบบที่ตรงกันอัตโนมัติเมื่อเปิดหีบ",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "รวมจัดเก็บ + ยุบ",
   "config.omnichest.template.lockHotbar": "ล็อก hotbar",
   "config.omnichest.template.skipPreview": "ข้ามการยืนยัน",
-
   "config.omnichest.render.enableOverlay": "เปิดโอเวอร์เลย์",
   "config.omnichest.render.highlightColorRgb": "สีไฮไลต์",
   "config.omnichest.render.highlightColorRgb.tooltip": "สีเส้นขอบของหีบที่ไฮไลต์",
   "config.omnichest.render.showCategoryLabels": "ป้ายหมวด",
   "config.omnichest.render.enableTooltips": "เปิดทูลทิป",
   "config.omnichest.render.guiAnimation": "อนิเมชัน UI",
-
   "config.omnichest.compat.enableShaderCompatibility": "เข้ากันได้กับเชดเดอร์",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "ใช้เส้นทางเรนเดอร์ที่ปลอดภัยกับ Iris หรือ Oculus",
   "config.omnichest.compat.safeOverlayRendering": "เรนเดอร์โอเวอร์เลย์ปลอดภัย",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "ใช่",
   "config.omnichest.compat.status.no": "ไม่",
   "config.omnichest.compat.detection.shader_active": "เชดเดอร์ทำงาน",
-
   "config.omnichest.sub.compat_resourcepack": "เข้ากันได้กับ resource pack",
   "config.omnichest.compat.enableResourcePackCompatibility": "เปิดความเข้ากันได้กับ pack",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "สวิตช์หลักสำหรับเลเยอร์ความปลอดภัยเท็กซ์เจอร์/แอตลาส/ฟอนต์ ไม่กระทบเลย์เอาต์ สี อนิเมชัน",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "ตัดหรือห่อข้อความอย่างปลอดภัยเพื่อไม่ให้ฟอนต์ Unicode/CJK/bitmap ล้น ขนาด UI ไม่เปลี่ยน",
   "config.omnichest.compat.debugTextureLogs": "ล็อกเท็กซ์เจอร์",
   "config.omnichest.compat.debugTextureLogs.tooltip": "เขียนล็อกละเอียดทุกครั้งที่เท็กซ์เจอร์/ฟอนต์ fallback ใช้เฉพาะตอนวินิจฉัย",
-
   "config.omnichest.keybind.intro": "ปุ่มทั้งหมดอยู่ที่ ควบคุม → ปุ่ม → หมวด 'OmniChest'",
-
   "config.omnichest.language.intro": "เลือกภาษาแสดงผลของม็อด \"System Default\" ตามภาษาของ Minecraft",
   "config.omnichest.language.override": "ภาษาแสดงผล",
   "config.omnichest.language.override.tooltip": "เขียนทับภาษาของม็อด เลือก \"System Default\" เพื่อตาม Minecraft",
@@ -158,7 +142,6 @@
   "config.omnichest.language.unicode_font_safety": "ความปลอดภัยฟอนต์ Unicode",
   "config.omnichest.language.unicode_font_safety.tooltip": "ตัดข้อความนอก ASCII อย่างปลอดภัยให้ไม่ล้นออกจากวิดเจ็ต",
   "config.omnichest.language.restart_hint": "ข้อความส่วนใหญ่อัปเดตทันที บางหัวเรื่องต้องเปิดหน้าจอใหม่",
-
   "omnichest.language.system_default": "ค่าเริ่มต้นระบบ",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -188,19 +171,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "ค้นหาหีบ",
   "omnichest.screen.template.save.title": "บันทึกแม่แบบ",
   "omnichest.screen.template.manager.title": "แม่แบบ",
   "omnichest.screen.template.preview.title": "ตัวอย่างแม่แบบ",
-
   "omnichest.button.reset": "รีเซ็ต",
   "omnichest.button.save": "บันทึก",
   "omnichest.button.cancel": "ยกเลิก",
   "omnichest.button.apply": "ใช้",
   "omnichest.button.close": "ปิด",
   "omnichest.button.ok": "ตกลง",
-
   "omnichest.button.deposit": "เก็บประเภทเดียวกัน",
   "omnichest.button.compact": "ยุบ",
   "omnichest.button.search_network": "ค้นหาหีบ",
@@ -213,50 +193,40 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "จัดเรียง",
   "omnichest.button.category_sort.tooltip": "จัดเรียงเนื้อหาในหีบตามหมวด\n\nจัดกลุ่มตามความหมาย — ก่อสร้าง ไม้ แร่ อาหาร…\nสแต็กเหมือนกันถูกรวมเข้าด้วยกัน\n\nช่องที่ล็อกจะไม่ขยับ",
-
   "omnichest.button.sort_distance": "ระยะทาง",
   "omnichest.button.sort_count": "จำนวน",
   "omnichest.button.sort_name": "ชื่อ",
   "omnichest.button.search_selected": "ค้นที่เลือก",
   "omnichest.button.clear_selection": "ล้างที่เลือก",
   "omnichest.button.save_current_chest": "บันทึกหีบนี้",
-
   "omnichest.editbox.search.label": "ค้นหา",
   "omnichest.editbox.name.label": "ชื่อ",
   "omnichest.editbox.search.hint.generic": "ค้นหา...",
   "omnichest.editbox.search.hint.network": "ค้นหา (เช่น diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "กรองตามชื่อแม่แบบ",
   "omnichest.editbox.template_name.hint": "ชื่อแม่แบบ",
-
   "omnichest.search.summary": "ลงทะเบียน: %1$d  /  ผลลัพธ์: %2$d  /  เลือก: %3$d",
   "omnichest.search.hint": "คลิกแถว = เลือก  /  \"ค้นที่เลือก\" = ปักหมุด  /  ESC = ยกเลิก",
-
   "omnichest.template.default_name": "แม่แบบ %1$d",
   "omnichest.template.untitled": "(ไม่มีชื่อ)",
-
   "omnichest.template.kind.label": "ชนิด: %1$s",
   "omnichest.template.kind.exact": "ตรงเป๊ะ (ไอเทมตายตัว)",
   "omnichest.template.kind.category": "ตามหมวด (แทนได้)",
   "omnichest.template.kind.hybrid": "ลูกผสม (แนะนำ)",
-
   "omnichest.template.kind.badge.exact": "[ตรง]",
   "omnichest.template.kind.badge.category": "[หมวด]",
   "omnichest.template.kind.badge.hybrid": "[ลูกผสม]",
-
   "omnichest.template.kind.help.exact": "ไม้กระดานโอ๊กและเบิร์ชนับเป็นไอเทมต่างกัน",
   "omnichest.template.kind.help.category": "ไอเทมในหมวดเดียวกันแทนกันได้ (เหมาะกับหีบวัสดุ)",
   "omnichest.template.kind.help.hybrid": "เลือกของเดิมก่อน หากไม่มีจะใช้ของหมวดเดียวกันแทน",
-
   "omnichest.template.manager.summary": "บันทึก: %1$d  /  แสดง: %2$d",
   "omnichest.template.manager.hint": "คลิก = ใช้ (ต้องมีหีบ) / ปุ่มทางขวา / ESC = ปิด",
   "omnichest.template.manager.slot_rule_count": "%1$d ช่อง / %2$d กฎ",
-
   "omnichest.template.row.action.apply": "ใช้",
   "omnichest.template.row.action.duplicate": "ทำซ้ำ",
   "omnichest.template.row.action.delete": "ลบ",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "ตัวอย่าง: %1$s",
   "omnichest.template.preview.title_null": "(ไม่มี)",
   "omnichest.template.preview.computing": "กำลังคำนวณ...",
@@ -267,29 +237,24 @@
   "omnichest.template.preview.move_row": "  ช่อง %1$d  →  ช่อง %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(สลับ)",
   "omnichest.template.preview.more_items": "...และอีก %1$d",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[ช่องล็อก] §r§7ป้องกันจากการจัดเรียงอัตโนมัติ",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[ไอเทมล็อก] §r§7%1$s ถูกป้องกัน",
   "omnichest.slot_lock.tooltip.session": "§b§l[ล็อกเซสชัน] §r§7ช่องหีบ (จนกว่าจะปิด)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[ป้องกัน] §r§7Hotbar (ค่าเริ่มต้น)",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[ป้องกัน] §r§7มือรอง (ค่าเริ่มต้น)",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[ป้องกัน] §r§7ชุดเกราะ (ค่าเริ่มต้น)",
-
   "omnichest.slot_lock.chat.toggled": "[ล็อกช่อง] สลับช่อง %1$d",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[ล็อกช่อง] §oไม่มีล็อกให้ลบ",
   "omnichest.slot_lock.chat.cleared": "§a[ล็อกช่อง] §rลบ %1$d (ถาวร) + %2$d (เซสชัน) แล้ว",
   "omnichest.slot_lock.chat.confirm_clear": "§e[ล็อกช่อง] §rกดอีกครั้งใน 1.5 วินาทีเพื่อลบ %1$d ล็อก",
-
   "omnichest.smart_storage.prefix": "[โกดัง]",
   "omnichest.smart_storage.plan_empty": "[โกดัง] แผน: ไม่มีไอเทม / ฟีเจอร์ปิด",
   "omnichest.smart_storage.plan_header": "[โกดัง] แผน:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7ไม่มีปลายทาง",
-
   "omnichest.category_badge.confidence": " ความมั่นใจ: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "หีบ",
   "omnichest.container_type.trapped_chest": "หีบกับดัก",
   "omnichest.container_type.double_chest": "หีบใหญ่",
@@ -297,7 +262,6 @@
   "omnichest.container_type.barrel": "ถัง",
   "omnichest.container_type.shulker_box": "กล่องชัลเกอร์",
   "omnichest.container_type.other": "ภาชนะ",
-
   "omnichest.storage_category.building": "วัสดุก่อสร้าง",
   "omnichest.storage_category.wood": "ไม้",
   "omnichest.storage_category.ore": "แร่",
@@ -314,7 +278,6 @@
   "omnichest.storage_category.decoration": "ของตกแต่ง",
   "omnichest.storage_category.mixed": "ผสม",
   "omnichest.storage_category.unknown": "ยังไม่จัด",
-
   "omnichest.item_category.building": "ก่อสร้าง",
   "omnichest.item_category.wood": "ไม้",
   "omnichest.item_category.stone": "หิน",
@@ -331,35 +294,67 @@
   "omnichest.item_category.mob_drop": "ของหล่น",
   "omnichest.item_category.decoration": "ตกแต่ง",
   "omnichest.item_category.misc": "อื่น ๆ",
-
   "omnichest.toggle.on": "§a✔ เปิด",
   "omnichest.toggle.off": "§c✘ ปิด",
-
   "omnichest.color_picker.title": "เลือกสี",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "ตกลง",
   "omnichest.color_picker.cancel": "ยกเลิก",
-
   "key.omnichest.open_search": "เปิดค้นหาหีบ",
   "key.omnichest.smart_deposit": "แสดงแผนการเก็บ",
   "key.omnichest.toggle_slot_lock": "ล็อกช่องที่ชี้",
   "key.omnichest.clear_all_slot_locks": "ลบล็อกช่องทั้งหมด",
-
   "omnichest.keybind.line.open_search": "• เปิดค้นหา: %1$s",
   "omnichest.keybind.line.smart_deposit": "• จัดเก็บอัจฉริยะ: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• ล็อกช่อง: %1$s",
   "omnichest.keybind.line.clear_all_locks": "• ลบทั้งหมด: %1$s",
-
   "omnichest.controls.title": "การควบคุม",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+คลิก: ล็อกช่อง",
   "omnichest.controls.line.slot_lock_middle_click": "คลิกล้อ: ล็อกช่อง",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+คลิก: ล็อกไอเทม",
   "omnichest.controls.line.alt_drag": "Alt+ลาก: ล็อกต่อเนื่อง",
   "omnichest.controls.line.shift_compact": "Shift+ยุบ: รวมผู้เล่นด้วย",
-
   "config.omnichest.group.basics": "พื้นฐาน",
   "config.omnichest.group.item_sorting": "จัดเรียงไอเทม",
   "config.omnichest.group.protection_search": "ป้องกัน & ค้นหา",
-  "config.omnichest.group.appearance_input": "หน้าตา & อินพุต"
+  "config.omnichest.group.appearance_input": "หน้าตา & อินพุต",
+  "config.omnichest.search.enableCategoryTabs": "เปิดแท็บหมวดหมู่",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "แสดงแท็บสไตล์ Creative Inventory ที่ด้านบนของหน้าค้นหา",
+  "config.omnichest.search.enableFavorites": "เปิดรายการโปรด",
+  "config.omnichest.search.enableFavorites.tooltip": "ติด ★ ให้ไอเทมเพื่อจัดเรียงขึ้นบนหรือกรองในแท็บโปรด",
+  "config.omnichest.search.favoriteHighlight": "ไฮไลต์รายการโปรด",
+  "config.omnichest.search.favoriteHighlight.tooltip": "เพิ่มแสงเรืองทองให้ไอเทมโปรดในรายการ",
+  "config.omnichest.search.rememberLastDisplayMode": "จดจำโหมดล่าสุด",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "เมื่อเปิด ระบบจะกลับมาที่โหมดล่าสุดเมื่อเปิดอีกครั้ง",
+  "config.omnichest.search.compactTabMode": "โหมดแท็บกะทัดรัด",
+  "config.omnichest.search.compactTabMode.tooltip": "แสดงแท็บเป็นไอคอนเท่านั้น แม้แท็บที่เลือก",
+  "config.omnichest.search.defaultDisplayMode": "โหมดแสดงผลเริ่มต้น",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "โหมดเริ่มต้นเมื่อเปิดหน้าค้นหา",
+  "omnichest.search_category.all": "ทั้งหมด",
+  "omnichest.search_category.favorites": "รายการโปรด",
+  "omnichest.search_category.building": "ก่อสร้าง",
+  "omnichest.search_category.wood": "ไม้",
+  "omnichest.search_category.stone": "หิน",
+  "omnichest.search_category.ore": "แร่",
+  "omnichest.search_category.redstone": "เรดสโตน",
+  "omnichest.search_category.farming": "เกษตร",
+  "omnichest.search_category.food": "อาหาร",
+  "omnichest.search_category.combat": "ต่อสู้",
+  "omnichest.search_category.tool": "เครื่องมือ",
+  "omnichest.search_category.enchant": "เวทมนตร์",
+  "omnichest.search_category.potion": "ยา",
+  "omnichest.search_category.decoration": "ตกแต่ง",
+  "omnichest.search_category.nether": "เนเธอร์",
+  "omnichest.search_category.end": "เอนด์",
+  "omnichest.search_category.misc": "อื่น ๆ",
+  "omnichest.search.display_mode.label": "โหมดแสดงผล",
+  "omnichest.search.display_mode.compact_grid": "ตารางกะทัดรัด",
+  "omnichest.search.display_mode.large_grid": "ตารางใหญ่",
+  "omnichest.search.display_mode.list": "รายการ",
+  "omnichest.search.display_mode.detailed": "ละเอียด",
+  "omnichest.search.display_mode.icon_only": "เฉพาะไอคอน",
+  "omnichest.search.favorites.add_tooltip": "คลิกขวาหรือ Alt+คลิก เพื่อเพิ่มในรายการโปรด",
+  "omnichest.search.favorites.remove_tooltip": "คลิกขวาหรือ Alt+คลิก เพื่อลบออกจากรายการโปรด",
+  "omnichest.search.favorites.empty": "ยังไม่มีรายการโปรด คลิกขวาที่ไอเทมเพื่อใส่ ★"
 }

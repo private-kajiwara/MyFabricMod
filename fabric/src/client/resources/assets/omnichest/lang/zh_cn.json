@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest 简体中文 (zh_cn) — 全部使用简体字, 与 Minecraft 官方简中翻译风格保持一致.",
-
   "config.omnichest.title": "OmniChest 设置",
-
   "config.omnichest.category.general": "通用",
   "config.omnichest.category.sort": "分类整理",
   "config.omnichest.category.compact": "堆叠压缩",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "兼容性",
   "config.omnichest.category.keybind": "按键",
   "config.omnichest.category.language": "语言",
-
   "config.omnichest.sub.lock.overlay": "外观显示",
   "config.omnichest.sub.lock.protect": "默认保护",
   "config.omnichest.sub.ai.advanced": "高级 (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "高级 (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "已识别的模组",
-
   "config.omnichest.general.enableMod": "启用模组",
   "config.omnichest.general.enableMod.tooltip": "总开关。 关闭后, 本模组的所有功能都将停用。",
   "config.omnichest.general.debugMode": "调试模式",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = 无动画, 1.0 = 默认, 2.0 = 双倍速。",
   "config.omnichest.general.enableSounds": "启用音效",
   "config.omnichest.general.enableSounds.tooltip": "播放整理完成等模组自有的界面音效。",
-
   "config.omnichest.sort.enable": "启用分类整理",
   "config.omnichest.sort.enable.tooltip": "整体开关分类整理功能。",
   "config.omnichest.sort.insertEmptySeparator": "插入空格分隔",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "按创造模式标签的顺序进行分类。",
   "config.omnichest.sort.autoCompactAfterSort": "整理后自动合并",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "完成整理后, 自动合并零散物品。",
-
   "config.omnichest.compact.enable": "启用堆叠压缩",
   "config.omnichest.compact.compactPlayerInventory": "合并玩家背包",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "同时合并玩家背包内的零散物品。",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "合并动画",
   "config.omnichest.compact.maxActionsPerTick": "每 Tick 最大操作数",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "每个 Tick 发送的点击次数上限。",
-
   "config.omnichest.deposit.enable": "启用智能存入",
   "config.omnichest.deposit.matchNbtComponents": "匹配 NBT / 数据组件",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "严格模式: 仅当附魔等完全一致时才堆叠。",
   "config.omnichest.deposit.ignoreEmptySlots": "忽略空槽",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "仅向已经有该物品的箱子存入。",
   "config.omnichest.deposit.hotkey.notice": "自动存入按键请在原版 控制 → 'OmniChest' 分组中设置。",
-
   "config.omnichest.lock.enable": "启用槽位锁定",
   "config.omnichest.lock.enableItemLockMode": "物品级别锁定",
   "config.omnichest.lock.enableItemLockMode.tooltip": "按物品追踪 (例如让钻石镐随槽位移动)。",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "默认保护副手",
   "config.omnichest.lock.protectArmorByDefault": "默认保护盔甲",
   "config.omnichest.lock.hotkey.notice": "锁定按键位于原版 控制 → 'OmniChest' 分组中。",
-
   "config.omnichest.search.enable": "启用搜索功能",
   "config.omnichest.search.searchRadius": "搜索范围 (格)",
   "config.omnichest.search.searchRadius.tooltip": "数值越大能找到的箱子越多, 但扫描开销也更高。",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "结果排序方式",
   "config.omnichest.search.pinPersistUntilOpened": "打开前保留标记",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "在你真正打开该箱子之前都保持标记与高亮, 开启时会忽略高亮显示时间。",
-
   "config.omnichest.ai.enableClassification": "启用自动分类",
   "config.omnichest.ai.learningMode": "学习模式",
   "config.omnichest.ai.learningMode.tooltip": "根据存入历史调整各分类的权重。",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "允许将混合箱作为目标",
   "config.omnichest.ai.autoDepositMaxDistance": "自动存入最大距离",
   "config.omnichest.ai.persistEnabled": "保存学习数据",
-
   "config.omnichest.template.enable": "启用模板",
   "config.omnichest.template.autoApplyTemplate": "自动应用模板",
   "config.omnichest.template.autoApplyTemplate.tooltip": "打开箱子时自动应用匹配的已保存模板。",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "应用时同步执行 存入 + 压缩",
   "config.omnichest.template.lockHotbar": "应用期间锁定快捷栏",
   "config.omnichest.template.skipPreview": "跳过确认对话框",
-
   "config.omnichest.render.enableOverlay": "启用覆盖图",
   "config.omnichest.render.highlightColorRgb": "高亮颜色",
   "config.omnichest.render.highlightColorRgb.tooltip": "用于高亮匹配箱子的描边颜色。",
   "config.omnichest.render.showCategoryLabels": "显示分类标签",
   "config.omnichest.render.enableTooltips": "启用提示",
   "config.omnichest.render.guiAnimation": "界面动画",
-
   "config.omnichest.compat.enableShaderCompatibility": "光影兼容",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "在安装了 Iris 或 Oculus 时，切换到对光影更友好的渲染路径。",
   "config.omnichest.compat.safeOverlayRendering": "安全的叠加层渲染",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "是",
   "config.omnichest.compat.status.no": "否",
   "config.omnichest.compat.detection.shader_active": "光影包正在使用",
-
   "config.omnichest.sub.compat_resourcepack": "资源包兼容",
   "config.omnichest.compat.enableResourcePackCompatibility": "启用资源包兼容",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "材质 / 图集 / 字体安全层的总开关。 不影响布局、 颜色和动画。",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "安全地截断或换行文本, 避免 Unicode / CJK / 位图字体包溢出。 界面尺寸保持不变。",
   "config.omnichest.compat.debugTextureLogs": "材质调试日志",
   "config.omnichest.compat.debugTextureLogs.tooltip": "每次材质 / 字体回退时打印详细日志。 仅建议排查资源包时启用。",
-
   "config.omnichest.keybind.intro": "所有按键都位于原版 控制 → 按键设置 的 'OmniChest' 分组中。",
-
   "config.omnichest.language.intro": "选择本模组的显示语言。 选择 \"System Default\" 时跟随 Minecraft 的语言。",
   "config.omnichest.language.override": "显示语言",
   "config.omnichest.language.override.tooltip": "覆盖模组内的显示语言。 如果想跟随 Minecraft, 请选 \"System Default\"。",
@@ -158,13 +142,10 @@
   "config.omnichest.language.unicode_font_safety": "Unicode 字体安全",
   "config.omnichest.language.unicode_font_safety.tooltip": "对非 ASCII 文本进行安全裁剪, 避免控件溢出。",
   "config.omnichest.language.restart_hint": "大多数文字会立即更新。 少数标题需要重新打开界面才会刷新。",
-
   "config.omnichest.group.basics": "基本",
   "config.omnichest.group.item_sorting": "物品整理",
   "config.omnichest.group.protection_search": "保护与搜索",
   "config.omnichest.group.appearance_input": "外观与操作",
-
-
   "omnichest.language.system_default": "跟随系统",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -194,19 +175,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "箱子搜索",
   "omnichest.screen.template.save.title": "保存模板",
   "omnichest.screen.template.manager.title": "模板管理",
   "omnichest.screen.template.preview.title": "模板预览",
-
   "omnichest.button.reset": "重置",
   "omnichest.button.save": "保存",
   "omnichest.button.cancel": "取消",
   "omnichest.button.apply": "应用",
   "omnichest.button.close": "关闭",
   "omnichest.button.ok": "确定",
-
   "omnichest.button.deposit": "同类存入",
   "omnichest.button.compact": "堆叠压缩",
   "omnichest.button.search_network": "箱子搜索",
@@ -219,57 +197,46 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "分类整理",
   "omnichest.button.category_sort.tooltip": "按种类整理箱子里的物品。\n\n按 建筑·木材·矿物·食物 等含义分组,\n相同物品自动合并为一组。\n\n被锁定的槽位不会被移动。",
-
   "omnichest.controls.title": "操作方法",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+左键: 锁定槽位",
   "omnichest.controls.line.slot_lock_middle_click": "中键: 锁定槽位",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+左键: 物品锁定",
   "omnichest.controls.line.alt_drag": "Alt+拖动: 连续锁定",
   "omnichest.controls.line.shift_compact": "Shift+压缩: 含背包",
-
   "omnichest.button.sort_distance": "距离",
   "omnichest.button.sort_count": "数量",
   "omnichest.button.sort_name": "名称",
   "omnichest.button.search_selected": "搜索已选",
   "omnichest.button.clear_selection": "取消选择",
   "omnichest.button.save_current_chest": "保存当前箱子",
-
   "omnichest.editbox.search.label": "搜索",
   "omnichest.editbox.name.label": "名称",
   "omnichest.editbox.search.hint.generic": "搜索...",
   "omnichest.editbox.search.hint.network": "搜索 (如 diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "按模板名称筛选",
   "omnichest.editbox.template_name.hint": "模板名称",
-
   "omnichest.search.summary": "已登记 %1$d / 命中 %2$d / 选中 %3$d",
   "omnichest.search.hint": "点击行 = 切换选中  /  \"搜索已选\" = 标记  /  ESC = 关闭",
-
   "omnichest.template.default_name": "模板 %1$d",
   "omnichest.template.untitled": "(未命名)",
-
   "omnichest.template.kind.label": "类型: %1$s",
   "omnichest.template.kind.exact": "精确匹配 (固定物品)",
   "omnichest.template.kind.category": "分类匹配 (允许替代)",
   "omnichest.template.kind.hybrid": "混合 (推荐)",
-
   "omnichest.template.kind.badge.exact": "[精确]",
   "omnichest.template.kind.badge.category": "[分类]",
   "omnichest.template.kind.badge.hybrid": "[混合]",
-
   "omnichest.template.kind.help.exact": "橡木木板与白桦木板会被视为不同的物品。",
   "omnichest.template.kind.help.category": "同一分类的物品可互相替代。 (适合材料箱)",
   "omnichest.template.kind.help.hybrid": "优先使用原物品, 没有时按同分类替代。",
-
   "omnichest.template.manager.summary": "已登记 %1$d / 显示 %2$d",
   "omnichest.template.manager.hint": "点击行 = 应用 (需要箱子) / 复制/删除/↑↓ 在右侧 / ESC = 关闭",
   "omnichest.template.manager.slot_rule_count": "%1$d 槽位 / %2$d 规则",
-
   "omnichest.template.row.action.apply": "应用",
   "omnichest.template.row.action.duplicate": "复制",
   "omnichest.template.row.action.delete": "删除",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "预览: %1$s",
   "omnichest.template.preview.title_null": "(无)",
   "omnichest.template.preview.computing": "正在计算...",
@@ -280,29 +247,24 @@
   "omnichest.template.preview.move_row": "  槽位 %1$d  →  槽位 %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(交换)",
   "omnichest.template.preview.more_items": "...另有 %1$d 条",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[已锁定] §r§7自动整理已保护",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[锁定物品] §r§7%1$s 已保护",
   "omnichest.slot_lock.tooltip.session": "§b§l[会话锁定] §r§7箱内槽位 (关闭前有效)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[已保护] §r§7快捷栏默认保护",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[已保护] §r§7副手默认保护",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[已保护] §r§7盔甲默认保护",
-
   "omnichest.slot_lock.chat.toggled": "[槽位锁定] 已切换槽位 %1$d",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[槽位锁定] §o没有可解除的锁。",
   "omnichest.slot_lock.chat.cleared": "§a[槽位锁定] §r已解除 %1$d 个 (永久) + %2$d 个 (会话) 锁。",
   "omnichest.slot_lock.chat.confirm_clear": "§e[槽位锁定] §r1.5 秒内再次按下将解除 %1$d 个锁。",
-
   "omnichest.smart_storage.prefix": "[智能整理]",
   "omnichest.smart_storage.plan_empty": "[智能整理] 存入计划: 无物品 / 功能未启用",
   "omnichest.smart_storage.plan_header": "[智能整理] 存入计划:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7无目标",
-
   "omnichest.category_badge.confidence": " 置信度: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "箱子",
   "omnichest.container_type.trapped_chest": "陷阱箱",
   "omnichest.container_type.double_chest": "大型箱子",
@@ -310,7 +272,6 @@
   "omnichest.container_type.barrel": "木桶",
   "omnichest.container_type.shulker_box": "潜影盒",
   "omnichest.container_type.other": "容器",
-
   "omnichest.storage_category.building": "建筑材料箱",
   "omnichest.storage_category.wood": "木材箱",
   "omnichest.storage_category.ore": "矿物箱",
@@ -327,7 +288,6 @@
   "omnichest.storage_category.decoration": "装饰箱",
   "omnichest.storage_category.mixed": "混合储物",
   "omnichest.storage_category.unknown": "未分类",
-
   "omnichest.item_category.building": "建筑",
   "omnichest.item_category.wood": "木材",
   "omnichest.item_category.stone": "石材",
@@ -344,23 +304,57 @@
   "omnichest.item_category.mob_drop": "掉落",
   "omnichest.item_category.decoration": "装饰",
   "omnichest.item_category.misc": "其他",
-
   "omnichest.toggle.on": "§a✔ ON",
   "omnichest.toggle.off": "§c✘ OFF",
-
   "omnichest.color_picker.title": "颜色选择",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "确定",
   "omnichest.color_picker.cancel": "取消",
-
   "key.omnichest.open_search": "打开箱子搜索",
   "key.omnichest.smart_deposit": "显示智能存入计划",
   "key.omnichest.toggle_slot_lock": "切换悬停槽位锁",
   "key.omnichest.clear_all_slot_locks": "清除全部槽位锁",
-
   "omnichest.keybind.line.open_search": "• 打开搜索: %1$s",
   "omnichest.keybind.line.smart_deposit": "• 智能存入: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• 槽位锁定: %1$s",
-  "omnichest.keybind.line.clear_all_locks": "• 清除全部锁: %1$s"
+  "omnichest.keybind.line.clear_all_locks": "• 清除全部锁: %1$s",
+  "config.omnichest.search.enableCategoryTabs": "启用分类标签",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "在搜索界面顶部显示创造模式背包风格的分类标签。",
+  "config.omnichest.search.enableFavorites": "启用收藏",
+  "config.omnichest.search.enableFavorites.tooltip": "为物品加★，使其排在顶部，或在收藏标签中筛选。",
+  "config.omnichest.search.favoriteHighlight": "收藏高亮",
+  "config.omnichest.search.favoriteHighlight.tooltip": "为收藏的物品添加金色发光效果。",
+  "config.omnichest.search.rememberLastDisplayMode": "记住上次显示模式",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "开启后，下次打开时会恢复上次选择的显示模式。",
+  "config.omnichest.search.compactTabMode": "紧凑标签模式",
+  "config.omnichest.search.compactTabMode.tooltip": "即使是当前选中的标签也只显示图标（不显示文字标签）。",
+  "config.omnichest.search.defaultDisplayMode": "默认显示模式",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "打开搜索界面时使用的初始显示模式。",
+  "omnichest.search_category.all": "全部",
+  "omnichest.search_category.favorites": "收藏",
+  "omnichest.search_category.building": "建筑",
+  "omnichest.search_category.wood": "木材",
+  "omnichest.search_category.stone": "石材",
+  "omnichest.search_category.ore": "矿物",
+  "omnichest.search_category.redstone": "红石",
+  "omnichest.search_category.farming": "农业",
+  "omnichest.search_category.food": "食物",
+  "omnichest.search_category.combat": "战斗",
+  "omnichest.search_category.tool": "工具",
+  "omnichest.search_category.enchant": "附魔",
+  "omnichest.search_category.potion": "药水",
+  "omnichest.search_category.decoration": "装饰",
+  "omnichest.search_category.nether": "下界",
+  "omnichest.search_category.end": "末地",
+  "omnichest.search_category.misc": "其他",
+  "omnichest.search.display_mode.label": "显示模式",
+  "omnichest.search.display_mode.compact_grid": "紧凑网格",
+  "omnichest.search.display_mode.large_grid": "大图标",
+  "omnichest.search.display_mode.list": "列表",
+  "omnichest.search.display_mode.detailed": "详细",
+  "omnichest.search.display_mode.icon_only": "仅图标",
+  "omnichest.search.favorites.add_tooltip": "右键单击或按 Alt+单击添加到收藏",
+  "omnichest.search.favorites.remove_tooltip": "右键单击或按 Alt+单击从收藏中移除",
+  "omnichest.search.favorites.empty": "暂无收藏。右键单击物品即可加★。"
 }

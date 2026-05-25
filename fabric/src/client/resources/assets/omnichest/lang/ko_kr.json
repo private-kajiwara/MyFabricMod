@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest 한국어 (ko_kr) — Minecraft 공식 한국어 번역체의 짧고 자연스러운 어휘를 따른다.",
-
   "config.omnichest.title": "OmniChest 설정",
-
   "config.omnichest.category.general": "일반",
   "config.omnichest.category.sort": "카테고리 정리",
   "config.omnichest.category.compact": "스택 압축",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "호환성",
   "config.omnichest.category.keybind": "키 설정",
   "config.omnichest.category.language": "언어",
-
   "config.omnichest.sub.lock.overlay": "오버레이 표시",
   "config.omnichest.sub.lock.protect": "기본 보호",
   "config.omnichest.sub.ai.advanced": "고급 (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "고급 (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "감지된 모드",
-
   "config.omnichest.general.enableMod": "모드 활성화",
   "config.omnichest.general.enableMod.tooltip": "모드 전체 ON/OFF. 끄면 모든 기능이 비활성화됩니다.",
   "config.omnichest.general.debugMode": "디버그 모드",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = 없음, 1.0 = 기본, 2.0 = 2배속.",
   "config.omnichest.general.enableSounds": "효과음 사용",
   "config.omnichest.general.enableSounds.tooltip": "정리 완료 등 모드 전용 UI 효과음을 재생합니다.",
-
   "config.omnichest.sort.enable": "카테고리 정리 사용",
   "config.omnichest.sort.enable.tooltip": "카테고리 정리 기능 전체 ON/OFF.",
   "config.omnichest.sort.insertEmptySeparator": "구분용 빈 칸 삽입",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "크리에이티브 탭과 같은 순서로 정리합니다.",
   "config.omnichest.sort.autoCompactAfterSort": "정리 후 자동 합치기",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "정리가 끝난 뒤 남은 스택을 자동으로 합칩니다.",
-
   "config.omnichest.compact.enable": "압축 사용",
   "config.omnichest.compact.compactPlayerInventory": "플레이어 인벤토리도 합치기",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "플레이어 인벤토리의 남은 스택도 합칩니다.",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "합치기 애니메이션",
   "config.omnichest.compact.maxActionsPerTick": "틱당 최대 동작 수",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "한 틱에 보낼 클릭 수의 상한.",
-
   "config.omnichest.deposit.enable": "스마트 입고 사용",
   "config.omnichest.deposit.matchNbtComponents": "NBT/데이터 컴포넌트 일치",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "엄격 모드. 부여가 동일한 아이템끼리만 쌓습니다.",
   "config.omnichest.deposit.ignoreEmptySlots": "빈 칸 무시",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "해당 아이템이 이미 있는 상자에만 입고합니다.",
   "config.omnichest.deposit.hotkey.notice": "자동 입고 단축키는 바닐라 컨트롤 → 'OmniChest' 항목에서 설정합니다.",
-
   "config.omnichest.lock.enable": "슬롯 잠금 사용",
   "config.omnichest.lock.enableItemLockMode": "아이템 단위 잠금",
   "config.omnichest.lock.enableItemLockMode.tooltip": "특정 아이템을 추적해 슬롯이 바뀌어도 따라갑니다.",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "보조 손 기본 보호",
   "config.omnichest.lock.protectArmorByDefault": "갑옷 슬롯 기본 보호",
   "config.omnichest.lock.hotkey.notice": "잠금 단축키는 바닐라 컨트롤 → 'OmniChest' 항목에서 설정합니다.",
-
   "config.omnichest.search.enable": "검색 기능 사용",
   "config.omnichest.search.searchRadius": "검색 범위 (블록)",
   "config.omnichest.search.searchRadius.tooltip": "범위가 클수록 더 많은 상자를 찾지만 스캔 부하도 커집니다.",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "결과 정렬 방식",
   "config.omnichest.search.pinPersistUntilOpened": "열 때까지 핀 유지",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "해당 상자를 열 때까지 핀과 강조가 유지됩니다. ON 일 때는 표시 시간을 무시합니다.",
-
   "config.omnichest.ai.enableClassification": "자동 분류 사용",
   "config.omnichest.ai.learningMode": "학습 모드",
   "config.omnichest.ai.learningMode.tooltip": "입고 이력으로 카테고리 가중치를 학습합니다.",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "혼합 상자도 대상으로 허용",
   "config.omnichest.ai.autoDepositMaxDistance": "자동 입고 최대 거리",
   "config.omnichest.ai.persistEnabled": "학습 데이터 저장",
-
   "config.omnichest.template.enable": "템플릿 사용",
   "config.omnichest.template.autoApplyTemplate": "템플릿 자동 적용",
   "config.omnichest.template.autoApplyTemplate.tooltip": "상자를 열 때 일치하는 템플릿을 자동으로 적용합니다.",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "적용 시 입고 + 압축 함께 실행",
   "config.omnichest.template.lockHotbar": "적용 중 단축바 잠금",
   "config.omnichest.template.skipPreview": "확인 창 건너뛰기",
-
   "config.omnichest.render.enableOverlay": "오버레이 사용",
   "config.omnichest.render.highlightColorRgb": "강조 색상",
   "config.omnichest.render.highlightColorRgb.tooltip": "검색된 상자의 테두리 색상.",
   "config.omnichest.render.showCategoryLabels": "카테고리 라벨 표시",
   "config.omnichest.render.enableTooltips": "툴팁 사용",
   "config.omnichest.render.guiAnimation": "GUI 애니메이션",
-
   "config.omnichest.compat.enableShaderCompatibility": "셰이더 호환",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Iris나 Oculus가 설치되어 있을 때 셰이더와 충돌하지 않는 렌더 경로를 사용합니다.",
   "config.omnichest.compat.safeOverlayRendering": "안전한 오버레이 렌더링",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "있음",
   "config.omnichest.compat.status.no": "없음",
   "config.omnichest.compat.detection.shader_active": "셰이더팩 사용 중",
-
   "config.omnichest.sub.compat_resourcepack": "리소스팩 호환",
   "config.omnichest.compat.enableResourcePackCompatibility": "리소스팩 호환 활성화",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "텍스처 / 아틀라스 / 폰트 안전 계층의 마스터 스위치. 레이아웃·색·애니메이션은 영향 받지 않습니다.",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "유니코드 / CJK / 비트맵 폰트팩이 넘치지 않도록 안전하게 잘라내거나 줄바꿈합니다. UI 크기는 그대로입니다.",
   "config.omnichest.compat.debugTextureLogs": "텍스처 디버그 로그",
   "config.omnichest.compat.debugTextureLogs.tooltip": "텍스처 / 폰트가 대체될 때마다 상세 로그를 출력합니다. 리소스팩 진단 시에만 권장.",
-
   "config.omnichest.keybind.intro": "모든 단축키는 바닐라 컨트롤 → 키 설정의 'OmniChest' 항목에 있습니다.",
-
   "config.omnichest.language.intro": "모드 표시 언어를 선택합니다. \"System Default\" 는 마인크래프트 언어를 따릅니다.",
   "config.omnichest.language.override": "표시 언어",
   "config.omnichest.language.override.tooltip": "모드 내부 언어를 덮어씁니다. 마인크래프트에 맞추려면 \"System Default\" 를 선택하세요.",
@@ -158,13 +142,10 @@
   "config.omnichest.language.unicode_font_safety": "유니코드 폰트 안전",
   "config.omnichest.language.unicode_font_safety.tooltip": "비 ASCII 텍스트가 위젯 밖으로 넘치지 않게 안전하게 잘라냅니다.",
   "config.omnichest.language.restart_hint": "대부분의 항목은 즉시 바뀝니다. 일부 제목은 화면을 다시 열어야 반영됩니다.",
-
   "config.omnichest.group.basics": "기본",
   "config.omnichest.group.item_sorting": "아이템 정리",
   "config.omnichest.group.protection_search": "보호와 검색",
   "config.omnichest.group.appearance_input": "모양과 조작",
-
-
   "omnichest.language.system_default": "시스템 기본값",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -194,19 +175,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "상자 검색",
   "omnichest.screen.template.save.title": "템플릿 저장",
   "omnichest.screen.template.manager.title": "템플릿 관리",
   "omnichest.screen.template.preview.title": "템플릿 미리보기",
-
   "omnichest.button.reset": "초기화",
   "omnichest.button.save": "저장",
   "omnichest.button.cancel": "취소",
   "omnichest.button.apply": "적용",
   "omnichest.button.close": "닫기",
   "omnichest.button.ok": "확인",
-
   "omnichest.button.deposit": "동종 입고",
   "omnichest.button.compact": "스택 압축",
   "omnichest.button.search_network": "상자 검색",
@@ -219,57 +197,46 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "카테고리 정리",
   "omnichest.button.category_sort.tooltip": "상자 안을 종류별로 정리합니다.\n\n건축·목재·광물·식량 등으로 묶고,\n같은 아이템은 하나로 합칩니다.\n\n잠긴 칸은 그대로 둡니다.",
-
   "omnichest.controls.title": "조작 방법",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+클릭: 슬롯 잠금",
   "omnichest.controls.line.slot_lock_middle_click": "휠 클릭: 슬롯 잠금",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+클릭: 아이템 잠금",
   "omnichest.controls.line.alt_drag": "Alt+드래그: 연속 잠금",
   "omnichest.controls.line.shift_compact": "Shift+압축: 인벤토리도",
-
   "omnichest.button.sort_distance": "거리순",
   "omnichest.button.sort_count": "수량순",
   "omnichest.button.sort_name": "이름순",
   "omnichest.button.search_selected": "선택 검색",
   "omnichest.button.clear_selection": "선택 해제",
   "omnichest.button.save_current_chest": "현 상자 저장",
-
   "omnichest.editbox.search.label": "검색",
   "omnichest.editbox.name.label": "이름",
   "omnichest.editbox.search.hint.generic": "검색...",
   "omnichest.editbox.search.hint.network": "검색 (예: diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "템플릿 이름으로 검색",
   "omnichest.editbox.template_name.hint": "템플릿 이름",
-
   "omnichest.search.summary": "등록 %1$d / 결과 %2$d / 선택 %3$d",
   "omnichest.search.hint": "행 클릭 = 선택 토글  /  \"선택 검색\" = 핀 표시  /  ESC = 닫기",
-
   "omnichest.template.default_name": "템플릿 %1$d",
   "omnichest.template.untitled": "(이름 없음)",
-
   "omnichest.template.kind.label": "종류: %1$s",
   "omnichest.template.kind.exact": "정확 일치 (아이템 고정)",
   "omnichest.template.kind.category": "카테고리 일치 (대체 허용)",
   "omnichest.template.kind.hybrid": "혼합 (권장)",
-
   "omnichest.template.kind.badge.exact": "[정확]",
   "omnichest.template.kind.badge.category": "[카테고리]",
   "omnichest.template.kind.badge.hybrid": "[혼합]",
-
   "omnichest.template.kind.help.exact": "참나무 판자와 자작나무 판자를 다른 아이템으로 취급합니다.",
   "omnichest.template.kind.help.category": "같은 카테고리의 아이템이면 대체할 수 있습니다. (재료 상자에 권장)",
   "omnichest.template.kind.help.hybrid": "원하는 아이템을 우선하고, 없으면 같은 카테고리로 대체합니다.",
-
   "omnichest.template.manager.summary": "등록 %1$d / 표시 %2$d",
   "omnichest.template.manager.hint": "행 클릭 = 적용 (상자 필요) / 복제·삭제·↑↓ 는 우측 / ESC = 닫기",
   "omnichest.template.manager.slot_rule_count": "%1$d 칸 / %2$d 규칙",
-
   "omnichest.template.row.action.apply": "적용",
   "omnichest.template.row.action.duplicate": "복제",
   "omnichest.template.row.action.delete": "삭제",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "미리보기: %1$s",
   "omnichest.template.preview.title_null": "(없음)",
   "omnichest.template.preview.computing": "계산 중...",
@@ -280,29 +247,24 @@
   "omnichest.template.preview.move_row": "  슬롯 %1$d  →  슬롯 %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(교환)",
   "omnichest.template.preview.more_items": "...외 %1$d 건",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[잠금] §r§7자동 정리에서 보호됨",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[아이템 잠금] §r§7%1$s 보호 중",
   "omnichest.slot_lock.tooltip.session": "§b§l[세션 잠금] §r§7상자 슬롯 (닫을 때까지)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[보호] §r§7단축바 기본 보호",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[보호] §r§7보조 손 기본 보호",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[보호] §r§7갑옷 슬롯 기본 보호",
-
   "omnichest.slot_lock.chat.toggled": "[슬롯 잠금] 슬롯 %1$d 전환",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[슬롯 잠금] §o해제할 잠금이 없습니다.",
   "omnichest.slot_lock.chat.cleared": "§a[슬롯 잠금] §r%1$d 개 (영구) + %2$d 개 (세션) 해제 완료.",
   "omnichest.slot_lock.chat.confirm_clear": "§e[슬롯 잠금] §r1.5초 안에 한 번 더 누르면 %1$d 개 잠금이 전부 해제됩니다.",
-
   "omnichest.smart_storage.prefix": "[스마트 보관]",
   "omnichest.smart_storage.plan_empty": "[스마트 보관] 입고 계획: 아이템 없음 / 기능 OFF",
   "omnichest.smart_storage.plan_header": "[스마트 보관] 입고 계획:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7대상 없음",
-
   "omnichest.category_badge.confidence": " 신뢰도: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "상자",
   "omnichest.container_type.trapped_chest": "함정 상자",
   "omnichest.container_type.double_chest": "라지 상자",
@@ -310,7 +272,6 @@
   "omnichest.container_type.barrel": "통",
   "omnichest.container_type.shulker_box": "셜커 상자",
   "omnichest.container_type.other": "상자류",
-
   "omnichest.storage_category.building": "건축 자재 보관",
   "omnichest.storage_category.wood": "목재 보관",
   "omnichest.storage_category.ore": "광물 보관",
@@ -327,7 +288,6 @@
   "omnichest.storage_category.decoration": "장식 보관",
   "omnichest.storage_category.mixed": "혼합 보관",
   "omnichest.storage_category.unknown": "미분류",
-
   "omnichest.item_category.building": "건축",
   "omnichest.item_category.wood": "목재",
   "omnichest.item_category.stone": "석재",
@@ -344,23 +304,57 @@
   "omnichest.item_category.mob_drop": "드롭",
   "omnichest.item_category.decoration": "장식",
   "omnichest.item_category.misc": "기타",
-
   "omnichest.toggle.on": "§a✔ ON",
   "omnichest.toggle.off": "§c✘ OFF",
-
   "omnichest.color_picker.title": "색상 선택",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "확인",
   "omnichest.color_picker.cancel": "취소",
-
   "key.omnichest.open_search": "상자 검색 열기",
   "key.omnichest.smart_deposit": "스마트 입고 계획 보기",
   "key.omnichest.toggle_slot_lock": "선택 슬롯 잠금 전환",
   "key.omnichest.clear_all_slot_locks": "슬롯 잠금 전부 해제",
-
   "omnichest.keybind.line.open_search": "• 검색 열기: %1$s",
   "omnichest.keybind.line.smart_deposit": "• 스마트 입고: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• 슬롯 잠금: %1$s",
-  "omnichest.keybind.line.clear_all_locks": "• 잠금 전체 해제: %1$s"
+  "omnichest.keybind.line.clear_all_locks": "• 잠금 전체 해제: %1$s",
+  "config.omnichest.search.enableCategoryTabs": "카테고리 탭 활성화",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "검색 화면 상단에 크리에이티브 인벤토리 스타일의 탭을 표시합니다.",
+  "config.omnichest.search.enableFavorites": "즐겨찾기 활성화",
+  "config.omnichest.search.enableFavorites.tooltip": "아이템에 ★을 달아 상단에 정렬하거나 즐겨찾기 탭에서 필터링합니다.",
+  "config.omnichest.search.favoriteHighlight": "즐겨찾기 강조 표시",
+  "config.omnichest.search.favoriteHighlight.tooltip": "즐겨찾기 항목에 황금색 발광 효과를 추가합니다.",
+  "config.omnichest.search.rememberLastDisplayMode": "마지막 표시 모드 기억",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "켜면 다음 실행 시 이전에 선택한 표시 모드를 다시 사용합니다.",
+  "config.omnichest.search.compactTabMode": "컴팩트 탭 모드",
+  "config.omnichest.search.compactTabMode.tooltip": "선택된 탭도 아이콘만 표시합니다 (라벨 없음).",
+  "config.omnichest.search.defaultDisplayMode": "기본 표시 모드",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "검색 화면을 열 때의 초기 표시 모드.",
+  "omnichest.search_category.all": "전체",
+  "omnichest.search_category.favorites": "즐겨찾기",
+  "omnichest.search_category.building": "건축",
+  "omnichest.search_category.wood": "목재",
+  "omnichest.search_category.stone": "석재",
+  "omnichest.search_category.ore": "광석",
+  "omnichest.search_category.redstone": "레드스톤",
+  "omnichest.search_category.farming": "농업",
+  "omnichest.search_category.food": "음식",
+  "omnichest.search_category.combat": "전투",
+  "omnichest.search_category.tool": "도구",
+  "omnichest.search_category.enchant": "마법부여",
+  "omnichest.search_category.potion": "물약",
+  "omnichest.search_category.decoration": "장식",
+  "omnichest.search_category.nether": "네더",
+  "omnichest.search_category.end": "엔드",
+  "omnichest.search_category.misc": "기타",
+  "omnichest.search.display_mode.label": "표시 모드",
+  "omnichest.search.display_mode.compact_grid": "컴팩트 그리드",
+  "omnichest.search.display_mode.large_grid": "큰 아이콘",
+  "omnichest.search.display_mode.list": "리스트",
+  "omnichest.search.display_mode.detailed": "자세히",
+  "omnichest.search.display_mode.icon_only": "아이콘만",
+  "omnichest.search.favorites.add_tooltip": "오른쪽 클릭 또는 Alt+클릭으로 즐겨찾기 추가",
+  "omnichest.search.favorites.remove_tooltip": "오른쪽 클릭 또는 Alt+클릭으로 즐겨찾기 해제",
+  "omnichest.search.favorites.empty": "즐겨찾기가 없습니다. 아이템을 오른쪽 클릭하여 추가하세요."
 }

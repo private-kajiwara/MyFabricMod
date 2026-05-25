@@ -165,6 +165,18 @@ public final class Keys {
     // ─── ItemCategory displayName ─────────────────────────────
     public static final String ITEM_CATEGORY_PREFIX = "omnichest.item_category.";
 
+    // ─── Search UI 拡張 (Category Tabs / Display Mode / Favorites) ─────
+    /** カテゴリタブ ラベル prefix。 サフィックスは {@code SearchCategory#key()}。 */
+    public static final String SEARCH_CATEGORY_PREFIX = "omnichest.search_category.";
+
+    /** 表示モード ラベル prefix。 サフィックスは {@code ItemDisplayMode#key()}。 */
+    public static final String SEARCH_DISPLAY_MODE_PREFIX = "omnichest.search.display_mode.";
+
+    public static final String SEARCH_DISPLAY_MODE_LABEL = "omnichest.search.display_mode.label";
+    public static final String SEARCH_FAVORITES_ADD_TOOLTIP = "omnichest.search.favorites.add_tooltip";
+    public static final String SEARCH_FAVORITES_REMOVE_TOOLTIP = "omnichest.search.favorites.remove_tooltip";
+    public static final String SEARCH_FAVORITES_EMPTY = "omnichest.search.favorites.empty";
+
     // ─── Toggle ON / OFF ─────────────────────────────────────
     public static final String TOGGLE_ON = "omnichest.toggle.on";
     public static final String TOGGLE_OFF = "omnichest.toggle.off";

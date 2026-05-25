@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest Norsk Bokmål (nb_no) — Korte setninger i stil med Minecrafts offisielle norske oversettelse.",
-
   "config.omnichest.title": "OmniChest-innstillinger",
-
   "config.omnichest.category.general": "Generelt",
   "config.omnichest.category.sort": "Sorter etter kategori",
   "config.omnichest.category.compact": "Stable",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "Kompatibilitet",
   "config.omnichest.category.keybind": "Snarveier",
   "config.omnichest.category.language": "Språk",
-
   "config.omnichest.sub.lock.overlay": "Overlegg & visuelt",
   "config.omnichest.sub.lock.protect": "Standardbeskyttelse",
   "config.omnichest.sub.ai.advanced": "Avansert (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Avansert (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "Oppdagede moder",
-
   "config.omnichest.general.enableMod": "Aktiver mod",
   "config.omnichest.general.enableMod.tooltip": "Hovedbryter. Av = alle funksjoner i modden slås av.",
   "config.omnichest.general.debugMode": "Feilsøkings­modus",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = ingen, 1.0 = standard, 2.0 = dobbel.",
   "config.omnichest.general.enableSounds": "Aktiver lyder",
   "config.omnichest.general.enableSounds.tooltip": "Spiller moddens egne UI-lyder (sortering, lagring m.m.).",
-
   "config.omnichest.sort.enable": "Aktiver sortering",
   "config.omnichest.sort.enable.tooltip": "Slår hele kategorisorteringen på/av.",
   "config.omnichest.sort.insertEmptySeparator": "Tom slot som skille",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "Bruker samme rekkefølge som de kreative fanene.",
   "config.omnichest.sort.autoCompactAfterSort": "Stable etter sortering",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "Slår delstabler sammen automatisk etter sortering.",
-
   "config.omnichest.compact.enable": "Aktiver stabling",
   "config.omnichest.compact.compactPlayerInventory": "Også i inventaret",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "Stabler også stakker i spillerens inventar.",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "Sammenslåings-animasjon",
   "config.omnichest.compact.maxActionsPerTick": "Handlinger pr. tick (maks)",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "Maks. klikk sendt pr. tick.",
-
   "config.omnichest.deposit.enable": "Aktiver smart lagring",
   "config.omnichest.deposit.matchNbtComponents": "Match NBT / komponenter",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "Streng modus: fortryllede items stables kun med identiske fortryllelser.",
   "config.omnichest.deposit.ignoreEmptySlots": "Ignorer tomme slots",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "Lagrer kun i kister som allerede har itemet.",
   "config.omnichest.deposit.hotkey.notice": "Snarvei for auto-lagring: Kontroller → kategorien 'OmniChest'.",
-
   "config.omnichest.lock.enable": "Aktiver slotlås",
   "config.omnichest.lock.enableItemLockMode": "Lås pr. item",
   "config.omnichest.lock.enableItemLockMode.tooltip": "Følger et spesifikt item mellom slots (f.eks. diamanthakke).",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "Beskytt offhand",
   "config.omnichest.lock.protectArmorByDefault": "Beskytt rustning",
   "config.omnichest.lock.hotkey.notice": "Låse-snarveier finnes i Kontroller → kategorien 'OmniChest'.",
-
   "config.omnichest.search.enable": "Aktiver søk",
   "config.omnichest.search.searchRadius": "Søkeradius (blokker)",
   "config.omnichest.search.searchRadius.tooltip": "Større = flere kister, men dyrere skanning.",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "Sortering av resultater",
   "config.omnichest.search.pinPersistUntilOpened": "Pin til åpning",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "Beholder pin og markering til kisten faktisk åpnes. Overstyrer markeringstid.",
-
   "config.omnichest.ai.enableClassification": "Aktiver klassifisering",
   "config.omnichest.ai.learningMode": "Læringsmodus",
   "config.omnichest.ai.learningMode.tooltip": "Justerer kategorivekter ut fra lagringshistorikken din.",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "Tillat blandede kister",
   "config.omnichest.ai.autoDepositMaxDistance": "Maks. avstand",
   "config.omnichest.ai.persistEnabled": "Lagre læringsdata",
-
   "config.omnichest.template.enable": "Aktiver maler",
   "config.omnichest.template.autoApplyTemplate": "Bruk auto.",
   "config.omnichest.template.autoApplyTemplate.tooltip": "Bruker den matchende malen automatisk når kisten åpnes.",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "Inkluder lagring + stabling",
   "config.omnichest.template.lockHotbar": "Lås hotbar",
   "config.omnichest.template.skipPreview": "Hopp over bekreftelse",
-
   "config.omnichest.render.enableOverlay": "Aktiver overlegg",
   "config.omnichest.render.highlightColorRgb": "Markeringsfarge",
   "config.omnichest.render.highlightColorRgb.tooltip": "Kantfarge for markerte kister.",
   "config.omnichest.render.showCategoryLabels": "Kategori-merker",
   "config.omnichest.render.enableTooltips": "Tooltips på",
   "config.omnichest.render.guiAnimation": "UI-animasjoner",
-
   "config.omnichest.compat.enableShaderCompatibility": "Shader-kompatibilitet",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Bruker en shader-trygg rendervei med Iris eller Oculus.",
   "config.omnichest.compat.safeOverlayRendering": "Trygg overlegg-rendering",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "ja",
   "config.omnichest.compat.status.no": "nei",
   "config.omnichest.compat.detection.shader_active": "Shader-pakke aktiv",
-
   "config.omnichest.sub.compat_resourcepack": "Ressurspakke-kompatibilitet",
   "config.omnichest.compat.enableResourcePackCompatibility": "Aktiver ressurspakke-kompatibilitet",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "Hovedbryter for tekstur-/atlas-/fontsikkerhet. Layout, farger og animasjoner endres ikke.",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "Klipper eller bryter tekst trygt så Unicode-/CJK-/bitmap-fonter ikke flyter over. UI-størrelse endres ikke.",
   "config.omnichest.compat.debugTextureLogs": "Tekstur-logger",
   "config.omnichest.compat.debugTextureLogs.tooltip": "Skriver detaljerte logger ved hver tekstur-/font-fallback. Kun anbefalt for diagnose.",
-
   "config.omnichest.keybind.intro": "Alle snarveier finnes i Kontroller → Taster → kategorien 'OmniChest'.",
-
   "config.omnichest.language.intro": "Velg modens visningsspråk. \"System Default\" følger Minecraft.",
   "config.omnichest.language.override": "Visningsspråk",
   "config.omnichest.language.override.tooltip": "Overstyrer modens språk. Velg \"System Default\" for å følge Minecraft.",
@@ -158,7 +142,6 @@
   "config.omnichest.language.unicode_font_safety": "Unicode-fontsikkerhet",
   "config.omnichest.language.unicode_font_safety.tooltip": "Klipper ikke-ASCII-tekst trygt så den aldri flyter ut av widgets.",
   "config.omnichest.language.restart_hint": "De fleste tekster oppdateres straks. Noen titler krever at skjermen åpnes på nytt.",
-
   "omnichest.language.system_default": "Systemstandard",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -188,19 +171,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "Kistesøk",
   "omnichest.screen.template.save.title": "Lagre mal",
   "omnichest.screen.template.manager.title": "Maler",
   "omnichest.screen.template.preview.title": "Forhåndsvis mal",
-
   "omnichest.button.reset": "Nullstill",
   "omnichest.button.save": "Lagre",
   "omnichest.button.cancel": "Avbryt",
   "omnichest.button.apply": "Bruk",
   "omnichest.button.close": "Lukk",
   "omnichest.button.ok": "OK",
-
   "omnichest.button.deposit": "Legg like inn",
   "omnichest.button.compact": "Stable",
   "omnichest.button.search_network": "Kistesøk",
@@ -213,50 +193,40 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Sorter",
   "omnichest.button.category_sort.tooltip": "Sorterer kistens innhold etter kategori.\n\nGrupperer etter mening — bygg, tre, malm, mat…\nidentiske stabler slås sammen.\n\nLåste slots flyttes ikke.",
-
   "omnichest.button.sort_distance": "Avstand",
   "omnichest.button.sort_count": "Antall",
   "omnichest.button.sort_name": "Navn",
   "omnichest.button.search_selected": "Søk valgte",
   "omnichest.button.clear_selection": "Tøm valg",
   "omnichest.button.save_current_chest": "Lagre denne kisten",
-
   "omnichest.editbox.search.label": "Søk",
   "omnichest.editbox.name.label": "Navn",
   "omnichest.editbox.search.hint.generic": "Søk...",
   "omnichest.editbox.search.hint.network": "Søk (f.eks. diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "Filtrer etter navn",
   "omnichest.editbox.template_name.hint": "Malnavn",
-
   "omnichest.search.summary": "Reg.: %1$d  /  Treff: %2$d  /  Valgt: %3$d",
   "omnichest.search.hint": "Klikk = velg/fravelg  /  \"Søk valgte\" = pin  /  ESC = avbryt",
-
   "omnichest.template.default_name": "Mal %1$d",
   "omnichest.template.untitled": "(uten navn)",
-
   "omnichest.template.kind.label": "Type: %1$s",
   "omnichest.template.kind.exact": "Eksakt (item låst)",
   "omnichest.template.kind.category": "Kategori (erstatninger ok)",
   "omnichest.template.kind.hybrid": "Hybrid (anbefalt)",
-
   "omnichest.template.kind.badge.exact": "[Eks.]",
   "omnichest.template.kind.badge.category": "[Kat.]",
   "omnichest.template.kind.badge.hybrid": "[Hybr.]",
-
   "omnichest.template.kind.help.exact": "Eike- og bjørkeplanker regnes som forskjellige items.",
   "omnichest.template.kind.help.category": "Items i samme kategori kan erstatte hverandre. (Bra for material-kister)",
   "omnichest.template.kind.help.hybrid": "Foretrekker originalen, faller ellers tilbake på samme kategori.",
-
   "omnichest.template.manager.summary": "Lagret: %1$d  /  Vises: %2$d",
   "omnichest.template.manager.hint": "Klikk = Bruk (krever kiste) / Knapper til høyre / ESC = lukk",
   "omnichest.template.manager.slot_rule_count": "%1$d slots / %2$d regler",
-
   "omnichest.template.row.action.apply": "Bruk",
   "omnichest.template.row.action.duplicate": "Dupliser",
   "omnichest.template.row.action.delete": "Slett",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "Forhåndsvis: %1$s",
   "omnichest.template.preview.title_null": "(ingen)",
   "omnichest.template.preview.computing": "Beregner...",
@@ -267,29 +237,24 @@
   "omnichest.template.preview.move_row": "  slot %1$d  →  slot %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(bytt)",
   "omnichest.template.preview.more_items": "...og %1$d til",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[LÅST SLOT] §r§7Beskyttet mot sortering",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[LÅST ITEM] §r§7%1$s beskyttet",
   "omnichest.slot_lock.tooltip.session": "§b§l[ØKT-LÅS] §r§7Kistslot (til lukket)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[BESKYTTET] §r§7Hotbar (standard)",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[BESKYTTET] §r§7Offhand (standard)",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[BESKYTTET] §r§7Rustning (standard)",
-
   "omnichest.slot_lock.chat.toggled": "[Slotlås] slot %1$d byttet",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[Slotlås] §oIngen låser å fjerne.",
   "omnichest.slot_lock.chat.cleared": "§a[Slotlås] §rFjernet %1$d (perm.) + %2$d (økt).",
   "omnichest.slot_lock.chat.confirm_clear": "§e[Slotlås] §rTrykk igjen innen 1,5 s for å fjerne %1$d låser.",
-
   "omnichest.smart_storage.prefix": "[Lager]",
   "omnichest.smart_storage.plan_empty": "[Lager] Plan: ingen items / funksjon av",
   "omnichest.smart_storage.plan_header": "[Lager] Plan:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7ingen plass",
-
   "omnichest.category_badge.confidence": " Sikkerhet: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "Kiste",
   "omnichest.container_type.trapped_chest": "Fellekiste",
   "omnichest.container_type.double_chest": "Stor kiste",
@@ -297,7 +262,6 @@
   "omnichest.container_type.barrel": "Tønne",
   "omnichest.container_type.shulker_box": "Shulkereske",
   "omnichest.container_type.other": "Beholder",
-
   "omnichest.storage_category.building": "Byggemateriale",
   "omnichest.storage_category.wood": "Tre",
   "omnichest.storage_category.ore": "Malm",
@@ -314,7 +278,6 @@
   "omnichest.storage_category.decoration": "Dekorasjon",
   "omnichest.storage_category.mixed": "Blandet",
   "omnichest.storage_category.unknown": "Usortert",
-
   "omnichest.item_category.building": "Bygg",
   "omnichest.item_category.wood": "Tre",
   "omnichest.item_category.stone": "Stein",
@@ -331,35 +294,67 @@
   "omnichest.item_category.mob_drop": "Drops",
   "omnichest.item_category.decoration": "Dekor",
   "omnichest.item_category.misc": "Annet",
-
   "omnichest.toggle.on": "§a✔ PÅ",
   "omnichest.toggle.off": "§c✘ AV",
-
   "omnichest.color_picker.title": "Fargevelger",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "OK",
   "omnichest.color_picker.cancel": "Avbryt",
-
   "key.omnichest.open_search": "Åpne kistesøk",
   "key.omnichest.smart_deposit": "Vis lagringsplan",
   "key.omnichest.toggle_slot_lock": "Lås slot under markøren",
   "key.omnichest.clear_all_slot_locks": "Fjern alle slotlåser",
-
   "omnichest.keybind.line.open_search": "• Åpne søk: %1$s",
   "omnichest.keybind.line.smart_deposit": "• Smart lagring: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• Slotlås: %1$s",
   "omnichest.keybind.line.clear_all_locks": "• Fjern alle låser: %1$s",
-
   "omnichest.controls.title": "Kontroller",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+Klikk: lås slot",
   "omnichest.controls.line.slot_lock_middle_click": "Midtklikk: lås slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klikk: item-lås",
   "omnichest.controls.line.alt_drag": "Alt+Dra: fortløpende låsing",
   "omnichest.controls.line.shift_compact": "Shift+Stable: også spilleren",
-
   "config.omnichest.group.basics": "Grunnleggende",
   "config.omnichest.group.item_sorting": "Item-sortering",
   "config.omnichest.group.protection_search": "Beskyttelse & søk",
-  "config.omnichest.group.appearance_input": "Utseende & input"
+  "config.omnichest.group.appearance_input": "Utseende & input",
+  "config.omnichest.search.enableCategoryTabs": "Aktiver kategorifaner",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "Vis faner i kreativ-stil øverst på søkeskjermen.",
+  "config.omnichest.search.enableFavorites": "Aktiver favoritter",
+  "config.omnichest.search.enableFavorites.tooltip": "Marker gjenstander med ★ for å sortere øverst eller filtrere i Favoritter.",
+  "config.omnichest.search.favoriteHighlight": "Fremhev favoritter",
+  "config.omnichest.search.favoriteHighlight.tooltip": "Legg til et gyllent skinn på favorittgjenstander.",
+  "config.omnichest.search.rememberLastDisplayMode": "Husk siste modus",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "Hvis på, gjenopprettes siste visningsmodus neste gang.",
+  "config.omnichest.search.compactTabMode": "Kompakt fanemodus",
+  "config.omnichest.search.compactTabMode.tooltip": "Vis faner kun som ikoner, også valgt fane.",
+  "config.omnichest.search.defaultDisplayMode": "Standardvisning",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "Startmodus når søkeskjermen åpnes.",
+  "omnichest.search_category.all": "Alle",
+  "omnichest.search_category.favorites": "Favoritter",
+  "omnichest.search_category.building": "Bygg",
+  "omnichest.search_category.wood": "Tre",
+  "omnichest.search_category.stone": "Stein",
+  "omnichest.search_category.ore": "Malm",
+  "omnichest.search_category.redstone": "Redstone",
+  "omnichest.search_category.farming": "Jordbruk",
+  "omnichest.search_category.food": "Mat",
+  "omnichest.search_category.combat": "Kamp",
+  "omnichest.search_category.tool": "Verktøy",
+  "omnichest.search_category.enchant": "Fortryllelse",
+  "omnichest.search_category.potion": "Drikker",
+  "omnichest.search_category.decoration": "Dekorasjon",
+  "omnichest.search_category.nether": "Nether",
+  "omnichest.search_category.end": "End",
+  "omnichest.search_category.misc": "Annet",
+  "omnichest.search.display_mode.label": "Visningsmodus",
+  "omnichest.search.display_mode.compact_grid": "Kompakt rutenett",
+  "omnichest.search.display_mode.large_grid": "Stort rutenett",
+  "omnichest.search.display_mode.list": "Liste",
+  "omnichest.search.display_mode.detailed": "Detaljert",
+  "omnichest.search.display_mode.icon_only": "Kun ikoner",
+  "omnichest.search.favorites.add_tooltip": "Høyreklikk eller Alt+klikk for å favorittmarkere",
+  "omnichest.search.favorites.remove_tooltip": "Høyreklikk eller Alt+klikk for å fjerne favoritt",
+  "omnichest.search.favorites.empty": "Ingen favoritter. Høyreklikk på en gjenstand for ★."
 }

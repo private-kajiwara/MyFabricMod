@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest Italiano (it_it) — Frasi brevi, tono coerente con l'UI di Minecraft.",
-
   "config.omnichest.title": "Impostazioni OmniChest",
-
   "config.omnichest.category.general": "Generale",
   "config.omnichest.category.sort": "Ordinamento",
   "config.omnichest.category.compact": "Compatta pile",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "Compatibilità",
   "config.omnichest.category.keybind": "Tasti",
   "config.omnichest.category.language": "Lingua",
-
   "config.omnichest.sub.lock.overlay": "Overlay & grafica",
   "config.omnichest.sub.lock.protect": "Protezione predefinita",
   "config.omnichest.sub.ai.advanced": "Avanzate (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Avanzate (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "Mod rilevate",
-
   "config.omnichest.general.enableMod": "Attiva la mod",
   "config.omnichest.general.enableMod.tooltip": "Interruttore generale: se spento disattiva ogni funzione.",
   "config.omnichest.general.debugMode": "Modalità debug",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = ferme, 1.0 = normali, 2.0 = doppie.",
   "config.omnichest.general.enableSounds": "Suoni attivi",
   "config.omnichest.general.enableSounds.tooltip": "Suoni propri della mod (ordina, deposita, …).",
-
   "config.omnichest.sort.enable": "Ordinamento attivo",
   "config.omnichest.sort.enable.tooltip": "Attiva/disattiva l'intero ordinamento per categoria.",
   "config.omnichest.sort.insertEmptySeparator": "Slot vuoto come separatore",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "Ordina come le schede dell'inventario creativo.",
   "config.omnichest.sort.autoCompactAfterSort": "Compatta dopo l'ordinamento",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "Unisce le pile parziali al termine dell'ordinamento.",
-
   "config.omnichest.compact.enable": "Compatta attivo",
   "config.omnichest.compact.compactPlayerInventory": "Compatta anche l'inventario",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "Unisce anche le pile parziali del giocatore.",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "Animazione unione",
   "config.omnichest.compact.maxActionsPerTick": "Azioni max / tick",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "Tetto dei clic per tick.",
-
   "config.omnichest.deposit.enable": "Deposito smart attivo",
   "config.omnichest.deposit.matchNbtComponents": "Confronta NBT / componenti",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "Modalità rigida: oggetti incantati impilati solo se identici.",
   "config.omnichest.deposit.ignoreEmptySlots": "Ignora slot vuoti",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "Deposita solo in casse che già contengono l'oggetto.",
   "config.omnichest.deposit.hotkey.notice": "Imposta la scorciatoia in Controlli → categoria 'OmniChest'.",
-
   "config.omnichest.lock.enable": "Blocco slot attivo",
   "config.omnichest.lock.enableItemLockMode": "Blocco per oggetto",
   "config.omnichest.lock.enableItemLockMode.tooltip": "Segue l'oggetto fra gli slot (es. piccone di diamante).",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "Proteggi mano sec.",
   "config.omnichest.lock.protectArmorByDefault": "Proteggi armatura",
   "config.omnichest.lock.hotkey.notice": "Scorciatoie blocco in Controlli → categoria 'OmniChest'.",
-
   "config.omnichest.search.enable": "Ricerca attiva",
   "config.omnichest.search.searchRadius": "Raggio (blocchi)",
   "config.omnichest.search.searchRadius.tooltip": "Più grande = più casse, ma scansione più costosa.",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "Ordine risultati",
   "config.omnichest.search.pinPersistUntilOpened": "Pin fino all'apertura",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "Mantiene pin/evidenziazione finché non apri la cassa. Ignora Durata evidenziazione.",
-
   "config.omnichest.ai.enableClassification": "Classificazione attiva",
   "config.omnichest.ai.learningMode": "Modalità apprendimento",
   "config.omnichest.ai.learningMode.tooltip": "Adatta i pesi delle categorie in base ai tuoi depositi.",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "Casse miste come destinazione",
   "config.omnichest.ai.autoDepositMaxDistance": "Distanza max",
   "config.omnichest.ai.persistEnabled": "Salva dati appresi",
-
   "config.omnichest.template.enable": "Modelli attivi",
   "config.omnichest.template.autoApplyTemplate": "Applica automaticamente",
   "config.omnichest.template.autoApplyTemplate.tooltip": "Applica il modello coincidente all'apertura della cassa.",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "Integra deposito + compatta",
   "config.omnichest.template.lockHotbar": "Blocca barra durante l'applicazione",
   "config.omnichest.template.skipPreview": "Salta conferma",
-
   "config.omnichest.render.enableOverlay": "Overlay attivo",
   "config.omnichest.render.highlightColorRgb": "Colore evidenziazione",
   "config.omnichest.render.highlightColorRgb.tooltip": "Colore del bordo per le casse trovate.",
   "config.omnichest.render.showCategoryLabels": "Etichette categoria",
   "config.omnichest.render.enableTooltips": "Tooltip attivi",
   "config.omnichest.render.guiAnimation": "Animazioni UI",
-
   "config.omnichest.compat.enableShaderCompatibility": "Compatibilità con gli shader",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Passa a un percorso di rendering sicuro quando Iris o Oculus è installato.",
   "config.omnichest.compat.safeOverlayRendering": "Rendering sicuro delle sovrapposizioni",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "sì",
   "config.omnichest.compat.status.no": "no",
   "config.omnichest.compat.detection.shader_active": "Shader pack attivo",
-
   "config.omnichest.sub.compat_resourcepack": "Compatibilità resource pack",
   "config.omnichest.compat.enableResourcePackCompatibility": "Attiva compatibilità pack",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "Interruttore generale per i livelli di sicurezza texture / atlas / font. Layout, colori e animazioni non cambiano.",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "Tronca o avvolge il testo per evitare che pack Unicode / CJK / bitmap fuoriescano. Le dimensioni dell'UI restano invariate.",
   "config.omnichest.compat.debugTextureLogs": "Log texture",
   "config.omnichest.compat.debugTextureLogs.tooltip": "Stampa log dettagliati ad ogni fallback di texture / font. Utile per diagnosticare un pack.",
-
   "config.omnichest.keybind.intro": "Tutti i tasti sono in Controlli → Tasti → categoria 'OmniChest'.",
-
   "config.omnichest.language.intro": "Scegli la lingua della mod. \"System Default\" segue la lingua di Minecraft.",
   "config.omnichest.language.override": "Lingua di visualizzazione",
   "config.omnichest.language.override.tooltip": "Sovrascrive la lingua interna alla mod. Usa \"System Default\" per seguire Minecraft.",
@@ -158,13 +142,10 @@
   "config.omnichest.language.unicode_font_safety": "Sicurezza font Unicode",
   "config.omnichest.language.unicode_font_safety.tooltip": "Tronca in sicurezza il testo non ASCII per evitare che esca dai widget.",
   "config.omnichest.language.restart_hint": "La maggior parte dei testi si aggiorna subito. Alcuni titoli richiedono di riaprire la schermata.",
-
   "config.omnichest.group.basics": "Generale",
   "config.omnichest.group.item_sorting": "Ordinamento",
   "config.omnichest.group.protection_search": "Protezione e ricerca",
   "config.omnichest.group.appearance_input": "Aspetto e comandi",
-
-
   "omnichest.language.system_default": "Predefinita di sistema",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -194,19 +175,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "Ricerca casse",
   "omnichest.screen.template.save.title": "Salva modello",
   "omnichest.screen.template.manager.title": "Modelli",
   "omnichest.screen.template.preview.title": "Anteprima modello",
-
   "omnichest.button.reset": "Reimposta",
   "omnichest.button.save": "Salva",
   "omnichest.button.cancel": "Annulla",
   "omnichest.button.apply": "Applica",
   "omnichest.button.close": "Chiudi",
   "omnichest.button.ok": "OK",
-
   "omnichest.button.deposit": "Deposita uguali",
   "omnichest.button.compact": "Compatta",
   "omnichest.button.search_network": "Ricerca casse",
@@ -219,57 +197,46 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Ordina",
   "omnichest.button.category_sort.tooltip": "Ordina il contenuto della cassa per categoria.\n\nRaggruppa per significato — costruzione, legno, minerali, cibo…\ne unisce le pile uguali in una sola.\n\nGli slot bloccati restano fermi.",
-
   "omnichest.controls.title": "Comandi",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+Clic: Blocca slot",
   "omnichest.controls.line.slot_lock_middle_click": "Clic centrale: Blocca slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Clic: Blocca oggetto",
   "omnichest.controls.line.alt_drag": "Alt+Trascina: Blocco continuo",
   "omnichest.controls.line.shift_compact": "Shift+Compatta: Anche giocatore",
-
   "omnichest.button.sort_distance": "Distanza",
   "omnichest.button.sort_count": "Quantità",
   "omnichest.button.sort_name": "Nome",
   "omnichest.button.search_selected": "Cerca selez.",
   "omnichest.button.clear_selection": "Annulla selez.",
   "omnichest.button.save_current_chest": "Salva cassa attuale",
-
   "omnichest.editbox.search.label": "Cerca",
   "omnichest.editbox.name.label": "Nome",
   "omnichest.editbox.search.hint.generic": "Cerca...",
   "omnichest.editbox.search.hint.network": "Cerca (es. diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "Filtra per nome",
   "omnichest.editbox.template_name.hint": "Nome modello",
-
   "omnichest.search.summary": "Registrate: %1$d  /  Trovate: %2$d  /  Selezionate: %3$d",
   "omnichest.search.hint": "Clic = seleziona/deseleziona  /  \"Cerca selez.\" = pin  /  ESC = annulla",
-
   "omnichest.template.default_name": "Modello %1$d",
   "omnichest.template.untitled": "(senza nome)",
-
   "omnichest.template.kind.label": "Tipo: %1$s",
   "omnichest.template.kind.exact": "Esatto (oggetto fisso)",
   "omnichest.template.kind.category": "Categoria (con sostituti)",
   "omnichest.template.kind.hybrid": "Ibrido (consigliato)",
-
   "omnichest.template.kind.badge.exact": "[Esatto]",
   "omnichest.template.kind.badge.category": "[Categoria]",
   "omnichest.template.kind.badge.hybrid": "[Ibrido]",
-
   "omnichest.template.kind.help.exact": "Le assi di quercia e di betulla sono oggetti diversi.",
   "omnichest.template.kind.help.category": "Gli oggetti della stessa categoria possono sostituirsi. (Ideale per casse-materiale)",
   "omnichest.template.kind.help.hybrid": "Preferisce l'originale, in mancanza ricorre alla stessa categoria.",
-
   "omnichest.template.manager.summary": "Salvati: %1$d  /  Visibili: %2$d",
   "omnichest.template.manager.hint": "Clic = Applica (serve una cassa) / Pulsanti a destra / ESC = chiudi",
   "omnichest.template.manager.slot_rule_count": "%1$d slot / %2$d regole",
-
   "omnichest.template.row.action.apply": "Applica",
   "omnichest.template.row.action.duplicate": "Duplica",
   "omnichest.template.row.action.delete": "Elimina",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "Anteprima: %1$s",
   "omnichest.template.preview.title_null": "(nessuno)",
   "omnichest.template.preview.computing": "Calcolo...",
@@ -280,29 +247,24 @@
   "omnichest.template.preview.move_row": "  slot %1$d  →  slot %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(scambio)",
   "omnichest.template.preview.more_items": "...e %1$d altre",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[SLOT BLOCCATO] §r§7Protetto dall'ordinamento",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[OGGETTO BLOCCATO] §r§7%1$s protetto",
   "omnichest.slot_lock.tooltip.session": "§b§l[BLOCCO SESSIONE] §r§7Slot della cassa (fino alla chiusura)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[PROTETTO] §r§7Barra rapida (default)",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[PROTETTO] §r§7Mano sec. (default)",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[PROTETTO] §r§7Armatura (default)",
-
   "omnichest.slot_lock.chat.toggled": "[Blocco slot] commutato slot %1$d",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[Blocco slot] §oNessun blocco da rimuovere.",
   "omnichest.slot_lock.chat.cleared": "§a[Blocco slot] §rRimossi %1$d (permanenti) + %2$d (sessione).",
   "omnichest.slot_lock.chat.confirm_clear": "§e[Blocco slot] §rPremi di nuovo entro 1,5s per rimuovere %1$d blocchi.",
-
   "omnichest.smart_storage.prefix": "[Magazzino]",
   "omnichest.smart_storage.plan_empty": "[Magazzino] Piano: nessun oggetto / funzione off",
   "omnichest.smart_storage.plan_header": "[Magazzino] Piano:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7nessuna destinazione",
-
   "omnichest.category_badge.confidence": " Confidenza: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "Cassa",
   "omnichest.container_type.trapped_chest": "Cassa-trappola",
   "omnichest.container_type.double_chest": "Cassa doppia",
@@ -310,7 +272,6 @@
   "omnichest.container_type.barrel": "Botte",
   "omnichest.container_type.shulker_box": "Cassa di Shulker",
   "omnichest.container_type.other": "Contenitore",
-
   "omnichest.storage_category.building": "Magazzino edilizio",
   "omnichest.storage_category.wood": "Magazzino legno",
   "omnichest.storage_category.ore": "Magazzino minerali",
@@ -327,7 +288,6 @@
   "omnichest.storage_category.decoration": "Magazzino decorazioni",
   "omnichest.storage_category.mixed": "Mista",
   "omnichest.storage_category.unknown": "Non smistato",
-
   "omnichest.item_category.building": "Edilizia",
   "omnichest.item_category.wood": "Legno",
   "omnichest.item_category.stone": "Pietra",
@@ -344,23 +304,57 @@
   "omnichest.item_category.mob_drop": "Drop",
   "omnichest.item_category.decoration": "Decoraz.",
   "omnichest.item_category.misc": "Varie",
-
   "omnichest.toggle.on": "§a✔ ON",
   "omnichest.toggle.off": "§c✘ OFF",
-
   "omnichest.color_picker.title": "Selettore colore",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "OK",
   "omnichest.color_picker.cancel": "Annulla",
-
   "key.omnichest.open_search": "Apri ricerca casse",
   "key.omnichest.smart_deposit": "Mostra piano deposito",
   "key.omnichest.toggle_slot_lock": "Commuta blocco slot",
   "key.omnichest.clear_all_slot_locks": "Rimuovi tutti i blocchi",
-
   "omnichest.keybind.line.open_search": "• Apri ricerca: %1$s",
   "omnichest.keybind.line.smart_deposit": "• Deposito smart: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• Blocco slot: %1$s",
-  "omnichest.keybind.line.clear_all_locks": "• Rimuovi tutti i blocchi: %1$s"
+  "omnichest.keybind.line.clear_all_locks": "• Rimuovi tutti i blocchi: %1$s",
+  "config.omnichest.search.enableCategoryTabs": "Abilita schede categoria",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "Mostra schede in stile Inventario Creativo nella parte alta della schermata di ricerca.",
+  "config.omnichest.search.enableFavorites": "Abilita preferiti",
+  "config.omnichest.search.enableFavorites.tooltip": "Aggiungi ★ agli oggetti per ordinarli in cima o filtrarli nella scheda Preferiti.",
+  "config.omnichest.search.favoriteHighlight": "Evidenzia preferiti",
+  "config.omnichest.search.favoriteHighlight.tooltip": "Aggiunge un bagliore dorato agli oggetti preferiti nella lista.",
+  "config.omnichest.search.rememberLastDisplayMode": "Ricorda ultima modalità",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "Se attivo, ripristina l'ultima modalità di visualizzazione alla riapertura.",
+  "config.omnichest.search.compactTabMode": "Modalità schede compatta",
+  "config.omnichest.search.compactTabMode.tooltip": "Mostra le schede solo come icone, anche quella selezionata.",
+  "config.omnichest.search.defaultDisplayMode": "Modalità predefinita",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "Modalità iniziale all'apertura della schermata di ricerca.",
+  "omnichest.search_category.all": "Tutti",
+  "omnichest.search_category.favorites": "Preferiti",
+  "omnichest.search_category.building": "Costruzioni",
+  "omnichest.search_category.wood": "Legno",
+  "omnichest.search_category.stone": "Pietra",
+  "omnichest.search_category.ore": "Minerali",
+  "omnichest.search_category.redstone": "Redstone",
+  "omnichest.search_category.farming": "Agricoltura",
+  "omnichest.search_category.food": "Cibo",
+  "omnichest.search_category.combat": "Combattimento",
+  "omnichest.search_category.tool": "Strumenti",
+  "omnichest.search_category.enchant": "Incantamenti",
+  "omnichest.search_category.potion": "Pozioni",
+  "omnichest.search_category.decoration": "Decorazione",
+  "omnichest.search_category.nether": "Nether",
+  "omnichest.search_category.end": "End",
+  "omnichest.search_category.misc": "Altri",
+  "omnichest.search.display_mode.label": "Modalità",
+  "omnichest.search.display_mode.compact_grid": "Griglia compatta",
+  "omnichest.search.display_mode.large_grid": "Griglia grande",
+  "omnichest.search.display_mode.list": "Elenco",
+  "omnichest.search.display_mode.detailed": "Dettagliato",
+  "omnichest.search.display_mode.icon_only": "Solo icone",
+  "omnichest.search.favorites.add_tooltip": "Clic destro o Alt+clic per aggiungere ai preferiti",
+  "omnichest.search.favorites.remove_tooltip": "Clic destro o Alt+clic per rimuovere dai preferiti",
+  "omnichest.search.favorites.empty": "Nessun preferito. Clic destro su un oggetto per aggiungere ★."
 }

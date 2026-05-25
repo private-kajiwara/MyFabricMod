@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest Čeština (cs_cz) — Krátké věty v duchu oficiálního českého překladu Minecraftu.",
-
   "config.omnichest.title": "Nastavení OmniChest",
-
   "config.omnichest.category.general": "Obecné",
   "config.omnichest.category.sort": "Třídění dle kategorie",
   "config.omnichest.category.compact": "Slučování stacků",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "Kompatibilita",
   "config.omnichest.category.keybind": "Klávesy",
   "config.omnichest.category.language": "Jazyk",
-
   "config.omnichest.sub.lock.overlay": "Vrstva & vzhled",
   "config.omnichest.sub.lock.protect": "Výchozí ochrana",
   "config.omnichest.sub.ai.advanced": "Pokročilé (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Pokročilé (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "Detekované módy",
-
   "config.omnichest.general.enableMod": "Povolit mod",
   "config.omnichest.general.enableMod.tooltip": "Hlavní spínač. Vypnutí znamená vypnuté všechny funkce módu.",
   "config.omnichest.general.debugMode": "Režim ladění",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = žádné, 1.0 = výchozí, 2.0 = dvojitá.",
   "config.omnichest.general.enableSounds": "Povolit zvuky",
   "config.omnichest.general.enableSounds.tooltip": "Přehrává vlastní UI zvuky módu (třídění, ukládání atd.).",
-
   "config.omnichest.sort.enable": "Povolit třídění",
   "config.omnichest.sort.enable.tooltip": "Zapne/vypne celé třídění dle kategorie.",
   "config.omnichest.sort.insertEmptySeparator": "Prázdný slot jako oddělovač",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "Stejné pořadí jako záložky kreativního inventáře.",
   "config.omnichest.sort.autoCompactAfterSort": "Sloučit po třídění",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "Automaticky sloučí částečné stacky po třídění.",
-
   "config.omnichest.compact.enable": "Povolit slučování",
   "config.omnichest.compact.compactPlayerInventory": "Slučovat i v inventáři",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "Sloučí stacky i v inventáři hráče.",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "Animace sloučení",
   "config.omnichest.compact.maxActionsPerTick": "Akce na tick (max)",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "Horní limit kliků za tick.",
-
   "config.omnichest.deposit.enable": "Povolit chytré ukládání",
   "config.omnichest.deposit.matchNbtComponents": "Porovnat NBT / komponenty",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "Striktní režim: kouzelné předměty se skládají pouze se stejnými kouzly.",
   "config.omnichest.deposit.ignoreEmptySlots": "Ignorovat prázdné sloty",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "Ukládá pouze do truhel, které již předmět obsahují.",
   "config.omnichest.deposit.hotkey.notice": "Klávesa auto-ukládání: Ovládání → kategorie 'OmniChest'.",
-
   "config.omnichest.lock.enable": "Povolit zámek slotů",
   "config.omnichest.lock.enableItemLockMode": "Zámek na předmět",
   "config.omnichest.lock.enableItemLockMode.tooltip": "Sleduje konkrétní předmět napříč sloty (např. diamantový krumpáč).",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "Chránit druhou ruku",
   "config.omnichest.lock.protectArmorByDefault": "Chránit zbroj",
   "config.omnichest.lock.hotkey.notice": "Klávesy zámku jsou v Ovládání → kategorie 'OmniChest'.",
-
   "config.omnichest.search.enable": "Povolit hledání",
   "config.omnichest.search.searchRadius": "Dosah (bloky)",
   "config.omnichest.search.searchRadius.tooltip": "Větší = více truhel, ale dražší skenování.",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "Řazení výsledků",
   "config.omnichest.search.pinPersistUntilOpened": "Špendlík do otevření",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "Špendlík a zvýraznění zůstávají, dokud truhlu skutečně neotevřete. Ignoruje dobu zvýraznění.",
-
   "config.omnichest.ai.enableClassification": "Povolit klasifikaci",
   "config.omnichest.ai.learningMode": "Režim učení",
   "config.omnichest.ai.learningMode.tooltip": "Upravuje váhy kategorií dle historie ukládání.",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "Povolit smíšené truhly",
   "config.omnichest.ai.autoDepositMaxDistance": "Max. vzdálenost",
   "config.omnichest.ai.persistEnabled": "Ukládat data učení",
-
   "config.omnichest.template.enable": "Povolit šablony",
   "config.omnichest.template.autoApplyTemplate": "Aplikovat auto.",
   "config.omnichest.template.autoApplyTemplate.tooltip": "Aplikuje odpovídající šablonu automaticky při otevření truhly.",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "Zahrnout ukládání + slučování",
   "config.omnichest.template.lockHotbar": "Uzamknout hotbar",
   "config.omnichest.template.skipPreview": "Přeskočit potvrzení",
-
   "config.omnichest.render.enableOverlay": "Povolit vrstvu",
   "config.omnichest.render.highlightColorRgb": "Barva zvýraznění",
   "config.omnichest.render.highlightColorRgb.tooltip": "Barva obrysu zvýrazněných truhel.",
   "config.omnichest.render.showCategoryLabels": "Štítky kategorií",
   "config.omnichest.render.enableTooltips": "Popisky zapnuty",
   "config.omnichest.render.guiAnimation": "Animace UI",
-
   "config.omnichest.compat.enableShaderCompatibility": "Kompatibilita se shadery",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Použije shader-bezpečnou render cestu při Iris nebo Oculus.",
   "config.omnichest.compat.safeOverlayRendering": "Bezpečné vykreslení vrstvy",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "ano",
   "config.omnichest.compat.status.no": "ne",
   "config.omnichest.compat.detection.shader_active": "Shader balíček aktivní",
-
   "config.omnichest.sub.compat_resourcepack": "Kompatibilita balíčků zdrojů",
   "config.omnichest.compat.enableResourcePackCompatibility": "Povolit kompatibilitu balíčků",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "Hlavní spínač pro vrstvy bezpečnosti textur / atlasu / fontu. Layout, barvy a animace zůstávají stejné.",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "Bezpečně ořezává nebo zalamuje text, aby Unicode / CJK / bitmap fonty nepřetékaly. Velikosti UI se nemění.",
   "config.omnichest.compat.debugTextureLogs": "Logy textur",
   "config.omnichest.compat.debugTextureLogs.tooltip": "Podrobné logy při každém fallback textury / fontu. Doporučeno jen pro diagnostiku.",
-
   "config.omnichest.keybind.intro": "Všechny klávesy najdete v Ovládání → Klávesy → kategorie 'OmniChest'.",
-
   "config.omnichest.language.intro": "Zvolte zobrazovací jazyk módu. \"System Default\" sleduje Minecraft.",
   "config.omnichest.language.override": "Jazyk zobrazení",
   "config.omnichest.language.override.tooltip": "Přepisuje jazyk módu. Pro sledování Minecraftu zvolte \"System Default\".",
@@ -158,7 +142,6 @@
   "config.omnichest.language.unicode_font_safety": "Bezpečnost Unicode fontu",
   "config.omnichest.language.unicode_font_safety.tooltip": "Bezpečně ořezává text mimo ASCII, aby nepřetékal mimo widgety.",
   "config.omnichest.language.restart_hint": "Většina textů se aktualizuje okamžitě. Některé titulky vyžadují znovuotevření obrazovky.",
-
   "omnichest.language.system_default": "Výchozí systému",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -188,19 +171,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "Hledání truhel",
   "omnichest.screen.template.save.title": "Uložit šablonu",
   "omnichest.screen.template.manager.title": "Šablony",
   "omnichest.screen.template.preview.title": "Náhled šablony",
-
   "omnichest.button.reset": "Resetovat",
   "omnichest.button.save": "Uložit",
   "omnichest.button.cancel": "Zrušit",
   "omnichest.button.apply": "Použít",
   "omnichest.button.close": "Zavřít",
   "omnichest.button.ok": "OK",
-
   "omnichest.button.deposit": "Uložit stejné",
   "omnichest.button.compact": "Sloučit",
   "omnichest.button.search_network": "Hledání truhel",
@@ -213,50 +193,40 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Třídit",
   "omnichest.button.category_sort.tooltip": "Třídí obsah truhly dle kategorie.\n\nSkupiny dle významu — stavba, dřevo, rudy, jídlo…\nshodné stacky se sloučí.\n\nUzamčené sloty se nehýbou.",
-
   "omnichest.button.sort_distance": "Vzdálenost",
   "omnichest.button.sort_count": "Počet",
   "omnichest.button.sort_name": "Název",
   "omnichest.button.search_selected": "Hledat vybrané",
   "omnichest.button.clear_selection": "Smazat výběr",
   "omnichest.button.save_current_chest": "Uložit tuto truhlu",
-
   "omnichest.editbox.search.label": "Hledat",
   "omnichest.editbox.name.label": "Název",
   "omnichest.editbox.search.hint.generic": "Hledat...",
   "omnichest.editbox.search.hint.network": "Hledat (např. diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "Filtrovat dle názvu",
   "omnichest.editbox.template_name.hint": "Název šablony",
-
   "omnichest.search.summary": "Reg.: %1$d  /  Nálezů: %2$d  /  Vybráno: %3$d",
   "omnichest.search.hint": "Klik na řádek = výběr  /  \"Hledat vybrané\" = připnout  /  ESC = zrušit",
-
   "omnichest.template.default_name": "Šablona %1$d",
   "omnichest.template.untitled": "(bez názvu)",
-
   "omnichest.template.kind.label": "Typ: %1$s",
   "omnichest.template.kind.exact": "Přesný (předmět pevný)",
   "omnichest.template.kind.category": "Kategorie (náhrady povoleny)",
   "omnichest.template.kind.hybrid": "Hybridní (doporučeno)",
-
   "omnichest.template.kind.badge.exact": "[Přesný]",
   "omnichest.template.kind.badge.category": "[Kat.]",
   "omnichest.template.kind.badge.hybrid": "[Hybr.]",
-
   "omnichest.template.kind.help.exact": "Dubová a březová prkna se počítají jako různé předměty.",
   "omnichest.template.kind.help.category": "Předměty stejné kategorie se mohou nahradit. (Ideální pro materiálové truhly)",
   "omnichest.template.kind.help.hybrid": "Preferuje originál, jinak použije náhradu stejné kategorie.",
-
   "omnichest.template.manager.summary": "Uloženo: %1$d  /  Zobrazeno: %2$d",
   "omnichest.template.manager.hint": "Klik = Použít (vyžaduje truhlu) / Tlačítka vpravo / ESC = zavřít",
   "omnichest.template.manager.slot_rule_count": "%1$d slotů / %2$d pravidel",
-
   "omnichest.template.row.action.apply": "Použít",
   "omnichest.template.row.action.duplicate": "Duplikovat",
   "omnichest.template.row.action.delete": "Smazat",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "Náhled: %1$s",
   "omnichest.template.preview.title_null": "(nic)",
   "omnichest.template.preview.computing": "Výpočet...",
@@ -267,29 +237,24 @@
   "omnichest.template.preview.move_row": "  slot %1$d  →  slot %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(výměna)",
   "omnichest.template.preview.more_items": "...a další %1$d",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[ZAMČENO] §r§7Chráněno před tříděním",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[PŘEDMĚT ZAMČEN] §r§7%1$s chráněn",
   "omnichest.slot_lock.tooltip.session": "§b§l[ZÁMEK SEZENÍ] §r§7Slot truhly (do zavření)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[CHRÁNĚNO] §r§7Hotbar (výchozí)",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[CHRÁNĚNO] §r§7Druhá ruka (výchozí)",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[CHRÁNĚNO] §r§7Zbroj (výchozí)",
-
   "omnichest.slot_lock.chat.toggled": "[Zámek] slot %1$d přepnut",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[Zámek] §oŽádné zámky k odstranění.",
   "omnichest.slot_lock.chat.cleared": "§a[Zámek] §rOdstraněno %1$d (perm.) + %2$d (sez.).",
   "omnichest.slot_lock.chat.confirm_clear": "§e[Zámek] §rStiskněte znovu do 1,5 s pro odstranění %1$d zámků.",
-
   "omnichest.smart_storage.prefix": "[Sklad]",
   "omnichest.smart_storage.plan_empty": "[Sklad] Plán: žádné předměty / funkce vypnuta",
   "omnichest.smart_storage.plan_header": "[Sklad] Plán:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7bez cíle",
-
   "omnichest.category_badge.confidence": " Jistota: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "Truhla",
   "omnichest.container_type.trapped_chest": "Past-truhla",
   "omnichest.container_type.double_chest": "Velká truhla",
@@ -297,7 +262,6 @@
   "omnichest.container_type.barrel": "Sud",
   "omnichest.container_type.shulker_box": "Shulker box",
   "omnichest.container_type.other": "Nádoba",
-
   "omnichest.storage_category.building": "Stavební materiál",
   "omnichest.storage_category.wood": "Dřevo",
   "omnichest.storage_category.ore": "Rudy",
@@ -314,7 +278,6 @@
   "omnichest.storage_category.decoration": "Dekorace",
   "omnichest.storage_category.mixed": "Smíšené",
   "omnichest.storage_category.unknown": "Nezařazené",
-
   "omnichest.item_category.building": "Stavba",
   "omnichest.item_category.wood": "Dřevo",
   "omnichest.item_category.stone": "Kámen",
@@ -331,35 +294,67 @@
   "omnichest.item_category.mob_drop": "Lup",
   "omnichest.item_category.decoration": "Dekor.",
   "omnichest.item_category.misc": "Ostatní",
-
   "omnichest.toggle.on": "§a✔ ZAP",
   "omnichest.toggle.off": "§c✘ VYP",
-
   "omnichest.color_picker.title": "Výběr barvy",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "OK",
   "omnichest.color_picker.cancel": "Zrušit",
-
   "key.omnichest.open_search": "Otevřít hledání truhel",
   "key.omnichest.smart_deposit": "Zobrazit plán ukládání",
   "key.omnichest.toggle_slot_lock": "Zamknout slot pod kurzorem",
   "key.omnichest.clear_all_slot_locks": "Odstranit všechny zámky",
-
   "omnichest.keybind.line.open_search": "• Otevřít hledání: %1$s",
   "omnichest.keybind.line.smart_deposit": "• Chytré ukládání: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• Zámek slotu: %1$s",
   "omnichest.keybind.line.clear_all_locks": "• Odstranit všechny zámky: %1$s",
-
   "omnichest.controls.title": "Ovládání",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+Klik: zamknout slot",
   "omnichest.controls.line.slot_lock_middle_click": "Prostřední klik: zamknout slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klik: zámek předmětu",
   "omnichest.controls.line.alt_drag": "Alt+Tažení: průběžné zamykání",
   "omnichest.controls.line.shift_compact": "Shift+Sloučit: i hráč",
-
   "config.omnichest.group.basics": "Základy",
   "config.omnichest.group.item_sorting": "Třídění předmětů",
   "config.omnichest.group.protection_search": "Ochrana & hledání",
-  "config.omnichest.group.appearance_input": "Vzhled & vstup"
+  "config.omnichest.group.appearance_input": "Vzhled & vstup",
+  "config.omnichest.search.enableCategoryTabs": "Povolit kategorické záložky",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "Zobrazí záložky ve stylu Kreativního inventáře v horní části obrazovky hledání.",
+  "config.omnichest.search.enableFavorites": "Povolit oblíbené",
+  "config.omnichest.search.enableFavorites.tooltip": "Označte předměty ★ pro řazení nahoru nebo filtrování v záložce Oblíbené.",
+  "config.omnichest.search.favoriteHighlight": "Zvýraznění oblíbených",
+  "config.omnichest.search.favoriteHighlight.tooltip": "Přidá zlatou záři k oblíbeným předmětům.",
+  "config.omnichest.search.rememberLastDisplayMode": "Zapamatovat poslední režim",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "Pokud zapnuto, obnoví poslední režim zobrazení při dalším otevření.",
+  "config.omnichest.search.compactTabMode": "Kompaktní záložky",
+  "config.omnichest.search.compactTabMode.tooltip": "Zobrazit záložky pouze jako ikony, i vybranou.",
+  "config.omnichest.search.defaultDisplayMode": "Výchozí režim",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "Počáteční režim při otevření obrazovky hledání.",
+  "omnichest.search_category.all": "Vše",
+  "omnichest.search_category.favorites": "Oblíbené",
+  "omnichest.search_category.building": "Stavba",
+  "omnichest.search_category.wood": "Dřevo",
+  "omnichest.search_category.stone": "Kámen",
+  "omnichest.search_category.ore": "Rudy",
+  "omnichest.search_category.redstone": "Redstone",
+  "omnichest.search_category.farming": "Zemědělství",
+  "omnichest.search_category.food": "Jídlo",
+  "omnichest.search_category.combat": "Boj",
+  "omnichest.search_category.tool": "Nástroje",
+  "omnichest.search_category.enchant": "Očarování",
+  "omnichest.search_category.potion": "Lektvary",
+  "omnichest.search_category.decoration": "Dekorace",
+  "omnichest.search_category.nether": "Nether",
+  "omnichest.search_category.end": "End",
+  "omnichest.search_category.misc": "Ostatní",
+  "omnichest.search.display_mode.label": "Režim zobrazení",
+  "omnichest.search.display_mode.compact_grid": "Kompaktní mřížka",
+  "omnichest.search.display_mode.large_grid": "Velká mřížka",
+  "omnichest.search.display_mode.list": "Seznam",
+  "omnichest.search.display_mode.detailed": "Podrobné",
+  "omnichest.search.display_mode.icon_only": "Pouze ikony",
+  "omnichest.search.favorites.add_tooltip": "Pravé tlačítko nebo Alt+klik pro přidání do oblíbených",
+  "omnichest.search.favorites.remove_tooltip": "Pravé tlačítko nebo Alt+klik pro odebrání z oblíbených",
+  "omnichest.search.favorites.empty": "Žádné oblíbené. Klikněte pravým tlačítkem pro označení ★."
 }

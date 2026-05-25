@@ -151,6 +151,11 @@ public final class ConfigManager {
         if (c.deposit == null) c.deposit = d.deposit;
         if (c.lock == null) c.lock = d.lock;
         if (c.search == null) c.search = d.search;
+        // 新規追加された参照型フィールドの個別フォールバック (= 旧 JSON との互換)
+        if (c.search != null) {
+            if (c.search.defaultDisplayMode == null) c.search.defaultDisplayMode = d.search.defaultDisplayMode;
+            if (c.search.favoriteSortMode == null) c.search.favoriteSortMode = d.search.favoriteSortMode;
+        }
         if (c.ai == null) c.ai = d.ai;
         if (c.template == null) c.template = d.template;
         if (c.render == null) c.render = d.render;

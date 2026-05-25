@@ -1,6 +1,21 @@
 package com.kajiwara.omnichest.client.gui;
 
+import com.kajiwara.omnichest.client.gui.search.DisplayModeDropdown;
+import com.kajiwara.omnichest.client.gui.search.FavoritesManager;
+import com.kajiwara.omnichest.client.gui.search.ItemDisplayMode;
+import com.kajiwara.omnichest.client.gui.search.LocalizationBridge;
+import com.kajiwara.omnichest.client.gui.search.SearchCategory;
+import com.kajiwara.omnichest.client.gui.search.SearchCategoryManager;
+import com.kajiwara.omnichest.client.gui.search.SearchCategoryTab;
+import com.kajiwara.omnichest.client.gui.search.StorageSearchListRenderer;
+import com.kajiwara.omnichest.client.gui.search.layout.LayoutBox;
+import com.kajiwara.omnichest.client.gui.search.layout.SearchScreenLayout;
+import com.kajiwara.omnichest.client.gui.search.layout.TabLayoutEngine;
+import com.kajiwara.omnichest.client.gui.search.layout.TooltipPlacementHelper;
+import com.kajiwara.omnichest.client.gui.search.layout.UILayoutMetrics;
 import com.kajiwara.omnichest.client.render.ChestHighlighter;
+import com.kajiwara.omnichest.config.ConfigManager;
+import com.kajiwara.omnichest.config.data.SearchConfig;
 import com.kajiwara.omnichest.i18n.Keys;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.search.ChestNetworkManager;
@@ -14,107 +29,78 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.core.BlockPos;
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
  * 「Chest Network Search」のメイン GUI。
  *
  * <p>
- * 主要な構成:
+ * <b>レイアウト方針 (4 原則)</b>:
  * <ul>
- * <li>上部の検索ボックス (EditBox): 入力ごとにリアルタイムでフィルタ更新。</li>
- * <li>ソートボタン: 距離 / 数量 / 名前 の 3 通り。</li>
- * <li>結果リスト: 自前の paint + scroll を持つ簡易リスト
- * (item icon, 表示名 × 数量, コンテナ種別, 座標, 距離)。
- * 行クリックで {@link ChestHighlighter} にハイライトを依頼し、ワールドへ戻る。</li>
+ *   <li><b>近接</b>: 検索ボックスと sort ボタンを 1 行に。 アクション群 (Find / Clear) と
+ *       Display Mode は離して配置 (= 別グループ)。 タブ列とリストは {@link UILayoutMetrics#SECTION_GAP}
+ *       で区切る。</li>
+ *   <li><b>整列</b>: すべての y / x は {@link SearchScreenLayout} が 1 か所で計算。
+ *       Screen 側は座標を生成しない。</li>
+ *   <li><b>反復</b>: ボタン高 / padding / gap は {@link UILayoutMetrics} の定数を共有。</li>
+ *   <li><b>コントラスト</b>: 色 / アニメ / テーマは既存維持。 情報階層は距離で表現。</li>
  * </ul>
  *
  * <p>
- * 「重い ObjectSelectionList 派生」を避け、自前のスクロールリストにすることで
- * 1.21.x 系の API ぶれに強い実装としている。
+ * <b>非破壊原則 (継続)</b>: 既存の検索ロジック・ピン座標・Overlay 描画・Search Engine・
+ * 操作感 (Find Selected / Clear Selection / 行クリック / スクロール) は全て維持する。
  */
 public class SearchScreen extends Screen {
 
-    /** 直前に開いていた Screen (戻るために保持)。 nullable。 */
     private final Screen parent;
 
-    /** 検索クエリ入力欄。 */
     private EditBox searchBox;
 
-    /** 直近検索結果。 init / クエリ変更 / ソート変更で再構築する。 */
+    /** 直近検索結果 (= フィルタ前)。 init / クエリ変更 / ソート変更で再構築する。 */
+    private List<SearchIndex.SearchResult> baseResults = new ArrayList<>();
+    /** カテゴリタブ + お気に入りソートを適用した「描画用ビュー」。 */
     private List<SearchIndex.SearchResult> results = new ArrayList<>();
 
-    /** 現在のソートモード。 */
     private SortMode sortMode = SortMode.DISTANCE;
 
-    /** スクロール量 (px)。 0 = 最上段。 */
     private double scrollPx = 0.0;
-
-    /** スクロールバーをドラッグ中か。 mouseClicked で true、 mouseReleased で false に戻す。 */
     private boolean draggingScroll = false;
-
-    /** ドラッグ開始時に「ハンドル上端からカーソルまでの距離 (px)」。 drag 中はこの距離を保ったまま追従する。 */
     private double scrollDragOffsetY = 0.0;
 
-    /**
-     * 選択中の行データ。 key = (チェスト × アイテム種) を表す行識別子 (String)、
-     * value = ハイライト発火時に必要な (snapshot, ItemStack, 個数) のスナップショット。
-     *
-     * <p>
-     * チェスト単位ではなく「行 (= 同一チェスト内のアイテム種ごと)」をキーにすることで、
-     * 1 つのチェストに複数アイテムが入っていても 1 行ずつ個別にトグルできる。
-     *
-     * <p>
-     * 値は SearchResult のコピーで保持するため、クエリ変更で表示行から消えても
-     * 選択は維持され、 「選択したアイテムを検索」で正しく全件ハイライトされる。
-     *
-     * <p>
-     * 順序を安定させるため LinkedHashMap を使う。
-     */
+    /** 選択中の行データ。 行 = チェスト × アイテム種、 LinkedHashMap で順序安定。 */
     private final Map<String, SelectedRow> selectedRows = new LinkedHashMap<>();
 
-    /** 選択行 1 件のスナップショット (ハイライト発火用にラベル/個数情報を保持)。 */
     private record SelectedRow(ContainerSnapshot snapshot, ItemStack stack, int count) {
     }
 
-    /**
-     * 行の一意キーを文字列で生成する。
-     * <ul>
-     * <li>同一チェスト (=同一 dim+pos) でもアイテム種 (item + components) が違えば別キー。</li>
-     * <li>クエリ変更でリストが再構築されてもキーは安定 (= 選択状態が保持される)。</li>
-     * </ul>
-     */
     private static String makeRowKey(SearchIndex.SearchResult r) {
         ContainerSnapshot.Key c = r.snapshot().key();
-        // ItemStack.toString() は "<count> <id>[components...]" 形式で、
-        // 同種・同 components のスタックは同一文字列になる。
         return c.dimension() + "|" + c.pos() + "|" + r.stack();
     }
 
-    /** 各結果行の高さ (px)。 */
-    private static final int ROW_HEIGHT = 22;
+    // ─── 拡張 UI 状態 ───────────────────────────────────────────────
+    private SearchCategory currentCategory = SearchCategory.ALL;
+    private ItemDisplayMode displayMode = ItemDisplayMode.DETAILED;
+    private List<SearchCategoryTab.TabHit> tabHits = new ArrayList<>();
+    /** Display Mode の popup (開いていれば描画 + クリック吸収)。 */
+    private DisplayModeDropdown displayDropdown = null;
 
-    /** リスト表示領域の上端 / 下端の余白 (px)。 */
-    private static final int LIST_TOP_INSET = 82;
-    private static final int LIST_BOTTOM_INSET = 30;
-    private static final int LIST_SIDE_INSET = 16;
+    /** init() で算出されたレイアウト一式 (= 各 widget の位置)。 */
+    private SearchScreenLayout layout;
 
     public SearchScreen(Screen parent) {
         super(OmniChestLocale.get(Keys.SCREEN_SEARCH_TITLE, "Chest Network Search"));
         this.parent = parent;
     }
 
-    /** メニューやキーバインドから呼ぶための簡易ファクトリ。 */
     public static void open(Screen parent) {
         Minecraft.getInstance().setScreen(new SearchScreen(parent));
     }
@@ -130,113 +116,149 @@ public class SearchScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+        SearchConfig cfg = ConfigManager.get().search;
+        this.displayMode = (cfg.defaultDisplayMode != null) ? cfg.defaultDisplayMode : ItemDisplayMode.DETAILED;
 
-        int contentWidth = this.width - LIST_SIDE_INSET * 2;
-        int searchY = 24;
+        // ─── ラベルを先に解決してから layout に渡す (= 翻訳長で幅が変わるため) ───
+        Component sortDistanceLabel = OmniChestLocale.get(Keys.BUTTON_SORT_DISTANCE, "By Distance");
+        Component sortCountLabel = OmniChestLocale.get(Keys.BUTTON_SORT_COUNT, "By Count");
+        Component sortNameLabel = OmniChestLocale.get(Keys.BUTTON_SORT_NAME, "By Name");
+        Component findSelectedLabel = OmniChestLocale.get(Keys.BUTTON_SEARCH_SELECTED, "Find Selected");
+        Component clearSelectionLabel = OmniChestLocale.get(Keys.BUTTON_CLEAR_SELECTION, "Clear Selection");
+        Component displayModeLabel = Component.literal("▼ ").append(this.displayMode.displayName());
+        Component searchHint = OmniChestLocale.get(Keys.EDITBOX_SEARCH_HINT_NETWORK,
+                "Search (e.g. diamond, food, mekanism)");
 
-        // 検索ボックス
-        this.searchBox = new EditBox(this.font, LIST_SIDE_INSET, searchY,
-                Math.max(120, contentWidth - 270), 18,
+        // タブ列の必要高さを事前計測 (= 折り返しが起きるか判定)
+        List<SearchCategory> tabCategories = visibleCategories(cfg);
+        int contentW = this.width - UILayoutMetrics.SCREEN_INSET_X * 2;
+        int tabStripHeight = TabLayoutEngine.measureHeight(this.font, contentW,
+                UILayoutMetrics.SCREEN_INSET_X, tabCategories, this.currentCategory, cfg.compactTabMode);
+
+        this.layout = SearchScreenLayout.compute(this.width, this.height, this.font,
+                tabStripHeight,
+                searchHint,
+                new Component[]{sortDistanceLabel, sortCountLabel, sortNameLabel},
+                new Component[]{findSelectedLabel, clearSelectionLabel},
+                displayModeLabel);
+
+        // ─── 検索ボックス ─────────────────────────────────────────
+        this.searchBox = new EditBox(this.font, layout.searchBox.x(), layout.searchBox.y(),
+                layout.searchBox.w(), layout.searchBox.h(),
                 OmniChestLocale.get(Keys.EDITBOX_SEARCH_LABEL, "Search"));
         this.searchBox.setMaxLength(64);
-        this.searchBox.setHint(OmniChestLocale.get(Keys.EDITBOX_SEARCH_HINT_NETWORK,
-                "Search (e.g. diamond, food, mekanism)"));
-        // 1 文字入力ごとに即フィルタ。
+        this.searchBox.setHint(searchHint);
         this.searchBox.setResponder(text -> rebuildResults());
         this.addRenderableWidget(this.searchBox);
         this.setInitialFocus(this.searchBox);
 
-        // ソートボタン (右上に横並び)
-        int sortX = LIST_SIDE_INSET + this.searchBox.getWidth() + 6;
-        this.addRenderableWidget(Button.builder(
-                OmniChestLocale.get(Keys.BUTTON_SORT_DISTANCE, "By Distance"), b -> {
+        // ─── Sort ボタン (3 つ) ───────────────────────────────────
+        this.addRenderableWidget(Button.builder(sortDistanceLabel, b -> {
             this.sortMode = SortMode.DISTANCE;
             rebuildResults();
-        }).bounds(sortX, searchY, 80, 18).build());
+        }).bounds(layout.sortDistanceBtn.x(), layout.sortDistanceBtn.y(),
+                layout.sortDistanceBtn.w(), layout.sortDistanceBtn.h()).build());
 
-        this.addRenderableWidget(Button.builder(
-                OmniChestLocale.get(Keys.BUTTON_SORT_COUNT, "By Count"), b -> {
+        this.addRenderableWidget(Button.builder(sortCountLabel, b -> {
             this.sortMode = SortMode.COUNT;
             rebuildResults();
-        }).bounds(sortX + 86, searchY, 80, 18).build());
+        }).bounds(layout.sortCountBtn.x(), layout.sortCountBtn.y(),
+                layout.sortCountBtn.w(), layout.sortCountBtn.h()).build());
 
-        this.addRenderableWidget(Button.builder(
-                OmniChestLocale.get(Keys.BUTTON_SORT_NAME, "By Name"), b -> {
+        this.addRenderableWidget(Button.builder(sortNameLabel, b -> {
             this.sortMode = SortMode.NAME;
             rebuildResults();
-        }).bounds(sortX + 172, searchY, 80, 18).build());
+        }).bounds(layout.sortNameBtn.x(), layout.sortNameBtn.y(),
+                layout.sortNameBtn.w(), layout.sortNameBtn.h()).build());
 
-        // ───────────────────────────────────────────────────────────
-        // 2 行目: 「選択したアイテムを検索」ボタン + 「選択解除」ボタン (左寄せ)
-        // 選択中のコンテナを一括ハイライトしてから Screen を閉じる。
-        // ───────────────────────────────────────────────────────────
-        int actionY = searchY + 22;
-        this.addRenderableWidget(Button.builder(
-                OmniChestLocale.get(Keys.BUTTON_SEARCH_SELECTED, "Find Selected"),
-                b -> highlightSelectedAndClose())
-                .bounds(LIST_SIDE_INSET, actionY, 120, 18).build());
+        // ─── アクションボタン ─────────────────────────────────────
+        this.addRenderableWidget(Button.builder(findSelectedLabel, b -> highlightSelectedAndClose())
+                .bounds(layout.findSelectedBtn.x(), layout.findSelectedBtn.y(),
+                        layout.findSelectedBtn.w(), layout.findSelectedBtn.h()).build());
 
-        this.addRenderableWidget(Button.builder(
-                OmniChestLocale.get(Keys.BUTTON_CLEAR_SELECTION, "Clear Selection"),
-                b -> this.selectedRows.clear())
-                .bounds(LIST_SIDE_INSET + 126, actionY, 80, 18).build());
+        this.addRenderableWidget(Button.builder(clearSelectionLabel, b -> this.selectedRows.clear())
+                .bounds(layout.clearSelectionBtn.x(), layout.clearSelectionBtn.y(),
+                        layout.clearSelectionBtn.w(), layout.clearSelectionBtn.h()).build());
 
-        // 初期結果セット
+        // ─── Display Mode ボタン ──────────────────────────────────
+        this.addRenderableWidget(Button.builder(displayModeLabel,
+                b -> openDisplayDropdown(b.getX(), b.getY() + b.getHeight()))
+                .bounds(layout.displayModeBtn.x(), layout.displayModeBtn.y(),
+                        layout.displayModeBtn.w(), layout.displayModeBtn.h()).build());
+
         rebuildResults();
     }
 
-    /**
-     * 「選択したアイテムを検索」ボタンの動作。
-     * 選択中の全行 (= チェスト × アイテム種の組) を一括ハイライトして Screen を閉じる。
-     *
-     * <p>
-     * selectedRows に元データ (snapshot, stack, count) を保持しているので、
-     * クエリ変更で非表示になった選択もそのまま正しく highlight できる。
-     */
+    private void openDisplayDropdown(int anchorX, int anchorBottomY) {
+        this.displayDropdown = new DisplayModeDropdown(
+                this.displayMode,
+                m -> {
+                    this.displayMode = m;
+                    SearchConfig cfg = ConfigManager.get().search;
+                    if (cfg.rememberLastDisplayMode) {
+                        cfg.defaultDisplayMode = m;
+                        ConfigManager.save();
+                    }
+                    // 表示モード変更: スクロールは同じ index 位置へ寄せ直し
+                    clampScroll();
+                    // ボタンラベルを更新するため layout 再計算
+                    this.rebuild();
+                },
+                anchorX, anchorBottomY,
+                this.width, this.height);
+    }
+
+    /** ラベル変化 (= Display Mode 切替) 等に応じて widget を作り直す。 */
+    private void rebuild() {
+        this.clearWidgets();
+        init();
+    }
+
     private void highlightSelectedAndClose() {
         for (SelectedRow sr : this.selectedRows.values()) {
             ChestHighlighter.get().highlight(sr.snapshot(), sr.stack(), sr.count());
+            FavoritesManager.get().touch(sr.stack());
         }
         this.onClose();
     }
 
-    /** 現在のクエリ / ソート設定で結果リストを再構築する。 */
     private void rebuildResults() {
+        SearchConfig cfg = ConfigManager.get().search;
         String query = this.searchBox == null ? "" : this.searchBox.getValue();
         List<SearchIndex.SearchResult> raw = SearchIndex.search(query);
         switch (this.sortMode) {
-            case DISTANCE -> this.results = SearchIndex.sortByDistance(raw);
-            case COUNT -> this.results = SearchIndex.sortByCount(raw);
-            case NAME -> this.results = SearchIndex.sortByName(raw);
+            case DISTANCE -> this.baseResults = SearchIndex.sortByDistance(raw);
+            case COUNT -> this.baseResults = SearchIndex.sortByCount(raw);
+            case NAME -> this.baseResults = SearchIndex.sortByName(raw);
         }
-        // 選択状態は {@link ContainerSnapshot.Key} で保持しているため、
-        // クエリ変更で行 index がズレても OK。意図的にクリアしない。
-        // スクロール位置の正規化 (結果が縮んだら下端を超えないように)。
+        List<SearchIndex.SearchResult> filtered = cfg.enableCategoryTabs
+                ? SearchCategoryManager.get().filter(this.baseResults, this.currentCategory)
+                : this.baseResults;
+
+        if (cfg.enableFavorites && cfg.favoriteSortMode != null) {
+            FavoritesManager fav = FavoritesManager.get();
+            filtered = switch (cfg.favoriteSortMode) {
+                case "favorites_first" -> fav.sortFavoritesFirst(filtered);
+                case "recently_used" -> fav.sortRecentlyUsed(filtered);
+                case "most_searched" -> fav.sortMostSearched(filtered);
+                default -> filtered;
+            };
+        }
+        this.results = filtered;
         clampScroll();
     }
 
-    private int listTop() {
-        return LIST_TOP_INSET;
-    }
-
-    private int listBottom() {
-        return this.height - LIST_BOTTOM_INSET;
-    }
-
-    private int listHeight() {
-        return listBottom() - listTop();
-    }
-
     private int contentHeight() {
-        return this.results.size() * ROW_HEIGHT;
+        if (this.layout == null) return 0;
+        return StorageSearchListRenderer.computeContentHeight(this.displayMode,
+                this.results.size(), this.layout.list.w());
     }
 
     private void clampScroll() {
-        double maxScroll = Math.max(0, contentHeight() - listHeight());
-        if (this.scrollPx < 0)
-            this.scrollPx = 0;
-        if (this.scrollPx > maxScroll)
-            this.scrollPx = maxScroll;
+        if (this.layout == null) return;
+        double maxScroll = Math.max(0, contentHeight() - this.layout.list.h());
+        if (this.scrollPx < 0) this.scrollPx = 0;
+        if (this.scrollPx > maxScroll) this.scrollPx = maxScroll;
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -245,202 +267,163 @@ public class SearchScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // 半透明の背景 (Screen.renderBackground のデフォルトは Minecraft 標準のグラデ)。
         super.render(g, mouseX, mouseY, partialTick);
-
         Font font = this.font;
+        SearchConfig cfg = ConfigManager.get().search;
 
-        // タイトル
-        g.drawCenteredString(font, this.getTitle(), this.width / 2, 8, 0xFFFFFFFF);
+        // ─── タイトル (上部中央) ─────────────────────────────────
+        g.drawCenteredString(font, this.getTitle(), this.width / 2, UILayoutMetrics.SCREEN_INSET_TOP, 0xFFFFFFFF);
 
-        // 「総コンテナ数 / 該当ヒット数」を右上ぎみに小さく表示
+        // ─── サマリ (= タイトルの行と兼ねる。 LTR では左、 RTL では右) ──
         int total = ChestNetworkManager.get().size();
         Component summary = OmniChestLocale.get(Keys.SEARCH_SUMMARY,
                 "Registered: %1$d  /  Hits: %2$d  /  Selected: %3$d",
                 total, this.results.size(), this.selectedRows.size());
-        g.drawString(font, summary, LIST_SIDE_INSET, 8, 0xFFAAAAAA, false);
+        boolean rtl = LocalizationBridge.isRtl();
+        if (rtl) {
+            int sw = font.width(summary);
+            g.drawString(font, summary, this.width - UILayoutMetrics.SCREEN_INSET_X - sw,
+                    UILayoutMetrics.SCREEN_INSET_TOP, 0xFFAAAAAA, false);
+        } else {
+            g.drawString(font, summary, UILayoutMetrics.SCREEN_INSET_X,
+                    UILayoutMetrics.SCREEN_INSET_TOP, 0xFFAAAAAA, false);
+        }
 
-        // 検索結果リスト本体
-        renderList(g, mouseX, mouseY);
+        // ─── カテゴリタブ列 ───────────────────────────────────────
+        if (cfg.enableCategoryTabs) {
+            List<SearchCategory> visible = visibleCategories(cfg);
+            this.tabHits = SearchCategoryTab.render(g, mouseX, mouseY,
+                    this.layout.tabStrip, this.currentCategory, visible, cfg.compactTabMode);
+        } else {
+            this.tabHits = new ArrayList<>();
+        }
 
-        // 下部ヒント
+        // ─── 結果リスト ───────────────────────────────────────────
+        renderList(g, mouseX, mouseY, cfg);
+
+        // ─── フッターヒント ───────────────────────────────────────
         Component hint = OmniChestLocale.get(Keys.SEARCH_HINT,
                 "Click row = toggle selection  /  Find Selected = pin  /  ESC = cancel");
-        g.drawCenteredString(font, hint, this.width / 2, this.height - 18, 0xFFAAAAAA);
+        g.drawCenteredString(font, hint, this.layout.footerHint.centerX(),
+                this.layout.footerHint.y(), 0xFFAAAAAA);
+
+        // ─── Display Mode dropdown (overlay) ───
+        if (this.displayDropdown != null) {
+            if (this.displayDropdown.isClosed()) {
+                this.displayDropdown = null;
+            } else {
+                this.displayDropdown.render(g, mouseX, mouseY);
+            }
+        }
+
+        // ─── タブホバー Tooltip (= 非選択タブの名前) ───
+        // forbidden = リスト領域。 tooltip がそこに被らないように TooltipPlacementHelper で位置調整。
+        if (cfg.enableCategoryTabs) {
+            SearchCategoryTab.TabHit hovered = SearchCategoryTab.hoveredHit(this.tabHits, mouseX, mouseY);
+            if (hovered != null && hovered.cat != this.currentCategory) {
+                int[] pos = TooltipPlacementHelper.preferAbove(font, hovered.cat.displayName(),
+                        hovered.box, this.width, this.height);
+                g.setComponentTooltipForNextFrame(font, java.util.List.of(hovered.cat.displayName()),
+                        pos[0], pos[1]);
+            }
+        }
     }
 
-    private void renderList(GuiGraphics g, int mouseX, int mouseY) {
-        int top = listTop();
-        int bottom = listBottom();
-        int left = LIST_SIDE_INSET;
-        int right = this.width - LIST_SIDE_INSET;
+    private List<SearchCategory> visibleCategories(SearchConfig cfg) {
+        List<SearchCategory> all = new ArrayList<>(Arrays.asList(SearchCategory.values()));
+        if (!cfg.enableFavorites) all.remove(SearchCategory.FAVORITES);
+        return all;
+    }
 
-        // クリッピング (上下) + 背景パネル
+    private void renderList(GuiGraphics g, int mouseX, int mouseY, SearchConfig cfg) {
+        LayoutBox list = this.layout.list;
+        int left = list.x();
+        int top = list.y();
+        int right = list.right();
+        int bottom = list.bottom();
+
+        // 背景パネル
         g.fill(left, top, right, bottom, 0x60000000);
 
-        // スクロール対象範囲を scissor で物理的にクリップしておく。
         g.enableScissor(left, top, right, bottom);
         try {
-            int firstVisible = (int) Math.floor(this.scrollPx / ROW_HEIGHT);
-            int lastVisible = firstVisible + (listHeight() / ROW_HEIGHT) + 2;
-            lastVisible = Math.min(lastVisible, this.results.size());
-
-            Vec3 player = (this.minecraft != null && this.minecraft.player != null)
-                    ? this.minecraft.player.position()
-                    : null;
-
-            for (int i = Math.max(0, firstVisible); i < lastVisible; i++) {
-                int rowY = top + (i * ROW_HEIGHT) - (int) this.scrollPx;
-                if (rowY + ROW_HEIGHT < top || rowY > bottom)
-                    continue;
-                boolean hovering = (mouseX >= left && mouseX <= right
-                        && mouseY >= rowY && mouseY < rowY + ROW_HEIGHT);
-                SearchIndex.SearchResult r = this.results.get(i);
-                boolean selected = this.selectedRows.containsKey(makeRowKey(r));
-                renderRow(g, r, left, rowY, right - left, hovering, selected, player);
+            if (this.currentCategory == SearchCategory.FAVORITES && this.results.isEmpty()) {
+                Component msg = LocalizationBridge.favoritesEmpty();
+                int tw = this.font.width(msg);
+                g.drawString(this.font, msg, list.centerX() - tw / 2,
+                        list.centerY() - this.font.lineHeight / 2, 0xFFAAAAAA, false);
+            } else {
+                FavoritesManager fav = FavoritesManager.get();
+                StorageSearchListRenderer.render(this.displayMode, g, this.results,
+                        left, top, right, bottom, this.scrollPx,
+                        mouseX, mouseY,
+                        r -> this.selectedRows.containsKey(makeRowKey(r)),
+                        r -> cfg.enableFavorites && fav.isFavorite(r.stack()),
+                        cfg.enableFavorites && cfg.favoriteHighlight);
             }
         } finally {
             g.disableScissor();
         }
 
-        // スクロールバー (右側)
-        renderScrollbar(g, top, bottom, right);
+        renderScrollbar(g, top, bottom);
     }
 
-    /** 1 行の描画。 */
-    private void renderRow(GuiGraphics g, SearchIndex.SearchResult result,
-            int x, int y, int width, boolean hovering, boolean selected, Vec3 player) {
-        // 選択中の行は「太い黄色帯」で強くハイライト + 左端の縦バー + 外枠。
-        // (チェックボックスは描画コスト避けて視覚的に同等)
-        if (selected) {
-            // 全面塗りつぶし (80% alpha でハッキリ見える)
-            g.fill(x, y, x + width, y + ROW_HEIGHT, 0xCC665500);
-            // 左端の太い縦バー (アクセント)
-            g.fill(x, y, x + 3, y + ROW_HEIGHT, 0xFFFFD040);
-            // 上下の境界線
-            g.fill(x, y, x + width, y + 1, 0xFFFFCC00);
-            g.fill(x, y + ROW_HEIGHT - 1, x + width, y + ROW_HEIGHT, 0xFFFFCC00);
-        }
-        // ホバー時の薄い白オーバーレイ (選択色の上にも乗せて、ホバー判別を残す)。
-        if (hovering) {
-            g.fill(x, y, x + width, y + ROW_HEIGHT, 0x33FFFFFF);
-        }
-
-        Font font = this.font;
-        ItemStack stack = result.stack();
-        BlockPos pos = result.pos();
-
-        // (1) アイテムアイコン
-        int iconX = x + 4;
-        int iconY = y + (ROW_HEIGHT - 16) / 2;
-        g.renderItem(stack, iconX, iconY);
-        // 数量小表示はアイコン右下 ("99+" 形式) — Minecraft 標準の decorations を流用。
-        ItemStack labelStack = stack.copy();
-        labelStack.setCount(Math.min(result.count(), 99));
-        g.renderItemDecorations(font, labelStack, iconX, iconY);
-
-        // (2) 「アイテム名 × 数量」
-        String name = stack.getHoverName().getString();
-        if (name.length() > 28)
-            name = name.substring(0, 27) + "…";
-        Component left1 = Component.literal(name + "  ×" + result.count());
-        g.drawString(font, left1, iconX + 22, y + 3, 0xFFFFFFFF, false);
-
-        // (3) 「コンテナ種別 (x, y, z)」
-        String typeName = result.containerType() != null
-                ? result.containerType().displayString()
-                : OmniChestLocale.getString(Keys.CONTAINER_TYPE_OTHER, "Container");
-        Component left2 = Component.literal(typeName
-                + "  (" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + ")");
-        g.drawString(font, left2, iconX + 22, y + 12, 0xFFAAAAAA, false);
-
-        // (4) 距離 (右寄せ)
-        if (player != null) {
-            double distSq = result.distanceSqTo(player);
-            String distText = String.format(Locale.ROOT, "%.1fm", Math.sqrt(distSq));
-            int textW = font.width(distText);
-            g.drawString(font, distText, x + width - textW - 6, y + 7, 0xFFFFFFFF, false);
-        }
-    }
-
-    private void renderScrollbar(GuiGraphics g, int top, int bottom, int right) {
+    private void renderScrollbar(GuiGraphics g, int top, int bottom) {
         int contentH = contentHeight();
         int viewH = bottom - top;
-        if (contentH <= viewH)
-            return;
+        if (contentH <= viewH) return;
         int barX = scrollbarBarX();
         int barH = scrollbarHandleHeight();
         int barY = scrollbarHandleY();
-        // トラック (背景帯)
-        g.fill(barX, top, barX + SCROLLBAR_BAR_WIDTH, bottom, 0x66000000);
-        // ハンドル (ドラッグ中は明るく)
+        g.fill(barX, top, barX + UILayoutMetrics.SCROLLBAR_WIDTH, bottom, 0x66000000);
         int handleColor = this.draggingScroll ? 0xFFFFFFFF : 0xFFAAAAAA;
-        g.fill(barX, barY, barX + SCROLLBAR_BAR_WIDTH, barY + barH, handleColor);
+        g.fill(barX, barY, barX + UILayoutMetrics.SCROLLBAR_WIDTH, barY + barH, handleColor);
     }
 
     // ════════════════════════════════════════════════════════════════════
-    // スクロールバー: 形状計算ヘルパ
+    // スクロールバー: 形状計算 (既存仕様維持 / 定数化のみ)
     // ════════════════════════════════════════════════════════════════════
-
-    /** 描画バーの幅 (px)。クリック判定エリアはこの倍ぶん広く取る。 */
-    private static final int SCROLLBAR_BAR_WIDTH = 4;
-    /** クリック判定の左右マージン (px)。バーの左右にこの幅ぶん広げてヒット領域とする。 */
-    private static final int SCROLLBAR_CLICK_MARGIN = 4;
 
     private int scrollbarBarX() {
-        return (this.width - LIST_SIDE_INSET) - SCROLLBAR_BAR_WIDTH;
+        return this.layout.list.right() - UILayoutMetrics.SCROLLBAR_WIDTH;
     }
 
-    /** ハンドル (= 動く方のバー) の高さ。表示割合に比例。 0 はスクロール不要を意味する。 */
     private int scrollbarHandleHeight() {
         int contentH = contentHeight();
-        int viewH = listHeight();
-        if (contentH <= viewH)
-            return 0;
+        int viewH = this.layout.list.h();
+        if (contentH <= viewH) return 0;
         return Math.max(20, (int) ((long) viewH * viewH / contentH));
     }
 
-    /** ハンドル上端 Y。スクロール不要のときは listTop() を返す (safe fallback)。 */
     private int scrollbarHandleY() {
         int barH = scrollbarHandleHeight();
-        int viewH = listHeight();
+        int viewH = this.layout.list.h();
         int contentH = contentHeight();
-        if (barH == 0)
-            return listTop();
+        if (barH == 0) return this.layout.list.y();
         int maxScroll = contentH - viewH;
         int trackH = viewH;
-        return listTop() + (int) ((this.scrollPx / maxScroll) * (trackH - barH));
+        return this.layout.list.y() + (int) ((this.scrollPx / maxScroll) * (trackH - barH));
     }
 
-    /** マウスがスクロールバーのクリック領域 (バー本体 + 左右マージン) にあるか。 */
     private boolean isMouseOverScrollbar(double mouseX, double mouseY) {
-        if (scrollbarHandleHeight() == 0)
-            return false;
+        if (scrollbarHandleHeight() == 0) return false;
         int barX = scrollbarBarX();
-        return mouseX >= (barX - SCROLLBAR_CLICK_MARGIN)
-                && mouseX <= (barX + SCROLLBAR_BAR_WIDTH + SCROLLBAR_CLICK_MARGIN)
-                && mouseY >= listTop()
-                && mouseY <= listBottom();
+        return mouseX >= (barX - UILayoutMetrics.SCROLLBAR_HIT_MARGIN)
+                && mouseX <= (barX + UILayoutMetrics.SCROLLBAR_WIDTH + UILayoutMetrics.SCROLLBAR_HIT_MARGIN)
+                && mouseY >= this.layout.list.y()
+                && mouseY <= this.layout.list.bottom();
     }
 
-    /**
-     * ハンドル上端をマウスの希望位置に合わせるよう scrollPx を再計算する。
-     * desiredHandleTopY はトラック内 (= listTop()〜listBottom()-barH) 範囲外なら自動でクランプ。
-     */
     private void setScrollFromHandleTopY(double desiredHandleTopY) {
         int barH = scrollbarHandleHeight();
-        int viewH = listHeight();
+        int viewH = this.layout.list.h();
         int contentH = contentHeight();
-        if (barH == 0 || contentH <= viewH)
-            return;
+        if (barH == 0 || contentH <= viewH) return;
         int trackRange = viewH - barH;
-        if (trackRange <= 0)
-            return;
-        double frac = (desiredHandleTopY - listTop()) / trackRange;
-        if (frac < 0)
-            frac = 0;
-        if (frac > 1)
-            frac = 1;
+        if (trackRange <= 0) return;
+        double frac = (desiredHandleTopY - this.layout.list.y()) / trackRange;
+        if (frac < 0) frac = 0;
+        if (frac > 1) frac = 1;
         int maxScroll = contentH - viewH;
         this.scrollPx = frac * maxScroll;
         clampScroll();
@@ -452,25 +435,40 @@ public class SearchScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        // 既存ウィジェット (検索ボックス / ソートボタン) を優先処理。
-        if (super.mouseClicked(event, doubleClick))
+        if (this.displayDropdown != null && !this.displayDropdown.isClosed()) {
+            if (this.displayDropdown.mouseClicked(event.x(), event.y(), event.button())) {
+                if (this.displayDropdown.isClosed()) this.displayDropdown = null;
+                return true;
+            }
+        }
+
+        SearchConfig cfg = ConfigManager.get().search;
+
+        // カテゴリタブクリック処理
+        if (cfg.enableCategoryTabs && event.button() == 0
+                && SearchCategoryTab.handleClick(this.tabHits, event.x(), event.y(),
+                cat -> {
+                    this.currentCategory = cat;
+                    rebuildResults();
+                    // タブ折り返しが変化することがあるので layout を作り直す
+                    this.rebuild();
+                })) {
             return true;
+        }
+
+        if (super.mouseClicked(event, doubleClick)) return true;
 
         double mouseX = event.x();
         double mouseY = event.y();
 
-        // ───────────────────────────────────────────────────────
-        // スクロールバー処理 (左クリックのみ、行クリックより先)
-        // ───────────────────────────────────────────────────────
+        // スクロールバー
         if (event.button() == 0 && isMouseOverScrollbar(mouseX, mouseY)) {
             int handleY = scrollbarHandleY();
             int handleH = scrollbarHandleHeight();
             if (mouseY >= handleY && mouseY < handleY + handleH) {
-                // ハンドル本体をクリック: drag 開始。「ハンドル内のどこを掴んだか」を保存。
                 this.draggingScroll = true;
                 this.scrollDragOffsetY = mouseY - handleY;
             } else {
-                // トラック上 (ハンドル以外) をクリック: そこへハンドルの中心を瞬間移動 + drag 継続。
                 setScrollFromHandleTopY(mouseY - handleH / 2.0);
                 this.draggingScroll = true;
                 this.scrollDragOffsetY = handleH / 2.0;
@@ -479,38 +477,41 @@ public class SearchScreen extends Screen {
         }
 
         // 行クリック判定
-        int top = listTop();
-        int bottom = listBottom();
-        int left = LIST_SIDE_INSET;
-        int right = this.width - LIST_SIDE_INSET;
-        if (mouseX < left || mouseX > right || mouseY < top || mouseY > bottom)
-            return false;
+        LayoutBox list = this.layout.list;
+        if (mouseX < list.x() || mouseX > list.right()
+                || mouseY < list.y() || mouseY > list.bottom()) return false;
 
-        int rel = (int) (mouseY - top + this.scrollPx);
-        int index = rel / ROW_HEIGHT;
-        if (index < 0 || index >= this.results.size())
-            return false;
+        int index = StorageSearchListRenderer.hitTest(this.displayMode, this.results,
+                list.x(), list.y(), list.right(), list.bottom(), this.scrollPx, mouseX, mouseY);
+        if (index < 0) return false;
 
         SearchIndex.SearchResult clicked = this.results.get(index);
-        // 行クリックは「この 1 行のみ」を選択トグルする。
-        // (チェスト単位ではなく「行 = チェスト × アイテム種」単位で切り替わる)
-        // 実際の highlight 発火は「選択したアイテムを検索」ボタン側で一括。
+
+        // ★ トグル: 右クリック または Alt+左クリック
+        boolean isRightClick = event.button() == 1;
+        boolean isAltClick = event.button() == 0 && event.hasAltDown();
+        if (cfg.enableFavorites && (isRightClick || isAltClick)) {
+            FavoritesManager.get().toggle(clicked.stack());
+            rebuildResults();
+            return true;
+        }
+
+        // 通常クリック = 行選択トグル
         String key = makeRowKey(clicked);
         if (this.selectedRows.containsKey(key)) {
             this.selectedRows.remove(key);
         } else {
             this.selectedRows.put(key,
                     new SelectedRow(clicked.snapshot(), clicked.stack().copy(), clicked.count()));
+            if (cfg.enableFavorites) FavoritesManager.get().touch(clicked.stack());
         }
         return true;
     }
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-        // ドラッグ中なら scrollPx を追従更新。 ボタン番号は問わない (drag 開始した button が押下中)。
         if (this.draggingScroll) {
-            double mouseY = event.y();
-            setScrollFromHandleTopY(mouseY - this.scrollDragOffsetY);
+            setScrollFromHandleTopY(event.y() - this.scrollDragOffsetY);
             return true;
         }
         return super.mouseDragged(event, dx, dy);
@@ -520,37 +521,32 @@ public class SearchScreen extends Screen {
     public boolean mouseReleased(MouseButtonEvent event) {
         if (event.button() == 0 && this.draggingScroll) {
             this.draggingScroll = false;
-            // super も呼んでおく (= 内部 widget 系の release 処理を阻害しない)。
         }
         return super.mouseReleased(event);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double dx, double dy) {
-        // 検索ボックスや他ウィジェット上での scroll は先に消化させる。
-        if (super.mouseScrolled(mouseX, mouseY, dx, dy))
-            return true;
-
-        // 1 ノッチ = ROW_HEIGHT * 2 程度。
-        this.scrollPx -= dy * ROW_HEIGHT * 2;
+        if (super.mouseScrolled(mouseX, mouseY, dx, dy)) return true;
+        this.scrollPx -= dy * this.displayMode.rowHeight() * 2;
         clampScroll();
         return true;
     }
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-        // ESC は常に Screen 標準動作 (= shouldCloseOnEsc() → onClose()) に渡す。
-        // EditBox がフォーカス中だと canConsumeInput=true で ESC が呑まれてしまうので、
-        // EditBox に渡す前に最優先で判定する。
+        if (this.displayDropdown != null && !this.displayDropdown.isClosed()) {
+            if (this.displayDropdown.keyPressed(event.key())) {
+                if (this.displayDropdown.isClosed()) this.displayDropdown = null;
+                return true;
+            }
+        }
         if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
             return super.keyPressed(event);
         }
-        // 検索ボックスのフォーカスを優先 (Backspace 等で onClose しないように)。
         if (this.searchBox != null && this.searchBox.isFocused()) {
-            if (this.searchBox.keyPressed(event))
-                return true;
-            if (this.searchBox.canConsumeInput())
-                return false;
+            if (this.searchBox.keyPressed(event)) return true;
+            if (this.searchBox.canConsumeInput()) return false;
         }
         return super.keyPressed(event);
     }
@@ -562,12 +558,7 @@ public class SearchScreen extends Screen {
 
     @Override
     public void onClose() {
-        if (this.minecraft != null) {
-            // parent が指定されているならそれに戻す (チェスト GUI から開いた場合の挙動)。
-            // ただし、 setScreen 経由で開いている時点で既に元の Menu は閉じている可能性が高いため、
-            // parent が AbstractContainerScreen のときは null にして InGame に戻すのが安全。
-            this.minecraft.setScreen(null);
-        }
+        if (this.minecraft != null) this.minecraft.setScreen(null);
     }
 
     /** ソートモード。 */
@@ -575,7 +566,6 @@ public class SearchScreen extends Screen {
         DISTANCE, COUNT, NAME
     }
 
-    /** parent への参照を import 警告除けに残す。 */
     @SuppressWarnings("unused")
     private Screen parentForReference() {
         return this.parent;

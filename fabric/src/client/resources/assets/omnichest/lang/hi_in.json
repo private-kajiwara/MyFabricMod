@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest हिन्दी (hi_in) — Minecraft के अनुवाद की शैली में संक्षिप्त वाक्य.",
-
   "config.omnichest.title": "OmniChest सेटिंग्स",
-
   "config.omnichest.category.general": "सामान्य",
   "config.omnichest.category.sort": "श्रेणी से क्रमबद्ध",
   "config.omnichest.category.compact": "स्टैक संक्षेपण",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "संगतता",
   "config.omnichest.category.keybind": "कुंजी",
   "config.omnichest.category.language": "भाषा",
-
   "config.omnichest.sub.lock.overlay": "ओवरले और दृश्य",
   "config.omnichest.sub.lock.protect": "डिफ़ॉल्ट सुरक्षा",
   "config.omnichest.sub.ai.advanced": "उन्नत (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "उन्नत (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "पाए गए मॉड",
-
   "config.omnichest.general.enableMod": "मॉड चालू करें",
   "config.omnichest.general.enableMod.tooltip": "मुख्य स्विच। बंद = मॉड की सभी सुविधाएँ बंद।",
   "config.omnichest.general.debugMode": "डिबग मोड",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = बंद, 1.0 = सामान्य, 2.0 = दुगुनी।",
   "config.omnichest.general.enableSounds": "ध्वनि चालू",
   "config.omnichest.general.enableSounds.tooltip": "मॉड की अपनी UI ध्वनियाँ बजाता है (क्रमबद्ध करना, भंडारण आदि)।",
-
   "config.omnichest.sort.enable": "क्रमबद्ध चालू",
   "config.omnichest.sort.enable.tooltip": "पूरे श्रेणी-क्रमबद्ध फ़ीचर को चालू/बंद करता है।",
   "config.omnichest.sort.insertEmptySeparator": "खाली स्लॉट विभाजक",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "क्रिएटिव इन्वेंटरी टैब के समान क्रम।",
   "config.omnichest.sort.autoCompactAfterSort": "क्रमबद्ध के बाद संक्षेपण",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "क्रमबद्ध के बाद आंशिक स्टैक स्वतः मिला देता है।",
-
   "config.omnichest.compact.enable": "संक्षेपण चालू",
   "config.omnichest.compact.compactPlayerInventory": "इन्वेंटरी में भी",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "खिलाड़ी की इन्वेंटरी में भी स्टैक मिलाता है।",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "मर्ज एनिमेशन",
   "config.omnichest.compact.maxActionsPerTick": "क्रियाएँ / tick (अधिकतम)",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "प्रति tick भेजे जाने वाले क्लिक की ऊपरी सीमा।",
-
   "config.omnichest.deposit.enable": "स्मार्ट भंडारण चालू",
   "config.omnichest.deposit.matchNbtComponents": "NBT / कॉम्पोनेंट मिलान",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "सख्त मोड: मंत्रबद्ध आइटम केवल समान मंत्रों में स्टैक होते हैं।",
   "config.omnichest.deposit.ignoreEmptySlots": "खाली स्लॉट छोड़ें",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "सिर्फ़ उन संदूकों में रखें जिनमें वह आइटम पहले से है।",
   "config.omnichest.deposit.hotkey.notice": "स्वतः भंडारण कुंजी: नियंत्रण → 'OmniChest' श्रेणी।",
-
   "config.omnichest.lock.enable": "स्लॉट लॉक चालू",
   "config.omnichest.lock.enableItemLockMode": "आइटम-स्तरीय लॉक",
   "config.omnichest.lock.enableItemLockMode.tooltip": "किसी विशिष्ट आइटम को स्लॉटों के बीच ट्रैक करता है (जैसे हीरे की कुदाल)।",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "ऑफहैंड सुरक्षा",
   "config.omnichest.lock.protectArmorByDefault": "कवच सुरक्षा",
   "config.omnichest.lock.hotkey.notice": "लॉक कुंजी: नियंत्रण → 'OmniChest' श्रेणी।",
-
   "config.omnichest.search.enable": "खोज चालू",
   "config.omnichest.search.searchRadius": "त्रिज्या (ब्लॉक)",
   "config.omnichest.search.searchRadius.tooltip": "अधिक = अधिक संदूक, पर स्कैनिंग महंगी।",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "परिणाम क्रम",
   "config.omnichest.search.pinPersistUntilOpened": "खुलने तक पिन",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "पिन और हाइलाइट तब तक रहते हैं जब तक संदूक नहीं खोला जाता। हाइलाइट समय को नज़रअंदाज़ करता है।",
-
   "config.omnichest.ai.enableClassification": "वर्गीकरण चालू",
   "config.omnichest.ai.learningMode": "लर्निंग मोड",
   "config.omnichest.ai.learningMode.tooltip": "आपके भंडारण इतिहास से श्रेणी वज़न समायोजित करता है।",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "मिश्रित संदूक की अनुमति",
   "config.omnichest.ai.autoDepositMaxDistance": "अधिकतम दूरी",
   "config.omnichest.ai.persistEnabled": "लर्निंग डेटा सहेजें",
-
   "config.omnichest.template.enable": "टेम्पलेट चालू",
   "config.omnichest.template.autoApplyTemplate": "स्वतः लागू करें",
   "config.omnichest.template.autoApplyTemplate.tooltip": "संदूक खोलने पर मेल खाते टेम्पलेट को स्वतः लागू करता है।",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "भंडारण + संक्षेपण साथ",
   "config.omnichest.template.lockHotbar": "हॉटबार लॉक करें",
   "config.omnichest.template.skipPreview": "पुष्टि छोड़ें",
-
   "config.omnichest.render.enableOverlay": "ओवरले चालू",
   "config.omnichest.render.highlightColorRgb": "हाइलाइट रंग",
   "config.omnichest.render.highlightColorRgb.tooltip": "हाइलाइट किए गए संदूकों के बॉर्डर का रंग।",
   "config.omnichest.render.showCategoryLabels": "श्रेणी लेबल",
   "config.omnichest.render.enableTooltips": "टूलटिप चालू",
   "config.omnichest.render.guiAnimation": "UI एनिमेशन",
-
   "config.omnichest.compat.enableShaderCompatibility": "शेडर संगतता",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Iris या Oculus के साथ शेडर-सुरक्षित रेंडर पथ का उपयोग करता है।",
   "config.omnichest.compat.safeOverlayRendering": "सुरक्षित ओवरले रेंडर",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "हाँ",
   "config.omnichest.compat.status.no": "नहीं",
   "config.omnichest.compat.detection.shader_active": "शेडर पैक सक्रिय",
-
   "config.omnichest.sub.compat_resourcepack": "रिसोर्स पैक संगतता",
   "config.omnichest.compat.enableResourcePackCompatibility": "रिसोर्स पैक संगतता चालू",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "टेक्सचर/एटलस/फ़ॉन्ट सुरक्षा परत के लिए मुख्य स्विच। लेआउट, रंग और एनिमेशन प्रभावित नहीं।",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "Unicode/CJK/bitmap फ़ॉन्ट न ओवरफ़्लो हो इसलिए टेक्स्ट को सुरक्षित रूप से काटता या रैप करता है। UI आकार वही रहता है।",
   "config.omnichest.compat.debugTextureLogs": "टेक्सचर लॉग",
   "config.omnichest.compat.debugTextureLogs.tooltip": "प्रत्येक टेक्सचर/फ़ॉन्ट फ़ॉलबैक पर विस्तृत लॉग। केवल निदान के लिए अनुशंसित।",
-
   "config.omnichest.keybind.intro": "सभी कुंजी: नियंत्रण → कुंजी → 'OmniChest' श्रेणी।",
-
   "config.omnichest.language.intro": "मॉड की प्रदर्शन भाषा चुनें। \"System Default\" Minecraft का अनुसरण करता है।",
   "config.omnichest.language.override": "प्रदर्शन भाषा",
   "config.omnichest.language.override.tooltip": "मॉड भाषा को बदल देता है। Minecraft का अनुसरण करने के लिए \"System Default\" चुनें।",
@@ -158,7 +142,6 @@
   "config.omnichest.language.unicode_font_safety": "Unicode फ़ॉन्ट सुरक्षा",
   "config.omnichest.language.unicode_font_safety.tooltip": "गैर-ASCII टेक्स्ट को सुरक्षित रूप से काटता है ताकि वह विजेट बाहर न बहे।",
   "config.omnichest.language.restart_hint": "अधिकांश टेक्स्ट तुरंत अपडेट होता है। कुछ शीर्षकों के लिए स्क्रीन फिर खोलनी होगी।",
-
   "omnichest.language.system_default": "सिस्टम डिफ़ॉल्ट",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -188,19 +171,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "संदूक खोज",
   "omnichest.screen.template.save.title": "टेम्पलेट सहेजें",
   "omnichest.screen.template.manager.title": "टेम्पलेट",
   "omnichest.screen.template.preview.title": "टेम्पलेट पूर्वावलोकन",
-
   "omnichest.button.reset": "रीसेट",
   "omnichest.button.save": "सहेजें",
   "omnichest.button.cancel": "रद्द",
   "omnichest.button.apply": "लागू",
   "omnichest.button.close": "बंद",
   "omnichest.button.ok": "ठीक",
-
   "omnichest.button.deposit": "समान भंडारित करें",
   "omnichest.button.compact": "संक्षेपण",
   "omnichest.button.search_network": "संदूक खोज",
@@ -213,50 +193,40 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "क्रमबद्ध",
   "omnichest.button.category_sort.tooltip": "संदूक की सामग्री को श्रेणी से क्रमबद्ध करता है।\n\nनिर्माण, लकड़ी, अयस्क, भोजन के अर्थ से समूहित\nऔर समान स्टैक एक में मिल जाते हैं।\n\nलॉक स्लॉट नहीं हिलते।",
-
   "omnichest.button.sort_distance": "दूरी",
   "omnichest.button.sort_count": "मात्रा",
   "omnichest.button.sort_name": "नाम",
   "omnichest.button.search_selected": "चयन खोजें",
   "omnichest.button.clear_selection": "चयन साफ़",
   "omnichest.button.save_current_chest": "इस संदूक को सहेजें",
-
   "omnichest.editbox.search.label": "खोज",
   "omnichest.editbox.name.label": "नाम",
   "omnichest.editbox.search.hint.generic": "खोजें...",
   "omnichest.editbox.search.hint.network": "खोजें (जैसे diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "टेम्पलेट नाम से फ़िल्टर करें",
   "omnichest.editbox.template_name.hint": "टेम्पलेट का नाम",
-
   "omnichest.search.summary": "पंजीकृत: %1$d  /  परिणाम: %2$d  /  चयनित: %3$d",
   "omnichest.search.hint": "पंक्ति क्लिक = चयन  /  \"चयन खोजें\" = पिन  /  ESC = रद्द",
-
   "omnichest.template.default_name": "टेम्पलेट %1$d",
   "omnichest.template.untitled": "(बिना शीर्षक)",
-
   "omnichest.template.kind.label": "प्रकार: %1$s",
   "omnichest.template.kind.exact": "सटीक (आइटम स्थिर)",
   "omnichest.template.kind.category": "श्रेणी (विकल्प स्वीकार्य)",
   "omnichest.template.kind.hybrid": "मिश्रित (अनुशंसित)",
-
   "omnichest.template.kind.badge.exact": "[सटीक]",
   "omnichest.template.kind.badge.category": "[श्रेणी]",
   "omnichest.template.kind.badge.hybrid": "[मिश्रित]",
-
   "omnichest.template.kind.help.exact": "ओक और बर्च तख्ते अलग आइटम माने जाते हैं।",
   "omnichest.template.kind.help.category": "एक ही श्रेणी के आइटम एक-दूसरे का स्थान ले सकते हैं। (सामग्री संदूकों के लिए उपयुक्त)",
   "omnichest.template.kind.help.hybrid": "मूल को प्राथमिकता देता है, न मिलने पर उसी श्रेणी से विकल्प।",
-
   "omnichest.template.manager.summary": "सहेजे: %1$d  /  प्रदर्शित: %2$d",
   "omnichest.template.manager.hint": "क्लिक = लागू (संदूक चाहिए) / बटन दाईं ओर / ESC = बंद",
   "omnichest.template.manager.slot_rule_count": "%1$d स्लॉट / %2$d नियम",
-
   "omnichest.template.row.action.apply": "लागू",
   "omnichest.template.row.action.duplicate": "नकल",
   "omnichest.template.row.action.delete": "हटाएँ",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "पूर्वावलोकन: %1$s",
   "omnichest.template.preview.title_null": "(कोई नहीं)",
   "omnichest.template.preview.computing": "गणना...",
@@ -267,29 +237,24 @@
   "omnichest.template.preview.move_row": "  स्लॉट %1$d  →  स्लॉट %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(अदला-बदली)",
   "omnichest.template.preview.more_items": "...और %1$d अधिक",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[लॉक स्लॉट] §r§7स्वतः क्रमबद्ध से सुरक्षित",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[लॉक आइटम] §r§7%1$s सुरक्षित",
   "omnichest.slot_lock.tooltip.session": "§b§l[सत्र लॉक] §r§7संदूक स्लॉट (बंद होने तक)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[सुरक्षित] §r§7हॉटबार (डिफ़ॉल्ट)",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[सुरक्षित] §r§7ऑफहैंड (डिफ़ॉल्ट)",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[सुरक्षित] §r§7कवच (डिफ़ॉल्ट)",
-
   "omnichest.slot_lock.chat.toggled": "[स्लॉट लॉक] स्लॉट %1$d बदला",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[स्लॉट लॉक] §oहटाने के लिए कोई लॉक नहीं।",
   "omnichest.slot_lock.chat.cleared": "§a[स्लॉट लॉक] §r%1$d (स्थायी) + %2$d (सत्र) हटाए।",
   "omnichest.slot_lock.chat.confirm_clear": "§e[स्लॉट लॉक] §r1.5 सेकंड में फिर दबाएँ %1$d लॉक हटाने के लिए।",
-
   "omnichest.smart_storage.prefix": "[भंडार]",
   "omnichest.smart_storage.plan_empty": "[भंडार] योजना: कोई आइटम नहीं / सुविधा बंद",
   "omnichest.smart_storage.plan_header": "[भंडार] योजना:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7कोई गंतव्य नहीं",
-
   "omnichest.category_badge.confidence": " विश्वास: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "संदूक",
   "omnichest.container_type.trapped_chest": "जाल संदूक",
   "omnichest.container_type.double_chest": "बड़ा संदूक",
@@ -297,7 +262,6 @@
   "omnichest.container_type.barrel": "बैरल",
   "omnichest.container_type.shulker_box": "शुल्कर बॉक्स",
   "omnichest.container_type.other": "कंटेनर",
-
   "omnichest.storage_category.building": "निर्माण सामग्री",
   "omnichest.storage_category.wood": "लकड़ी",
   "omnichest.storage_category.ore": "अयस्क",
@@ -314,7 +278,6 @@
   "omnichest.storage_category.decoration": "सजावट",
   "omnichest.storage_category.mixed": "मिश्रित",
   "omnichest.storage_category.unknown": "अवर्गीकृत",
-
   "omnichest.item_category.building": "निर्माण",
   "omnichest.item_category.wood": "लकड़ी",
   "omnichest.item_category.stone": "पत्थर",
@@ -331,35 +294,67 @@
   "omnichest.item_category.mob_drop": "ड्रॉप",
   "omnichest.item_category.decoration": "सजावट",
   "omnichest.item_category.misc": "अन्य",
-
   "omnichest.toggle.on": "§a✔ चालू",
   "omnichest.toggle.off": "§c✘ बंद",
-
   "omnichest.color_picker.title": "रंग चयन",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "ठीक",
   "omnichest.color_picker.cancel": "रद्द",
-
   "key.omnichest.open_search": "संदूक खोज खोलें",
   "key.omnichest.smart_deposit": "भंडारण योजना दिखाएँ",
   "key.omnichest.toggle_slot_lock": "कर्सर वाले स्लॉट को लॉक करें",
   "key.omnichest.clear_all_slot_locks": "सभी स्लॉट लॉक हटाएँ",
-
   "omnichest.keybind.line.open_search": "• खोज खोलें: %1$s",
   "omnichest.keybind.line.smart_deposit": "• स्मार्ट भंडारण: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• स्लॉट लॉक: %1$s",
   "omnichest.keybind.line.clear_all_locks": "• सभी लॉक हटाएँ: %1$s",
-
   "omnichest.controls.title": "नियंत्रण",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+क्लिक: स्लॉट लॉक",
   "omnichest.controls.line.slot_lock_middle_click": "बीच क्लिक: स्लॉट लॉक",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+क्लिक: आइटम लॉक",
   "omnichest.controls.line.alt_drag": "Alt+खींचें: निरंतर लॉक",
   "omnichest.controls.line.shift_compact": "Shift+संक्षेपण: खिलाड़ी सहित",
-
   "config.omnichest.group.basics": "मूल बातें",
   "config.omnichest.group.item_sorting": "आइटम क्रमबद्ध",
   "config.omnichest.group.protection_search": "सुरक्षा और खोज",
-  "config.omnichest.group.appearance_input": "स्वरूप और इनपुट"
+  "config.omnichest.group.appearance_input": "स्वरूप और इनपुट",
+  "config.omnichest.search.enableCategoryTabs": "श्रेणी टैब सक्षम करें",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "खोज स्क्रीन के शीर्ष पर क्रिएटिव इन्वेंट्री शैली के टैब दिखाएं।",
+  "config.omnichest.search.enableFavorites": "पसंदीदा सक्षम करें",
+  "config.omnichest.search.enableFavorites.tooltip": "★ लगाकर शीर्ष पर सॉर्ट करें या पसंदीदा टैब में फ़िल्टर करें।",
+  "config.omnichest.search.favoriteHighlight": "पसंदीदा हाइलाइट",
+  "config.omnichest.search.favoriteHighlight.tooltip": "पसंदीदा वस्तुओं को सुनहरी चमक देता है।",
+  "config.omnichest.search.rememberLastDisplayMode": "अंतिम मोड याद रखें",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "चालू होने पर अगली बार पिछला मोड पुनर्स्थापित होता है।",
+  "config.omnichest.search.compactTabMode": "कॉम्पैक्ट टैब मोड",
+  "config.omnichest.search.compactTabMode.tooltip": "टैब केवल आइकन के रूप में दिखाएं, चयनित भी।",
+  "config.omnichest.search.defaultDisplayMode": "डिफ़ॉल्ट मोड",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "खोज स्क्रीन खोलते समय प्रारंभिक मोड।",
+  "omnichest.search_category.all": "सभी",
+  "omnichest.search_category.favorites": "पसंदीदा",
+  "omnichest.search_category.building": "निर्माण",
+  "omnichest.search_category.wood": "लकड़ी",
+  "omnichest.search_category.stone": "पत्थर",
+  "omnichest.search_category.ore": "अयस्क",
+  "omnichest.search_category.redstone": "रेडस्टोन",
+  "omnichest.search_category.farming": "खेती",
+  "omnichest.search_category.food": "भोजन",
+  "omnichest.search_category.combat": "लड़ाई",
+  "omnichest.search_category.tool": "उपकरण",
+  "omnichest.search_category.enchant": "मंत्र",
+  "omnichest.search_category.potion": "औषधि",
+  "omnichest.search_category.decoration": "सजावट",
+  "omnichest.search_category.nether": "नेदर",
+  "omnichest.search_category.end": "एंड",
+  "omnichest.search_category.misc": "अन्य",
+  "omnichest.search.display_mode.label": "दृश्य मोड",
+  "omnichest.search.display_mode.compact_grid": "कॉम्पैक्ट ग्रिड",
+  "omnichest.search.display_mode.large_grid": "बड़ा ग्रिड",
+  "omnichest.search.display_mode.list": "सूची",
+  "omnichest.search.display_mode.detailed": "विस्तृत",
+  "omnichest.search.display_mode.icon_only": "केवल आइकन",
+  "omnichest.search.favorites.add_tooltip": "पसंदीदा में जोड़ने के लिए राइट क्लिक या Alt+क्लिक",
+  "omnichest.search.favorites.remove_tooltip": "पसंदीदा से हटाने के लिए राइट क्लिक या Alt+क्लिक",
+  "omnichest.search.favorites.empty": "कोई पसंदीदा नहीं। आइटम पर राइट क्लिक करके ★ लगाएं।"
 }

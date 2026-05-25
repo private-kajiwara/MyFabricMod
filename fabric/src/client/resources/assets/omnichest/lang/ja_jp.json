@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest 日本語 (ja_jp) — 既存実装の表記を踏襲し、 Minecraft 日本語訳に近い自然な短文で統一する。",
-
   "config.omnichest.title": "OmniChest 設定",
-
   "config.omnichest.category.general": "全般",
   "config.omnichest.category.sort": "カテゴリ整理",
   "config.omnichest.category.compact": "スタック圧縮",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "互換性",
   "config.omnichest.category.keybind": "キー設定",
   "config.omnichest.category.language": "言語",
-
   "config.omnichest.sub.lock.overlay": "オーバーレイ表示",
   "config.omnichest.sub.lock.protect": "既定保護",
   "config.omnichest.sub.ai.advanced": "詳細設定 (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "詳細設定 (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "検出された MOD",
-
   "config.omnichest.general.enableMod": "MOD を有効化",
   "config.omnichest.general.enableMod.tooltip": "MOD 全体の ON/OFF スイッチ。 OFF にすると全機能が無効になります。",
   "config.omnichest.general.debugMode": "デバッグモード",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = アニメなし、 1.0 = 標準、 2.0 = 倍速。",
   "config.omnichest.general.enableSounds": "効果音を有効化",
   "config.omnichest.general.enableSounds.tooltip": "整理完了など MOD 独自の UI 効果音を再生します。",
-
   "config.omnichest.sort.enable": "カテゴリ整理を有効化",
   "config.omnichest.sort.enable.tooltip": "カテゴリ整理機能 全体の ON/OFF。",
   "config.omnichest.sort.insertEmptySeparator": "区切り用の空きスロット",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "クリエイティブタブと同じ並びで分類します。",
   "config.omnichest.sort.autoCompactAfterSort": "整理後に自動でまとめる",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "整理が終わったあと、 端数スタックを自動でまとめます。",
-
   "config.omnichest.compact.enable": "スタック圧縮を有効化",
   "config.omnichest.compact.compactPlayerInventory": "プレイヤー側も圧縮対象にする",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "プレイヤーインベントリの端数スタックも圧縮します。",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "圧縮アニメーション",
   "config.omnichest.compact.maxActionsPerTick": "1tick あたりの最大操作数",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "1tick で発火するクリック数の上限。",
-
   "config.omnichest.deposit.enable": "同種預入を有効化",
   "config.omnichest.deposit.matchNbtComponents": "NBT / データ要素も一致させる",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "厳密モード。 エンチャの内容が完全一致するスタックだけ重なります。",
   "config.omnichest.deposit.ignoreEmptySlots": "空きスロットを除外",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "対象アイテムが既に入っているチェストにだけ預け入れます。",
   "config.omnichest.deposit.hotkey.notice": "自動預入のキー設定はバニラの コントロール → 'OmniChest' カテゴリで行えます。",
-
   "config.omnichest.lock.enable": "スロットロックを有効化",
   "config.omnichest.lock.enableItemLockMode": "アイテム単位ロック",
   "config.omnichest.lock.enableItemLockMode.tooltip": "アイテムごとに追跡します (例: ダイヤピッケルをスロット間でも追従)。",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "オフハンドを既定でロック",
   "config.omnichest.lock.protectArmorByDefault": "防具スロットを既定でロック",
   "config.omnichest.lock.hotkey.notice": "ロックの操作キーはバニラの コントロール → 'OmniChest' カテゴリで設定できます。",
-
   "config.omnichest.search.enable": "検索機能を有効化",
   "config.omnichest.search.searchRadius": "検索範囲 (ブロック)",
   "config.omnichest.search.searchRadius.tooltip": "値が大きいほど多くのチェストが見つかりますが、 ゲーム負荷が上昇します。",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "結果の並び順",
   "config.omnichest.search.pinPersistUntilOpened": "開くまでピンを残す",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "対象チェストを開くまでピン / ハイライトを維持。 ON のときは表示時間を無視します。",
-
   "config.omnichest.ai.enableClassification": "自動分類を有効化",
   "config.omnichest.ai.learningMode": "学習モード",
   "config.omnichest.ai.learningMode.tooltip": "預入履歴からカテゴリの指向を学習します。",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "混合チェストも預入先に含める",
   "config.omnichest.ai.autoDepositMaxDistance": "自動預入の最大距離",
   "config.omnichest.ai.persistEnabled": "学習データを保存",
-
   "config.omnichest.template.enable": "テンプレートを有効化",
   "config.omnichest.template.autoApplyTemplate": "テンプレを自動適用",
   "config.omnichest.template.autoApplyTemplate.tooltip": "チェストを開いた時に該当テンプレを自動で適用します。",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "適用時に 預入 + 圧縮 も実行",
   "config.omnichest.template.lockHotbar": "適用中はホットバーを保護",
   "config.omnichest.template.skipPreview": "確認ダイアログを省略",
-
   "config.omnichest.render.enableOverlay": "オーバーレイを有効化",
   "config.omnichest.render.highlightColorRgb": "ハイライト色",
   "config.omnichest.render.highlightColorRgb.tooltip": "ヒットしたチェストを縁取る色。",
   "config.omnichest.render.showCategoryLabels": "カテゴリ ラベルを表示",
   "config.omnichest.render.enableTooltips": "ツールチップを有効化",
   "config.omnichest.render.guiAnimation": "GUI アニメーション",
-
   "config.omnichest.compat.enableShaderCompatibility": "シェーダー互換",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Iris や Oculus を導入している環境で、 シェーダーと競合しにくい描画経路に切り替えます。",
   "config.omnichest.compat.safeOverlayRendering": "オーバーレイの安全描画",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "あり",
   "config.omnichest.compat.status.no": "なし",
   "config.omnichest.compat.detection.shader_active": "シェーダーパック使用中",
-
   "config.omnichest.sub.compat_resourcepack": "リソースパック互換",
   "config.omnichest.compat.enableResourcePackCompatibility": "リソースパック互換を有効化",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "テクスチャ / アトラス / フォント の安全層をまとめて ON/OFF します。 UI のレイアウト・色・アニメーションは変更されません。",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "Unicode / CJK / ビットマップフォント パックでも文字がはみ出ないよう安全に切詰めます。 UI サイズは変更しません。",
   "config.omnichest.compat.debugTextureLogs": "テクスチャ ログを詳細出力",
   "config.omnichest.compat.debugTextureLogs.tooltip": "テクスチャ / スプライト / フォント が fallback した際に詳細ログを出します。 リソースパックの不具合切り分け時のみ ON にしてください。",
-
   "config.omnichest.keybind.intro": "全てのキーはバニラの コントロール → キー設定 の 'OmniChest' カテゴリにあります。",
-
   "config.omnichest.language.intro": "MOD の表示言語を選択できます。 「System Default」 は Minecraft 本体の言語に追従します。",
   "config.omnichest.language.override": "表示言語",
   "config.omnichest.language.override.tooltip": "MOD 内の表示言語を上書きします。 Minecraft に合わせたいときは 「System Default」 を選んでください。",
@@ -158,13 +142,10 @@
   "config.omnichest.language.unicode_font_safety": "Unicode フォント安全",
   "config.omnichest.language.unicode_font_safety.tooltip": "非 ASCII テキストを安全に切り詰めて、 ウィジェット枠からあふれないようにします。",
   "config.omnichest.language.restart_hint": "変更は即座に反映されます。 一部のタイトルは画面を開き直すと反映されます。",
-
   "config.omnichest.group.basics": "基本",
   "config.omnichest.group.item_sorting": "アイテム整理",
   "config.omnichest.group.protection_search": "保護と検索",
   "config.omnichest.group.appearance_input": "見た目と操作",
-
-
   "omnichest.language.system_default": "システム標準",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -194,19 +175,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "倉庫検索",
   "omnichest.screen.template.save.title": "テンプレートを保存",
   "omnichest.screen.template.manager.title": "テンプレート管理",
   "omnichest.screen.template.preview.title": "プレビュー",
-
   "omnichest.button.reset": "リセット",
   "omnichest.button.save": "保存",
   "omnichest.button.cancel": "キャンセル",
   "omnichest.button.apply": "適用",
   "omnichest.button.close": "閉じる",
   "omnichest.button.ok": "OK",
-
   "omnichest.button.deposit": "同種預入",
   "omnichest.button.compact": "スタック圧縮",
   "omnichest.button.search_network": "倉庫検索",
@@ -219,57 +197,46 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "カテゴリ整理",
   "omnichest.button.category_sort.tooltip": "チェストの中身を、種類ごとに整理します。\n\n建築・木材・鉱石・食料などの意味でグループ化し、\n同じアイテムはひとつにまとめます。\n\nロック中のスロットは動せません。",
-
   "omnichest.controls.title": "操作方法",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+左クリック: スロットロック",
   "omnichest.controls.line.slot_lock_middle_click": "中クリック: スロットロック",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+クリック: アイテムロック",
   "omnichest.controls.line.alt_drag": "Alt+ドラッグ: 連続ロック",
   "omnichest.controls.line.shift_compact": "Shift+圧縮: プレイヤーも",
-
   "omnichest.button.sort_distance": "距離順",
   "omnichest.button.sort_count": "数量順",
   "omnichest.button.sort_name": "名前順",
   "omnichest.button.search_selected": "選択を検索",
   "omnichest.button.clear_selection": "選択解除",
   "omnichest.button.save_current_chest": "現チェストを保存",
-
   "omnichest.editbox.search.label": "検索",
   "omnichest.editbox.name.label": "名前",
   "omnichest.editbox.search.hint.generic": "検索...",
   "omnichest.editbox.search.hint.network": "検索 (例: diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "テンプレート名で絞り込み",
   "omnichest.editbox.template_name.hint": "テンプレート名",
-
   "omnichest.search.summary": "登録 %1$d 個 / ヒット %2$d 行 / 選択 %3$d 件",
   "omnichest.search.hint": "行クリック=選択トグル  /  「選択を検索」でピン表示  /  ESC で閉じる",
-
   "omnichest.template.default_name": "テンプレート %1$d",
   "omnichest.template.untitled": "(無題)",
-
   "omnichest.template.kind.label": "種別: %1$s",
   "omnichest.template.kind.exact": "完全一致 (アイテム固定)",
   "omnichest.template.kind.category": "カテゴリ一致 (代替品許容)",
   "omnichest.template.kind.hybrid": "ハイブリッド (推奨)",
-
   "omnichest.template.kind.badge.exact": "[完全]",
   "omnichest.template.kind.badge.category": "[カテゴリ]",
   "omnichest.template.kind.badge.hybrid": "[ハイブリッド]",
-
   "omnichest.template.kind.help.exact": "オーク板と白樺板を別物として扱います。",
   "omnichest.template.kind.help.category": "同じカテゴリのアイテムなら代替できます。 (素材倉庫向け)",
   "omnichest.template.kind.help.hybrid": "希望は固定しつつ、 無ければ同カテゴリで代用します。",
-
   "omnichest.template.manager.summary": "登録 %1$d 件 / 表示 %2$d 件",
   "omnichest.template.manager.hint": "行クリック=適用 (要チェスト連動) / 複製/削除/↑↓ は行の右側 / ESC で閉じる",
   "omnichest.template.manager.slot_rule_count": "%1$d スロット / %2$d ルール",
-
   "omnichest.template.row.action.apply": "適用",
   "omnichest.template.row.action.duplicate": "複製",
   "omnichest.template.row.action.delete": "削除",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "プレビュー: %1$s",
   "omnichest.template.preview.title_null": "(なし)",
   "omnichest.template.preview.computing": "計算中...",
@@ -280,29 +247,24 @@
   "omnichest.template.preview.move_row": "  スロット %1$d  →  スロット %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(入替)",
   "omnichest.template.preview.more_items": "...他 %1$d 件",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[ロック中] §r§7自動整理から保護",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[アイテムロック] §r§7%1$s を保護",
   "omnichest.slot_lock.tooltip.session": "§b§l[セッションロック] §r§7チェスト側スロット (閉じるまで)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[保護] §r§7ホットバーの既定保護",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[保護] §r§7オフハンドの既定保護",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[保護] §r§7防具スロットの既定保護",
-
   "omnichest.slot_lock.chat.toggled": "[スロットロック] スロット %1$d を切り替えました",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[スロットロック] §o解除対象のロックはありません。",
   "omnichest.slot_lock.chat.cleared": "§a[スロットロック] §r%1$d 件 (永続) + %2$d 件 (セッション) を全解除しました。",
   "omnichest.slot_lock.chat.confirm_clear": "§e[スロットロック] §rもう一度押すと %1$d 件のロックを全解除します (1.5 秒以内)。",
-
   "omnichest.smart_storage.prefix": "[スマート倉庫]",
   "omnichest.smart_storage.plan_empty": "[スマート倉庫] 投入プラン: アイテムなし / 機能 OFF",
   "omnichest.smart_storage.plan_header": "[スマート倉庫] 投入プラン:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7行き先なし",
-
   "omnichest.category_badge.confidence": " 信頼度: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "チェスト",
   "omnichest.container_type.trapped_chest": "トラップチェスト",
   "omnichest.container_type.double_chest": "ラージチェスト",
@@ -310,7 +272,6 @@
   "omnichest.container_type.barrel": "樽",
   "omnichest.container_type.shulker_box": "シュルカーボックス",
   "omnichest.container_type.other": "コンテナ",
-
   "omnichest.storage_category.building": "建築ブロック倉庫",
   "omnichest.storage_category.wood": "木材倉庫",
   "omnichest.storage_category.ore": "鉱石倉庫",
@@ -327,7 +288,6 @@
   "omnichest.storage_category.decoration": "装飾倉庫",
   "omnichest.storage_category.mixed": "混合倉庫",
   "omnichest.storage_category.unknown": "未分類",
-
   "omnichest.item_category.building": "建築",
   "omnichest.item_category.wood": "木材",
   "omnichest.item_category.stone": "石材",
@@ -344,23 +304,57 @@
   "omnichest.item_category.mob_drop": "ドロップ",
   "omnichest.item_category.decoration": "装飾",
   "omnichest.item_category.misc": "その他",
-
   "omnichest.toggle.on": "§a✔ ON",
   "omnichest.toggle.off": "§c✘ OFF",
-
   "omnichest.color_picker.title": "カラーピッカー",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "決定",
   "omnichest.color_picker.cancel": "キャンセル",
-
   "key.omnichest.open_search": "倉庫検索を開く",
   "key.omnichest.smart_deposit": "スマート預入プランを表示",
   "key.omnichest.toggle_slot_lock": "ホバー中スロットをロック",
   "key.omnichest.clear_all_slot_locks": "ロックを全解除",
-
   "omnichest.keybind.line.open_search": "• 検索を開く: %1$s",
   "omnichest.keybind.line.smart_deposit": "• スマート預入: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• スロットロック: %1$s",
-  "omnichest.keybind.line.clear_all_locks": "• ロック全解除: %1$s"
+  "omnichest.keybind.line.clear_all_locks": "• ロック全解除: %1$s",
+  "config.omnichest.search.enableCategoryTabs": "カテゴリタブを有効化",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "検索画面の上部に Creative Inventory 風のタブを表示します。",
+  "config.omnichest.search.enableFavorites": "お気に入りを有効化",
+  "config.omnichest.search.enableFavorites.tooltip": "アイテムに★を付けて先頭に並べたり、お気に入りタブで絞り込めます。",
+  "config.omnichest.search.favoriteHighlight": "お気に入りハイライト",
+  "config.omnichest.search.favoriteHighlight.tooltip": "お気に入り登録したアイテムに金色の発光エフェクトを追加します。",
+  "config.omnichest.search.rememberLastDisplayMode": "前回の表示モードを記憶",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "ON にすると次回起動時も前回選んだ表示モードを再現します。",
+  "config.omnichest.search.compactTabMode": "コンパクトタブ表示",
+  "config.omnichest.search.compactTabMode.tooltip": "選択中タブもアイコンのみで表示します（名前ラベルなし）。",
+  "config.omnichest.search.defaultDisplayMode": "デフォルト表示モード",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "検索画面を開いた時の初期表示モード。",
+  "omnichest.search_category.all": "すべて",
+  "omnichest.search_category.favorites": "お気に入り",
+  "omnichest.search_category.building": "建築",
+  "omnichest.search_category.wood": "木材",
+  "omnichest.search_category.stone": "石材",
+  "omnichest.search_category.ore": "鉱石",
+  "omnichest.search_category.redstone": "レッドストーン",
+  "omnichest.search_category.farming": "農業",
+  "omnichest.search_category.food": "食料",
+  "omnichest.search_category.combat": "戦闘",
+  "omnichest.search_category.tool": "ツール",
+  "omnichest.search_category.enchant": "エンチャント",
+  "omnichest.search_category.potion": "ポーション",
+  "omnichest.search_category.decoration": "装飾",
+  "omnichest.search_category.nether": "ネザー",
+  "omnichest.search_category.end": "エンド",
+  "omnichest.search_category.misc": "その他",
+  "omnichest.search.display_mode.label": "表示モード",
+  "omnichest.search.display_mode.compact_grid": "コンパクト",
+  "omnichest.search.display_mode.large_grid": "大アイコン",
+  "omnichest.search.display_mode.list": "リスト",
+  "omnichest.search.display_mode.detailed": "詳細",
+  "omnichest.search.display_mode.icon_only": "アイコンのみ",
+  "omnichest.search.favorites.add_tooltip": "右クリックまたは Alt+クリックでお気に入り登録",
+  "omnichest.search.favorites.remove_tooltip": "右クリックまたは Alt+クリックでお気に入り解除",
+  "omnichest.search.favorites.empty": "お気に入り未登録。アイテムを右クリックで★が付けられます。"
 }

@@ -1,8 +1,6 @@
 {
   "_comment": "OmniChest Română (ro_ro) — Fraze scurte, în spiritul traducerii oficiale române a Minecraft.",
-
   "config.omnichest.title": "Setări OmniChest",
-
   "config.omnichest.category.general": "General",
   "config.omnichest.category.sort": "Sortare pe categorii",
   "config.omnichest.category.compact": "Comprimare stive",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "Compatibilitate",
   "config.omnichest.category.keybind": "Taste",
   "config.omnichest.category.language": "Limbă",
-
   "config.omnichest.sub.lock.overlay": "Suprapunere & vizual",
   "config.omnichest.sub.lock.protect": "Protecție implicită",
   "config.omnichest.sub.ai.advanced": "Avansat (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Avansat (TemplateConfig)",
   "config.omnichest.sub.compat_detection": "Mod-uri detectate",
-
   "config.omnichest.general.enableMod": "Activează modul",
   "config.omnichest.general.enableMod.tooltip": "Comutator principal. Dezactivat = toate funcțiile sunt oprite.",
   "config.omnichest.general.debugMode": "Mod depanare",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = fără, 1.0 = implicit, 2.0 = dublu.",
   "config.omnichest.general.enableSounds": "Activează sunetele",
   "config.omnichest.general.enableSounds.tooltip": "Redă sunete UI proprii (sortare, depozitare etc.).",
-
   "config.omnichest.sort.enable": "Activează sortarea",
   "config.omnichest.sort.enable.tooltip": "Pornește/oprește toată sortarea pe categorii.",
   "config.omnichest.sort.insertEmptySeparator": "Slot gol ca separator",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "Aceeași ordine ca în inventarul creativ.",
   "config.omnichest.sort.autoCompactAfterSort": "Comprimă după sortare",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "După sortare unește automat stivele parțiale.",
-
   "config.omnichest.compact.enable": "Activează comprimarea",
   "config.omnichest.compact.compactPlayerInventory": "Și în inventar",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "Unește și stivele din inventarul jucătorului.",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "Animație de unire",
   "config.omnichest.compact.maxActionsPerTick": "Acțiuni / tick (max)",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "Limita superioară de click-uri pe tick.",
-
   "config.omnichest.deposit.enable": "Activează depozitarea",
   "config.omnichest.deposit.matchNbtComponents": "Compară NBT / componente",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "Mod strict: obiectele vrăjite se stivuiesc doar la vrăji identice.",
   "config.omnichest.deposit.ignoreEmptySlots": "Ignoră sloturile goale",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "Depozitează doar în cufere care conțin deja obiectul.",
   "config.omnichest.deposit.hotkey.notice": "Tasta depozitării auto.: Comenzi → categoria 'OmniChest'.",
-
   "config.omnichest.lock.enable": "Activează blocarea",
   "config.omnichest.lock.enableItemLockMode": "Blocare per obiect",
   "config.omnichest.lock.enableItemLockMode.tooltip": "Urmărește un obiect între sloturi (ex. târnăcop de diamant).",
@@ -72,7 +64,6 @@
   "config.omnichest.lock.protectOffhandByDefault": "Protejează mâna secund.",
   "config.omnichest.lock.protectArmorByDefault": "Protejează armura",
   "config.omnichest.lock.hotkey.notice": "Tastele de blocare: Comenzi → categoria 'OmniChest'.",
-
   "config.omnichest.search.enable": "Activează căutarea",
   "config.omnichest.search.searchRadius": "Rază (blocuri)",
   "config.omnichest.search.searchRadius.tooltip": "Mai mare = mai multe cufere, dar scanare mai scumpă.",
@@ -83,7 +74,6 @@
   "config.omnichest.search.resultSortMode": "Ordine rezultate",
   "config.omnichest.search.pinPersistUntilOpened": "Ac până la deschidere",
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "Acul și evidențierea rămân până când deschizi efectiv cufărul. Ignoră timpul de evidențiere.",
-
   "config.omnichest.ai.enableClassification": "Activează clasificarea",
   "config.omnichest.ai.learningMode": "Mod învățare",
   "config.omnichest.ai.learningMode.tooltip": "Ajustează ponderea categoriilor pe baza istoricului.",
@@ -97,7 +87,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "Permite cufere mixte",
   "config.omnichest.ai.autoDepositMaxDistance": "Distanță max.",
   "config.omnichest.ai.persistEnabled": "Salvează date învățate",
-
   "config.omnichest.template.enable": "Activează șabloanele",
   "config.omnichest.template.autoApplyTemplate": "Aplică auto.",
   "config.omnichest.template.autoApplyTemplate.tooltip": "Aplică șablonul potrivit automat la deschiderea cufărului.",
@@ -111,14 +100,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "Include depozit + comprimare",
   "config.omnichest.template.lockHotbar": "Blochează hotbar",
   "config.omnichest.template.skipPreview": "Sări peste confirmare",
-
   "config.omnichest.render.enableOverlay": "Activează suprapunerea",
   "config.omnichest.render.highlightColorRgb": "Culoare evidențiere",
   "config.omnichest.render.highlightColorRgb.tooltip": "Culoarea conturului cuferelor evidențiate.",
   "config.omnichest.render.showCategoryLabels": "Etichete de categorie",
   "config.omnichest.render.enableTooltips": "Tooltips active",
   "config.omnichest.render.guiAnimation": "Animații UI",
-
   "config.omnichest.compat.enableShaderCompatibility": "Compatibil. shader",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Folosește o cale de randare safe pentru shader cu Iris sau Oculus.",
   "config.omnichest.compat.safeOverlayRendering": "Randare sigură overlay",
@@ -134,7 +121,6 @@
   "config.omnichest.compat.status.yes": "da",
   "config.omnichest.compat.status.no": "nu",
   "config.omnichest.compat.detection.shader_active": "Pachet shader activ",
-
   "config.omnichest.sub.compat_resourcepack": "Compatibil. pachete de resurse",
   "config.omnichest.compat.enableResourcePackCompatibility": "Activează compat. pachet",
   "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "Comutator principal pentru straturile de siguranță textură/atlas/font. Layoutul, culorile și animațiile nu sunt afectate.",
@@ -144,9 +130,7 @@
   "config.omnichest.compat.fontSafetyMode.tooltip": "Taie sau reîncadrează textul în siguranță, ca fonturile Unicode/CJK/bitmap să nu depășească. Dimensiunile UI rămân la fel.",
   "config.omnichest.compat.debugTextureLogs": "Jurnale textură",
   "config.omnichest.compat.debugTextureLogs.tooltip": "Scrie jurnale la fiecare fallback de textură/font. Recomandat doar pentru diagnostic.",
-
   "config.omnichest.keybind.intro": "Toate tastele sunt în Comenzi → Taste → categoria 'OmniChest'.",
-
   "config.omnichest.language.intro": "Alege limba modului. \"System Default\" urmează Minecraft.",
   "config.omnichest.language.override": "Limba afișată",
   "config.omnichest.language.override.tooltip": "Suprascrie limba modului. Alege \"System Default\" pentru a urma Minecraft.",
@@ -158,7 +142,6 @@
   "config.omnichest.language.unicode_font_safety": "Siguranță font Unicode",
   "config.omnichest.language.unicode_font_safety.tooltip": "Taie textul non-ASCII în siguranță, ca să nu depășească widget-urile.",
   "config.omnichest.language.restart_hint": "Majoritatea textelor se actualizează imediat. Unele titluri necesită redeschiderea ecranului.",
-
   "omnichest.language.system_default": "Implicit sistem",
   "omnichest.language.en_us": "English",
   "omnichest.language.ja_jp": "日本語",
@@ -188,19 +171,16 @@
   "omnichest.language.uk_ua": "Українська",
   "omnichest.language.id_id": "Bahasa Indonesia",
   "omnichest.language.ms_my": "Bahasa Melayu",
-
   "omnichest.screen.search.title": "Căutare cufere",
   "omnichest.screen.template.save.title": "Salvează șablonul",
   "omnichest.screen.template.manager.title": "Șabloane",
   "omnichest.screen.template.preview.title": "Previzualizare șablon",
-
   "omnichest.button.reset": "Resetare",
   "omnichest.button.save": "Salvează",
   "omnichest.button.cancel": "Anulează",
   "omnichest.button.apply": "Aplică",
   "omnichest.button.close": "Închide",
   "omnichest.button.ok": "OK",
-
   "omnichest.button.deposit": "Depozit aceleași",
   "omnichest.button.compact": "Comprimare",
   "omnichest.button.search_network": "Căutare cufere",
@@ -213,50 +193,40 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Sortează",
   "omnichest.button.category_sort.tooltip": "Sortează conținutul cufărului pe categorii.\n\nGrupează după sens — construcție, lemn, minereu, mâncare…\nstivele identice se unesc.\n\nSloturile blocate nu se mișcă.",
-
   "omnichest.button.sort_distance": "Distanță",
   "omnichest.button.sort_count": "Cantitate",
   "omnichest.button.sort_name": "Nume",
   "omnichest.button.search_selected": "Caută selectate",
   "omnichest.button.clear_selection": "Șterge selecția",
   "omnichest.button.save_current_chest": "Salvează acest cufăr",
-
   "omnichest.editbox.search.label": "Caută",
   "omnichest.editbox.name.label": "Nume",
   "omnichest.editbox.search.hint.generic": "Caută...",
   "omnichest.editbox.search.hint.network": "Caută (ex. diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "Filtrează după nume",
   "omnichest.editbox.template_name.hint": "Nume șablon",
-
   "omnichest.search.summary": "Înreg.: %1$d  /  Rezultate: %2$d  /  Selectate: %3$d",
   "omnichest.search.hint": "Clic rând = selectare  /  \"Caută selectate\" = fixare  /  ESC = anulează",
-
   "omnichest.template.default_name": "Șablon %1$d",
   "omnichest.template.untitled": "(fără titlu)",
-
   "omnichest.template.kind.label": "Tip: %1$s",
   "omnichest.template.kind.exact": "Exact (obiect fixat)",
   "omnichest.template.kind.category": "Categorie (înlocuitori permiși)",
   "omnichest.template.kind.hybrid": "Hibrid (recomandat)",
-
   "omnichest.template.kind.badge.exact": "[Exact]",
   "omnichest.template.kind.badge.category": "[Cat.]",
   "omnichest.template.kind.badge.hybrid": "[Hibr.]",
-
   "omnichest.template.kind.help.exact": "Scândurile de stejar și de mesteacăn sunt obiecte diferite.",
   "omnichest.template.kind.help.category": "Obiecte din aceeași categorie se pot înlocui. (Ideal pentru cufere de materiale)",
   "omnichest.template.kind.help.hybrid": "Preferă originalul, în lipsă apelează la aceeași categorie.",
-
   "omnichest.template.manager.summary": "Salvate: %1$d  /  Afișate: %2$d",
   "omnichest.template.manager.hint": "Clic = Aplică (necesită cufăr) / Butoane dreapta / ESC = închide",
   "omnichest.template.manager.slot_rule_count": "%1$d sloturi / %2$d reguli",
-
   "omnichest.template.row.action.apply": "Aplică",
   "omnichest.template.row.action.duplicate": "Duplică",
   "omnichest.template.row.action.delete": "Șterge",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "Previzualizare: %1$s",
   "omnichest.template.preview.title_null": "(nimic)",
   "omnichest.template.preview.computing": "Calculez...",
@@ -267,29 +237,24 @@
   "omnichest.template.preview.move_row": "  slot %1$d  →  slot %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(interschimb)",
   "omnichest.template.preview.more_items": "...și încă %1$d",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[SLOT BLOCAT] §r§7Protejat de sortare",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[OBIECT BLOCAT] §r§7%1$s protejat",
   "omnichest.slot_lock.tooltip.session": "§b§l[BLOCARE SESIUNE] §r§7Slot cufăr (până la închidere)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[PROTEJAT] §r§7Hotbar (implicit)",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[PROTEJAT] §r§7Mâna secund. (implicit)",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[PROTEJAT] §r§7Armură (implicit)",
-
   "omnichest.slot_lock.chat.toggled": "[Blocare] slot %1$d comutat",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[Blocare] §oNu există blocări de șters.",
   "omnichest.slot_lock.chat.cleared": "§a[Blocare] §rȘterse %1$d (perm.) + %2$d (sesiune).",
   "omnichest.slot_lock.chat.confirm_clear": "§e[Blocare] §rApasă din nou în 1,5 s pentru a șterge %1$d blocări.",
-
   "omnichest.smart_storage.prefix": "[Depozit]",
   "omnichest.smart_storage.plan_empty": "[Depozit] Plan: niciun obiect / funcție inactivă",
   "omnichest.smart_storage.plan_header": "[Depozit] Plan:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7fără destinație",
-
   "omnichest.category_badge.confidence": " Încredere: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "Cufăr",
   "omnichest.container_type.trapped_chest": "Cufăr-capcană",
   "omnichest.container_type.double_chest": "Cufăr mare",
@@ -297,7 +262,6 @@
   "omnichest.container_type.barrel": "Butoi",
   "omnichest.container_type.shulker_box": "Cutie shulker",
   "omnichest.container_type.other": "Recipient",
-
   "omnichest.storage_category.building": "Materiale construcție",
   "omnichest.storage_category.wood": "Lemn",
   "omnichest.storage_category.ore": "Minereuri",
@@ -314,7 +278,6 @@
   "omnichest.storage_category.decoration": "Decorațiuni",
   "omnichest.storage_category.mixed": "Mixte",
   "omnichest.storage_category.unknown": "Nesortate",
-
   "omnichest.item_category.building": "Constr.",
   "omnichest.item_category.wood": "Lemn",
   "omnichest.item_category.stone": "Piatră",
@@ -331,35 +294,67 @@
   "omnichest.item_category.mob_drop": "Pradă",
   "omnichest.item_category.decoration": "Decor",
   "omnichest.item_category.misc": "Diverse",
-
   "omnichest.toggle.on": "§a✔ PORNIT",
   "omnichest.toggle.off": "§c✘ OPRIT",
-
   "omnichest.color_picker.title": "Selector culoare",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "OK",
   "omnichest.color_picker.cancel": "Anulează",
-
   "key.omnichest.open_search": "Deschide căutarea cuferelor",
   "key.omnichest.smart_deposit": "Arată planul de depozitare",
   "key.omnichest.toggle_slot_lock": "Blochează slotul indicat",
   "key.omnichest.clear_all_slot_locks": "Șterge toate blocările",
-
   "omnichest.keybind.line.open_search": "• Deschide căutarea: %1$s",
   "omnichest.keybind.line.smart_deposit": "• Depozitare smart: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• Blocare slot: %1$s",
   "omnichest.keybind.line.clear_all_locks": "• Șterge toate blocările: %1$s",
-
   "omnichest.controls.title": "Comenzi",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+Clic: blochează slot",
   "omnichest.controls.line.slot_lock_middle_click": "Clic mijloc: blochează slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Clic: blocare obiect",
   "omnichest.controls.line.alt_drag": "Alt+Tragere: blocare continuă",
   "omnichest.controls.line.shift_compact": "Shift+Comprimare: și jucător",
-
   "config.omnichest.group.basics": "De bază",
   "config.omnichest.group.item_sorting": "Sortare obiecte",
   "config.omnichest.group.protection_search": "Protecție & căutare",
-  "config.omnichest.group.appearance_input": "Aspect & input"
+  "config.omnichest.group.appearance_input": "Aspect & input",
+  "config.omnichest.search.enableCategoryTabs": "Activează file de categorie",
+  "config.omnichest.search.enableCategoryTabs.tooltip": "Afișează file în stil Inventar Creativ în partea de sus a căutării.",
+  "config.omnichest.search.enableFavorites": "Activează favoritele",
+  "config.omnichest.search.enableFavorites.tooltip": "Marchează obiectele cu ★ pentru a le sorta sus sau filtra în fila Favorite.",
+  "config.omnichest.search.favoriteHighlight": "Evidențiere favorite",
+  "config.omnichest.search.favoriteHighlight.tooltip": "Adaugă o strălucire aurie obiectelor favorite din listă.",
+  "config.omnichest.search.rememberLastDisplayMode": "Reține ultimul mod",
+  "config.omnichest.search.rememberLastDisplayMode.tooltip": "Activ restabilește ultimul mod ales la următoarea deschidere.",
+  "config.omnichest.search.compactTabMode": "Mod compact pentru file",
+  "config.omnichest.search.compactTabMode.tooltip": "Afișează filele doar ca pictograme, inclusiv cea selectată.",
+  "config.omnichest.search.defaultDisplayMode": "Mod implicit",
+  "config.omnichest.search.defaultDisplayMode.tooltip": "Modul inițial la deschiderea ecranului de căutare.",
+  "omnichest.search_category.all": "Toate",
+  "omnichest.search_category.favorites": "Favorite",
+  "omnichest.search_category.building": "Construcții",
+  "omnichest.search_category.wood": "Lemn",
+  "omnichest.search_category.stone": "Piatră",
+  "omnichest.search_category.ore": "Minereuri",
+  "omnichest.search_category.redstone": "Redstone",
+  "omnichest.search_category.farming": "Agricultură",
+  "omnichest.search_category.food": "Mâncare",
+  "omnichest.search_category.combat": "Luptă",
+  "omnichest.search_category.tool": "Unelte",
+  "omnichest.search_category.enchant": "Vrăjire",
+  "omnichest.search_category.potion": "Poțiuni",
+  "omnichest.search_category.decoration": "Decor",
+  "omnichest.search_category.nether": "Nether",
+  "omnichest.search_category.end": "End",
+  "omnichest.search_category.misc": "Diverse",
+  "omnichest.search.display_mode.label": "Mod afișare",
+  "omnichest.search.display_mode.compact_grid": "Grilă compactă",
+  "omnichest.search.display_mode.large_grid": "Grilă mare",
+  "omnichest.search.display_mode.list": "Listă",
+  "omnichest.search.display_mode.detailed": "Detaliat",
+  "omnichest.search.display_mode.icon_only": "Doar pictograme",
+  "omnichest.search.favorites.add_tooltip": "Click dreapta sau Alt+click pentru a adăuga la favorite",
+  "omnichest.search.favorites.remove_tooltip": "Click dreapta sau Alt+click pentru a elimina din favorite",
+  "omnichest.search.favorites.empty": "Niciun favorit. Click dreapta pe un obiect pentru a-l marca ★."
 }
