@@ -57,13 +57,15 @@ public final class SearchIndex {
         for (ContainerSnapshot snapshot : ChestNetworkManager.get().snapshots()) {
             // 同 1 コンテナ内では、 (Item + Components) 単位で個数を合計する。
             // Key は「同一性比較用の代表 ItemStack」とし、
-            // ItemStack#isSameItemSameComponents で同一判定する。
+            // SearchMatcher#exactComponentsEqual で同一判定する
+            // (= 内部は ItemStack#isSameItemSameComponents だが、 「Sharpness V ≠ Sharpness IV」
+            // を意図したコール元の意図を呼び名で明示する)。
             List<StackAgg> aggs = new ArrayList<>();
             outer: for (ItemStack stack : snapshot.items()) {
                 if (stack.isEmpty())
                     continue;
                 for (StackAgg agg : aggs) {
-                    if (ItemStack.isSameItemSameComponents(agg.representative, stack)) {
+                    if (SearchMatcher.exactComponentsEqual(agg.representative, stack)) {
                         agg.total += stack.getCount();
                         continue outer;
                     }
@@ -115,32 +117,14 @@ public final class SearchIndex {
 
     /**
      * 1 つの ItemStack が「lowercase 化済みクエリ」にマッチするかを判定する。
+     *
+     * <p>
+     * 実体は {@link SearchMatcher#matchesQuery(ItemStack, String)}。 後者は
+     * Item ID / 翻訳名 に加え、 Enchanted Book と通常エンチャ品の <b>エンチャント名 / レベル</b>
+     * もクエリで拾えるよう拡張されている。
      */
     public static boolean matches(ItemStack stack, String lowerQuery) {
-        if (stack.isEmpty())
-            return false;
-        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
-
-        // Item ID (フル / path のみ / namespace のみ) の部分一致
-        String full = id.toString().toLowerCase(Locale.ROOT);
-        if (full.contains(lowerQuery))
-            return true;
-        if (id.getPath().toLowerCase(Locale.ROOT).contains(lowerQuery))
-            return true;
-        if (id.getNamespace().toLowerCase(Locale.ROOT).contains(lowerQuery))
-            return true;
-
-        // 翻訳キー (Item 側の descriptionId は ItemStack の上書き名前を含まない)
-        String descId = stack.getItem().getDescriptionId();
-        if (descId != null && descId.toLowerCase(Locale.ROOT).contains(lowerQuery))
-            return true;
-
-        // 表示名 (カスタム名 / 翻訳済み)
-        String display = stack.getHoverName().getString();
-        if (display != null && display.toLowerCase(Locale.ROOT).contains(lowerQuery))
-            return true;
-
-        return false;
+        return SearchMatcher.matchesQuery(stack, lowerQuery);
     }
 
     /** 1 コンテナ内での同種スタック集計用の作業オブジェクト。 */

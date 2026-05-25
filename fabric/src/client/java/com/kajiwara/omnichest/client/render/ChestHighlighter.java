@@ -12,7 +12,6 @@ import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
@@ -98,6 +97,20 @@ public final class ChestHighlighter {
 
     /** ピンテキストのワールドスケール (= 1 font-pixel あたりのワールド単位)。 */
     private static final float PIN_TEXT_SCALE = 0.025f;
+
+    /**
+     * テキストのみ追加で適用する縮小係数。 1.0 = 既存サイズ、 0.85〜0.9 で「少し小さい」。
+     *
+     * <p>
+     * <b>適用範囲</b>: テキスト (ヘッダ「▼ 距離」 + 各エントリ行の「アイテム名 ×個数」) のみ。
+     * アイコン / 行背景 / 行レイアウト / ピン位置 / アンカ位置には影響を与えない
+     * (= 「Text scale のみ微調整」 要件に従う)。
+     *
+     * <p>
+     * <b>実装</b>: テキスト submit の直前に {@link PoseStack#scale(float, float, float)} を 1 軸ぶん
+     * 適用し、 直後に pop で破棄する。 これにより以後の描画に副作用を残さない。
+     */
+    private static final float PIN_TEXT_LOCAL_SCALE = 0.88f;
 
     /**
      * 画面サイズ一定化のための「基準距離」(m)。
@@ -380,6 +393,16 @@ public final class ChestHighlighter {
 
     /**
      * 1 ブロック分の wireframe box を camera-relative 座標で submit する。
+     *
+     * <p>
+     * 実描画は {@link WireHighlightRenderer#submitWireBox} に委譲する。
+     * これにより Iris / Sodium + Iris / Complementary / BSL / SEUS 等 shader 環境では
+     * 「shader-safe QUAD 経路」 が自動で選択され、 ワイヤーが消失する不具合を回避する。
+     *
+     * <p>
+     * <b>呼び出し互換</b>: 既存呼び出し側は xrayLines() の RenderType を渡してくるが、
+     * 委譲先が環境別に最適な RenderType を内部選択するため、 引数 type は無視して構わない
+     * (= 既存シグネチャ温存のため受け取るのみ)。
      */
     private static void submitBox(SubmitNodeCollector queue, PoseStack matrices, RenderType type,
             BlockPos pos, Vec3 camPos, int color) {
@@ -391,36 +414,9 @@ public final class ChestHighlighter {
         float y1 = y0 + 1.0f + BOX_INFLATE * 2.0f;
         float z1 = z0 + 1.0f + BOX_INFLATE * 2.0f;
 
-        queue.submitCustomGeometry(matrices, type, (pose, consumer) -> {
-            // 底面 4 辺
-            addLine(consumer, pose, x0, y0, z0, x1, y0, z0, color);
-            addLine(consumer, pose, x1, y0, z0, x1, y0, z1, color);
-            addLine(consumer, pose, x1, y0, z1, x0, y0, z1, color);
-            addLine(consumer, pose, x0, y0, z1, x0, y0, z0, color);
-            // 上面 4 辺
-            addLine(consumer, pose, x0, y1, z0, x1, y1, z0, color);
-            addLine(consumer, pose, x1, y1, z0, x1, y1, z1, color);
-            addLine(consumer, pose, x1, y1, z1, x0, y1, z1, color);
-            addLine(consumer, pose, x0, y1, z1, x0, y1, z0, color);
-            // 垂直 4 辺
-            addLine(consumer, pose, x0, y0, z0, x0, y1, z0, color);
-            addLine(consumer, pose, x1, y0, z0, x1, y1, z0, color);
-            addLine(consumer, pose, x1, y0, z1, x1, y1, z1, color);
-            addLine(consumer, pose, x0, y0, z1, x0, y1, z1, color);
-        });
-    }
-
-    private static void addLine(VertexConsumer c, PoseStack.Pose pose,
-            float x1, float y1, float z1, float x2, float y2, float z2, int color) {
-        float nx = x2 - x1, ny = y2 - y1, nz = z2 - z1;
-        float len = Mth.sqrt(nx * nx + ny * ny + nz * nz);
-        if (len > 1e-6f) {
-            nx /= len;
-            ny /= len;
-            nz /= len;
-        }
-        c.addVertex(pose, x1, y1, z1).setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(LINE_WIDTH);
-        c.addVertex(pose, x2, y2, z2).setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(LINE_WIDTH);
+        // shader 環境を自動判定し、 安全な描画経路を選択する。
+        WireHighlightRenderer.submitWireBox(queue, matrices,
+                x0, y0, z0, x1, y1, z1, color, LINE_WIDTH);
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -434,8 +430,17 @@ public final class ChestHighlighter {
      *
      * <p>
      * <b>SEE_THROUGH モード</b>: テキスト / 黒帯 は {@link Font.DisplayMode#SEE_THROUGH} 系の
-     * 描画パスを使うのでブロック越しでも常に視認できる。 アイコン (= 真の 3D アイテム描画) は
-     * 同じ pose を共有するためテキスト と <b>1px の精度で揃って</b> 表示される。
+     * 描画パスを使うのでブロック越しでも常に視認できる
+     * (= 「どんなブロック越しでも ピン / ラベル が表示」 要件)。
+     * 黒帯はアイコン領域の背後まで覆うため、 仮にアイコン本体 (= 真の 3D アイテム描画) が
+     * 後段で depth に削られても、 ユーザにはピン位置とアイテム名・個数が常時可視となる。
+     * アイコンは同じ pose を共有するためテキスト と <b>1px の精度で揃って</b> 表示される。
+     *
+     * <p>
+     * <b>描画深度</b>: テキストおよび黒帯は {@link Font.DisplayMode#SEE_THROUGH} /
+     * {@link RenderTypes#textBackgroundSeeThrough()} がいずれも NO_DEPTH_TEST 系の
+     * RenderType を内部で選択する。 これにより明示的に depth state を弄らずに
+     * 「壁越しに見えるピン」 を実現する (= Render state restore は RenderType 側で保証される)。
      *
      * <p>
      * <b>レイアウト</b>:
@@ -528,10 +533,21 @@ public final class ChestHighlighter {
             int headerRowIndex = totalRows - 1;
             float headerY = -(headerRowIndex + 1) * (float) rowSpacing + 1.0f;
             int headerWidth = font.width(headerComp);
-            queue.submitText(matrices, -headerWidth / 2.0f, headerY,
-                    headerComp.getVisualOrderText(),
-                    false, Font.DisplayMode.SEE_THROUGH,
-                    0xF000F0, 0xFFFFFFFF, PIN_BG_ARGB, 0);
+            // テキストのみ追加スケールを適用 (= 「Text scale のみ微調整」 要件)。
+            // 中央揃えの基準座標を残すため、 scale 前の座標で submit 位置を計算してから
+            // 局所 push/pop で囲む (= 他要素への副作用なし)。
+            float headerTextX = -headerWidth / 2.0f;
+            matrices.pushPose();
+            try {
+                matrices.translate(headerTextX, headerY, 0);
+                matrices.scale(PIN_TEXT_LOCAL_SCALE, PIN_TEXT_LOCAL_SCALE, 1.0f);
+                queue.submitText(matrices, 0, 0,
+                        headerComp.getVisualOrderText(),
+                        false, Font.DisplayMode.SEE_THROUGH,
+                        0xF000F0, 0xFFFFFFFF, PIN_BG_ARGB, 0);
+            } finally {
+                matrices.popPose();
+            }
 
             // ─── (b) エントリ行 — 左揃え、 行ごとに [アイコン] [テキスト] ───
             for (int i = 0; i < entries.size(); i++) {
@@ -543,6 +559,7 @@ public final class ChestHighlighter {
 
                 // 行頭 (= アイコン位置) の黒帯背景。 アイコン → テキスト が 1 本の黒帯に乗って見えるよう、
                 // テキスト bg と 1px だけ重ねる (= 接合部の隙間を消す)。
+                // 行レイアウト / アイコンサイズ / 黒帯サイズ は変更しない (= 既存仕様温存)。
                 float textX = entryBlockLeftX + entryIconSize + entryIconGap;
                 submitPinRowBg(matrices, queue,
                         entryBlockLeftX - 1, rowY - 1,
@@ -555,10 +572,18 @@ public final class ChestHighlighter {
                         e.stack, entryBlockLeftX, rowY, entryIconSize);
 
                 // テキストはアイコンの右隣 (icon size + gap だけずらす)。
+                // テキストのみ局所スケールを適用 (アイコン / 行 bg はサイズ維持)。
                 FormattedCharSequence seq = body.getVisualOrderText();
-                queue.submitText(matrices, textX, rowY, seq,
-                        false, Font.DisplayMode.SEE_THROUGH,
-                        0xF000F0, 0xFFFFFFFF, PIN_BG_ARGB, 0);
+                matrices.pushPose();
+                try {
+                    matrices.translate(textX, rowY, 0);
+                    matrices.scale(PIN_TEXT_LOCAL_SCALE, PIN_TEXT_LOCAL_SCALE, 1.0f);
+                    queue.submitText(matrices, 0, 0, seq,
+                            false, Font.DisplayMode.SEE_THROUGH,
+                            0xF000F0, 0xFFFFFFFF, PIN_BG_ARGB, 0);
+                } finally {
+                    matrices.popPose();
+                }
             }
         } finally {
             matrices.popPose();
