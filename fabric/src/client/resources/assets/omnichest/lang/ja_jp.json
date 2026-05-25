@@ -135,6 +135,16 @@
   "config.omnichest.compat.status.no": "なし",
   "config.omnichest.compat.detection.shader_active": "シェーダーパック使用中",
 
+  "config.omnichest.sub.compat_resourcepack": "リソースパック互換",
+  "config.omnichest.compat.enableResourcePackCompatibility": "リソースパック互換を有効化",
+  "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "テクスチャ / アトラス / フォント の安全層をまとめて ON/OFF します。 UI のレイアウト・色・アニメーションは変更されません。",
+  "config.omnichest.compat.safeTextureFallback": "安全なテクスチャ フォールバック",
+  "config.omnichest.compat.safeTextureFallback.tooltip": "テクスチャ / スプライト が見つからない時に、 クラッシュ や描画消失ではなく バニラの missing-texture を描いて継続します。",
+  "config.omnichest.compat.fontSafetyMode": "フォント安全モード",
+  "config.omnichest.compat.fontSafetyMode.tooltip": "Unicode / CJK / ビットマップフォント パックでも文字がはみ出ないよう安全に切詰めます。 UI サイズは変更しません。",
+  "config.omnichest.compat.debugTextureLogs": "テクスチャ ログを詳細出力",
+  "config.omnichest.compat.debugTextureLogs.tooltip": "テクスチャ / スプライト / フォント が fallback した際に詳細ログを出します。 リソースパックの不具合切り分け時のみ ON にしてください。",
+
   "config.omnichest.keybind.intro": "全てのキーはバニラの コントロール → キー設定 の 'OmniChest' カテゴリにあります。",
 
   "config.omnichest.language.intro": "MOD の表示言語を選択できます。 「System Default」 は Minecraft 本体の言語に追従します。",

@@ -60,6 +60,33 @@ public final class CompatCategoryBuilder {
                 ConfigLabels.tooltip("compat.debugRenderLogs",
                         "Print verbose logs from the compatibility layer. Recommended only when reporting an issue."));
 
+        // ─── Resource Pack 互換 (texture / atlas / font の安全層) ────────────
+        // UI レイアウト・色・サイズ・アニメーションは変更しない。 ここで切り替えるのは
+        // 「リソース取得失敗 / 不正 sprite / カスタム font 環境」 での <i>fallback 挙動</i> のみ。
+        b.subHeader(ConfigLabels.sub("compat_resourcepack", "Resource Pack Compatibility"), sub -> {
+            sub.toggle(ConfigLabels.entry("compat.enableResourcePackCompatibility",
+                            "Enable Resource Pack Compatibility"),
+                    cfg.enableResourcePackCompatibility,
+                    v -> cfg.enableResourcePackCompatibility = v,
+                    ConfigLabels.tooltip("compat.enableResourcePackCompatibility",
+                            "Master switch for texture / atlas / font safety layers. UI layout, colors and animations are not affected."));
+
+            sub.toggle(ConfigLabels.entry("compat.safeTextureFallback", "Safe Texture Fallback"),
+                    cfg.safeTextureFallback, v -> cfg.safeTextureFallback = v,
+                    ConfigLabels.tooltip("compat.safeTextureFallback",
+                            "When a texture or sprite is missing, draw a vanilla missing-texture placeholder instead of crashing or dropping the frame."));
+
+            sub.toggle(ConfigLabels.entry("compat.fontSafetyMode", "Font Safety Mode"),
+                    cfg.fontSafetyMode, v -> cfg.fontSafetyMode = v,
+                    ConfigLabels.tooltip("compat.fontSafetyMode",
+                            "Truncate or wrap text safely so unicode / CJK / bitmap font packs do not overflow. UI sizes stay unchanged."));
+
+            sub.toggle(ConfigLabels.entry("compat.debugTextureLogs", "Debug Texture Logs"),
+                    cfg.debugTextureLogs, v -> cfg.debugTextureLogs = v,
+                    ConfigLabels.tooltip("compat.debugTextureLogs",
+                            "Print verbose logs whenever a texture / sprite / font falls back. Recommended only when diagnosing a resource pack."));
+        });
+
         // 検出結果のサマリ (= 編集不能の text 行)。
         // ステータス値 (yes/no) と「shader pack active」 はローカライズ対象、 MOD 名はブランド名なので literal。
         b.subHeader(ConfigLabels.sub("compat_detection", "Detected Mods"), sub -> {

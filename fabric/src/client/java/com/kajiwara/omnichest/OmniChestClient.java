@@ -6,6 +6,7 @@ import com.kajiwara.omnichest.classify.ClassifyConfig;
 import com.kajiwara.omnichest.classify.StorageMemory;
 import com.kajiwara.omnichest.client.ClientKeyBindings;
 import com.kajiwara.omnichest.client.compat.CompatManager;
+import com.kajiwara.omnichest.client.compat.resource.ResourcePackCompatManager;
 import com.kajiwara.omnichest.client.render.ChestHighlighter;
 import com.kajiwara.omnichest.config.ConfigManager;
 import com.kajiwara.omnichest.i18n.LanguageManager;
@@ -64,6 +65,13 @@ public class OmniChestClient implements ClientModInitializer {
         // 既存サブシステムの挙動には影響しない (= 検出 + ログ + 設定読み取りのみ)。
         // 例外時はクラスタ内部で握り潰してログに落とすので、 ここで try/catch しなくても安全。
         CompatManager.initialize();
+
+        // ─── Resource Pack 互換 (texture / atlas / font 安全層) ───
+        // CompatManager と並列の facade。 既存 UI / ロジック / アニメーション / 色 には触らず、
+        // 「リソース取得失敗時に missing-texture fallback」 「カスタム font pack でのテキスト切詰め」
+        // などの保険レイヤを 1 つだけ初期化する (= ReloadSafetyListener 登録 + summary ログ 1 行)。
+        // 例外は内部で握り潰してログに落とすため、 起動を止めない。
+        ResourcePackCompatManager.initialize();
 
         // ─── 表示言語の override を反映 ───
         // GeneralConfig.languageOverride ("system" / "en_us" / ...) を LanguageManager に

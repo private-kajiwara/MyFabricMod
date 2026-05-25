@@ -46,4 +46,31 @@ public final class CompatConfig {
 
     /** レンダリング系の詳細 INFO ログを出力する。 */
     public boolean debugRenderLogs = false;
+
+    // ─── Resource Pack 互換 (texture/atlas/font) ────────────────────────
+    //
+    // 既存 UI ロジック・レイアウト・色・アニメーションは変更しない。 ここで切り替わるのは
+    // 「テクスチャ取得 / sprite lookup / font 描画」 が失敗した時に MOD 全体クラッシュへ
+    // 連鎖させず、 safe fallback を踏ませるための『保険レイヤ』のみ。 既定値は全て有効寄り。
+    //
+    // - {@link #enableResourcePackCompatibility} ─ 全 sub-スイッチの大元 (OFF にすると以下 3 つは
+    //   一切評価されず、 1.21 系既定動作のままになる)。
+    // - {@link #safeTextureFallback} ─ texture / sprite 取得失敗時に missingno fallback で
+    //   描画を継続するか (= クラッシュ禁止 ポリシー)。
+    // - {@link #fontSafetyMode} ─ tooltip / ラベル の text を unicode / CJK / カスタム font
+    //   でも切れにくくする (truncation + safe width 計算)。 UI レイアウトは変えない。
+    // - {@link #debugTextureLogs} ─ 「どの texture が fallback したか」 を詳細ログに出す
+    //   (= リソースパック作者向けの診断補助)。 通常は OFF。
+
+    /** Resource pack 互換レイヤ全体の ON/OFF。 OFF にすると以下のサブスイッチは無効。 */
+    public boolean enableResourcePackCompatibility = true;
+
+    /** Texture / sprite 取得失敗時に missing texture fallback を使って描画継続する。 */
+    public boolean safeTextureFallback = true;
+
+    /** Unicode / CJK / bitmap font 環境で text overflow を防ぐ安全モード。 UI サイズは変更しない。 */
+    public boolean fontSafetyMode = true;
+
+    /** Texture / atlas / font の詳細ログ (どのリソースが fallback したか) を出す。 */
+    public boolean debugTextureLogs = false;
 }
