@@ -77,15 +77,22 @@ public final class TextDescriptionRow extends RowEntry {
     public void render(GuiGraphics g, int contentLeft, int rowY, int width,
             int mouseX, int mouseY, float partialTick) {
         Font font = Minecraft.getInstance().font;
+        boolean rtl = com.kajiwara.omnichest.i18n.RTLLayoutManager.get().isRtl();
         if (this.wrappedLines.isEmpty()) {
             // 念のためのフォールバック (= layout より先に render が呼ばれた場合)。
-            g.drawString(font, this.label, contentLeft + LEFT_PADDING,
+            int fallbackX = rtl
+                    ? contentLeft + width - RIGHT_PADDING - font.width(this.label)
+                    : contentLeft + LEFT_PADDING;
+            g.drawString(font, this.label, fallbackX,
                     rowY + (getHeight() - 8) / 2, 0xFFAAAAAA, false);
             return;
         }
         int lineY = rowY + 4;
         for (FormattedCharSequence line : this.wrappedLines) {
-            g.drawString(font, line, contentLeft + LEFT_PADDING, lineY, 0xFFAAAAAA, false);
+            int lineX = rtl
+                    ? contentLeft + width - RIGHT_PADDING - font.width(line)
+                    : contentLeft + LEFT_PADDING;
+            g.drawString(font, line, lineX, lineY, 0xFFAAAAAA, false);
             lineY += LINE_HEIGHT;
         }
     }

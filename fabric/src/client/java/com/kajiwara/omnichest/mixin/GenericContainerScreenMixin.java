@@ -320,6 +320,15 @@ public abstract class GenericContainerScreenMixin extends Screen {
     @Inject(method = "init", at = @At("TAIL"))
     private void cits$initWidgets(CallbackInfo ci) {
         // ───────────────────────────────────────────────────────────
+        // RTL ロケール時の初期レイアウト方向
+        // ユーザーが ◀▶ で明示的に切替するまでの初期値だけ反転する。
+        // 既存挙動 (LTR 言語) は cits$layoutRight=true のまま、 配置・色・動作は不変。
+        // ───────────────────────────────────────────────────────────
+        if (com.kajiwara.omnichest.i18n.RTLLayoutManager.get().isRtl()) {
+            this.cits$layoutRight = false;
+        }
+
+        // ───────────────────────────────────────────────────────────
         // (1) 「Deposit Matching」ボタンの追加
         // 対応している ScreenHandler のときだけ生成する。
         // 非対応 (例: InventoryScreen の InventoryMenu) では生成しない。

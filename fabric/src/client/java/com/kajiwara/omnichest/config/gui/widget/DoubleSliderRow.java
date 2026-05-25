@@ -53,7 +53,7 @@ public final class DoubleSliderRow extends RowEntry {
     public void layout(int x, int y, int width) {
         this.y = y;
         if (this.slider == null) return;
-        int bx = x + width - ControlSize.CONTROL_WIDTH - ControlSize.CONTROL_RIGHT_MARGIN;
+        int bx = controlX(x, width, ControlSize.CONTROL_WIDTH);
         int by = y + (getHeight() - ControlSize.CONTROL_HEIGHT) / 2;
         this.slider.setX(bx);
         this.slider.setY(by);

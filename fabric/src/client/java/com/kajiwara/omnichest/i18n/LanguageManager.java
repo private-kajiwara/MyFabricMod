@@ -32,6 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * <b>翻訳不足時のフォールバック順</b>:
  * <ol>
  *   <li>ユーザー選択言語</li>
+ *   <li>{@link LocaleMetadata#fallback()} が指す中間 locale (例: nb_no → sv_se)
+ *       — 言語親類関係を活かして翻訳率を底上げ。 連鎖は 1 段までに制限し循環を防ぐ。</li>
  *   <li>{@code en_us}</li>
  *   <li>呼び出し側が渡した fallback リテラル</li>
  * </ol>
@@ -108,7 +110,19 @@ public final class LanguageManager {
         if (opt == LanguageOption.SYSTEM_DEFAULT) {
             return null;
         }
+        // 1) ユーザー選択言語
         String template = lookup(opt, key);
+
+        // 2) metadata.fallback で指定された中間 locale
+        //    (en_us は最後で必ず引かれるので、 ここでは「en_us 以外の中間」だけを試す)。
+        if (template == null) {
+            String midCode = opt.metadata().fallback();
+            if (midCode != null && !"en_us".equals(midCode) && !midCode.equals(opt.code())) {
+                template = lookupRaw(midCode, key);
+            }
+        }
+
+        // 3) en_us フォールバック
         if (template == null) {
             template = lookupEnglishFallback(key);
         }
@@ -116,6 +130,12 @@ public final class LanguageManager {
             return null;
         }
         return formatSafely(template, args);
+    }
+
+    /** lang コード文字列で 1 段だけ生 lookup (= 内部用)。 */
+    private String lookupRaw(String code, String key) {
+        Map<String, String> map = this.loaded.computeIfAbsent(code, LanguageManager::loadLang);
+        return map.get(key);
     }
 
     /**

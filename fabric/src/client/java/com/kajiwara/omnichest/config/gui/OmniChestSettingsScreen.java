@@ -10,6 +10,7 @@ import com.kajiwara.omnichest.config.gui.widget.TabGroup;
 import com.kajiwara.omnichest.config.gui.widget.TabModel;
 import com.kajiwara.omnichest.i18n.Keys;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
+import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -280,10 +281,37 @@ public final class OmniChestSettingsScreen extends Screen {
     // 寸法ヘルパ
     // ════════════════════════════════════════════════════════════════════
 
-    private int sidebarLeft() { return 0; }
+    /**
+     * 現在のロケールが RTL かどうか。 サイドバーとコンテンツ全体を左右反転させる
+     * 唯一のトリガ。 値は {@link RTLLayoutManager} に従い、 言語切替の瞬間に切り替わる。
+     */
+    private boolean rtl() {
+        return RTLLayoutManager.get().isRtl();
+    }
+
+    /** サイドバー全体 (= 背景塗り + 区切り線含む) の左端 X。 */
+    private int sidebarLeft() { return rtl() ? this.width - SIDEBAR_WIDTH : 0; }
     private int sidebarTop() { return HEADER_HEIGHT; }
-    private int sidebarRight() { return SIDEBAR_WIDTH; }
+    /** サイドバー全体の右端 X。 */
+    private int sidebarRight() { return rtl() ? this.width : SIDEBAR_WIDTH; }
     private int sidebarBottom() { return this.height - FOOTER_HEIGHT; }
+
+    /**
+     * タブ ビューポート (= タブ ラベルが描画される領域) の左端 X。
+     * LTR: 0 (= 画面左端)。 V スクロールバーは右端側。
+     * RTL: width - SIDEBAR_WIDTH + SB_V_W (= V スクロールバーぶんだけ内側へ寄せる)。
+     */
+    private int sidebarTabViewportLeft() {
+        return rtl() ? this.width - SIDEBAR_WIDTH + SB_V_W : 0;
+    }
+    /** タブ ビューポートの右端 X。 */
+    private int sidebarTabViewportRight() {
+        return rtl() ? this.width : SIDEBAR_WIDTH - SB_V_W;
+    }
+    /** V スクロールバーの左端 X。 LTR=サイドバー右寄り / RTL=サイドバー左寄り。 */
+    private int sidebarVScrollbarLeft() {
+        return rtl() ? this.width - SIDEBAR_WIDTH : SIDEBAR_WIDTH - SB_V_W;
+    }
 
     /** タブ ビューポートの可視幅 (= 縦スクロールバーぶんを引いた値)。 */
     private int sidebarTabViewportW() {
@@ -602,16 +630,18 @@ public final class OmniChestSettingsScreen extends Screen {
     private void renderSidebar(GuiGraphics g, int mouseX, int mouseY) {
         int top = sidebarTop();
         int bottom = sidebarBottom();
+        int left = sidebarLeft();
         int right = sidebarRight();
 
         // 背景 (濃い目)。
-        g.fill(sidebarLeft(), top, right, bottom, COLOR_SIDEBAR_BG);
+        g.fill(left, top, right, bottom, COLOR_SIDEBAR_BG);
 
-        // タブ領域 (= スクロールバー 2 本ぶんを除外)。
-        int viewportLeft = 0;
-        int viewportRight = SIDEBAR_WIDTH - SB_V_W;
+        // タブ領域 (= スクロールバー 2 本ぶんを除外)。 LTR / RTL で X の範囲が変わる。
+        int viewportLeft = sidebarTabViewportLeft();
+        int viewportRight = sidebarTabViewportRight();
         int viewportTop = top;
         int viewportBottom = bottom - SB_H_H;
+        boolean rtl = rtl();
 
         clampSidebarScroll();
 
@@ -619,7 +649,12 @@ public final class OmniChestSettingsScreen extends Screen {
         g.enableScissor(viewportLeft, viewportTop, viewportRight, viewportBottom);
         Font font = this.font;
         int yCursor = viewportTop - (int) Math.round(this.sidebarScrollY);
-        int xBase = viewportLeft - (int) Math.round(this.sidebarScrollX);
+        // 文字の X 基準点: LTR は viewportLeft からの「左→右」スクロール, RTL は
+        // viewportRight からの「右→左」スクロールで反映する (= テキストの「先頭」が常に
+        // ロケールの主たる読み開始側に寄るようにする)。
+        int xBase = rtl
+                ? viewportRight + (int) Math.round(this.sidebarScrollX)
+                : viewportLeft - (int) Math.round(this.sidebarScrollX);
 
         for (SidebarEntry entry : this.sidebarEntries) {
             int entryTop = yCursor;
@@ -630,11 +665,11 @@ public final class OmniChestSettingsScreen extends Screen {
             if (entryTop + entryH < viewportTop || entryTop > viewportBottom) continue;
 
             if (entry instanceof HeaderEntry h) {
-                renderGroupHeader(g, font, h, entryTop, entryH, xBase, viewportLeft, viewportRight);
+                renderGroupHeader(g, font, h, entryTop, entryH, xBase, viewportLeft, viewportRight, rtl);
             } else if (entry instanceof TabEntry t) {
                 renderTabEntry(g, font, t, entryTop, entryH, xBase,
                         viewportLeft, viewportRight, viewportTop, viewportBottom,
-                        mouseX, mouseY);
+                        mouseX, mouseY, rtl);
             }
         }
         g.disableScissor();
@@ -643,8 +678,9 @@ public final class OmniChestSettingsScreen extends Screen {
         renderSidebarVScrollbar(g, mouseX, mouseY);
         renderSidebarHScrollbar(g, mouseX, mouseY);
 
-        // 右端の縦区切り (= サイドバーとコンテンツの境界を明確に)。
-        g.fill(SIDEBAR_WIDTH, top, SIDEBAR_WIDTH + 1, bottom, COLOR_SEP);
+        // サイドバーとコンテンツの境界線 (= LTR は右端、 RTL は左端の 1px ライン)。
+        int sepX = rtl ? this.width - SIDEBAR_WIDTH - 1 : SIDEBAR_WIDTH;
+        g.fill(sepX, top, sepX + 1, bottom, COLOR_SEP);
     }
 
     /**
@@ -657,26 +693,31 @@ public final class OmniChestSettingsScreen extends Screen {
      * (= 1px シフト重ね描き) を出してくれるため、 多言語で同じく太く見える。
      */
     private void renderGroupHeader(GuiGraphics g, Font font, HeaderEntry h,
-            int entryTop, int entryH, int xBase, int viewportLeft, int viewportRight) {
+            int entryTop, int entryH, int xBase,
+            int viewportLeft, int viewportRight, boolean rtl) {
         // 「上の隙間」は描画しない (= 透明にして区切りとして機能させる)。
         int textAreaTop = entryTop + (h.first() ? 0 : GROUP_HEADER_TOP_GAP);
         int textAreaH = entryH - (h.first() ? 0 : GROUP_HEADER_TOP_GAP);
         int textY = textAreaTop + (textAreaH - 8) / 2;
-        int textX = xBase + TAB_LABEL_PAD_LEFT;
         Component boldTitle = h.title().copy().withStyle(ChatFormatting.BOLD);
+        // LTR は左端からの padding、 RTL は右端からの padding で右寄せ。
+        int textX = rtl
+                ? xBase - TAB_LABEL_PAD_LEFT - font.width(boldTitle)
+                : xBase + TAB_LABEL_PAD_LEFT;
         g.drawString(font, boldTitle, textX, textY, COLOR_GROUP_HEADER_TEXT, false);
         // ヘッダ下に薄い水平ライン (= タブとの区切りを視覚化)。
+        // RTL のときは余白側が逆になるよう左右の引き量を入れ替える。
         int lineY = textAreaTop + textAreaH - 1;
-        g.fill(viewportLeft + TAB_LABEL_PAD_LEFT, lineY,
-                viewportRight - 4, lineY + 1,
-                COLOR_GROUP_HEADER_UNDERLINE);
+        int lineX1 = rtl ? viewportLeft + 4 : viewportLeft + TAB_LABEL_PAD_LEFT;
+        int lineX2 = rtl ? viewportRight - TAB_LABEL_PAD_LEFT : viewportRight - 4;
+        g.fill(lineX1, lineY, lineX2, lineY + 1, COLOR_GROUP_HEADER_UNDERLINE);
     }
 
     /** タブ 1 件を描画する (= 旧 renderSidebar の 1 イテレーション分を関数化)。 */
     private void renderTabEntry(GuiGraphics g, Font font, TabEntry t,
             int entryTop, int entryH, int xBase,
             int viewportLeft, int viewportRight, int viewportTop, int viewportBottom,
-            int mouseX, int mouseY) {
+            int mouseX, int mouseY, boolean rtl) {
         boolean active = (t.flatIndex() == this.activeTab);
         boolean hovered = mouseX >= viewportLeft && mouseX < viewportRight
                 && mouseY >= entryTop && mouseY < entryTop + entryH
@@ -687,17 +728,26 @@ public final class OmniChestSettingsScreen extends Screen {
             g.fill(viewportLeft, entryTop, viewportRight, entryTop + entryH, bg);
         }
         if (active) {
-            g.fill(viewportLeft, entryTop, viewportLeft + 2, entryTop + entryH,
-                    COLOR_TAB_ACTIVE_LINE);
+            // active indicator は「ロケールの読み開始側」(LTR=左端 / RTL=右端) に立てる。
+            if (rtl) {
+                g.fill(viewportRight - 2, entryTop, viewportRight, entryTop + entryH,
+                        COLOR_TAB_ACTIVE_LINE);
+            } else {
+                g.fill(viewportLeft, entryTop, viewportLeft + 2, entryTop + entryH,
+                        COLOR_TAB_ACTIVE_LINE);
+            }
         }
         int textColor = active ? COLOR_TAB_ACTIVE_LINE : (hovered ? 0xFFFFFFFF : 0xFFCCCCCC);
         int textY = entryTop + (entryH - 8) / 2;
-        int textX = xBase + TAB_LABEL_PAD_LEFT;
-        g.drawString(font, t.tab().title(), textX, textY, textColor, false);
+        Component title = t.tab().title();
+        int textX = rtl
+                ? xBase - TAB_LABEL_PAD_LEFT - font.width(title)
+                : xBase + TAB_LABEL_PAD_LEFT;
+        g.drawString(font, title, textX, textY, textColor, false);
     }
 
     private void renderSidebarVScrollbar(GuiGraphics g, int mouseX, int mouseY) {
-        int x = SIDEBAR_WIDTH - SB_V_W;
+        int x = sidebarVScrollbarLeft();
         int y = sidebarTop();
         int h = sidebarTabViewportH();
         // track。
@@ -714,7 +764,7 @@ public final class OmniChestSettingsScreen extends Screen {
     }
 
     private void renderSidebarHScrollbar(GuiGraphics g, int mouseX, int mouseY) {
-        int x = 0;
+        int x = sidebarTabViewportLeft();
         int y = sidebarBottom() - SB_H_H;
         int w = sidebarTabViewportW();
         // track。
@@ -724,7 +774,11 @@ public final class OmniChestSettingsScreen extends Screen {
 
         int totalW = sidebarContentTotalW();
         int thumbW = Math.max(20, (int) ((double) w / totalW * w));
-        int thumbX = x + (int) ((double) this.sidebarScrollX / (totalW - w) * (w - thumbW));
+        // thumb 位置は LTR=左→右 / RTL=右→左 と反転させて、
+        // 「読み開始側にスクロールしている」感覚を維持する。
+        double frac = (double) this.sidebarScrollX / (totalW - w);
+        if (rtl()) frac = 1.0 - frac;
+        int thumbX = x + (int) (frac * (w - thumbW));
         int color = this.draggingSidebarH ? COLOR_SB_THUMB_DRAG : COLOR_SB_THUMB;
         g.fill(thumbX, y, thumbX + thumbW, y + SB_H_H, color);
     }
@@ -752,8 +806,13 @@ public final class OmniChestSettingsScreen extends Screen {
         if (this.tabs.isEmpty()) return;
         TabModel tab = this.tabs.get(this.activeTab);
 
-        int contentLeft = SIDEBAR_WIDTH + 1 + SIDEBAR_GAP + CONTENT_PAD_X;
-        int contentRight = this.width - CONTENT_PAD_X;
+        boolean rtl = rtl();
+        // RTL ではサイドバーが右側に来るので、 コンテンツ領域も左右が反転する。
+        int contentLeft = rtl ? CONTENT_PAD_X
+                : SIDEBAR_WIDTH + 1 + SIDEBAR_GAP + CONTENT_PAD_X;
+        int contentRight = rtl
+                ? this.width - SIDEBAR_WIDTH - 1 - SIDEBAR_GAP - CONTENT_PAD_X
+                : this.width - CONTENT_PAD_X;
         int contentTop = HEADER_HEIGHT + 4;
         // 下端はグレー区切り線 (= footer 上辺) にそのまま合わせる。
         // 旧実装は -4 px のバッファを取っていたが、 「区切り線で切ってほしい」 という要求に合わせて廃止。
@@ -784,8 +843,14 @@ public final class OmniChestSettingsScreen extends Screen {
         if (this.tabs.isEmpty()) return;
         TabModel tab = this.tabs.get(this.activeTab);
 
-        int contentLeft = SIDEBAR_WIDTH + 1 + SIDEBAR_GAP + CONTENT_PAD_X;
-        int contentRight = this.width - CONTENT_PAD_X;
+        boolean rtl = rtl();
+        // prepareActiveTabLayout と同じ式で contentLeft/Right を導出する。 RTL では
+        // コンテンツが左側 (= サイドバーが右側) になる。
+        int contentLeft = rtl ? CONTENT_PAD_X
+                : SIDEBAR_WIDTH + 1 + SIDEBAR_GAP + CONTENT_PAD_X;
+        int contentRight = rtl
+                ? this.width - SIDEBAR_WIDTH - 1 - SIDEBAR_GAP - CONTENT_PAD_X
+                : this.width - CONTENT_PAD_X;
         int contentTop = HEADER_HEIGHT + 4;
         // grey 区切り線と切れ位置を合わせる (= prepareActiveTabLayout 側と同じ式)。
         int contentBottom = this.height - FOOTER_HEIGHT;
@@ -807,16 +872,16 @@ public final class OmniChestSettingsScreen extends Screen {
         }
         g.disableScissor();
 
-        // 縦スクロールバー (= コンテンツ用)。
+        // 縦スクロールバー (= コンテンツ用)。 RTL ではコンテンツの左側 (= 画面左寄り) に出す。
         if (totalHeight > viewportHeight) {
-            int sbX = contentRight + 1;
+            int sbRightX = rtl ? contentLeft - 1 : contentRight + 1;
             int sbY = contentTop;
             int sbH = viewportHeight;
-            g.fill(sbX - 4, sbY, sbX, sbY + sbH, COLOR_SB_TRACK);
+            g.fill(sbRightX - 4, sbY, sbRightX, sbY + sbH, COLOR_SB_TRACK);
             int thumbH = Math.max(20, (int) ((double) viewportHeight / totalHeight * sbH));
             int thumbY = sbY + (int) ((double) this.scrollPx / (totalHeight - viewportHeight)
                     * (sbH - thumbH));
-            g.fill(sbX - 4, thumbY, sbX, thumbY + thumbH, COLOR_SB_THUMB);
+            g.fill(sbRightX - 4, thumbY, sbRightX, thumbY + thumbH, COLOR_SB_THUMB);
         }
     }
 
@@ -861,7 +926,8 @@ public final class OmniChestSettingsScreen extends Screen {
 
         // ─── サイドバー クリック (= viewport 内のみ判定) ───
         // tab / group-header どちらの上にあるかを線形にスキャンして決定する。
-        if (mx >= 0 && mx < SIDEBAR_WIDTH - SB_V_W
+        // RTL では viewport が画面右側へ移動しているので、 X 範囲を helper 経由で取る。
+        if (mx >= sidebarTabViewportLeft() && mx < sidebarTabViewportRight()
                 && my >= sidebarTop() && my < sidebarBottom() - SB_H_H) {
             int relY = (int) (my - sidebarTop() + this.sidebarScrollY);
             int yWalk = 0;
@@ -940,14 +1006,17 @@ public final class OmniChestSettingsScreen extends Screen {
             return true;
         }
         // サイドバー領域でのホイールはサイドバー縦スクロール。
-        if (mouseX >= 0 && mouseX < SIDEBAR_WIDTH
+        if (mouseX >= sidebarLeft() && mouseX < sidebarRight()
                 && mouseY >= sidebarTop() && mouseY < sidebarBottom()) {
             this.sidebarScrollY -= scrollY * 18.0;
             return true;
         }
         // コンテンツ領域でのホイールはコンテンツ縦スクロール。
-        int contentLeft = SIDEBAR_WIDTH + SIDEBAR_GAP;
-        if (mouseX >= contentLeft && mouseY >= HEADER_HEIGHT
+        // RTL ではコンテンツが左側に来るので「サイドバー以外の領域」で判定する。
+        boolean inContentX = rtl()
+                ? (mouseX >= 0 && mouseX < this.width - SIDEBAR_WIDTH)
+                : (mouseX >= SIDEBAR_WIDTH + SIDEBAR_GAP && mouseX < this.width);
+        if (inContentX && mouseY >= HEADER_HEIGHT
                 && mouseY < this.height - FOOTER_HEIGHT) {
             this.scrollPx -= scrollY * 18.0;
             return true;
@@ -978,7 +1047,7 @@ public final class OmniChestSettingsScreen extends Screen {
 
     private boolean isOverSidebarVScrollbar(double mx, double my) {
         if (!needsSidebarVScroll()) return false;
-        int x = SIDEBAR_WIDTH - SB_V_W;
+        int x = sidebarVScrollbarLeft();
         int y = sidebarTop();
         int h = sidebarTabViewportH();
         return mx >= x && mx < x + SB_V_W && my >= y && my < y + h;
@@ -986,8 +1055,9 @@ public final class OmniChestSettingsScreen extends Screen {
 
     private boolean isOverSidebarHScrollbar(double mx, double my) {
         if (!needsSidebarHScroll()) return false;
+        int x = sidebarTabViewportLeft();
         int y = sidebarBottom() - SB_H_H;
-        return mx >= 0 && mx < sidebarTabViewportW() && my >= y && my < y + SB_H_H;
+        return mx >= x && mx < x + sidebarTabViewportW() && my >= y && my < y + SB_H_H;
     }
 
     private void startSidebarVDrag(double mouseY) {
@@ -1023,10 +1093,14 @@ public final class OmniChestSettingsScreen extends Screen {
 
     private void startSidebarHDrag(double mouseX) {
         this.draggingSidebarH = true;
+        int trackLeft = sidebarTabViewportLeft();
         int w = sidebarTabViewportW();
         int totalW = sidebarContentTotalW();
         int thumbW = Math.max(20, (int) ((double) w / totalW * w));
-        int thumbX = (int) ((double) this.sidebarScrollX / (totalW - w) * (w - thumbW));
+        // 描画と同じ式で thumb の絶対 X を求める。 RTL では frac を反転している。
+        double frac = (double) this.sidebarScrollX / (totalW - w);
+        if (rtl()) frac = 1.0 - frac;
+        int thumbX = trackLeft + (int) (frac * (w - thumbW));
         if (mouseX >= thumbX && mouseX < thumbX + thumbW) {
             this.sbDragOffset = mouseX - thumbX;
         } else {
@@ -1040,11 +1114,14 @@ public final class OmniChestSettingsScreen extends Screen {
     }
 
     private void setSidebarScrollXFromThumbLeft(double thumbLeftX) {
+        int trackLeft = sidebarTabViewportLeft();
         int w = sidebarTabViewportW();
         int totalW = sidebarContentTotalW();
         int thumbW = Math.max(20, (int) ((double) w / totalW * w));
-        double frac = thumbLeftX / Math.max(1.0, (w - thumbW));
+        double frac = (thumbLeftX - trackLeft) / Math.max(1.0, (w - thumbW));
         frac = Math.max(0.0, Math.min(1.0, frac));
+        // 描画時の反転に合わせて RTL ではユーザのドラッグ方向と scrollX を逆対応させる。
+        if (rtl()) frac = 1.0 - frac;
         this.sidebarScrollX = frac * (totalW - w);
     }
 

@@ -66,7 +66,7 @@ public final class ColorRow extends RowEntry {
     public void layout(int x, int y, int width) {
         this.y = y;
         if (this.button == null) return;
-        int bx = x + width - BUTTON_W - ControlSize.CONTROL_RIGHT_MARGIN;
+        int bx = controlX(x, width, BUTTON_W);
         int by = y + (getHeight() - BUTTON_H) / 2;
         this.button.setX(bx);
         this.button.setY(by);
@@ -93,10 +93,13 @@ public final class ColorRow extends RowEntry {
         // ラベルは super (RowEntry) の既定描画を使う。
         super.render(g, contentLeft, rowY, width, mouseX, mouseY, partialTick);
 
-        // ボタンの左 (= 4px 余白) に「現在色の swatch」を描いて、 ボタン文字と合わせて
-        // 「色が伝わる」 UI にする。
+        // swatch はボタンの「ラベル側」(LTR=ボタンの左、 RTL=ボタンの右) に置く。
+        // ボタンが row 内で左右反転してもラベルに寄り添うように追従する。
         if (this.button == null) return;
-        int swatchX = this.button.getX() - SWATCH_SIZE - 4;
+        boolean rtl = com.kajiwara.omnichest.i18n.RTLLayoutManager.get().isRtl();
+        int swatchX = rtl
+                ? this.button.getX() + this.button.getWidth() + 4
+                : this.button.getX() - SWATCH_SIZE - 4;
         int swatchY = rowY + (getHeight() - SWATCH_SIZE) / 2;
         int argb = 0xFF000000 | (this.value & 0xFFFFFF);
         g.fill(swatchX, swatchY, swatchX + SWATCH_SIZE, swatchY + SWATCH_SIZE, argb);

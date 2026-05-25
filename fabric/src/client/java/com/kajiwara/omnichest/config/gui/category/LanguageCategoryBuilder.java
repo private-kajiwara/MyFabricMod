@@ -8,6 +8,8 @@ import com.kajiwara.omnichest.i18n.Keys;
 import com.kajiwara.omnichest.i18n.LanguageManager;
 import com.kajiwara.omnichest.i18n.LanguageOption;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
+import com.kajiwara.omnichest.i18n.RTLLayoutManager;
+import net.minecraft.network.chat.Component;
 
 /**
  * 「Language」 タブの組み立て役。
@@ -59,10 +61,43 @@ public final class LanguageCategoryBuilder {
                 null,
                 LanguageOption::displayName);
 
+        // ─── RTL モード (auto / force_on / force_off) ───
+        // Arabic 等の RTL 言語を選ぶと AUTO で自動的にミラーされる。
+        // 翻訳者向けに 「LTR 言語でも強制 RTL 確認できる」 ように force_on も用意してある。
+        RTLLayoutManager.ForceMode currentRtl = RTLLayoutManager.ForceMode.fromString(cfg.rtlMode);
+        b.dropdownSelect(
+                OmniChestLocale.get(Keys.CONFIG_LANGUAGE_RTL_MODE, "RTL Layout"),
+                RTLLayoutManager.ForceMode.class,
+                currentRtl,
+                v -> {
+                    cfg.rtlMode = v.saveValue();
+                    RTLLayoutManager.get().setForceMode(v);
+                },
+                OmniChestLocale.get(Keys.CONFIG_LANGUAGE_RTL_MODE_TOOLTIP,
+                        "Mirror UI horizontally for right-to-left languages. Auto follows the language; Force overrides."),
+                LanguageCategoryBuilder::rtlModeLabel);
+
+        // ─── Unicode フォント安全 ───
+        b.toggle(
+                OmniChestLocale.get(Keys.CONFIG_LANGUAGE_UNICODE_FONT_SAFETY, "Unicode Font Safety"),
+                cfg.unicodeFontSafety,
+                v -> cfg.unicodeFontSafety = v,
+                OmniChestLocale.get(Keys.CONFIG_LANGUAGE_UNICODE_FONT_SAFETY_TOOLTIP,
+                        "Prefer safe truncation for non-ASCII text so it never overflows widget boxes."));
+
         // 補足説明 (= 即時反映のしくみと再起動不要のヒント)。
         b.text(OmniChestLocale.get(Keys.CONFIG_LANGUAGE_RESTART_HINT,
                 "Most labels update immediately. A few cached titles may need re-opening the screen."));
 
         return b.build();
+    }
+
+    /** RTL モード dropdown のラベル変換 (= 翻訳キー付き)。 */
+    private static Component rtlModeLabel(RTLLayoutManager.ForceMode mode) {
+        return switch (mode) {
+            case AUTO -> OmniChestLocale.get(Keys.CONFIG_LANGUAGE_RTL_AUTO, "Auto");
+            case FORCE_ON -> OmniChestLocale.get(Keys.CONFIG_LANGUAGE_RTL_FORCE_ON, "Force On");
+            case FORCE_OFF -> OmniChestLocale.get(Keys.CONFIG_LANGUAGE_RTL_FORCE_OFF, "Force Off");
+        };
     }
 }

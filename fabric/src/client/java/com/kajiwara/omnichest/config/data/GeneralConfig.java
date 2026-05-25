@@ -37,4 +37,24 @@ public final class GeneralConfig {
      * 挙動が変わらない (= 後方互換)。
      */
     public String languageOverride = "system";
+
+    /**
+     * RTL レイアウト適用モード ("auto" / "force_on" / "force_off")。
+     * {@link com.kajiwara.omnichest.i18n.RTLLayoutManager.ForceMode#saveValue()} と一致する。
+     *
+     * <p>
+     * 既定の {@code "auto"} は「選択言語の RTL フラグに従う」 意味
+     * (= ar_sa などを選んだ時だけ自動で RTL)。
+     * 「force_on」 は LTR 言語でも強制 RTL (= レイアウト確認用)、
+     * 「force_off」 は RTL 言語でも LTR 維持 (= レイアウト崩れ回避の最終手段)。
+     */
+    public String rtlMode = "auto";
+
+    /**
+     * 「Unicode フォント安全」 モード。
+     * true のとき、 非 ASCII を含むテキストは {@link com.kajiwara.omnichest.i18n.UnicodeTextHelper}
+     * の切り詰めユーティリティを優先的に使う (= 描画フレームのオーバーフローを抑える)。
+     * false のときは何もしない (= 旧挙動と等価)。
+     */
+    public boolean unicodeFontSafety = true;
 }

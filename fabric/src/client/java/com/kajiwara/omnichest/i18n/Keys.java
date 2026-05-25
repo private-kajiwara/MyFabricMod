@@ -194,6 +194,37 @@ public final class Keys {
     public static final String CONFIG_LANGUAGE_INTRO = "config.omnichest.language.intro";
     public static final String CONFIG_LANGUAGE_RESTART_HINT = "config.omnichest.language.restart_hint";
 
+    // RTL / Unicode 設定 (Language タブ内)
+    public static final String CONFIG_LANGUAGE_RTL_MODE = "config.omnichest.language.rtl_mode";
+    public static final String CONFIG_LANGUAGE_RTL_MODE_TOOLTIP = "config.omnichest.language.rtl_mode.tooltip";
+    public static final String CONFIG_LANGUAGE_RTL_AUTO = "config.omnichest.language.rtl_mode.auto";
+    public static final String CONFIG_LANGUAGE_RTL_FORCE_ON = "config.omnichest.language.rtl_mode.force_on";
+    public static final String CONFIG_LANGUAGE_RTL_FORCE_OFF = "config.omnichest.language.rtl_mode.force_off";
+    public static final String CONFIG_LANGUAGE_UNICODE_FONT_SAFETY = "config.omnichest.language.unicode_font_safety";
+    public static final String CONFIG_LANGUAGE_UNICODE_FONT_SAFETY_TOOLTIP = "config.omnichest.language.unicode_font_safety.tooltip";
+
+    // 16 new language names (Config Selector の現地語表示)
+    public static final String LANGUAGE_FR_FR = "omnichest.language.fr_fr";
+    public static final String LANGUAGE_RU_RU = "omnichest.language.ru_ru";
+    public static final String LANGUAGE_PT_BR = "omnichest.language.pt_br";
+    public static final String LANGUAGE_TR_TR = "omnichest.language.tr_tr";
+    public static final String LANGUAGE_AR_SA = "omnichest.language.ar_sa";
+    public static final String LANGUAGE_HI_IN = "omnichest.language.hi_in";
+    public static final String LANGUAGE_TH_TH = "omnichest.language.th_th";
+    public static final String LANGUAGE_VI_VN = "omnichest.language.vi_vn";
+    public static final String LANGUAGE_PL_PL = "omnichest.language.pl_pl";
+    public static final String LANGUAGE_NL_NL = "omnichest.language.nl_nl";
+    public static final String LANGUAGE_SV_SE = "omnichest.language.sv_se";
+    public static final String LANGUAGE_DA_DK = "omnichest.language.da_dk";
+    public static final String LANGUAGE_NB_NO = "omnichest.language.nb_no";
+    public static final String LANGUAGE_FI_FI = "omnichest.language.fi_fi";
+    public static final String LANGUAGE_CS_CZ = "omnichest.language.cs_cz";
+    public static final String LANGUAGE_HU_HU = "omnichest.language.hu_hu";
+    public static final String LANGUAGE_RO_RO = "omnichest.language.ro_ro";
+    public static final String LANGUAGE_UK_UA = "omnichest.language.uk_ua";
+    public static final String LANGUAGE_ID_ID = "omnichest.language.id_id";
+    public static final String LANGUAGE_MS_MY = "omnichest.language.ms_my";
+
     // ─── Config GUI Sidebar Group (カテゴリ見出し) ───────────────
     public static final String CONFIG_GROUP_BASICS = "config.omnichest.group.basics";
     public static final String CONFIG_GROUP_ITEM_SORTING = "config.omnichest.group.item_sorting";

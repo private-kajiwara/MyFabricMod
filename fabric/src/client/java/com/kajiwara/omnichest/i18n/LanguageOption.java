@@ -12,56 +12,127 @@ import org.jetbrains.annotations.Nullable;
  * 直接翻訳を引いて表示する (= Minecraft 本体は英語でも MOD だけ日本語、といった運用が可能)。
  *
  * <p>
+ * <b>メタデータ</b>: 各値は {@link LocaleMetadata} (nativeName / rtl / fallback / script) を持つ。
+ * RTL 判定や翻訳カバレッジ レポートは metadata 経由で取得し、 enum 名そのものは
+ * 内部識別子としてだけ使う (= ロケール固有のロジックを書き散らさない)。
+ *
+ * <p>
  * <b>追加の言語を増やす手順</b>:
  * <ol>
- * <li>このenum に値を 1 つ追加。</li>
- * <li>{@code assets/omnichest/lang/&lt;code&gt;.json} を同梱。</li>
+ *   <li>このenum に値を 1 つ追加 (metadata も同時に指定)。</li>
+ *   <li>{@code assets/omnichest/lang/&lt;code&gt;.json} を同梱。</li>
  * </ol>
- * 既存のクラスを編集する必要は無い (= 設定 GUI 側も自動でこのリストを列挙する)。
+ * 既存クラスの編集は不要 (= Config GUI は LanguageOption.values() を機械的に列挙する)。
  */
 public enum LanguageOption {
 
     /** Minecraft 本体の言語設定に従う (= 既定値)。 */
-    SYSTEM_DEFAULT(null, "System Default", "omnichest.language.system_default"),
+    SYSTEM_DEFAULT(LocaleMetadata.systemDefault(), "omnichest.language.system_default"),
 
-    EN_US("en_us", "English", "omnichest.language.en_us"),
-    JA_JP("ja_jp", "日本語", "omnichest.language.ja_jp"),
-    KO_KR("ko_kr", "한국어", "omnichest.language.ko_kr"),
-    ZH_CN("zh_cn", "简体中文", "omnichest.language.zh_cn"),
-    ZH_TW("zh_tw", "繁體中文", "omnichest.language.zh_tw"),
-    ES_ES("es_es", "Español", "omnichest.language.es_es"),
-    DE_DE("de_de", "Deutsch", "omnichest.language.de_de"),
-    IT_IT("it_it", "Italiano", "omnichest.language.it_it"),
-    FR_FR("fr_fr", "Français", "omnichest.language.fr_fr"),
-    RU_RU("ru_ru", "Русский", "omnichest.language.ru_ru"),
-    PT_BR("pt_br", "Português (Brasil)", "omnichest.language.pt_br"),
-    TR_TR("tr_tr", "Türkçe", "omnichest.language.tr_tr");
+    // ─── ラテン系 (Tier 1) ──────────────────────────────────────
+    EN_US(LocaleMetadata.ltr("en_us", "English", "English", LocaleMetadata.Script.LATIN),
+            "omnichest.language.en_us"),
+    ES_ES(LocaleMetadata.ltr("es_es", "Español", "Spanish", LocaleMetadata.Script.LATIN),
+            "omnichest.language.es_es"),
+    DE_DE(LocaleMetadata.ltr("de_de", "Deutsch", "German", LocaleMetadata.Script.LATIN),
+            "omnichest.language.de_de"),
+    IT_IT(LocaleMetadata.ltr("it_it", "Italiano", "Italian", LocaleMetadata.Script.LATIN),
+            "omnichest.language.it_it"),
+    FR_FR(LocaleMetadata.ltr("fr_fr", "Français", "French", LocaleMetadata.Script.LATIN),
+            "omnichest.language.fr_fr"),
+    PT_BR(LocaleMetadata.ltr("pt_br", "Português (Brasil)", "Portuguese (Brazil)",
+            LocaleMetadata.Script.LATIN), "omnichest.language.pt_br"),
 
-    @Nullable
-    private final String code;
-    private final String nativeName;
+    // ─── ラテン系 (北欧 / 中欧 / 東欧) ──────────────────────────
+    NL_NL(LocaleMetadata.ltr("nl_nl", "Nederlands", "Dutch", LocaleMetadata.Script.LATIN),
+            "omnichest.language.nl_nl"),
+    SV_SE(LocaleMetadata.ltr("sv_se", "Svenska", "Swedish", LocaleMetadata.Script.LATIN),
+            "omnichest.language.sv_se"),
+    DA_DK(LocaleMetadata.ltr("da_dk", "Dansk", "Danish", LocaleMetadata.Script.LATIN),
+            "omnichest.language.da_dk"),
+    // ノルウェー語 (Bokmål) は スウェーデン語経由でフォールバック (= 言語的類縁)。
+    NB_NO(LocaleMetadata.withFallback("nb_no", "Norsk Bokmål", "Norwegian Bokmål",
+            LocaleMetadata.Script.LATIN, "sv_se"), "omnichest.language.nb_no"),
+    FI_FI(LocaleMetadata.ltr("fi_fi", "Suomi", "Finnish", LocaleMetadata.Script.LATIN),
+            "omnichest.language.fi_fi"),
+    PL_PL(LocaleMetadata.ltr("pl_pl", "Polski", "Polish", LocaleMetadata.Script.LATIN),
+            "omnichest.language.pl_pl"),
+    CS_CZ(LocaleMetadata.ltr("cs_cz", "Čeština", "Czech", LocaleMetadata.Script.LATIN),
+            "omnichest.language.cs_cz"),
+    HU_HU(LocaleMetadata.ltr("hu_hu", "Magyar", "Hungarian", LocaleMetadata.Script.LATIN),
+            "omnichest.language.hu_hu"),
+    RO_RO(LocaleMetadata.ltr("ro_ro", "Română", "Romanian", LocaleMetadata.Script.LATIN),
+            "omnichest.language.ro_ro"),
+    TR_TR(LocaleMetadata.ltr("tr_tr", "Türkçe", "Turkish", LocaleMetadata.Script.LATIN),
+            "omnichest.language.tr_tr"),
+
+    // ─── キリル系 ─────────────────────────────────────────
+    RU_RU(LocaleMetadata.ltr("ru_ru", "Русский", "Russian", LocaleMetadata.Script.CYRILLIC),
+            "omnichest.language.ru_ru"),
+    // ウクライナ語は ロシア語にフォールバック (= 親類言語、 翻訳率を上げやすい)。
+    UK_UA(LocaleMetadata.withFallback("uk_ua", "Українська", "Ukrainian",
+            LocaleMetadata.Script.CYRILLIC, "ru_ru"), "omnichest.language.uk_ua"),
+
+    // ─── CJK ─────────────────────────────────────────────
+    JA_JP(LocaleMetadata.ltr("ja_jp", "日本語", "Japanese", LocaleMetadata.Script.CJK),
+            "omnichest.language.ja_jp"),
+    KO_KR(LocaleMetadata.ltr("ko_kr", "한국어", "Korean", LocaleMetadata.Script.CJK),
+            "omnichest.language.ko_kr"),
+    ZH_CN(LocaleMetadata.ltr("zh_cn", "简体中文", "Chinese (Simplified)",
+            LocaleMetadata.Script.CJK), "omnichest.language.zh_cn"),
+    // 繁体は 簡体にフォールバック (= zh_tw が未訳のとき zh_cn → en_us の順で解決)。
+    ZH_TW(LocaleMetadata.withFallback("zh_tw", "繁體中文", "Chinese (Traditional)",
+            LocaleMetadata.Script.CJK, "zh_cn"), "omnichest.language.zh_tw"),
+
+    // ─── 東南アジア / 南アジア ──────────────────────────────
+    TH_TH(LocaleMetadata.ltr("th_th", "ไทย", "Thai", LocaleMetadata.Script.THAI),
+            "omnichest.language.th_th"),
+    VI_VN(LocaleMetadata.ltr("vi_vn", "Tiếng Việt", "Vietnamese",
+            LocaleMetadata.Script.VIETNAMESE), "omnichest.language.vi_vn"),
+    HI_IN(LocaleMetadata.ltr("hi_in", "हिन्दी", "Hindi", LocaleMetadata.Script.DEVANAGARI),
+            "omnichest.language.hi_in"),
+    ID_ID(LocaleMetadata.ltr("id_id", "Bahasa Indonesia", "Indonesian",
+            LocaleMetadata.Script.LATIN), "omnichest.language.id_id"),
+    // マレー語は インドネシア語にフォールバック (= 同系統言語)。
+    MS_MY(LocaleMetadata.withFallback("ms_my", "Bahasa Melayu", "Malay",
+            LocaleMetadata.Script.LATIN, "id_id"), "omnichest.language.ms_my"),
+
+    // ─── RTL (アラビア語) ─────────────────────────────────
+    AR_SA(LocaleMetadata.rtl("ar_sa", "العربية", "Arabic", LocaleMetadata.Script.ARABIC),
+            "omnichest.language.ar_sa");
+
+    private final LocaleMetadata metadata;
     private final String translationKey;
 
-    LanguageOption(@Nullable String code, String nativeName, String translationKey) {
-        this.code = code;
-        this.nativeName = nativeName;
+    LanguageOption(LocaleMetadata metadata, String translationKey) {
+        this.metadata = metadata;
         this.translationKey = translationKey;
+    }
+
+    /** ロケール metadata (= rtl / fallback / native name / script)。 */
+    public LocaleMetadata metadata() {
+        return this.metadata;
     }
 
     /** Minecraft の lang コード (例: "ja_jp")。 {@link #SYSTEM_DEFAULT} のみ null を返す。 */
     @Nullable
     public String code() {
-        return this.code;
+        return this.metadata.code();
     }
 
-    /** 言語名 (= 各言語のネイティブ表記)。 翻訳が無くてもこれだけは判別できるよう英数/漢字で持つ。 */
+    /** 言語名 (= 各言語のネイティブ表記)。 */
     public String nativeName() {
-        return this.nativeName;
+        return this.metadata.nativeName();
+    }
+
+    /** 右から左 (RTL) 言語か。 RTLLayoutManager のショートカット。 */
+    public boolean isRtl() {
+        return this.metadata.rtl();
     }
 
     /** GUI ラベル用の翻訳キー。 fallback には {@link #nativeName()} を使う。 */
     public Component displayName() {
-        return OmniChestLocale.get(this.translationKey, this.nativeName);
+        return OmniChestLocale.get(this.translationKey, this.metadata.nativeName());
     }
 
     /**
@@ -73,7 +144,8 @@ public enum LanguageOption {
             return SYSTEM_DEFAULT;
         }
         for (LanguageOption opt : values()) {
-            if (opt.code != null && opt.code.equalsIgnoreCase(s)) {
+            String code = opt.code();
+            if (code != null && code.equalsIgnoreCase(s)) {
                 return opt;
             }
         }
@@ -82,6 +154,6 @@ public enum LanguageOption {
 
     /** Config 保存用の文字列表現。 {@link #SYSTEM_DEFAULT} は "system"。 */
     public String saveValue() {
-        return this.code == null ? "system" : this.code;
+        return this.code() == null ? "system" : this.code();
     }
 }

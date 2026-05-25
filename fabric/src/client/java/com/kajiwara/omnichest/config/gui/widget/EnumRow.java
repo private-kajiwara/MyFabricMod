@@ -71,7 +71,7 @@ public final class EnumRow<E extends Enum<E>> extends RowEntry {
     public void layout(int x, int y, int width) {
         this.y = y;
         if (this.button == null) return;
-        int bx = x + width - ControlSize.CONTROL_WIDTH - ControlSize.CONTROL_RIGHT_MARGIN;
+        int bx = controlX(x, width, ControlSize.CONTROL_WIDTH);
         int by = y + (getHeight() - ControlSize.CONTROL_HEIGHT) / 2;
         this.button.setX(bx);
         this.button.setY(by);

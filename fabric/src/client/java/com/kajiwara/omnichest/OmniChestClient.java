@@ -11,6 +11,7 @@ import com.kajiwara.omnichest.client.render.ChestHighlighter;
 import com.kajiwara.omnichest.config.ConfigManager;
 import com.kajiwara.omnichest.i18n.LanguageManager;
 import com.kajiwara.omnichest.i18n.LanguageOption;
+import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import com.kajiwara.omnichest.i18n.TranslationValidator;
 import com.kajiwara.omnichest.search.ChestCacheStorage;
 import com.kajiwara.omnichest.search.ContainerScanner;
@@ -79,6 +80,12 @@ public class OmniChestClient implements ClientModInitializer {
         // SYSTEM_DEFAULT の場合は MC 本体の Language 解決経路にそのまま流す。
         LanguageManager.get().setCurrent(
                 LanguageOption.fromCode(ConfigManager.get().general.languageOverride));
+
+        // ─── RTL レイアウト モードを反映 ───
+        // GeneralConfig.rtlMode は "auto" / "force_on" / "force_off" の文字列で保存される。
+        // AUTO のときは選択言語の RTL フラグに従う (= ar_sa 等で自動 ON)。
+        RTLLayoutManager.get().setForceMode(
+                RTLLayoutManager.ForceMode.fromString(ConfigManager.get().general.rtlMode));
 
         // ─── 翻訳ファイルの検証 ───
         // 全 lang JSON を canonical (en_us) と比較し、 不足キー / 余分キー / 破損を warn ログに出す。

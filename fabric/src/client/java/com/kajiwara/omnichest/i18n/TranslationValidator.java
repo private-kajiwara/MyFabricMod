@@ -52,14 +52,24 @@ public final class TranslationValidator {
         }
         Set<String> canonicalKeys = canonical.keySet();
 
+        // ─── 同梱 locale 一覧の overview (= dev/翻訳者が「何が含まれているか」を一望できる) ───
+        List<LanguageOption> concrete = LocaleRegistry.allConcreteLocales();
+        int rtlCount = 0;
+        for (LanguageOption opt : concrete) {
+            if (opt.isRtl()) rtlCount++;
+        }
+        OmniChest.LOGGER.info(
+                "[omnichest][i18n] Bundled locales: {} total ({} RTL), canonical=en_us with {} keys",
+                concrete.size(), rtlCount, countNonMeta(canonicalKeys));
+
         List<MissingKeyReporter> reports = new ArrayList<>();
-        for (LanguageOption opt : LocaleRegistry.allConcreteLocales()) {
+        for (LanguageOption opt : concrete) {
             if (opt == LanguageOption.EN_US) {
                 continue; // canonical 自身は比較対象外。
             }
             MissingKeyReporter report = compare(opt.code(), canonicalKeys);
             reports.add(report);
-            logReport(report);
+            logReport(report, opt);
         }
         return reports;
     }
@@ -109,9 +119,14 @@ public final class TranslationValidator {
      * 1 件の {@link MissingKeyReporter} を整形してログ出力する。
      * カバレッジ 100% の locale は 1 行のサマリのみ。
      * 不足/余分が在る locale は最初の数件を列挙する。
+     *
+     * <p>
+     * locale の metadata (RTL / fallback) も末尾に併記して、 翻訳者が
+     * 「この locale は何にフォールバックするのか」 をログ 1 行で把握できるようにする。
      */
-    private static void logReport(MissingKeyReporter report) {
-        String summary = report.summary();
+    private static void logReport(MissingKeyReporter report, LanguageOption opt) {
+        String tag = buildMetadataTag(opt);
+        String summary = report.summary() + " " + tag;
         if (report.missing.isEmpty() && report.extra.isEmpty()) {
             OmniChest.LOGGER.info("[omnichest][i18n] {}", summary);
             return;
@@ -136,5 +151,17 @@ public final class TranslationValidator {
             OmniChest.LOGGER.warn("[omnichest][i18n]   extra in {}: {}{}",
                     report.code, sample, suffix);
         }
+    }
+
+    /** ログ末尾に付ける metadata タグ。 例: {@code "[script=CYRILLIC,fallback=en_us]"}。 */
+    private static String buildMetadataTag(LanguageOption opt) {
+        LocaleMetadata md = opt.metadata();
+        StringBuilder sb = new StringBuilder("[script=").append(md.script());
+        if (md.rtl()) sb.append(",rtl");
+        if (md.fallback() != null && !"en_us".equals(md.fallback())) {
+            sb.append(",fallback=").append(md.fallback());
+        }
+        sb.append("]");
+        return sb.toString();
     }
 }

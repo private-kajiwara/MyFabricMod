@@ -42,15 +42,23 @@ public final class SubHeaderRow extends RowEntry {
     public void render(GuiGraphics g, int contentLeft, int rowY, int width,
             int mouseX, int mouseY, float partialTick) {
         Font font = Minecraft.getInstance().font;
-        // 行の中央に「── タイトル ──」を描画する。
         int textWidth = font.width(this.label);
         int titleY = rowY + (getHeight() - 8) / 2;
-        int titleX = contentLeft + 4;
-        // 左側に短いゲージ線、右に伸びる横線。
         int lineY = titleY + 4;
-        g.fill(contentLeft, lineY, contentLeft + 2, lineY + 1, 0xFFFFD700);
-        g.fill(titleX + textWidth + 4, lineY,
-                contentLeft + width - 4, lineY + 1, 0xFF555555);
-        g.drawString(font, this.label, titleX, titleY, 0xFFFFD700, false);
+        boolean rtl = com.kajiwara.omnichest.i18n.RTLLayoutManager.get().isRtl();
+        if (rtl) {
+            // RTL: 右側に短いゲージ線、 左に伸びる横線、 タイトルは右寄せ。
+            int titleX = contentLeft + width - 4 - textWidth;
+            g.fill(contentLeft + width - 2, lineY, contentLeft + width, lineY + 1, 0xFFFFD700);
+            g.fill(contentLeft + 4, lineY, titleX - 4, lineY + 1, 0xFF555555);
+            g.drawString(font, this.label, titleX, titleY, 0xFFFFD700, false);
+        } else {
+            // LTR: 左に短いゲージ線、 右に伸びる横線、 タイトルは左寄せ。
+            int titleX = contentLeft + 4;
+            g.fill(contentLeft, lineY, contentLeft + 2, lineY + 1, 0xFFFFD700);
+            g.fill(titleX + textWidth + 4, lineY,
+                    contentLeft + width - 4, lineY + 1, 0xFF555555);
+            g.drawString(font, this.label, titleX, titleY, 0xFFFFD700, false);
+        }
     }
 }

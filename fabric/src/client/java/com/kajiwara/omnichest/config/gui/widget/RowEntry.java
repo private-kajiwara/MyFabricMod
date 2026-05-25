@@ -1,5 +1,8 @@
 package com.kajiwara.omnichest.config.gui.widget;
 
+import com.kajiwara.omnichest.i18n.RTLLayoutManager;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.network.chat.Component;
@@ -77,11 +80,33 @@ public abstract class RowEntry {
     /** row 自体の追加描画 (= ラベルなど widget 以外)。 */
     public void render(GuiGraphics g, int contentLeft, int rowY, int width, int mouseX, int mouseY,
             float partialTick) {
-        // 既定: 左寄せでラベルを描画。 widget の描画は Screen.render が自動でやる。
+        // ラベルの寄せ方向は RTL/LTR に合わせる。 widget 本体の位置は layout() 側で同じく反転される。
         int textColor = 0xFFFFFFFF;
         int labelY = rowY + (getHeight() - 8) / 2;
-        g.drawString(net.minecraft.client.Minecraft.getInstance().font,
-                this.label, contentLeft + 4, labelY, textColor, false);
+        Font font = Minecraft.getInstance().font;
+        int labelX = RTLLayoutManager.get().isRtl()
+                ? contentLeft + width - 4 - font.width(this.label)
+                : contentLeft + 4;
+        g.drawString(font, this.label, labelX, labelY, textColor, false);
+    }
+
+    /**
+     * 「row の右端にぶら下げる」 想定のコントロールの X 座標を、 RTL のときは
+     * 「左端にぶら下げる」 座標へ反転して返す共通ヘルパ。
+     *
+     * <p>
+     * 各 row の layout() からはこのメソッドを 1 行差し替えるだけで RTL 対応できる。
+     *
+     * @param x         row の左端 X (= layout() の引数 x)
+     * @param width     row の幅 (= layout() の引数 width)
+     * @param controlW  ぶら下げるコントロール本体の幅
+     * @return          コントロール左端の X 座標 (RTL なら left margin、 LTR なら right margin 側)
+     */
+    public static int controlX(int x, int width, int controlW) {
+        if (RTLLayoutManager.get().isRtl()) {
+            return x + ControlSize.CONTROL_RIGHT_MARGIN;
+        }
+        return x + width - controlW - ControlSize.CONTROL_RIGHT_MARGIN;
     }
 
     /**
