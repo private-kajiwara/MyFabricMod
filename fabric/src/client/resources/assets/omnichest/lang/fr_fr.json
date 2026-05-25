@@ -12,6 +12,7 @@
   "config.omnichest.category.ai": "Classification auto.",
   "config.omnichest.category.template": "Modèles",
   "config.omnichest.category.render": "Affichage / UI",
+  "config.omnichest.category.compat": "Compatibilité",
   "config.omnichest.category.keybind": "Raccourcis",
   "config.omnichest.category.language": "Langue",
 
@@ -19,6 +20,7 @@
   "config.omnichest.sub.lock.protect": "Protection par défaut",
   "config.omnichest.sub.ai.advanced": "Avancé (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Avancé (TemplateConfig)",
+  "config.omnichest.sub.compat_detection": "Mods détectés",
 
   "config.omnichest.general.enableMod": "Activer le mod",
   "config.omnichest.general.enableMod.tooltip": "Interrupteur général. Désactivé, toutes les fonctions sont coupées.",
@@ -116,6 +118,22 @@
   "config.omnichest.render.showCategoryLabels": "Étiquettes de catégorie",
   "config.omnichest.render.enableTooltips": "Activer les info-bulles",
   "config.omnichest.render.guiAnimation": "Animations d'interface",
+
+  "config.omnichest.compat.enableShaderCompatibility": "Compatibilité avec les shaders",
+  "config.omnichest.compat.enableShaderCompatibility.tooltip": "Bascule vers un rendu compatible avec les shaders lorsque Iris ou Oculus est installé.",
+  "config.omnichest.compat.safeOverlayRendering": "Rendu sécurisé des surcouches",
+  "config.omnichest.compat.safeOverlayRendering.tooltip": "Encadre le rendu des surcouches dans une pile de matrices protégée afin qu'une erreur isolée n'abîme pas tout l'écran.",
+  "config.omnichest.compat.disableExperimentalRendering": "Désactiver le rendu expérimental",
+  "config.omnichest.compat.disableExperimentalRendering.tooltip": "Désactive par anticipation les futurs rendus expérimentaux. Sans effet pour l'instant.",
+  "config.omnichest.compat.enableOptionalIntegrations": "Intégrations optionnelles avec d'autres mods",
+  "config.omnichest.compat.enableOptionalIntegrations.tooltip": "Active les passerelles vers REI, EMI, Inventory Profiles et autres mods quand ils sont installés.",
+  "config.omnichest.compat.strictCompatibilityMode": "Mode de compatibilité strict",
+  "config.omnichest.compat.strictCompatibilityMode.tooltip": "Désactive toutes les intégrations et utilise le chemin de rendu le plus prudent. Pratique pour isoler un conflit.",
+  "config.omnichest.compat.debugRenderLogs": "Journaux de rendu détaillés",
+  "config.omnichest.compat.debugRenderLogs.tooltip": "Affiche des journaux détaillés de la couche de compatibilité. À activer uniquement pour signaler un problème.",
+  "config.omnichest.compat.status.yes": "oui",
+  "config.omnichest.compat.status.no": "non",
+  "config.omnichest.compat.detection.shader_active": "Shader pack actif",
 
   "config.omnichest.keybind.intro": "Tous les raccourcis se trouvent dans Contrôles → Touches → catégorie 'OmniChest'.",
 

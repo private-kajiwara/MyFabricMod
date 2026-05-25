@@ -12,6 +12,7 @@
   "config.omnichest.category.ai": "AI Classification",
   "config.omnichest.category.template": "Chest Template",
   "config.omnichest.category.render": "Render / UI",
+  "config.omnichest.category.compat": "Compatibility",
   "config.omnichest.category.keybind": "Keybinds",
   "config.omnichest.category.language": "Language",
 
@@ -19,6 +20,7 @@
   "config.omnichest.sub.lock.protect": "Default Protection",
   "config.omnichest.sub.ai.advanced": "Advanced (existing ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Advanced (existing TemplateConfig)",
+  "config.omnichest.sub.compat_detection": "Detected Mods",
 
   "config.omnichest.general.enableMod": "Enable Mod",
   "config.omnichest.general.enableMod.tooltip": "Master switch. Disabling this turns off every feature in this mod.",
@@ -116,6 +118,22 @@
   "config.omnichest.render.showCategoryLabels": "Show Category Labels",
   "config.omnichest.render.enableTooltips": "Enable Tooltips",
   "config.omnichest.render.guiAnimation": "GUI Animation",
+
+  "config.omnichest.compat.enableShaderCompatibility": "Shader Compatibility",
+  "config.omnichest.compat.enableShaderCompatibility.tooltip": "Switch to a shader-safe render path when Iris or Oculus is installed.",
+  "config.omnichest.compat.safeOverlayRendering": "Safe Overlay Rendering",
+  "config.omnichest.compat.safeOverlayRendering.tooltip": "Wrap overlay draws in a guarded matrix stack so a single failure can't break the rest of the screen.",
+  "config.omnichest.compat.disableExperimentalRendering": "Disable Experimental Rendering",
+  "config.omnichest.compat.disableExperimentalRendering.tooltip": "Opt out of any future experimental render paths. Has no effect today.",
+  "config.omnichest.compat.enableOptionalIntegrations": "Optional Mod Integrations",
+  "config.omnichest.compat.enableOptionalIntegrations.tooltip": "Allow hooks for REI, EMI, Inventory Profiles and similar mods when they are installed.",
+  "config.omnichest.compat.strictCompatibilityMode": "Strict Compatibility Mode",
+  "config.omnichest.compat.strictCompatibilityMode.tooltip": "Disable every integration and use the most conservative render paths. Handy for isolating conflicts.",
+  "config.omnichest.compat.debugRenderLogs": "Debug Render Logs",
+  "config.omnichest.compat.debugRenderLogs.tooltip": "Print verbose logs from the compatibility layer. Recommended only when reporting an issue.",
+  "config.omnichest.compat.status.yes": "yes",
+  "config.omnichest.compat.status.no": "no",
+  "config.omnichest.compat.detection.shader_active": "Shader pack active",
 
   "config.omnichest.keybind.intro": "All hotkeys live under ‘OmniChest’ in vanilla Controls → Key Binds.",
 

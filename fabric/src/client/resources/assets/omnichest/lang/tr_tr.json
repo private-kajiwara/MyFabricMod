@@ -12,6 +12,7 @@
   "config.omnichest.category.ai": "Otomatik sınıflama",
   "config.omnichest.category.template": "Şablonlar",
   "config.omnichest.category.render": "Görsel / UI",
+  "config.omnichest.category.compat": "Uyumluluk",
   "config.omnichest.category.keybind": "Kısayollar",
   "config.omnichest.category.language": "Dil",
 
@@ -19,6 +20,7 @@
   "config.omnichest.sub.lock.protect": "Varsayılan koruma",
   "config.omnichest.sub.ai.advanced": "Gelişmiş (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Gelişmiş (TemplateConfig)",
+  "config.omnichest.sub.compat_detection": "Algılanan modlar",
 
   "config.omnichest.general.enableMod": "Modu aç",
   "config.omnichest.general.enableMod.tooltip": "Ana anahtar. Kapatınca modun tüm özellikleri devre dışı kalır.",
@@ -116,6 +118,22 @@
   "config.omnichest.render.showCategoryLabels": "Kategori etiketleri",
   "config.omnichest.render.enableTooltips": "İpuçlarını aç",
   "config.omnichest.render.guiAnimation": "UI animasyonları",
+
+  "config.omnichest.compat.enableShaderCompatibility": "Shader uyumluluğu",
+  "config.omnichest.compat.enableShaderCompatibility.tooltip": "Iris veya Oculus yüklüyken shader ile çakışmayan bir çizim yolu kullanır.",
+  "config.omnichest.compat.safeOverlayRendering": "Güvenli kaplama çizimi",
+  "config.omnichest.compat.safeOverlayRendering.tooltip": "Kaplamaları korumalı bir matris yığını içinde çizer; tek bir hata diğer arayüzü etkilemez.",
+  "config.omnichest.compat.disableExperimentalRendering": "Deneysel çizimi kapat",
+  "config.omnichest.compat.disableExperimentalRendering.tooltip": "İleride eklenecek deneysel çizim yollarını baştan kapatır. Şu an için bir etkisi yoktur.",
+  "config.omnichest.compat.enableOptionalIntegrations": "İsteğe bağlı mod entegrasyonları",
+  "config.omnichest.compat.enableOptionalIntegrations.tooltip": "REI, EMI, Inventory Profiles gibi modlar varsa onlarla entegrasyonu açar.",
+  "config.omnichest.compat.strictCompatibilityMode": "Sıkı uyumluluk modu",
+  "config.omnichest.compat.strictCompatibilityMode.tooltip": "Tüm entegrasyonları kapatır ve en temkinli çizim yolunu kullanır. Çakışmaları ayıklarken işe yarar.",
+  "config.omnichest.compat.debugRenderLogs": "Ayrıntılı çizim günlüğü",
+  "config.omnichest.compat.debugRenderLogs.tooltip": "Uyumluluk katmanının ayrıntılı günlüğünü yazar. Yalnızca sorun bildirirken açmanız önerilir.",
+  "config.omnichest.compat.status.yes": "evet",
+  "config.omnichest.compat.status.no": "hayır",
+  "config.omnichest.compat.detection.shader_active": "Shader paketi etkin",
 
   "config.omnichest.keybind.intro": "Tüm kısayollar Kontroller → Tuşlar → 'OmniChest' kategorisinde.",
 

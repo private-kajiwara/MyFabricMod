@@ -12,6 +12,7 @@
   "config.omnichest.category.ai": "자동 분류",
   "config.omnichest.category.template": "템플릿",
   "config.omnichest.category.render": "표시 / UI",
+  "config.omnichest.category.compat": "호환성",
   "config.omnichest.category.keybind": "키 설정",
   "config.omnichest.category.language": "언어",
 
@@ -19,6 +20,7 @@
   "config.omnichest.sub.lock.protect": "기본 보호",
   "config.omnichest.sub.ai.advanced": "고급 (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "고급 (TemplateConfig)",
+  "config.omnichest.sub.compat_detection": "감지된 모드",
 
   "config.omnichest.general.enableMod": "모드 활성화",
   "config.omnichest.general.enableMod.tooltip": "모드 전체 ON/OFF. 끄면 모든 기능이 비활성화됩니다.",
@@ -116,6 +118,22 @@
   "config.omnichest.render.showCategoryLabels": "카테고리 라벨 표시",
   "config.omnichest.render.enableTooltips": "툴팁 사용",
   "config.omnichest.render.guiAnimation": "GUI 애니메이션",
+
+  "config.omnichest.compat.enableShaderCompatibility": "셰이더 호환",
+  "config.omnichest.compat.enableShaderCompatibility.tooltip": "Iris나 Oculus가 설치되어 있을 때 셰이더와 충돌하지 않는 렌더 경로를 사용합니다.",
+  "config.omnichest.compat.safeOverlayRendering": "안전한 오버레이 렌더링",
+  "config.omnichest.compat.safeOverlayRendering.tooltip": "오버레이를 보호된 행렬 스택으로 감싸 한 부분의 오류가 화면 전체를 망가뜨리지 않게 합니다.",
+  "config.omnichest.compat.disableExperimentalRendering": "실험적 렌더링 비활성화",
+  "config.omnichest.compat.disableExperimentalRendering.tooltip": "앞으로 추가될 실험적인 렌더 경로를 미리 차단합니다. 지금은 동작에 영향을 주지 않습니다.",
+  "config.omnichest.compat.enableOptionalIntegrations": "선택적 모드 연동",
+  "config.omnichest.compat.enableOptionalIntegrations.tooltip": "REI, EMI, Inventory Profiles 같은 모드가 설치되어 있을 때 연동을 활성화합니다.",
+  "config.omnichest.compat.strictCompatibilityMode": "엄격 호환 모드",
+  "config.omnichest.compat.strictCompatibilityMode.tooltip": "모든 연동을 끄고 가장 보수적인 렌더 경로만 사용합니다. 충돌 원인을 가릴 때 유용합니다.",
+  "config.omnichest.compat.debugRenderLogs": "디버그 렌더 로그",
+  "config.omnichest.compat.debugRenderLogs.tooltip": "호환 레이어의 상세 로그를 출력합니다. 문제를 신고할 때만 켜는 것을 권장합니다.",
+  "config.omnichest.compat.status.yes": "있음",
+  "config.omnichest.compat.status.no": "없음",
+  "config.omnichest.compat.detection.shader_active": "셰이더팩 사용 중",
 
   "config.omnichest.keybind.intro": "모든 단축키는 바닐라 컨트롤 → 키 설정의 'OmniChest' 항목에 있습니다.",
 

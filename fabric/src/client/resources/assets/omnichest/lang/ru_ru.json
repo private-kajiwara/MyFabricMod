@@ -12,6 +12,7 @@
   "config.omnichest.category.ai": "Автоклассификация",
   "config.omnichest.category.template": "Шаблоны",
   "config.omnichest.category.render": "Отображение / UI",
+  "config.omnichest.category.compat": "Совместимость",
   "config.omnichest.category.keybind": "Клавиши",
   "config.omnichest.category.language": "Язык",
 
@@ -19,6 +20,7 @@
   "config.omnichest.sub.lock.protect": "Защита по умолчанию",
   "config.omnichest.sub.ai.advanced": "Расширенно (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Расширенно (TemplateConfig)",
+  "config.omnichest.sub.compat_detection": "Обнаруженные моды",
 
   "config.omnichest.general.enableMod": "Включить мод",
   "config.omnichest.general.enableMod.tooltip": "Главный переключатель. При выключении отключаются все функции мода.",
@@ -116,6 +118,22 @@
   "config.omnichest.render.showCategoryLabels": "Метки категорий",
   "config.omnichest.render.enableTooltips": "Подсказки",
   "config.omnichest.render.guiAnimation": "Анимации интерфейса",
+
+  "config.omnichest.compat.enableShaderCompatibility": "Совместимость с шейдерами",
+  "config.omnichest.compat.enableShaderCompatibility.tooltip": "Переключает на безопасный путь отрисовки, когда установлены Iris или Oculus.",
+  "config.omnichest.compat.safeOverlayRendering": "Безопасная отрисовка наложений",
+  "config.omnichest.compat.safeOverlayRendering.tooltip": "Заворачивает наложения в защищённый матричный стек, чтобы единичный сбой не сломал остальной интерфейс.",
+  "config.omnichest.compat.disableExperimentalRendering": "Отключить экспериментальную отрисовку",
+  "config.omnichest.compat.disableExperimentalRendering.tooltip": "Заранее отключает будущие экспериментальные пути отрисовки. Сейчас ни на что не влияет.",
+  "config.omnichest.compat.enableOptionalIntegrations": "Интеграция со сторонними модами",
+  "config.omnichest.compat.enableOptionalIntegrations.tooltip": "Включает интеграцию с REI, EMI, Inventory Profiles и подобными модами, если они установлены.",
+  "config.omnichest.compat.strictCompatibilityMode": "Строгий режим совместимости",
+  "config.omnichest.compat.strictCompatibilityMode.tooltip": "Отключает все интеграции и использует самый щадящий путь отрисовки. Удобно для поиска конфликтов.",
+  "config.omnichest.compat.debugRenderLogs": "Подробные логи отрисовки",
+  "config.omnichest.compat.debugRenderLogs.tooltip": "Выводит подробные логи слоя совместимости. Включайте только при отчётах об ошибках.",
+  "config.omnichest.compat.status.yes": "да",
+  "config.omnichest.compat.status.no": "нет",
+  "config.omnichest.compat.detection.shader_active": "Шейдер-пак активен",
 
   "config.omnichest.keybind.intro": "Все клавиши находятся в Управление → Клавиши → раздел 'OmniChest'.",
 

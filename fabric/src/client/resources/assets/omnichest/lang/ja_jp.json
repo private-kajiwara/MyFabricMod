@@ -12,6 +12,7 @@
   "config.omnichest.category.ai": "自動分類",
   "config.omnichest.category.template": "テンプレート",
   "config.omnichest.category.render": "表示 / UI",
+  "config.omnichest.category.compat": "互換性",
   "config.omnichest.category.keybind": "キー設定",
   "config.omnichest.category.language": "言語",
 
@@ -19,6 +20,7 @@
   "config.omnichest.sub.lock.protect": "既定保護",
   "config.omnichest.sub.ai.advanced": "詳細設定 (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "詳細設定 (TemplateConfig)",
+  "config.omnichest.sub.compat_detection": "検出された MOD",
 
   "config.omnichest.general.enableMod": "MOD を有効化",
   "config.omnichest.general.enableMod.tooltip": "MOD 全体の ON/OFF スイッチ。 OFF にすると全機能が無効になります。",
@@ -116,6 +118,22 @@
   "config.omnichest.render.showCategoryLabels": "カテゴリ ラベルを表示",
   "config.omnichest.render.enableTooltips": "ツールチップを有効化",
   "config.omnichest.render.guiAnimation": "GUI アニメ",
+
+  "config.omnichest.compat.enableShaderCompatibility": "シェーダー互換",
+  "config.omnichest.compat.enableShaderCompatibility.tooltip": "Iris や Oculus を導入している環境で、 シェーダーと競合しにくい描画経路に切り替えます。",
+  "config.omnichest.compat.safeOverlayRendering": "オーバーレイの安全描画",
+  "config.omnichest.compat.safeOverlayRendering.tooltip": "オーバーレイを保護付きの行列スタックで囲み、 1 か所の描画失敗が画面全体に波及しないようにします。",
+  "config.omnichest.compat.disableExperimentalRendering": "実験的な描画を無効化",
+  "config.omnichest.compat.disableExperimentalRendering.tooltip": "今後追加される実験的な描画機能を最初から無効にします。 現時点では動作に影響しません。",
+  "config.omnichest.compat.enableOptionalIntegrations": "他 MOD との連携",
+  "config.omnichest.compat.enableOptionalIntegrations.tooltip": "REI / EMI / Inventory Profiles などが導入されているときに、 それらとの連携を有効にします。",
+  "config.omnichest.compat.strictCompatibilityMode": "厳格互換モード",
+  "config.omnichest.compat.strictCompatibilityMode.tooltip": "全ての連携を無効化し、 最も控えめな描画経路で動作させます。 不具合の切り分け用。",
+  "config.omnichest.compat.debugRenderLogs": "描画ログを詳細出力",
+  "config.omnichest.compat.debugRenderLogs.tooltip": "互換レイヤの詳細ログを出力します。 不具合報告時のみ ON にしてください。",
+  "config.omnichest.compat.status.yes": "あり",
+  "config.omnichest.compat.status.no": "なし",
+  "config.omnichest.compat.detection.shader_active": "シェーダーパック使用中",
 
   "config.omnichest.keybind.intro": "全てのキーはバニラの コントロール → キー設定 の 'OmniChest' カテゴリにあります。",
 

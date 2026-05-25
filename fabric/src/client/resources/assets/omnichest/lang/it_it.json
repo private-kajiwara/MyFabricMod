@@ -12,6 +12,7 @@
   "config.omnichest.category.ai": "Classificazione",
   "config.omnichest.category.template": "Modelli",
   "config.omnichest.category.render": "Visuale / UI",
+  "config.omnichest.category.compat": "Compatibilità",
   "config.omnichest.category.keybind": "Tasti",
   "config.omnichest.category.language": "Lingua",
 
@@ -19,6 +20,7 @@
   "config.omnichest.sub.lock.protect": "Protezione predefinita",
   "config.omnichest.sub.ai.advanced": "Avanzate (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Avanzate (TemplateConfig)",
+  "config.omnichest.sub.compat_detection": "Mod rilevate",
 
   "config.omnichest.general.enableMod": "Attiva la mod",
   "config.omnichest.general.enableMod.tooltip": "Interruttore generale: se spento disattiva ogni funzione.",
@@ -116,6 +118,22 @@
   "config.omnichest.render.showCategoryLabels": "Etichette categoria",
   "config.omnichest.render.enableTooltips": "Tooltip attivi",
   "config.omnichest.render.guiAnimation": "Animazioni UI",
+
+  "config.omnichest.compat.enableShaderCompatibility": "Compatibilità con gli shader",
+  "config.omnichest.compat.enableShaderCompatibility.tooltip": "Passa a un percorso di rendering sicuro quando Iris o Oculus è installato.",
+  "config.omnichest.compat.safeOverlayRendering": "Rendering sicuro delle sovrapposizioni",
+  "config.omnichest.compat.safeOverlayRendering.tooltip": "Racchiude le sovrapposizioni in uno stack di matrici protetto, così un errore isolato non rovina il resto dello schermo.",
+  "config.omnichest.compat.disableExperimentalRendering": "Disattiva il rendering sperimentale",
+  "config.omnichest.compat.disableExperimentalRendering.tooltip": "Lascia disattivati i futuri percorsi di rendering sperimentali. Al momento non ha effetto.",
+  "config.omnichest.compat.enableOptionalIntegrations": "Integrazioni opzionali con altre mod",
+  "config.omnichest.compat.enableOptionalIntegrations.tooltip": "Abilita l'integrazione con REI, EMI, Inventory Profiles e simili quando sono installate.",
+  "config.omnichest.compat.strictCompatibilityMode": "Modalità compatibilità rigorosa",
+  "config.omnichest.compat.strictCompatibilityMode.tooltip": "Disattiva tutte le integrazioni e usa il percorso di rendering più prudente. Utile per isolare i conflitti.",
+  "config.omnichest.compat.debugRenderLogs": "Log di rendering dettagliati",
+  "config.omnichest.compat.debugRenderLogs.tooltip": "Stampa log dettagliati del livello di compatibilità. Consigliato solo per segnalare problemi.",
+  "config.omnichest.compat.status.yes": "sì",
+  "config.omnichest.compat.status.no": "no",
+  "config.omnichest.compat.detection.shader_active": "Shader pack attivo",
 
   "config.omnichest.keybind.intro": "Tutti i tasti sono in Controlli → Tasti → categoria 'OmniChest'.",
 

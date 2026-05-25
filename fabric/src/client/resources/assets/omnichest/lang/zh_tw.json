@@ -12,6 +12,7 @@
   "config.omnichest.category.ai": "自動分類",
   "config.omnichest.category.template": "範本",
   "config.omnichest.category.render": "顯示 / 介面",
+  "config.omnichest.category.compat": "相容性",
   "config.omnichest.category.keybind": "按鍵",
   "config.omnichest.category.language": "語言",
 
@@ -19,6 +20,7 @@
   "config.omnichest.sub.lock.protect": "預設保護",
   "config.omnichest.sub.ai.advanced": "進階 (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "進階 (TemplateConfig)",
+  "config.omnichest.sub.compat_detection": "已偵測到的模組",
 
   "config.omnichest.general.enableMod": "啟用模組",
   "config.omnichest.general.enableMod.tooltip": "總開關。 關閉後本模組的所有功能都會停用。",
@@ -116,6 +118,22 @@
   "config.omnichest.render.showCategoryLabels": "顯示分類標籤",
   "config.omnichest.render.enableTooltips": "啟用提示",
   "config.omnichest.render.guiAnimation": "介面動畫",
+
+  "config.omnichest.compat.enableShaderCompatibility": "光影相容",
+  "config.omnichest.compat.enableShaderCompatibility.tooltip": "安裝 Iris 或 Oculus 時，切換到對光影更友善的渲染路徑。",
+  "config.omnichest.compat.safeOverlayRendering": "安全的疊加層渲染",
+  "config.omnichest.compat.safeOverlayRendering.tooltip": "用受保護的矩陣堆疊包住疊加層繪製，避免單次失敗影響整個畫面。",
+  "config.omnichest.compat.disableExperimentalRendering": "停用實驗性渲染",
+  "config.omnichest.compat.disableExperimentalRendering.tooltip": "預先停用未來新增的實驗性渲染路徑，目前不會影響遊戲行為。",
+  "config.omnichest.compat.enableOptionalIntegrations": "可選模組整合",
+  "config.omnichest.compat.enableOptionalIntegrations.tooltip": "當 REI、EMI、Inventory Profiles 等模組存在時，啟用對應的整合功能。",
+  "config.omnichest.compat.strictCompatibilityMode": "嚴格相容模式",
+  "config.omnichest.compat.strictCompatibilityMode.tooltip": "停用所有整合，並使用最保守的渲染路徑，便於釐清相容性問題。",
+  "config.omnichest.compat.debugRenderLogs": "除錯渲染紀錄",
+  "config.omnichest.compat.debugRenderLogs.tooltip": "輸出相容層的詳細紀錄，僅建議在回報問題時開啟。",
+  "config.omnichest.compat.status.yes": "是",
+  "config.omnichest.compat.status.no": "否",
+  "config.omnichest.compat.detection.shader_active": "光影包使用中",
 
   "config.omnichest.keybind.intro": "所有按鍵都在原版 控制設定 → 按鍵設定 的 'OmniChest' 分類中。",
 

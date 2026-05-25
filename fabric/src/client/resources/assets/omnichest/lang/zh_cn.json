@@ -12,6 +12,7 @@
   "config.omnichest.category.ai": "自动分类",
   "config.omnichest.category.template": "模板",
   "config.omnichest.category.render": "显示 / 界面",
+  "config.omnichest.category.compat": "兼容性",
   "config.omnichest.category.keybind": "按键",
   "config.omnichest.category.language": "语言",
 
@@ -19,6 +20,7 @@
   "config.omnichest.sub.lock.protect": "默认保护",
   "config.omnichest.sub.ai.advanced": "高级 (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "高级 (TemplateConfig)",
+  "config.omnichest.sub.compat_detection": "已识别的模组",
 
   "config.omnichest.general.enableMod": "启用模组",
   "config.omnichest.general.enableMod.tooltip": "总开关。 关闭后, 本模组的所有功能都将停用。",
@@ -116,6 +118,22 @@
   "config.omnichest.render.showCategoryLabels": "显示分类标签",
   "config.omnichest.render.enableTooltips": "启用提示",
   "config.omnichest.render.guiAnimation": "界面动画",
+
+  "config.omnichest.compat.enableShaderCompatibility": "光影兼容",
+  "config.omnichest.compat.enableShaderCompatibility.tooltip": "在安装了 Iris 或 Oculus 时，切换到对光影更友好的渲染路径。",
+  "config.omnichest.compat.safeOverlayRendering": "安全的叠加层渲染",
+  "config.omnichest.compat.safeOverlayRendering.tooltip": "用受保护的矩阵堆栈包裹叠加层绘制，避免单次失败影响整个界面。",
+  "config.omnichest.compat.disableExperimentalRendering": "禁用实验性渲染",
+  "config.omnichest.compat.disableExperimentalRendering.tooltip": "提前关闭将来加入的实验性渲染路径，目前不会影响游戏行为。",
+  "config.omnichest.compat.enableOptionalIntegrations": "可选模组联动",
+  "config.omnichest.compat.enableOptionalIntegrations.tooltip": "当 REI、EMI、Inventory Profiles 等模组存在时，启用对应的联动支持。",
+  "config.omnichest.compat.strictCompatibilityMode": "严格兼容模式",
+  "config.omnichest.compat.strictCompatibilityMode.tooltip": "关闭所有联动，并使用最保守的渲染路径，便于排查冲突。",
+  "config.omnichest.compat.debugRenderLogs": "调试渲染日志",
+  "config.omnichest.compat.debugRenderLogs.tooltip": "输出兼容层的详细日志，仅在反馈问题时建议开启。",
+  "config.omnichest.compat.status.yes": "是",
+  "config.omnichest.compat.status.no": "否",
+  "config.omnichest.compat.detection.shader_active": "光影包正在使用",
 
   "config.omnichest.keybind.intro": "所有按键都位于原版 控制 → 按键设置 的 'OmniChest' 分组中。",
 

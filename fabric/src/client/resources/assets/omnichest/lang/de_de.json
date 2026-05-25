@@ -12,6 +12,7 @@
   "config.omnichest.category.ai": "Auto-Klassif.",
   "config.omnichest.category.template": "Vorlagen",
   "config.omnichest.category.render": "Anzeige / UI",
+  "config.omnichest.category.compat": "Kompatibilität",
   "config.omnichest.category.keybind": "Tasten",
   "config.omnichest.category.language": "Sprache",
 
@@ -19,6 +20,7 @@
   "config.omnichest.sub.lock.protect": "Standard-Schutz",
   "config.omnichest.sub.ai.advanced": "Erweitert (ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Erweitert (TemplateConfig)",
+  "config.omnichest.sub.compat_detection": "Erkannte Mods",
 
   "config.omnichest.general.enableMod": "Mod aktivieren",
   "config.omnichest.general.enableMod.tooltip": "Hauptschalter. Aus schaltet alle Funktionen ab.",
@@ -116,6 +118,22 @@
   "config.omnichest.render.showCategoryLabels": "Kategorie-Labels",
   "config.omnichest.render.enableTooltips": "Tooltips aktiv",
   "config.omnichest.render.guiAnimation": "GUI-Animationen",
+
+  "config.omnichest.compat.enableShaderCompatibility": "Shader-Kompatibilität",
+  "config.omnichest.compat.enableShaderCompatibility.tooltip": "Wechselt auf einen shaderfreundlichen Renderpfad, sobald Iris oder Oculus installiert ist.",
+  "config.omnichest.compat.safeOverlayRendering": "Sicheres Overlay-Rendering",
+  "config.omnichest.compat.safeOverlayRendering.tooltip": "Umschließt Overlay-Zeichnungen mit einem geschützten Matrix-Stack, damit ein einzelner Fehler nicht den ganzen Bildschirm beschädigt.",
+  "config.omnichest.compat.disableExperimentalRendering": "Experimentelles Rendering aus",
+  "config.omnichest.compat.disableExperimentalRendering.tooltip": "Deaktiviert künftige experimentelle Renderpfade vorab. Aktuell ohne Auswirkung.",
+  "config.omnichest.compat.enableOptionalIntegrations": "Optionale Mod-Anbindungen",
+  "config.omnichest.compat.enableOptionalIntegrations.tooltip": "Aktiviert die Anbindung an REI, EMI, Inventory Profiles und ähnliche Mods, sofern installiert.",
+  "config.omnichest.compat.strictCompatibilityMode": "Strikter Kompatibilitätsmodus",
+  "config.omnichest.compat.strictCompatibilityMode.tooltip": "Schaltet alle Anbindungen ab und nutzt den konservativsten Renderpfad. Hilfreich beim Eingrenzen von Konflikten.",
+  "config.omnichest.compat.debugRenderLogs": "Ausführliche Render-Logs",
+  "config.omnichest.compat.debugRenderLogs.tooltip": "Schreibt detaillierte Logs der Kompatibilitätsschicht. Nur bei Fehlerberichten empfohlen.",
+  "config.omnichest.compat.status.yes": "ja",
+  "config.omnichest.compat.status.no": "nein",
+  "config.omnichest.compat.detection.shader_active": "Shader-Pack aktiv",
 
   "config.omnichest.keybind.intro": "Alle Hotkeys findest du unter Vanilla-Steuerung → Tasten → Gruppe 'OmniChest'.",
 
