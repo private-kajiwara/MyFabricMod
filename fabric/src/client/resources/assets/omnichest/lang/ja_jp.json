@@ -108,7 +108,7 @@
   "config.omnichest.template.showButtons": "GUI 内ボタンを表示",
   "config.omnichest.template.applyClickIntervalTicks": "クリック間隔 (tick)",
   "config.omnichest.template.applyClicksPerTickCap": "1tick あたりのクリック上限",
-  "config.omnichest.template.integrateDepositAndCompact": "適用時に 預入 + 詰める も実行",
+  "config.omnichest.template.integrateDepositAndCompact": "適用時に 預入 + 圧縮 も実行",
   "config.omnichest.template.lockHotbar": "適用中はホットバーを保護",
   "config.omnichest.template.skipPreview": "確認ダイアログを省略",
 
@@ -117,7 +117,7 @@
   "config.omnichest.render.highlightColorRgb.tooltip": "ヒットしたチェストを縁取る色。",
   "config.omnichest.render.showCategoryLabels": "カテゴリ ラベルを表示",
   "config.omnichest.render.enableTooltips": "ツールチップを有効化",
-  "config.omnichest.render.guiAnimation": "GUI アニメ",
+  "config.omnichest.render.guiAnimation": "GUI アニメーション",
 
   "config.omnichest.compat.enableShaderCompatibility": "シェーダー互換",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Iris や Oculus を導入している環境で、 シェーダーと競合しにくい描画経路に切り替えます。",
@@ -271,9 +271,9 @@
   "omnichest.category_badge.lock": " [L]",
 
   "omnichest.container_type.chest": "チェスト",
-  "omnichest.container_type.trapped_chest": "トラップ式チェスト",
+  "omnichest.container_type.trapped_chest": "トラップチェスト",
   "omnichest.container_type.double_chest": "ラージチェスト",
-  "omnichest.container_type.double_trapped_chest": "ラージトラップ式チェスト",
+  "omnichest.container_type.double_trapped_chest": "ラージトラップチェスト",
   "omnichest.container_type.barrel": "樽",
   "omnichest.container_type.shulker_box": "シュルカーボックス",
   "omnichest.container_type.other": "コンテナ",

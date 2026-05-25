@@ -28,8 +28,8 @@ import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -369,7 +369,7 @@ public final class ChestHighlighter {
                 submitBox(queue, matrices, xray, snap.secondaryPos(), camPos, color);
             }
 
-            // ─── ピン (ネームタグ) ───
+            // ─── ピン (ネームタグ): ワールド ビルボード として常時 チェスト 真上 に固定 ───
             submitPinStack(queue, matrices, camState, snap, camPos, h.entries, themeRgb);
         }
     }
@@ -424,31 +424,30 @@ public final class ChestHighlighter {
     }
 
     // ════════════════════════════════════════════════════════════════════
-    // ピン (テキスト, X-ray, 濃いめ背景)
+    // ピン (テキスト + 黒帯 + アイコン: ワールド ビルボード)
     // ════════════════════════════════════════════════════════════════════
 
     /**
-     * チェストの「真上 (PIN_BASE_HEIGHT)」を起点に、複数 entry を縦積みで描画する。
+     * チェスト 真上 (= {@link #PIN_BASE_HEIGHT}) にビルボード ピン を 1 個 描画する。
+     * バニラ プレイヤーネームタグ と同じ pose 変換 (translate → camera 向き 回転 → scale) を行うため、
+     * 「ピンがチェストの真上に固定」 されているように見える (= カメラを動かしても チェスト 中心 から離れない)。
      *
      * <p>
-     * バニラの {@code submitNameTag} は背景透明度を {@code Options.getBackgroundOpacity(0.25f)}
-     * に固定しており、ユーザー設定 (1/4) では薄すぎて視認性が悪い。
-     * そこで本実装ではバニラ NameTag と同じ pose 変換 (translate → billboard → scale) を自前で行い、
-     * {@link SubmitNodeCollector#submitText} に直接濃いめの bg を指定する。
+     * <b>SEE_THROUGH モード</b>: テキスト / 黒帯 は {@link Font.DisplayMode#SEE_THROUGH} 系の
+     * 描画パスを使うのでブロック越しでも常に視認できる。 アイコン (= 真の 3D アイテム描画) は
+     * 同じ pose を共有するためテキスト と <b>1px の精度で揃って</b> 表示される。
      *
      * <p>
      * <b>レイアウト</b>:
      * <ul>
-     * <li>最上段は「▼ 距離」(中央揃え, 黄色)。 アイコンは付かない。</li>
-     * <li>その下のエントリ行は <b>左揃え</b>。 各行は「[アイテム アイコン] アイテム名 ×個数」 の順で並ぶ。
-     *     アイテム アイコンは {@link ItemStackRenderState} 経由でビルボード描画する
-     *     (= テキストと同じ pose 内で 1 行ぶんの高さに収まるよう scale)。</li>
+     * <li>最上段は「▼ 距離」(中央揃え, themeRgb 色)。</li>
+     * <li>その下のエントリ行は <b>左揃え</b>: [アイテム アイコン] [アイテム名 ×個数]。</li>
      * </ul>
-     * すべての本文行の左端を揃えるため、 全エントリの最大幅 (= アイコン幅 + ギャップ + テキスト幅) を
-     * 計算してから、 ブロック全体を中央寄せした位置の左端から描画する。
      *
      * <p>
-     * DisplayMode は {@code SEE_THROUGH} なのでブロック越しでも視認できる (X-ray ボックスと一致)。
+     * <b>距離スケール</b>: 基準距離 ({@link #PIN_SCALE_REF_DISTANCE}) より遠いとワールドスケールを
+     * 距離に比例させて、 画面上のサイズを一定に保つ (= 透視で縮小されるのを打ち消す)。
+     * 近距離は素のスケール で「近付くと大きく見える」 自然な挙動。
      */
     private static void submitPinStack(SubmitNodeCollector queue, PoseStack matrices,
             CameraRenderState camState, ContainerSnapshot snap, Vec3 camPos,
@@ -479,7 +478,7 @@ public final class ChestHighlighter {
         double distM = Math.sqrt(distSq);
 
         // ─── 行レイアウト ───
-        // 最上段 (rowIndex = totalRows-1) に「▼ 距離」(黄色)
+        // 最上段 (rowIndex = totalRows-1) に「▼ 距離」
         // その下にエントリを上から entries[0], entries[1], ..., entries[N-1] と並べる
         //   (画面上の縦順序: 上→下 = ▼距離, 1番目, 2番目, ..., 最後)
         int totalRows = (entries.isEmpty() ? 1 : entries.size() + 1);
@@ -506,9 +505,7 @@ public final class ChestHighlighter {
         }
 
         // ─── pose 変換 (バニラ NameTagFeatureRenderer.Storage.add と等価) ───
-        // ただし「画面上のサイズを一定にする」ため、 基準距離より遠ければ
-        // ワールドスケールを距離に比例させる (= 透視投影による縮小を打ち消す)。
-        // 基準距離以下では素のスケールに固定し、 近距離での過剰な肥大化を防ぐ。
+        // 基準距離より遠ければワールドスケールを距離に比例させる (= 透視縮小を打ち消す)。
         float distScaleFactor = (float) (Math.max(distM, PIN_SCALE_REF_DISTANCE)
                 / PIN_SCALE_REF_DISTANCE);
         float worldScale = PIN_TEXT_SCALE * distScaleFactor;
@@ -544,16 +541,8 @@ public final class ChestHighlighter {
                 Component body = entryTexts[i];
                 HighlightEntry e = entries.get(i);
 
-                // ─── 行頭 (= アイコン位置) の黒帯背景 ───
-                //
-                // submitText に bg を渡すと「テキストのちょうど後ろ」 にしか黒帯が出ないため、
-                // 行頭のアイテム アイコンの後ろは素通しになってしまっていた。
-                // ここで「アイコン領域 + ギャップ + テキスト bg と 1px 重ね」 を覆う bg 四角を
-                // submitCustomGeometry + textBackgroundSeeThrough で先に出して、
-                // 「アイコン → テキスト」が 1 本の黒帯に乗っているように見せる。
-                //
-                // X 範囲: leftX-1 .. textX+1 (テキスト bg は textX-1 から始まる想定で 2px 重ねる)
-                // Y 範囲: rowY-1 .. rowY+lineHeight-1 (= MC 標準のテキスト bg の縦範囲と一致)
+                // 行頭 (= アイコン位置) の黒帯背景。 アイコン → テキスト が 1 本の黒帯に乗って見えるよう、
+                // テキスト bg と 1px だけ重ねる (= 接合部の隙間を消す)。
                 float textX = entryBlockLeftX + entryIconSize + entryIconGap;
                 submitPinRowBg(matrices, queue,
                         entryBlockLeftX - 1, rowY - 1,
@@ -561,7 +550,7 @@ public final class ChestHighlighter {
                         (float) lineHeight,
                         PIN_BG_ARGB);
 
-                // アイコン描画用に独立 push (item 描画は内部で pose を変えるため隔離)。
+                // アイコン本体 (ワールド ビルボード)。 pose を独立 push して item 描画の内部変換を隔離する。
                 submitPinIcon(matrices, queue, itemModelResolver,
                         e.stack, entryBlockLeftX, rowY, entryIconSize);
 
@@ -581,28 +570,23 @@ public final class ChestHighlighter {
      *
      * <p>
      * 呼び出し時点で matrices は「ピン billboard + worldScale (= font ピクセル単位, Y 下向き)」まで
-     * 適用済みなので、 ここではバニラ {@code GuiGraphics.renderItem} と同じ追加変換を行う:
+     * 適用済み。 ここではバニラ {@code GuiGraphics.renderItem} と同じ追加変換を行う:
      * <ol>
-     *   <li>アイコンの <b>中心</b> へ translate (アイテム ジオメトリは中心原点なので、 左上ではない)。</li>
-     *   <li>Y 軸を反転 (= バニラ GUI 描画と同じ。 親の Y 反転と二重で正味は正の Y 上方向、
-     *       これでアイテム テクスチャが正しい向きで描かれる)。</li>
-     *   <li>{@code iconSize} に scale (アイテム ジオメトリは 1 単位幅 [-0.5, 0.5] なので
-     *       これで {@code iconSize} font ピクセル幅の正方形に収まる)。</li>
+     *   <li>アイコンの中心へ translate (アイテム ジオメトリは中心原点)。</li>
+     *   <li>Y 軸を反転 + iconSize に scale (アイテム ジオメトリ 1 単位幅 → iconSize 幅)。</li>
      * </ol>
      *
      * <p>
      * Z 方向には微小に手前 (+Z) へ寄せて、 同じ pose 内でテキスト背景と Z-fight するのを避ける。
      *
      * <p>
-     * <b>解決メソッドの選び方 (= 「インベントリと同じ見た目」 のため)</b>:
-     * バニラ {@code GuiGraphics.renderItem} は内部で
-     * {@code ItemModelResolver.updateForTopItem(state, stack, ItemDisplayContext.GUI,
-     * level, player, 0)} を呼んでいる (= バイトコード確認済み)。
-     * 旧実装は {@code updateForNonLiving + FIXED} (= アイテム フレーム用) を使っており、
-     * 木材のように形は出るが <b>テクスチャの 2D 投影</b> がインベントリと違う
-     * ("立体的に転がった" ように見える) ため、 「インベントリと同じ平面アイコン」 にならない。
-     * GUI context + updateForTopItem に揃えれば、 インベントリの 1 スロットを切り取って
-     * ワールドにビルボード貼ったような見た目になる。
+     * <b>解決メソッド</b>: バニラ {@code GuiGraphics.renderItem} と同じ
+     * {@code ItemModelResolver.updateForTopItem(state, stack, ItemDisplayContext.GUI, level, player, 0)}
+     * を呼ぶ (= インベントリ と同じ 平面アイコン に揃える)。
+     *
+     * <p>
+     * <b>ライト</b>: {@code 0xF000F0} (= 天空 / ブロック 光 共に最大) を渡して、 夜 / 洞窟 でも
+     * アイコンが暗くならないようにする (= 「常に最大輝度」)。
      */
     private static void submitPinIcon(PoseStack matrices, SubmitNodeCollector queue,
             ItemModelResolver itemModelResolver,
@@ -619,22 +603,14 @@ public final class ChestHighlighter {
 
         matrices.pushPose();
         try {
-            // (1) アイコン中心へ移動。 中心 = 左上 + iconSize/2。 Z は手前 (= +Z は親 worldScale 後では
-            //     カメラ方向) に少しだけ寄せて、 テキスト背景 (Z=0) より前面に出す。
             matrices.translate(
                     leftX + iconSize / 2.0f,
                     topY + iconSize / 2.0f,
                     0.5f);
-            // (2)(3) Y 軸反転 + サイズ調整を 1 回の scale で適用。
-            //   アイテム ジオメトリは 1 単位幅 → scale(iconSize) で iconSize ピクセル幅。
-            //   Y 反転は GUI item 描画の慣例 (バニラ GuiGraphics と同様)。
             matrices.scale((float) iconSize, -(float) iconSize, (float) iconSize);
-            // ★ submit の第5引数は 「アイテムを覆う tint カラー」 ではなく <b>outlineColor</b>
-            //   (= SubmitNodeStorage$ItemSubmit のフィールド名がそうなっている)。
-            //   非 0 を渡すと光ったアイテムの「縁取りシルエット」 パスが走り、 アイテム本体の上に
-            //   そのカラーのべた塗りシルエットが被さる。 旧コードで 0xFFFFFFFF を渡していたのが
-            //   「真っ白なアイテム」の正体 (= 白縁取りシルエットが全体を塗りつぶしていた)。
-            //   通常描画 (= 縁取りなし) は 0 を渡す。
+            // submit 第5引数 = outlineColor。 非 0 を渡すと 「縁取りシルエット」 パスが走り
+            // アイテム本体を覆ってしまうので、 通常描画 (= 縁取りなし) は 0 を渡す。
+            // 第3引数 = packed light: 0xF000F0 で天空/ブロック光 共に最大 (= 夜でも明るく描画)。
             state.submit(matrices, queue, 0xF000F0, OverlayTexture.NO_OVERLAY, 0);
         } finally {
             matrices.popPose();
@@ -642,23 +618,16 @@ public final class ChestHighlighter {
     }
 
     /**
-     * ピン行頭 (= アイコンを置く領域) に「テキスト bg と同色 / 同じ blend モード」 の四角を出す。
+     * ピン行頭の黒帯背景 (= アイコン領域の後ろに「テキスト bg と同色 / 同じ blend モード」 の四角を出す)。
      *
      * <p>
-     * {@link SubmitNodeCollector#submitText} が描く bg はテキスト文字列の rect しか覆わないので、
-     * その左に並ぶアイテム アイコン領域の後ろは素通しになっていた。
-     * これを補うため、 {@link RenderTypes#textBackgroundSeeThrough()} の RenderType で
-     * カスタム ジオメトリの四角を直接 submit する。
+     * {@link SubmitNodeCollector#submitText} の bg はテキスト rect しか覆わないので、
+     * 左に並ぶアイテム アイコン領域の後ろは素通しになる。 ここを補うため、
+     * {@link RenderTypes#textBackgroundSeeThrough()} で カスタム ジオメトリの四角を直接 submit する。
      * <ul>
-     *   <li>テキスト bg と同じ shader を使うので blend / depth の振る舞いが揃う
-     *       (= SEE_THROUGH = ブロック越しでも見える)。</li>
-     *   <li>頂点フォーマットは {@code POSITION_COLOR_LIGHTMAP} のため
-     *       {@code .setColor + .setLight(0xF000F0)} で十分 (= 法線 / テクスチャ不要)。</li>
+     *   <li>テキスト bg と同じ shader = blend / depth の振る舞いが揃う (= SEE_THROUGH)。</li>
+     *   <li>頂点フォーマットは {@code POSITION_COLOR_LIGHTMAP} ({@code .setColor + .setLight}) で十分。</li>
      * </ul>
-     *
-     * <p>
-     * 与える矩形は <b>原点起点</b> (= 呼び出し側が matrices を pin の billboard pose に揃えた状態)
-     * で、 x は右、 y は下が正、 z は手前 (worldScale で -Y 反転済み)。
      */
     private static void submitPinRowBg(PoseStack matrices, SubmitNodeCollector queue,
             float x, float y, float width, float height, int argb) {
@@ -668,7 +637,6 @@ public final class ChestHighlighter {
         final float y2 = y + height;
         queue.submitCustomGeometry(matrices, RenderTypes.textBackgroundSeeThrough(),
                 (pose, consumer) -> {
-                    // テキスト bg と同じ z=0 平面に置く (= submitText の bg と Z fight しない)。
                     consumer.addVertex(pose, x1, y1, 0).setColor(argb).setLight(0xF000F0);
                     consumer.addVertex(pose, x1, y2, 0).setColor(argb).setLight(0xF000F0);
                     consumer.addVertex(pose, x2, y2, 0).setColor(argb).setLight(0xF000F0);
