@@ -102,21 +102,25 @@ public final class StorageSearchListRenderer {
         Font font = Minecraft.getInstance().font;
         Vec3 player = playerPos();
 
-        // 右側スクロールバーを避けるため、 内容領域は scrollbar 分だけ狭める。
+        // 内容領域: 黄色外枠とアイテムが被らないよう左右上下に padding を取る。
+        // DETAILED モードは既存挙動温存のため上下 padding は <b>0</b> (= 元レイアウト)。
         int contentLeft = listLeft + UILayoutMetrics.LIST_CONTENT_PAD_X;
         int contentRight = listRight - UILayoutMetrics.CONTENT_RIGHT_PAD_FROM_SCROLLBAR;
         int contentWidth = Math.max(0, contentRight - contentLeft);
+        int vPad = (mode == ItemDisplayMode.DETAILED) ? 0 : UILayoutMetrics.LIST_CONTENT_PAD_Y;
+        int contentTop = listTop + vPad;
+        int contentBottom = listBottom - vPad;
         int rowH = mode.rowHeight();
 
         if (!mode.isGrid()) {
             // 1 行 1 アイテム
             int firstVisible = (int) Math.floor(scrollPx / rowH);
-            int viewport = listBottom - listTop;
+            int viewport = contentBottom - contentTop;
             int lastVisible = firstVisible + (viewport / rowH) + 2;
             lastVisible = Math.min(lastVisible, results.size());
             for (int i = Math.max(0, firstVisible); i < lastVisible; i++) {
-                int rowY = listTop + (i * rowH) - (int) scrollPx;
-                if (rowY + rowH < listTop || rowY > listBottom) continue;
+                int rowY = contentTop + (i * rowH) - (int) scrollPx;
+                if (rowY + rowH < contentTop || rowY > contentBottom) continue;
                 SearchIndex.SearchResult r = results.get(i);
                 boolean hovering = mouseX >= contentLeft && mouseX <= contentRight
                         && mouseY >= rowY && mouseY < rowY + rowH;
@@ -134,13 +138,13 @@ public final class StorageSearchListRenderer {
             int cols = spec.cols();
             int gridLeft = contentLeft + spec.leftPad();
             int firstRow = (int) Math.floor(scrollPx / cellH);
-            int viewport = listBottom - listTop;
+            int viewport = contentBottom - contentTop;
             int lastRow = firstRow + (viewport / cellH) + 2;
             int totalRows = (results.size() + cols - 1) / cols;
             lastRow = Math.min(lastRow, totalRows);
             for (int r = Math.max(0, firstRow); r < lastRow; r++) {
-                int rowY = listTop + (r * cellH) - (int) scrollPx;
-                if (rowY + cellH < listTop || rowY > listBottom) continue;
+                int rowY = contentTop + (r * cellH) - (int) scrollPx;
+                if (rowY + cellH < contentTop || rowY > contentBottom) continue;
                 for (int c = 0; c < cols; c++) {
                     int idx = r * cols + c;
                     if (idx >= results.size()) break;
@@ -167,12 +171,16 @@ public final class StorageSearchListRenderer {
         int contentLeft = listLeft + UILayoutMetrics.LIST_CONTENT_PAD_X;
         int contentRight = listRight - UILayoutMetrics.CONTENT_RIGHT_PAD_FROM_SCROLLBAR;
         int contentWidth = Math.max(0, contentRight - contentLeft);
-        if (mouseX < contentLeft || mouseX > contentRight || mouseY < listTop || mouseY > listBottom) {
+        int vPad = (mode == ItemDisplayMode.DETAILED) ? 0 : UILayoutMetrics.LIST_CONTENT_PAD_Y;
+        int contentTop = listTop + vPad;
+        int contentBottom = listBottom - vPad;
+        if (mouseX < contentLeft || mouseX > contentRight
+                || mouseY < contentTop || mouseY > contentBottom) {
             return -1;
         }
         int rowH = mode.rowHeight();
         if (!mode.isGrid()) {
-            int rel = (int) (mouseY - listTop + scrollPx);
+            int rel = (int) (mouseY - contentTop + scrollPx);
             int idx = rel / rowH;
             return (idx >= 0 && idx < results.size()) ? idx : -1;
         } else {
@@ -185,7 +193,7 @@ public final class StorageSearchListRenderer {
             int gridLeft = contentLeft + spec.leftPad();
             if (mouseX < gridLeft || mouseX >= gridLeft + cellW * cols) return -1;
             int colIdx = (int) ((mouseX - gridLeft) / cellW);
-            int rowIdx = (int) ((mouseY - listTop + scrollPx) / cellH);
+            int rowIdx = (int) ((mouseY - contentTop + scrollPx) / cellH);
             int idx = rowIdx * cols + colIdx;
             return (idx >= 0 && idx < results.size() && colIdx >= 0 && colIdx < cols) ? idx : -1;
         }

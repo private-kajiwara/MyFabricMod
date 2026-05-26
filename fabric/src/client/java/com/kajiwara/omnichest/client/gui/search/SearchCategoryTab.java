@@ -2,6 +2,7 @@ package com.kajiwara.omnichest.client.gui.search;
 
 import com.kajiwara.omnichest.client.gui.search.layout.LayoutBox;
 import com.kajiwara.omnichest.client.gui.search.layout.TabLayoutEngine;
+import com.kajiwara.omnichest.client.gui.search.layout.ThemeColorResolver;
 import com.kajiwara.omnichest.client.gui.search.layout.UILayoutMetrics;
 import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import net.minecraft.client.Minecraft;
@@ -15,65 +16,76 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * 倉庫検索 GUI の上部に並べる「Creative Inventory 風」 カテゴリタブ列の描画器。
+ * 倉庫検索 GUI の <b>単一列 縦並びカテゴリタブ</b> の描画器 (= 新仕様)。
  *
  * <p>
- * <b>責務分離</b>:
+ * <b>UI 仕様</b>:
  * <ul>
- *   <li>位置計算: {@link TabLayoutEngine} (= 折り返し / RTL / compact mode を扱う)</li>
- *   <li>描画 + 入力: 本クラス (= 色 / ハイライト / クリック判定)</li>
- * </ul>
- *
- * <p>
- * <b>UI 仕様 (既存維持)</b>:
- * <ul>
- *   <li>選択中タブ: アイコン + ラベル文字を横並びに表示。</li>
- *   <li>非選択タブ: アイコンのみ。 ラベルは tooltip で出す。</li>
- *   <li>選択タブには下線アクセント + 左端の縦バー (既存色 0xFFFFCC00 / 0xFFFFD040)。</li>
- *   <li>RTL では並び順を反転 + テキスト位置を右詰め (= TabLayoutEngine + renderer 双方で対応)。</li>
+ *   <li>タブ列は画面 <b>左側</b> (RTL は右側)、 <b>単一列</b> で並ぶ。</li>
+ *   <li>全タブが strip 全幅を占有。 高さ {@link UILayoutMetrics#TAB_HEIGHT}。</li>
+ *   <li>選択タブ: icon + label 横並び (= active 色 + アクセント)。</li>
+ *   <li>非選択タブ: icon 中央配置 (= 識別はホバー tooltip で補完)。</li>
+ *   <li>並び順は上から下で固定 (= RTL でも変えない)。</li>
+ *   <li>strip の縦サイズを超えるタブはスクロール (= scrollPx) で位置調整。</li>
+ *   <li>選択タブの list 側エッジには区切りを引かず、 list 側 (= SearchScreen) と
+ *       「黄色枠で連結」する演出と組み合わせる。</li>
  * </ul>
  */
 public final class SearchCategoryTab {
 
-    // ─── 色 (= 既存 SearchScreen / DropdownPopup と同調、 触らない) ──
-    private static final int COLOR_BG_NORMAL = 0x80000000;
-    private static final int COLOR_BG_HOVER = 0x33FFFFFF;
-    private static final int COLOR_BG_SELECTED = 0xCC665500;
-    private static final int COLOR_ACCENT = 0xFFFFD040;
-    private static final int COLOR_BORDER = 0xFFFFCC00;
-    private static final int COLOR_TEXT = 0xFFFFFFFF;
+    /** アイコンと文字の隙間 (= 反復統一)。 */
+    private static final int ICON_TEXT_GAP = 4;
+    /** タブ内部の左右 padding。 */
+    private static final int TAB_INNER_PAD_X = 4;
 
     private SearchCategoryTab() {
     }
 
     /**
-     * タブ群を描画し、 ホバー判定用の領域リストを返す。
+     * タブを描画し、 ホバー判定用の領域リストを返す。
      *
-     * @param g           GuiGraphics
-     * @param mouseX      画面マウス座標
-     * @param mouseY      画面マウス座標
-     * @param strip       タブ列の配置領域 (= {@link com.kajiwara.omnichest.client.gui.search.layout.SearchScreenLayout#tabStrip})
-     * @param current     現在選択中のタブ
-     * @param categories  並べるタブ
-     * @param compactAlways 全タブをアイコンのみ表示するか
-     * @return            各タブの (描画長方形, 紐づくカテゴリ) リスト。 onClick で使う。
+     * @param strip       タブ列の配置領域 (= width = computeStripWidth の結果)
+     * @param scrollPx    縦スクロール量 (px)。 0 = 一番上
      */
     public static List<TabHit> render(GuiGraphics g, int mouseX, int mouseY,
                                       LayoutBox strip,
                                       SearchCategory current,
                                       List<SearchCategory> categories,
-                                      boolean compactAlways) {
+                                      boolean compactAlways,
+                                      double scrollPx) {
         Font font = Minecraft.getInstance().font;
-        TabLayoutEngine.Layout layout = TabLayoutEngine.layout(font, strip, categories, current, compactAlways);
-
+        TabLayoutEngine.Layout layout = TabLayoutEngine.layoutVertical(font, strip, categories, current, compactAlways);
         boolean rtl = RTLLayoutManager.get().isRtl();
+
         List<TabHit> hits = new ArrayList<>(layout.boxes.size());
-        for (TabLayoutEngine.TabSlot slot : layout.boxes) {
-            boolean hovered = slot.box.contains(mouseX, mouseY);
-            drawTab(g, font, slot.cat, slot.box, hovered, slot.selected, compactAlways, rtl);
-            hits.add(new TabHit(slot.cat, slot.box));
+
+        // scrollPx を加味した実座標で hit / 描画する。
+        // hits 側にもスクロール後の座標を載せる (= クリック判定がそのまま使える)。
+        g.enableScissor(strip.x(), strip.y(), strip.right(), strip.bottom());
+        try {
+            for (TabLayoutEngine.TabSlot slot : layout.boxes) {
+                LayoutBox b = slot.box.translateY(-(int) scrollPx);
+                if (b.bottom() < strip.y() || b.y() > strip.bottom()) {
+                    hits.add(new TabHit(slot.cat, b));
+                    continue;
+                }
+                boolean hovered = b.contains(mouseX, mouseY);
+                drawTab(g, font, slot.cat, b, hovered, slot.selected, compactAlways, rtl);
+                hits.add(new TabHit(slot.cat, b));
+            }
+        } finally {
+            g.disableScissor();
         }
         return hits;
+    }
+
+    /** 旧 API (= scrollPx 0 と等価) 互換用。 */
+    public static List<TabHit> render(GuiGraphics g, int mouseX, int mouseY,
+                                      LayoutBox strip,
+                                      SearchCategory current,
+                                      List<SearchCategory> categories,
+                                      boolean compactAlways) {
+        return render(g, mouseX, mouseY, strip, current, categories, compactAlways, 0.0);
     }
 
     private static void drawTab(GuiGraphics g, Font font, SearchCategory cat,
@@ -84,51 +96,56 @@ public final class SearchCategoryTab {
         int w = box.w();
         int h = box.h();
 
-        // 背景
-        int bg = selected ? COLOR_BG_SELECTED : COLOR_BG_NORMAL;
+        // ─── 背景 ───
+        int bg = selected ? ThemeColorResolver.TAB_ACTIVE_BG : ThemeColorResolver.TAB_NORMAL_BG;
         g.fill(x, y, x + w, y + h, bg);
         if (hovered && !selected) {
-            g.fill(x, y, x + w, y + h, COLOR_BG_HOVER);
+            g.fill(x, y, x + w, y + h, ThemeColorResolver.TAB_HOVER_BG);
         }
-        if (selected) {
-            // 下線アクセント + 左端 (RTL なら右端) の縦バー
-            g.fill(x, y + h - 2, x + w, y + h, COLOR_BORDER);
-            if (rtl) {
-                g.fill(x + w - 2, y, x + w, y + h, COLOR_ACCENT);
-            } else {
-                g.fill(x, y, x + 2, y + h, COLOR_ACCENT);
-            }
+        // ─── 通常タブの上下境界線 (= 反復による整列) ───
+        // 選択タブは外側で黄色フレームに包まれるので、 ここでは <b>引かない</b> (= 重複防止)。
+        if (!selected) {
+            g.fill(x, y, x + w, y + 1, ThemeColorResolver.TAB_BORDER);
+            g.fill(x, y + h - 1, x + w, y + h, ThemeColorResolver.TAB_BORDER);
         }
 
-        // アイコン位置
-        int iconY = y + (h - 16) / 2;
-        int iconX = rtl ? (x + w - 16 - 4) : (x + 4);
+        // ─── アイコン / ラベル ───
+        // compactAlways モード: icon のみ。
+        // それ以外: <b>全タブ icon + label 横並び</b> (= 余白があるなら最大限活用)。
+        // 選択中はラベル色を強調、 非選択は通常色。
         ItemStack icon = new ItemStack(cat.icon());
-        g.renderItem(icon, iconX, iconY);
+        int iconY = y + (h - 16) / 2;
 
-        // ラベル (= 選択中 かつ compactAlways でないときのみ)
-        if (selected && !compactAlways) {
-            Component label = cat.displayName();
-            int avail = w - (16 + 4 + 6);
-            String text = label.getString();
-            if (font.width(label) > avail && text.length() > 4) {
-                while (text.length() > 4 && font.width(text + "…") > avail) {
-                    text = text.substring(0, text.length() - 1);
-                }
-                text = text + "…";
-                int tw = font.width(text);
-                int tx = rtl ? (iconX - 4 - tw) : (iconX + 16 + 4);
-                int ty = y + (h - 8) / 2;
-                g.drawString(font, text, tx, ty, COLOR_TEXT, false);
-            } else {
-                int tx = rtl ? (iconX - 4 - font.width(label)) : (iconX + 16 + 4);
-                int ty = y + (h - 8) / 2;
-                g.drawString(font, label, tx, ty, COLOR_TEXT, false);
-            }
+        if (compactAlways) {
+            int iconX = x + (w - 16) / 2;
+            g.renderItem(icon, iconX, iconY);
+            return;
         }
+
+        int iconX = rtl
+                ? (x + w - TAB_INNER_PAD_X - 16)
+                : (x + TAB_INNER_PAD_X);
+        g.renderItem(icon, iconX, iconY);
+        Component label = cat.displayName();
+        int labelAvail = w - 16 - TAB_INNER_PAD_X * 2 - ICON_TEXT_GAP;
+        String text = label.getString();
+        if (font.width(label) > labelAvail && text.length() > 2) {
+            while (text.length() > 2 && font.width(text + "…") > labelAvail) {
+                text = text.substring(0, text.length() - 1);
+            }
+            text = text + "…";
+        }
+        int textY = y + (h - 8) / 2;
+        int textX = rtl
+                ? (iconX - ICON_TEXT_GAP - font.width(text))
+                : (iconX + 16 + ICON_TEXT_GAP);
+        int textColor = selected
+                ? ThemeColorResolver.TEXT_HIGHLIGHT // 選択中: 強調
+                : ThemeColorResolver.TEXT_PRIMARY;   // 非選択: 通常
+        g.drawString(font, text, textX, textY, textColor, false);
     }
 
-    /** 与えられた hits からクリックを処理する。 */
+    /** クリック判定。 */
     public static boolean handleClick(List<TabHit> hits, double mouseX, double mouseY,
                                       Consumer<SearchCategory> onSelect) {
         for (TabHit h : hits) {
@@ -148,10 +165,20 @@ public final class SearchCategoryTab {
         return null;
     }
 
-    /** 旧 API (= マウス座標 → カテゴリ) 互換用。 */
+    /** 旧 API 互換用。 */
     public static SearchCategory hoveredCategory(List<TabHit> hits, double mouseX, double mouseY) {
         TabHit h = hoveredHit(hits, mouseX, mouseY);
         return h == null ? null : h.cat;
+    }
+
+    /**
+     * タブ列のコンテンツ高さ (= スクロール上限算出用)。
+     */
+    public static int computeContentHeight(Font font, LayoutBox strip,
+                                           List<SearchCategory> categories,
+                                           SearchCategory current,
+                                           boolean compactAlways) {
+        return TabLayoutEngine.layoutVertical(font, strip, categories, current, compactAlways).totalHeight;
     }
 
     /** タブ 1 つのクリック判定領域 + 紐づくカテゴリ。 */

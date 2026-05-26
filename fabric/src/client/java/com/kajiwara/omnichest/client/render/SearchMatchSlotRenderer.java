@@ -40,14 +40,21 @@ public final class SearchMatchSlotRenderer {
     public static void renderSlot(GuiGraphics g, Slot slot) {
         if (slot == null)
             return;
-        // プレイヤーインベントリ側は除外。
-        if (slot.container instanceof Inventory)
-            return;
         ItemStack stack = slot.getItem();
         if (stack.isEmpty())
             return;
-        if (!ChestHighlighter.get().isHighlightedItem(stack))
-            return;
+        // プレイヤーインベントリ側の扱い:
+        //   - 通常時 (= 対象チェストが健在): プレイヤースロットは <b>除外</b>。
+        //     「手持ちのアイテムまで光る」 UX 問題を避けるため。
+        //   - チェスト破壊後: 中身がインベントリへ移ったケースなので、
+        //     引き継ぎハイライトとして <b>表示する</b>。
+        if (slot.container instanceof Inventory) {
+            if (!ChestHighlighter.get().isHighlightedItemFromBrokenChest(stack))
+                return;
+        } else {
+            if (!ChestHighlighter.get().isHighlightedItem(stack))
+                return;
+        }
 
         int rgb = ChestHighlighter.themeRgb() & 0x00FFFFFF;
         int x = slot.x;

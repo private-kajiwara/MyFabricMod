@@ -1,6 +1,7 @@
 package com.kajiwara.omnichest.client.gui;
 
 import com.kajiwara.omnichest.client.gui.search.DisplayModeDropdown;
+import com.kajiwara.omnichest.client.gui.search.FavoriteInteractionHandler;
 import com.kajiwara.omnichest.client.gui.search.FavoritesManager;
 import com.kajiwara.omnichest.client.gui.search.ItemDisplayMode;
 import com.kajiwara.omnichest.client.gui.search.LocalizationBridge;
@@ -10,7 +11,7 @@ import com.kajiwara.omnichest.client.gui.search.SearchCategoryTab;
 import com.kajiwara.omnichest.client.gui.search.StorageSearchListRenderer;
 import com.kajiwara.omnichest.client.gui.search.layout.LayoutBox;
 import com.kajiwara.omnichest.client.gui.search.layout.SearchScreenLayout;
-import com.kajiwara.omnichest.client.gui.search.layout.TabLayoutEngine;
+import com.kajiwara.omnichest.client.gui.search.layout.ThemeColorResolver;
 import com.kajiwara.omnichest.client.gui.search.layout.TooltipPlacementHelper;
 import com.kajiwara.omnichest.client.gui.search.layout.UILayoutMetrics;
 import com.kajiwara.omnichest.client.render.ChestHighlighter;
@@ -75,6 +76,11 @@ public class SearchScreen extends Screen {
     private boolean draggingScroll = false;
     private double scrollDragOffsetY = 0.0;
 
+    /** タブ列の縦スクロール量 (= 単一列タブが strip より長い時のスクロール)。 */
+    private double tabScrollPx = 0.0;
+    private boolean draggingTabScroll = false;
+    private double tabScrollDragOffsetY = 0.0;
+
     /** 選択中の行データ。 行 = チェスト × アイテム種、 LinkedHashMap で順序安定。 */
     private final Map<String, SelectedRow> selectedRows = new LinkedHashMap<>();
 
@@ -129,18 +135,15 @@ public class SearchScreen extends Screen {
         Component searchHint = OmniChestLocale.get(Keys.EDITBOX_SEARCH_HINT_NETWORK,
                 "Search (e.g. diamond, food, mekanism)");
 
-        // タブ列の必要高さを事前計測 (= 折り返しが起きるか判定)
-        List<SearchCategory> tabCategories = visibleCategories(cfg);
-        int contentW = this.width - UILayoutMetrics.SCREEN_INSET_X * 2;
-        int tabStripHeight = TabLayoutEngine.measureHeight(this.font, contentW,
-                UILayoutMetrics.SCREEN_INSET_X, tabCategories, this.currentCategory, cfg.compactTabMode);
-
+        // タブ列幅は翻訳済みラベルから動的に算出 (= 言語別に最適化)。
+        List<SearchCategory> visibleCats = visibleCategories(cfg);
         this.layout = SearchScreenLayout.compute(this.width, this.height, this.font,
-                tabStripHeight,
+                0,
                 searchHint,
                 new Component[]{sortDistanceLabel, sortCountLabel, sortNameLabel},
                 new Component[]{findSelectedLabel, clearSelectionLabel},
-                displayModeLabel);
+                displayModeLabel,
+                visibleCats);
 
         // ─── 検索ボックス ─────────────────────────────────────────
         this.searchBox = new EditBox(this.font, layout.searchBox.x(), layout.searchBox.y(),
@@ -272,9 +275,10 @@ public class SearchScreen extends Screen {
         SearchConfig cfg = ConfigManager.get().search;
 
         // ─── タイトル (上部中央) ─────────────────────────────────
-        g.drawCenteredString(font, this.getTitle(), this.width / 2, UILayoutMetrics.SCREEN_INSET_TOP, 0xFFFFFFFF);
+        g.drawCenteredString(font, this.getTitle(), this.width / 2, UILayoutMetrics.SCREEN_INSET_TOP,
+                ThemeColorResolver.TEXT_PRIMARY);
 
-        // ─── サマリ (= タイトルの行と兼ねる。 LTR では左、 RTL では右) ──
+        // ─── サマリ (= LTR では左、 RTL では右) ──
         int total = ChestNetworkManager.get().size();
         Component summary = OmniChestLocale.get(Keys.SEARCH_SUMMARY,
                 "Registered: %1$d  /  Hits: %2$d  /  Selected: %3$d",
@@ -283,17 +287,27 @@ public class SearchScreen extends Screen {
         if (rtl) {
             int sw = font.width(summary);
             g.drawString(font, summary, this.width - UILayoutMetrics.SCREEN_INSET_X - sw,
-                    UILayoutMetrics.SCREEN_INSET_TOP, 0xFFAAAAAA, false);
+                    UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
         } else {
             g.drawString(font, summary, UILayoutMetrics.SCREEN_INSET_X,
-                    UILayoutMetrics.SCREEN_INSET_TOP, 0xFFAAAAAA, false);
+                    UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
         }
 
-        // ─── カテゴリタブ列 ───────────────────────────────────────
+        // ─── カテゴリタブ列 (= 左側固定 / RTL は右側) ───────────────
+        LayoutBox selectedBox = null;
         if (cfg.enableCategoryTabs) {
+            LayoutBox strip = this.layout.tabStrip;
+            // パネル背景 (= list と同系色だが少しコントラスト)
+            g.fill(strip.x(), strip.y(), strip.right(), strip.bottom(),
+                    ThemeColorResolver.CATEGORY_PANEL_BG);
             List<SearchCategory> visible = visibleCategories(cfg);
+            clampTabScroll(visible, cfg.compactTabMode);
             this.tabHits = SearchCategoryTab.render(g, mouseX, mouseY,
-                    this.layout.tabStrip, this.currentCategory, visible, cfg.compactTabMode);
+                    strip, this.currentCategory, visible, cfg.compactTabMode, this.tabScrollPx);
+
+            // タブ列のスクロールバー描画 (= 中身が strip 高さを超える時のみ)
+            renderTabScrollbar(g, strip, visible, cfg.compactTabMode);
+            selectedBox = findSelectedTabBox(this.tabHits, this.currentCategory);
         } else {
             this.tabHits = new ArrayList<>();
         }
@@ -301,11 +315,15 @@ public class SearchScreen extends Screen {
         // ─── 結果リスト ───────────────────────────────────────────
         renderList(g, mouseX, mouseY, cfg);
 
+        // ─── 黄色フレーム (= list 上に描画して背景に上書きされないようにする) ───
+        LayoutBox stripForFrame = cfg.enableCategoryTabs ? this.layout.tabStrip : null;
+        drawYellowConnectingFrame(g, stripForFrame, this.layout.list, selectedBox, this.layout.rtl);
+
         // ─── フッターヒント ───────────────────────────────────────
         Component hint = OmniChestLocale.get(Keys.SEARCH_HINT,
                 "Click row = toggle selection  /  Find Selected = pin  /  ESC = cancel");
         g.drawCenteredString(font, hint, this.layout.footerHint.centerX(),
-                this.layout.footerHint.y(), 0xFFAAAAAA);
+                this.layout.footerHint.y(), ThemeColorResolver.TEXT_DIM);
 
         // ─── Display Mode dropdown (overlay) ───
         if (this.displayDropdown != null) {
@@ -317,16 +335,109 @@ public class SearchScreen extends Screen {
         }
 
         // ─── タブホバー Tooltip (= 非選択タブの名前) ───
-        // forbidden = リスト領域。 tooltip がそこに被らないように TooltipPlacementHelper で位置調整。
+        // 縦並びタブなので tooltip は list 側 (= anchor の横) に出す。 上下に出すと他タブが隠れる。
         if (cfg.enableCategoryTabs) {
             SearchCategoryTab.TabHit hovered = SearchCategoryTab.hoveredHit(this.tabHits, mouseX, mouseY);
             if (hovered != null && hovered.cat != this.currentCategory) {
-                int[] pos = TooltipPlacementHelper.preferAbove(font, hovered.cat.displayName(),
+                int[] pos = TooltipPlacementHelper.preferSide(font, hovered.cat.displayName(),
                         hovered.box, this.width, this.height);
                 g.setComponentTooltipForNextFrame(font, java.util.List.of(hovered.cat.displayName()),
                         pos[0], pos[1]);
             }
         }
+    }
+
+    /** 現在選択タブの描画矩形を返す (= 「繋がる」演出用に list 側でも参照する)。 */
+    private LayoutBox findSelectedTabBox(List<SearchCategoryTab.TabHit> hits, SearchCategory current) {
+        for (SearchCategoryTab.TabHit h : hits) {
+            if (h.cat == current) return h.box;
+        }
+        return null;
+    }
+
+    /**
+     * <b>分離レイアウト用</b>の黄色アクセント描画。
+     * <ul>
+     *   <li>list: 全 4 辺を細い黄色枠 ({@link UILayoutMetrics#LIST_FRAME_THICKNESS}) で囲む</li>
+     *   <li>選択タブ: 外側エッジ (= 反 list 側) に <b>太い</b> 黄色ライン
+     *       ({@link UILayoutMetrics#TAB_SELECTED_OUTER_LINE}) を引く</li>
+     *   <li>タブと list は <b>分離</b>。 連結のための塗りつぶしは行わない</li>
+     * </ul>
+     */
+    private static void drawYellowConnectingFrame(GuiGraphics g, LayoutBox strip, LayoutBox list,
+                                                  LayoutBox selectedBox, boolean rtl) {
+        int frame = ThemeColorResolver.TAB_ACTIVE_LINE; // 黄色 (= 0xFFFFD700)
+        int lt = UILayoutMetrics.LIST_FRAME_THICKNESS;
+
+        // list の細い枠 (= 4 辺)
+        g.fill(list.x(), list.y(), list.right(), list.y() + lt, frame);
+        g.fill(list.x(), list.bottom() - lt, list.right(), list.bottom(), frame);
+        g.fill(list.x(), list.y(), list.x() + lt, list.bottom(), frame);
+        g.fill(list.right() - lt, list.y(), list.right(), list.bottom(), frame);
+
+        // 選択タブ: 外側エッジに太いライン (= list の細枠より目立たせる)
+        if (strip != null && selectedBox != null) {
+            int outerY1 = Math.max(selectedBox.y(), strip.y());
+            int outerY2 = Math.min(selectedBox.bottom(), strip.bottom());
+            if (outerY2 > outerY1) {
+                int at = UILayoutMetrics.TAB_SELECTED_OUTER_LINE;
+                if (rtl) {
+                    // RTL: 外側 = 右側
+                    int x = selectedBox.right() - at;
+                    g.fill(x, outerY1, x + at, outerY2, frame);
+                } else {
+                    // LTR: 外側 = 左側
+                    int x = selectedBox.x();
+                    g.fill(x, outerY1, x + at, outerY2, frame);
+                }
+            }
+        }
+    }
+
+    /** タブ列の中身高さがストリップを超える時、 scrollPx を [0, max] に丸める。 */
+    private void clampTabScroll(List<SearchCategory> visible, boolean compactAlways) {
+        int contentH = SearchCategoryTab.computeContentHeight(this.font, this.layout.tabStrip,
+                visible, this.currentCategory, compactAlways);
+        int viewH = this.layout.tabStrip.h();
+        double max = Math.max(0, contentH - viewH);
+        if (this.tabScrollPx < 0) this.tabScrollPx = 0;
+        if (this.tabScrollPx > max) this.tabScrollPx = max;
+    }
+
+    /** タブ列のスクロールバー描画 (= strip の <b>外側</b> に独立配置)。 */
+    private void renderTabScrollbar(GuiGraphics g, LayoutBox strip,
+                                    List<SearchCategory> visible, boolean compactAlways) {
+        int contentH = SearchCategoryTab.computeContentHeight(this.font, strip,
+                visible, this.currentCategory, compactAlways);
+        int viewH = strip.h();
+        if (contentH <= viewH) return;
+        LayoutBox sbBox = this.layout.tabScrollbar;
+        int trackTop = sbBox.y() + 1;
+        int trackBottom = sbBox.bottom() - 1;
+        int trackH = trackBottom - trackTop;
+        int thumbH = Math.max(16, (int) ((long) viewH * viewH / contentH));
+        int maxScroll = contentH - viewH;
+        int thumbY = trackTop + (int) ((this.tabScrollPx / maxScroll) * (trackH - thumbH));
+        g.fill(sbBox.x(), trackTop, sbBox.right(), trackBottom, ThemeColorResolver.SCROLLBAR_TRACK);
+        int color = this.draggingTabScroll
+                ? ThemeColorResolver.SCROLLBAR_THUMB_DRAG
+                : ThemeColorResolver.SCROLLBAR_THUMB;
+        g.fill(sbBox.x(), thumbY, sbBox.right(), thumbY + thumbH, color);
+    }
+
+    /** マウスがタブ列のスクロールバー領域上にあるか。 */
+    private boolean isMouseOverTabScrollbar(double mouseX, double mouseY) {
+        if (this.layout == null) return false;
+        LayoutBox sbBox = this.layout.tabScrollbar;
+        return mouseX >= sbBox.x() - 2 && mouseX <= sbBox.right() + 2
+                && mouseY >= sbBox.y() && mouseY <= sbBox.bottom();
+    }
+
+    /** マウスがタブ列領域 (= strip) 上にあるか (= wheel 操作の判定用)。 */
+    private boolean isMouseOverTabStrip(double mouseX, double mouseY) {
+        if (this.layout == null) return false;
+        return this.layout.tabStrip.contains(mouseX, mouseY)
+                || this.layout.tabScrollbar.contains(mouseX, mouseY);
     }
 
     private List<SearchCategory> visibleCategories(SearchConfig cfg) {
@@ -342,16 +453,17 @@ public class SearchScreen extends Screen {
         int right = list.right();
         int bottom = list.bottom();
 
-        // 背景パネル
-        g.fill(left, top, right, bottom, 0x60000000);
+        // 背景パネル (= 設定画面と統一されたテーマ色)。
+        // 上下境界線は描かない — 黄色の外枠が後段で上書き描画される。
+        g.fill(left, top, right, bottom, ThemeColorResolver.LIST_BG);
 
-        g.enableScissor(left, top, right, bottom);
+        g.enableScissor(left, top + 1, right, bottom - 1);
         try {
             if (this.currentCategory == SearchCategory.FAVORITES && this.results.isEmpty()) {
                 Component msg = LocalizationBridge.favoritesEmpty();
                 int tw = this.font.width(msg);
                 g.drawString(this.font, msg, list.centerX() - tw / 2,
-                        list.centerY() - this.font.lineHeight / 2, 0xFFAAAAAA, false);
+                        list.centerY() - this.font.lineHeight / 2, ThemeColorResolver.TEXT_SECONDARY, false);
             } else {
                 FavoritesManager fav = FavoritesManager.get();
                 StorageSearchListRenderer.render(this.displayMode, g, this.results,
@@ -375,8 +487,10 @@ public class SearchScreen extends Screen {
         int barX = scrollbarBarX();
         int barH = scrollbarHandleHeight();
         int barY = scrollbarHandleY();
-        g.fill(barX, top, barX + UILayoutMetrics.SCROLLBAR_WIDTH, bottom, 0x66000000);
-        int handleColor = this.draggingScroll ? 0xFFFFFFFF : 0xFFAAAAAA;
+        g.fill(barX, top, barX + UILayoutMetrics.SCROLLBAR_WIDTH, bottom, ThemeColorResolver.SCROLLBAR_TRACK);
+        int handleColor = this.draggingScroll
+                ? ThemeColorResolver.SCROLLBAR_THUMB_DRAG
+                : ThemeColorResolver.SCROLLBAR_THUMB;
         g.fill(barX, barY, barX + UILayoutMetrics.SCROLLBAR_WIDTH, barY + barH, handleColor);
     }
 
@@ -461,6 +575,14 @@ public class SearchScreen extends Screen {
         double mouseX = event.x();
         double mouseY = event.y();
 
+        // タブ列のスクロールバードラッグ開始
+        if (event.button() == 0 && isMouseOverTabScrollbar(mouseX, mouseY)) {
+            this.draggingTabScroll = true;
+            this.tabScrollDragOffsetY = 0; // 簡易: スクロール量を直接マウス位置から計算
+            updateTabScrollFromMouse(mouseY);
+            return true;
+        }
+
         // スクロールバー
         if (event.button() == 0 && isMouseOverScrollbar(mouseX, mouseY)) {
             int handleY = scrollbarHandleY();
@@ -487,16 +609,19 @@ public class SearchScreen extends Screen {
 
         SearchIndex.SearchResult clicked = this.results.get(index);
 
-        // ★ トグル: 右クリック または Alt+左クリック
-        boolean isRightClick = event.button() == 1;
-        boolean isAltClick = event.button() == 0 && event.hasAltDown();
-        if (cfg.enableFavorites && (isRightClick || isAltClick)) {
-            FavoritesManager.get().toggle(clicked.stack());
+        // ─── クリック種別判定 (= FavoriteInteractionHandler に集約) ───
+        FavoriteInteractionHandler.ClickKind kind = FavoriteInteractionHandler.classify(event, cfg);
+        boolean continueAsSelect = FavoriteInteractionHandler.handle(clicked, kind);
+        if (kind == FavoriteInteractionHandler.ClickKind.TOGGLE_FAVORITE) {
             rebuildResults();
             return true;
         }
+        if (!continueAsSelect) {
+            // IGNORE (= middle click 等) は何もせず consume だけ。
+            return true;
+        }
 
-        // 通常クリック = 行選択トグル
+        // 通常クリック = 行選択トグル (既存仕様維持)
         String key = makeRowKey(clicked);
         if (this.selectedRows.containsKey(key)) {
             this.selectedRows.remove(key);
@@ -510,6 +635,10 @@ public class SearchScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (this.draggingTabScroll) {
+            updateTabScrollFromMouse(event.y());
+            return true;
+        }
         if (this.draggingScroll) {
             setScrollFromHandleTopY(event.y() - this.scrollDragOffsetY);
             return true;
@@ -519,18 +648,41 @@ public class SearchScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (event.button() == 0 && this.draggingScroll) {
-            this.draggingScroll = false;
-        }
+        if (event.button() == 0 && this.draggingTabScroll) this.draggingTabScroll = false;
+        if (event.button() == 0 && this.draggingScroll) this.draggingScroll = false;
         return super.mouseReleased(event);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double dx, double dy) {
         if (super.mouseScrolled(mouseX, mouseY, dx, dy)) return true;
+        // タブ列上でホイールを回した場合: タブ列をスクロール
+        if (isMouseOverTabStrip(mouseX, mouseY)) {
+            this.tabScrollPx -= dy * (UILayoutMetrics.TAB_HEIGHT + UILayoutMetrics.TAB_GAP);
+            SearchConfig cfg = ConfigManager.get().search;
+            clampTabScroll(visibleCategories(cfg), cfg.compactTabMode);
+            return true;
+        }
         this.scrollPx -= dy * this.displayMode.rowHeight() * 2;
         clampScroll();
         return true;
+    }
+
+    /** タブ列スクロールバーの thumb 位置をマウス Y から更新する。 */
+    private void updateTabScrollFromMouse(double mouseY) {
+        SearchConfig cfg = ConfigManager.get().search;
+        List<SearchCategory> visible = visibleCategories(cfg);
+        int contentH = SearchCategoryTab.computeContentHeight(this.font,
+                this.layout.tabStrip, visible, this.currentCategory, cfg.compactTabMode);
+        int viewH = this.layout.tabStrip.h();
+        if (contentH <= viewH) return;
+        int thumbH = Math.max(16, (int) ((long) viewH * viewH / contentH));
+        int trackTop = this.layout.tabScrollbar.y() + 1;
+        int trackH = (this.layout.tabScrollbar.bottom() - 1) - trackTop;
+        double frac = (mouseY - trackTop - thumbH / 2.0) / (trackH - thumbH);
+        if (frac < 0) frac = 0;
+        if (frac > 1) frac = 1;
+        this.tabScrollPx = frac * (contentH - viewH);
     }
 
     @Override

@@ -57,6 +57,47 @@ public final class TooltipPlacementHelper {
     }
 
     /**
+     * 縦並びタブ用: anchor の <b>list 側</b> に tooltip を出す。
+     * <ul>
+     *   <li>LTR (タブは画面右): tooltip は anchor の <b>左</b> に。</li>
+     *   <li>RTL (タブは画面左): tooltip は anchor の <b>右</b> に。</li>
+     * </ul>
+     * 出せない場合は preferAbove と同じ fallback で逃がす。
+     */
+    public static int[] preferSide(Font font, Component label, LayoutBox anchor,
+                                   int screenW, int screenH) {
+        int margin = UILayoutMetrics.TOOLTIP_SCREEN_MARGIN;
+        int offset = UILayoutMetrics.TOOLTIP_OFFSET;
+        int tw = font.width(label) + 8;
+        int th = font.lineHeight + 6;
+        boolean rtl = RTLLayoutManager.get().isRtl();
+
+        int x;
+        if (rtl) {
+            // RTL: anchor の右側に出す
+            x = anchor.right() + offset;
+            if (x + tw > screenW - margin) {
+                // 画面右端を超える → 反対側 (= anchor の左) に逃げる
+                x = anchor.x() - tw - offset;
+            }
+        } else {
+            // LTR: anchor の左側に出す
+            x = anchor.x() - tw - offset;
+            if (x < margin) {
+                // 画面左端 → 反対側
+                x = anchor.right() + offset;
+            }
+        }
+        if (x < margin) x = margin;
+        if (x + tw > screenW - margin) x = screenW - margin - tw;
+
+        int y = anchor.y() + (anchor.h() - th) / 2;
+        if (y < margin) y = margin;
+        if (y + th > screenH - margin) y = screenH - margin - th;
+        return new int[]{x, y};
+    }
+
+    /**
      * forbidden 矩形 (= リスト領域) に被らないよう調整した tooltip 表示位置。
      * カーソル直近に出すが、 forbidden を避けるため上か横へ自動で逃がす。
      */

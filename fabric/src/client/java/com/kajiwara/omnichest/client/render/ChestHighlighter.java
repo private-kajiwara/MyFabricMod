@@ -77,6 +77,15 @@ public final class ChestHighlighter {
     private static final long SLOT_VIEW_REFRESH_MS = 10_000L;
 
     /**
+     * チェスト破壊検出後、 ハイライトを残す上限時間 (ms)。
+     * <p>
+     * 「壊した瞬間からドロップアイテムを拾い終わるまで」 の猶予として 30 秒を確保。
+     * 永続ピン設定 ({@code pinPersistUntilOpened}) で expiresAt = Long.MAX_VALUE になっていても、
+     * 壊した瞬間にこの値に clamp されるため、 「壊れたチェストのハイライトが永遠に残る」 バグを防ぐ。
+     */
+    private static final long CHEST_BROKEN_GRACE_MS = 30_000L;
+
+    /**
      * ピン・ボックス共通のテーマカラー (RGB) のフォールバック値。
      *
      * <p>
@@ -302,13 +311,36 @@ public final class ChestHighlighter {
             }
             if (hitThis) {
                 matched = true;
-                // 「開封済みフェーズ」では時計を延長しない。 そうしないと slot overlay の
-                // refresh で expiresAt が永久に再延長され、 ハイライトが消えなくなる。
-                if (!h.worldRenderSuppressed && h.expiresAt < refreshTo)
+                // 「開封済み」 or 「チェスト破壊済み」フェーズでは時計を延長しない。
+                // そうしないと slot overlay の refresh で expiresAt が永久に再延長され、
+                // ハイライトが消えなくなる。
+                if (!h.worldRenderSuppressed && !h.chestBroken && h.expiresAt < refreshTo)
                     h.expiresAt = refreshTo;
             }
         }
         return matched;
+    }
+
+    /**
+     * 任意の {@link ItemStack} が、 <b>チェスト破壊済み</b> のハイライトに該当するかを返す。
+     *
+     * <p>
+     * チェストが壊れて中身がプレイヤーインベントリへ移った後も、 そのアイテムを
+     * 識別できるよう player inventory スロットでも overlay を出すために使う。
+     * 通常時 (= チェストがまだ存在) のプレイヤースロットは highlight しない仕様を維持する。
+     */
+    public boolean isHighlightedItemFromBrokenChest(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        if (active.isEmpty()) return false;
+        long now = System.currentTimeMillis();
+        for (ActiveHighlight h : active.values()) {
+            if (!h.chestBroken) continue;
+            if (h.expiresAt < now) continue;
+            for (HighlightEntry e : h.entries) {
+                if (ItemStack.isSameItemSameComponents(e.stack, stack)) return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -376,15 +408,137 @@ public final class ChestHighlighter {
                     : 1.0f;
             int color = packColor(themeRgb, alphaF);
 
-            // ─── ボックス (X-ray) ───
-            submitBox(queue, matrices, xray, snap.pos(), camPos, color);
-            if (snap.secondaryPos() != null && snap.type() != null && snap.type().isDouble()) {
-                submitBox(queue, matrices, xray, snap.secondaryPos(), camPos, color);
+            // ─── 「チェストはまだそこにあるか」 の検出 ───
+            // 壊された瞬間にワイヤー / ピンを消す。 entries は残し、 ドロップアイテムや
+            // プレイヤーインベントリに移ったアイテムをハイライトし続ける (= 引き継ぎ強調)。
+            boolean stillStanding = isStillContainerBlock(level, snap.pos())
+                    || (snap.secondaryPos() != null
+                            && isStillContainerBlock(level, snap.secondaryPos()));
+            if (!stillStanding) {
+                if (!h.chestBroken) {
+                    h.chestBroken = true;
+                    // 永続ピン設定で expiresAt = Long.MAX_VALUE になっているケースがあるため、
+                    // チェスト破壊後は 30 秒以内の有限値にクランプして「永遠に残るバグ」を回避。
+                    long clamp = now + CHEST_BROKEN_GRACE_MS;
+                    if (h.expiresAt > clamp) {
+                        h.expiresAt = clamp;
+                    }
+                }
+                continue;
             }
+
+            // ─── ボックス (X-ray) — ラージチェストは 1 つの長方形として描く ───
+            submitMergedBox(queue, matrices, xray, snap, camPos, color);
 
             // ─── ピン (ネームタグ): ワールド ビルボード として常時 チェスト 真上 に固定 ───
             submitPinStack(queue, matrices, camState, snap, camPos, h.entries, themeRgb);
         }
+
+        // ─── ドロップアイテム / プレイヤーインベントリ への引き継ぎハイライト ───
+        // 「対象アイテムを含む ItemEntity」 をワールド上で個別にワイヤー強調する。
+        // プレイヤーインベントリ側は別 Mixin ({@link com.kajiwara.omnichest.mixin.SearchMatchSlotMixin}) が
+        // {@link #isHighlightedItem} を経由して既にハイライトしているため、 ここでは触らない。
+        renderItemEntityHighlights(level, queue, matrices, camPos, currentDim, themeRgb);
+    }
+
+    /**
+     * {@link BlockPos} の場所がまだコンテナブロックかを確認 (= 壊された検出)。
+     * 失敗時 (= level == null) は true 扱い (= 余計に消さない安全側)。
+     */
+    private static boolean isStillContainerBlock(net.minecraft.client.multiplayer.ClientLevel level,
+                                                 BlockPos pos) {
+        if (level == null) return true;
+        try {
+            net.minecraft.world.level.block.state.BlockState state = level.getBlockState(pos);
+            return com.kajiwara.omnichest.search.ContainerType.fromBlockState(state) != null;
+        } catch (Throwable ignored) {
+            return true;
+        }
+    }
+
+    /**
+     * ワールド上の {@link net.minecraft.world.entity.item.ItemEntity} に対して、
+     * 現在ハイライト中の対象アイテム (= active.entries) と一致するものを wireframe で強調する。
+     *
+     * <p>
+     * <b>動機</b>: チェストが壊されてアイテムがドロップした瞬間、 ユーザに
+     * 「どれが目的の物か」 を伝え続けるため。 アイテムがプレイヤーインベントリへ入った後は
+     * スロット側の overlay ({@link com.kajiwara.omnichest.mixin.SearchMatchSlotMixin}) が
+     * 引き継ぐので、 ここはあくまでワールド上にある期間だけの強調。
+     */
+    private void renderItemEntityHighlights(net.minecraft.client.multiplayer.ClientLevel level,
+                                            SubmitNodeCollector queue, PoseStack matrices,
+                                            Vec3 camPos,
+                                            ResourceKey<Level> currentDim, int themeRgb) {
+        if (level == null || active.isEmpty()) return;
+        int color = packColor(themeRgb, 1.0f);
+        RenderType xray = xrayLines();
+        // クライアントが描画候補にしているエンティティ群を走査 (= 視界 / chunk 範囲内)
+        for (net.minecraft.world.entity.Entity e : level.entitiesForRendering()) {
+            if (!(e instanceof net.minecraft.world.entity.item.ItemEntity ie)) continue;
+            ItemStack stack = ie.getItem();
+            if (stack == null || stack.isEmpty()) continue;
+            if (!matchesAnyActive(stack)) continue;
+
+            // ItemEntity の周囲に小型のワイヤーボックスを 1 つ描く。
+            // AABB から取りたいが API が版違いで不安定なので、 中心 + 半径で簡易に組む。
+            Vec3 ep = ie.position();
+            float r = 0.22f;
+            float x0 = (float) (ep.x - r - camPos.x) - BOX_INFLATE;
+            float y0 = (float) (ep.y - camPos.y) - BOX_INFLATE;
+            float z0 = (float) (ep.z - r - camPos.z) - BOX_INFLATE;
+            float x1 = (float) (ep.x + r - camPos.x) + BOX_INFLATE;
+            float y1 = (float) (ep.y + 0.5 - camPos.y) + BOX_INFLATE;
+            float z1 = (float) (ep.z + r - camPos.z) + BOX_INFLATE;
+            WireHighlightRenderer.submitWireBox(queue, matrices,
+                    x0, y0, z0, x1, y1, z1, color, LINE_WIDTH);
+        }
+        @SuppressWarnings("unused") RenderType _x = xray;
+    }
+
+    /** 任意のスタックが現在の active 群いずれかにマッチするか。 */
+    private boolean matchesAnyActive(ItemStack stack) {
+        for (ActiveHighlight h : active.values()) {
+            for (HighlightEntry e : h.entries) {
+                if (ItemStack.isSameItemSameComponents(e.stack, stack)) return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * ラージチェストは 2 ブロックを <b>1 つの矩形</b> として描く。
+     * 単体チェストは従来通り 1 ブロック AABB。
+     */
+    private static void submitMergedBox(SubmitNodeCollector queue, PoseStack matrices, RenderType type,
+                                        ContainerSnapshot snap, Vec3 camPos, int color) {
+        BlockPos primary = snap.pos();
+        BlockPos secondary = snap.secondaryPos();
+        int x0, y0, z0, x1, y1, z1;
+        if (secondary != null && snap.type() != null && snap.type().isDouble()) {
+            x0 = Math.min(primary.getX(), secondary.getX());
+            y0 = Math.min(primary.getY(), secondary.getY());
+            z0 = Math.min(primary.getZ(), secondary.getZ());
+            x1 = Math.max(primary.getX(), secondary.getX()) + 1;
+            y1 = Math.max(primary.getY(), secondary.getY()) + 1;
+            z1 = Math.max(primary.getZ(), secondary.getZ()) + 1;
+        } else {
+            x0 = primary.getX();
+            y0 = primary.getY();
+            z0 = primary.getZ();
+            x1 = x0 + 1;
+            y1 = y0 + 1;
+            z1 = z0 + 1;
+        }
+        float fx0 = (float) (x0 - camPos.x) - BOX_INFLATE;
+        float fy0 = (float) (y0 - camPos.y) - BOX_INFLATE;
+        float fz0 = (float) (z0 - camPos.z) - BOX_INFLATE;
+        float fx1 = (float) (x1 - camPos.x) + BOX_INFLATE;
+        float fy1 = (float) (y1 - camPos.y) + BOX_INFLATE;
+        float fz1 = (float) (z1 - camPos.z) + BOX_INFLATE;
+        @SuppressWarnings("unused") RenderType _t = type;
+        WireHighlightRenderer.submitWireBox(queue, matrices,
+                fx0, fy0, fz0, fx1, fy1, fz1, color, LINE_WIDTH);
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -735,19 +889,25 @@ public final class ChestHighlighter {
          * true なら {@link ChestHighlighter#onWorldRender(WorldRenderContext)} で
          * このエントリのワールド側描画 (ピン + X-ray ボックス) をスキップする。
          * 「対象チェストを開いた瞬間にピンを消す (= pinPersistUntilOpened)」用フラグ。
-         *
-         * <p>
-         * active マップからは消さないため、 {@link #isHighlightedItem(ItemStack)}
-         * 経由のスロット overlay は引き続き機能する。
-         * GUI を閉じた後は {@link #SLOT_VIEW_REFRESH_MS} 経過で自然に expire する。
          */
         boolean worldRenderSuppressed;
+        /**
+         * true なら 「ハイライト対象チェストが破壊された」 フェーズ。
+         * <ul>
+         *   <li>ワイヤー/ピン描画は停止される</li>
+         *   <li>{@link #expiresAt} は {@link #CHEST_BROKEN_GRACE_MS} で clamp 済</li>
+         *   <li>ドロップアイテム ({@link net.minecraft.world.entity.item.ItemEntity}) と
+         *       プレイヤーインベントリのスロットで引き継ぎハイライトが出る</li>
+         * </ul>
+         */
+        boolean chestBroken;
 
         ActiveHighlight(ContainerSnapshot snapshot, List<HighlightEntry> entries, long expiresAt) {
             this.snapshot = snapshot;
             this.entries = entries;
             this.expiresAt = expiresAt;
             this.worldRenderSuppressed = false;
+            this.chestBroken = false;
         }
     }
 }

@@ -172,6 +172,51 @@ public final class ContainerScanner {
                 captureNow("tick");
             }
         }
+
+        // ─── 破壊検出: 周期的に「ブロックが消えた」 チェストを取り除く ───
+        // チェストを壊して中身が world にドロップ → ドロップ品をプレイヤーが拾うと、
+        // ChestNetworkManager にスナップショットが残ったまま 「存在しないチェスト」
+        // として検索に引っかかる現象が起きる。 これを防ぐため、 ロード済みチャンクに
+        // 居るスナップショットだけを periodic にブロックチェックで検証する。
+        if (++validityCheckCounter >= VALIDITY_CHECK_INTERVAL_TICKS) {
+            validityCheckCounter = 0;
+            sweepBrokenContainers(mc);
+        }
+    }
+
+    /** ブロック検証の間隔 (= 1 秒)。 検証はロード済みチャンクのみ。 */
+    private static final int VALIDITY_CHECK_INTERVAL_TICKS = 20;
+    private static int validityCheckCounter = 0;
+
+    /**
+     * 「ロード済みチャンクにあるはずなのに、 もうコンテナでないブロック」 のスナップショットを
+     * {@link ChestNetworkManager} から取り除く。
+     * <ul>
+     *   <li>未ロードチャンクのスナップショットは <b>触らない</b> (= isLoaded で除外、 false positive 防止)。</li>
+     *   <li>取り除いたついでに、 対応するハイライト
+     *       ({@link com.kajiwara.omnichest.client.render.ChestHighlighter})
+     *       にも消去依頼を出して、 ピン/ワイヤーフレームの取り残しも回避。</li>
+     * </ul>
+     */
+    private static void sweepBrokenContainers(Minecraft mc) {
+        ClientLevel level = mc.level;
+        if (level == null) return;
+        java.util.List<ContainerSnapshot.Key> toRemove = new ArrayList<>();
+        ResourceKey<Level> dim = level.dimension();
+        for (ContainerSnapshot snap : ChestNetworkManager.get().snapshots()) {
+            if (!dim.equals(snap.dimension())) continue;
+            BlockPos pos = snap.pos();
+            if (!level.isLoaded(pos)) continue;
+            BlockState state = level.getBlockState(pos);
+            if (ContainerType.fromBlockState(state) == null) {
+                toRemove.add(snap.key());
+            }
+        }
+        if (toRemove.isEmpty()) return;
+        for (ContainerSnapshot.Key key : toRemove) {
+            ChestNetworkManager.get().remove(key);
+            com.kajiwara.omnichest.client.render.ChestHighlighter.get().clearForKey(key);
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════

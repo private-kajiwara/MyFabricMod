@@ -88,14 +88,45 @@ public final class UILayoutMetrics {
     /** 選択タブの最小幅 (アイコン + ラベル + パディング)。 */
     public static final int TAB_EXPANDED_MIN_WIDTH = 78;
 
+    /**
+     * 縦並びタブ列 (= 左側固定。 RTL では右側) の <b>最小</b> 幅。
+     * <p>
+     * 実際の幅は {@code TabLayoutEngine#computeStripWidth} が翻訳済みラベルの最長幅から
+     * 動的に算出し、 言語 (= en / de / ko / ja 等) に応じて伸縮する。
+     * 「[■][■] の 2 アイコンぶん」 はあくまで <b>最小値</b> の保証として残す。
+     */
+    public static final int VERTICAL_TAB_WIDTH_MIN = 44;
+    /** 後方互換 (= 旧 API)。 新コードは {@link #VERTICAL_TAB_WIDTH_MIN} を使うこと。 */
+    @Deprecated
+    public static final int VERTICAL_TAB_WIDTH = VERTICAL_TAB_WIDTH_MIN;
+    /** 縦タブ列 の 1 セル <b>最小</b> 幅 (= アイコン 1 個ぶん相当)。 */
+    public static final int VERTICAL_TAB_CELL_MIN = 22;
+    /** 後方互換。 */
+    @Deprecated
+    public static final int VERTICAL_TAB_CELL = VERTICAL_TAB_CELL_MIN;
+    /**
+     * 縦タブ列と list の間の隙間。
+     * タブと一覧を視覚的に分離しつつ、 近接 (= 操作の関連性) を保てる最小値に。
+     */
+    public static final int VERTICAL_TAB_GAP_X = 2;
+    /** タブ列の外側に配置するスクロールバーと strip の間の隙間。 */
+    public static final int TAB_SCROLLBAR_GAP_X = 2;
+    /** 選択タブの外側エッジに引く太い黄色ライン (= 視認性アクセント) の太さ。 */
+    public static final int TAB_SELECTED_OUTER_LINE = 3;
+    /** リストを囲む細い黄色枠の太さ (= TAB_SELECTED_OUTER_LINE より細く)。 */
+    public static final int LIST_FRAME_THICKNESS = 1;
+
     // ════════════════════════════════════════════════════════════════════
     // 4. リスト / グリッド
     // ════════════════════════════════════════════════════════════════════
 
-    /** リスト領域 (= scissor 範囲) の縁取り padding。 中身がスクロールバーや枠線に被らないようにする。 */
-    public static final int LIST_CONTENT_PAD_X = 2;
-    /** 上下も少し padding を入れる (= 行の境界が枠に密着しないように)。 */
-    public static final int LIST_CONTENT_PAD_Y = 2;
+    /**
+     * リスト領域 (= scissor 範囲) の左右 padding。
+     * 黄色の外枠 ({@link #LIST_FRAME_THICKNESS}) より十分大きくして、 アイテム描画が枠に被らないようにする。
+     */
+    public static final int LIST_CONTENT_PAD_X = 4;
+    /** 上下 padding。 黄色外枠と最上段/最下段の行境界が密着しないようにする。 */
+    public static final int LIST_CONTENT_PAD_Y = 3;
 
     /** 1 行 (DETAILED モード) の高さ。 */
     public static final int ROW_HEIGHT_DETAILED = 22;

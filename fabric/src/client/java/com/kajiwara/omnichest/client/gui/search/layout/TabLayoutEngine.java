@@ -3,7 +3,6 @@ package com.kajiwara.omnichest.client.gui.search.layout;
 import com.kajiwara.omnichest.client.gui.search.SearchCategory;
 import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import net.minecraft.client.gui.Font;
-import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,14 +14,14 @@ import java.util.List;
  * <p>
  * <b>方針</b>:
  * <ul>
- *   <li>1 行に収まらないタブは <b>次の行</b> へ折り返す。 折り返しは行全体の高さに反映される
- *       (= {@link Layout#totalHeight}) ので、 リスト領域は自動で下にシフトする。</li>
- *   <li>RTL 言語のときは並び順を反転 (= タブ配列を reverse) して左端から並べ続ける。
- *       「タブを画面右端に貼り付ける」 ことはしない (= 一覧の左端ではなく右端から並ぶ視覚と一致するため
- *       タブの並び方向だけ反転で表現)。</li>
- *   <li>選択中タブだけラベル展開 (= 仕様の「閉じているタブはアイコンのみ」)。 compactAlways モードでは
+ *   <li>HORIZONTAL モード: 折り返しありで横一列。 (旧仕様。 上部に置く時に使う)</li>
+ *   <li>VERTICAL モード: 全タブを縦に等幅で並べる。 (= 新仕様。 右側に固定タブ列を作る)</li>
+ *   <li>RTL 時: HORIZONTAL は配列を reverse、 VERTICAL は配置側 (= SearchScreenLayout) が
+ *       「画面の左側」 に貼り付ける。 タブ自体の並び順は上から下で固定。</li>
+ *   <li>選択タブだけラベル展開 (= 「閉じているタブはアイコンのみ」 の仕様)。 compactAlways モードでは
  *       全タブをアイコンのみで揃える。</li>
- *   <li>1 タブの幅はラベル幅 / 翻訳長で動的に決まる (= 「タブ幅不一致」 を防ぐため最小幅で揃える)。</li>
+ *   <li>VERTICAL では全タブが同じ幅 ({@link UILayoutMetrics#VERTICAL_TAB_WIDTH}) で並ぶ
+ *       (= 「[■][■] と左右ぴったり揃う」 の仕様)。</li>
  * </ul>
  */
 public final class TabLayoutEngine {
@@ -34,9 +33,11 @@ public final class TabLayoutEngine {
     public static final class Layout {
         public final List<TabSlot> boxes;
         public final int totalHeight;
+        public final int totalWidth;
 
-        public Layout(List<TabSlot> boxes, int totalHeight) {
+        public Layout(List<TabSlot> boxes, int totalWidth, int totalHeight) {
             this.boxes = boxes;
+            this.totalWidth = totalWidth;
             this.totalHeight = totalHeight;
         }
     }
@@ -45,7 +46,6 @@ public final class TabLayoutEngine {
     public static final class TabSlot {
         public final SearchCategory cat;
         public final LayoutBox box;
-        /** 選択中タブか (= 描画時にラベル展開する条件)。 */
         public final boolean selected;
 
         public TabSlot(SearchCategory cat, LayoutBox box, boolean selected) {
@@ -55,16 +55,10 @@ public final class TabLayoutEngine {
         }
     }
 
-    /**
-     * 与えられた領域内にタブを配置する。
-     *
-     * @param font           ラベル幅計測用
-     * @param origin         strip の左上 (LayoutBox)。 strip の高さは折り返しで伸びるため
-     *                       {@code origin.h} は無視される。
-     * @param categories     並べるタブ群。 RTL のときは内部で reverse する。
-     * @param current        現在選択中のタブ
-     * @param compactAlways  全部アイコンのみで表示するか
-     */
+    // ════════════════════════════════════════════════════════════════════
+    // HORIZONTAL (= 旧仕様, 互換のため温存)
+    // ════════════════════════════════════════════════════════════════════
+
     public static Layout layout(Font font, LayoutBox origin,
                                 List<SearchCategory> categories,
                                 SearchCategory current,
@@ -77,19 +71,23 @@ public final class TabLayoutEngine {
         int x = origin.x();
         int y = origin.y();
         int rowsMaxRight = origin.right();
-        int totalH = UILayoutMetrics.TAB_HEIGHT;
         int lastY = y;
+
+        int uniformSelectedW = 0;
+        if (!compactAlways) {
+            for (SearchCategory cat : categories) {
+                int w = UILayoutMetrics.snap(16 + 4 + font.width(cat.displayName()) + 8);
+                if (w > uniformSelectedW) uniformSelectedW = w;
+            }
+            uniformSelectedW = Math.max(uniformSelectedW, UILayoutMetrics.TAB_EXPANDED_MIN_WIDTH);
+        }
 
         for (SearchCategory cat : order) {
             boolean isCurrent = (cat == current);
             int w = compactAlways
                     ? UILayoutMetrics.TAB_COMPACT_WIDTH
-                    : (isCurrent
-                            ? Math.max(UILayoutMetrics.TAB_EXPANDED_MIN_WIDTH,
-                                    UILayoutMetrics.snap(16 + 4 + font.width(cat.displayName()) + 8))
-                            : UILayoutMetrics.TAB_COMPACT_WIDTH);
+                    : (isCurrent ? uniformSelectedW : UILayoutMetrics.TAB_COMPACT_WIDTH);
             if (x + w > rowsMaxRight) {
-                // 折り返し
                 x = origin.x();
                 y += UILayoutMetrics.TAB_HEIGHT + UILayoutMetrics.TAB_GAP;
             }
@@ -98,19 +96,79 @@ public final class TabLayoutEngine {
             x += w + UILayoutMetrics.TAB_GAP;
             lastY = y;
         }
-        totalH = (lastY - origin.y()) + UILayoutMetrics.TAB_HEIGHT;
-        return new Layout(slots, totalH);
+        int totalH = (lastY - origin.y()) + UILayoutMetrics.TAB_HEIGHT;
+        return new Layout(slots, origin.w(), totalH);
     }
 
-    /**
-     * 「タブ列の必要高さ」 を実測する事前ステップ。 {@link SearchScreenLayout} に渡す用。
-     * 描画はしないが Font 幅計算は同じなので、 layout を呼ぶのと等価。
-     */
     public static int measureHeight(Font font, int stripWidth, int stripX,
                                     List<SearchCategory> categories,
                                     SearchCategory current,
                                     boolean compactAlways) {
         LayoutBox origin = new LayoutBox(stripX, 0, stripWidth, UILayoutMetrics.TAB_HEIGHT);
         return layout(font, origin, categories, current, compactAlways).totalHeight;
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // VERTICAL (= 新仕様, 右側固定タブ列)
+    // ════════════════════════════════════════════════════════════════════
+
+    /**
+     * 翻訳済みラベルの最長幅から strip の最適幅を算出する (= 言語追従)。
+     *
+     * <p>
+     * 単一列構成: 全タブが strip 全幅を占める。 選択タブは「icon + label」 で並び、 非選択タブは
+     * 「icon 中央」 で描画される。 strip 幅は最長ラベルが切れずに収まる値。
+     */
+    public static int computeStripWidth(Font font, List<SearchCategory> categories) {
+        int maxLabel = 0;
+        for (SearchCategory cat : categories) {
+            int w = font.width(cat.displayName());
+            if (w > maxLabel) maxLabel = w;
+        }
+        // 単一列 1 タブの幅 = outer accent line + padding + icon + gap + label + padding
+        // (scrollbar は strip の <b>外側</b> に置くため strip 幅には加算しない)
+        int needed = UILayoutMetrics.TAB_SELECTED_OUTER_LINE
+                + 4 + 16 + 3 + maxLabel + 6;
+        if (needed % 2 != 0) needed++;
+        int min = UILayoutMetrics.VERTICAL_TAB_WIDTH_MIN;
+        if (needed < min) needed = min;
+        return needed;
+    }
+
+    /**
+     * <b>単一列</b> 縦並び。
+     * <ul>
+     *   <li>全タブが strip 全幅を占有。 高さ {@link UILayoutMetrics#TAB_HEIGHT}。</li>
+     *   <li>選択タブ: icon + label の横並び (= 識別性最優先)。</li>
+     *   <li>非選択タブ: icon 中央配置 (= ラベルは tooltip)。</li>
+     *   <li>並び順は上から下で固定。 RTL でも順序は変えない。</li>
+     *   <li>並べた結果が origin.h() を超える場合、 描画側で scrollPx を引いてスクロール表示する。</li>
+     * </ul>
+     *
+     * @param origin   strip の左上。 {@code origin.w()} は {@link #computeStripWidth} の結果。
+     * @param categories 並べるタブ群。
+     * @param current    現在選択タブ
+     * @param compactAlways true なら選択タブも icon のみで扱う (= 全部アイコンモード)
+     */
+    public static Layout layoutVertical(Font font, LayoutBox origin,
+                                        List<SearchCategory> categories,
+                                        SearchCategory current,
+                                        boolean compactAlways) {
+        int stripW = origin.w();
+        int tabH = UILayoutMetrics.TAB_HEIGHT;
+        int gap = UILayoutMetrics.TAB_GAP;
+
+        List<TabSlot> slots = new ArrayList<>(categories.size());
+        int y = origin.y();
+        for (SearchCategory cat : categories) {
+            boolean isCurrent = (cat == current);
+            LayoutBox box = new LayoutBox(origin.x(), y, stripW, tabH);
+            slots.add(new TabSlot(cat, box, isCurrent));
+            y += tabH + gap;
+        }
+        int totalH = slots.isEmpty() ? 0 : (y - gap - origin.y());
+        // compactAlways の影響は描画側 (= SearchCategoryTab) が判定する。
+        @SuppressWarnings("unused") boolean _c = compactAlways;
+        return new Layout(slots, stripW, totalH);
     }
 }
