@@ -1,5 +1,9 @@
 package com.kajiwara.omnichest.search;
 
+import com.kajiwara.omnichest.config.ConfigManager;
+import com.kajiwara.omnichest.config.data.SearchConfig;
+import com.kajiwara.omnichest.search.nested.ContainerSearchCache;
+import com.kajiwara.omnichest.search.nested.NestedItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -79,8 +83,80 @@ public final class SearchIndex {
                     results.add(new SearchResult(snapshot, agg.representative, agg.total));
                 }
             }
+
+            // ─── ネスト (シュルカー / エンダー内シュルカー 等) の中身を追加で検索する ───
+            // 既存のトップレベル集計とは別に、 入れ子コンテナの中身を「階層付き結果」として足す。
+            // 設定で無効なら depth=0 となり何も足さない (= 既存挙動に完全一致)。
+            collectNestedResults(snapshot, q, results);
         }
         return results;
+    }
+
+    /**
+     * スナップショット内のネストしたコンテナ (= シュルカーボックス等) の中身を検索し、
+     * 階層 (= 親コンテナ path) 付きの {@link SearchResult} を {@code results} に追記する。
+     *
+     * <p>
+     * <b>設定との対応</b> (= 3 トグルを「実効探索深さ」 1 つに畳む):
+     * <ul>
+     *   <li>{@code enableShulkerSearch == false} → depth 0 (= 一切潜らない)。</li>
+     *   <li>{@code enableShulkerSearch == true && enableNestedContainerSearch == false}
+     *       → depth 1 (= トップ直下のシュルカーの中身まで。 シュルカー in シュルカーは潜らない)。</li>
+     *   <li>両方 true → {@code maxNestedDepth} (推奨 2〜3) まで潜る。</li>
+     * </ul>
+     *
+     * <p>
+     * 走査結果は {@link ContainerSearchCache} 経由で取得するため、 同一内容のスナップショットを
+     * 毎クエリ再走査しない (= パフォーマンス要件)。
+     */
+    private static void collectNestedResults(ContainerSnapshot snapshot, String q,
+                                             List<SearchResult> results) {
+        int depth = effectiveNestedDepth();
+        if (depth <= 0) {
+            return;
+        }
+        List<NestedItem> nested = ContainerSearchCache.get(snapshot, depth);
+        if (nested.isEmpty()) {
+            return;
+        }
+
+        // (path シグネチャ + leaf アイテム+components) 単位で個数を合算する。
+        // 例: 同じ "Blue Shulker" 内の Diamond ×2 スタック → 1 行に合算。
+        List<NestedAgg> aggs = new ArrayList<>();
+        outer:
+        for (NestedItem item : nested) {
+            for (NestedAgg agg : aggs) {
+                if (agg.matches(item)) {
+                    agg.total += item.count();
+                    continue outer;
+                }
+            }
+            aggs.add(new NestedAgg(item));
+        }
+
+        for (NestedAgg agg : aggs) {
+            if (q.isEmpty() || matches(agg.representative, q)) {
+                results.add(new SearchResult(snapshot, agg.representative, agg.total, agg.path));
+            }
+        }
+    }
+
+    /**
+     * 設定 3 トグルから「実効的に潜る深さ」を算出する。 設定読込前 / 失敗時は安全側で 0 (= 潜らない)。
+     */
+    private static int effectiveNestedDepth() {
+        try {
+            SearchConfig cfg = ConfigManager.get().search;
+            if (!cfg.enableShulkerSearch) {
+                return 0;
+            }
+            if (!cfg.enableNestedContainerSearch) {
+                return 1;
+            }
+            return Math.max(1, cfg.maxNestedDepth);
+        } catch (Throwable ignored) {
+            return 0;
+        }
     }
 
     /**
@@ -139,21 +215,75 @@ public final class SearchIndex {
     }
 
     /**
+     * ネスト結果の集計用作業オブジェクト。 「同じ階層 path に同じアイテム」を 1 行へ合算する。
+     */
+    private static final class NestedAgg {
+        final ItemStack representative;
+        final List<ItemStack> path;
+        int total;
+
+        NestedAgg(NestedItem item) {
+            this.representative = item.stack();
+            this.path = item.containerPath();
+            this.total = item.count();
+        }
+
+        /** 与えた {@link NestedItem} がこの集計と「同じ階層 + 同じアイテム」か。 */
+        boolean matches(NestedItem item) {
+            if (!SearchMatcher.exactComponentsEqual(representative, item.stack())) {
+                return false;
+            }
+            List<ItemStack> other = item.containerPath();
+            if (path.size() != other.size()) {
+                return false;
+            }
+            for (int i = 0; i < path.size(); i++) {
+                if (!SearchMatcher.exactComponentsEqual(path.get(i), other.get(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    /**
      * 検索結果 1 行。 1 コンテナ × 1 アイテム種に集約済み。
      */
     public static final class SearchResult {
         private final ContainerSnapshot snapshot;
         private final ItemStack stack;
         private final int count;
+        /**
+         * このアイテムが入っている「ネスト親コンテナ列」 (= トップコンテナ直下から leaf の親まで)。
+         * トップレベル (= チェスト直置き) のアイテムは空リスト。 これにより既存呼び出し側の挙動は不変
+         * (= {@link #isNested()} が false)。
+         */
+        private final List<ItemStack> containerPath;
 
         public SearchResult(ContainerSnapshot snapshot, ItemStack stack, int count) {
+            this(snapshot, stack, count, List.of());
+        }
+
+        public SearchResult(ContainerSnapshot snapshot, ItemStack stack, int count,
+                            List<ItemStack> containerPath) {
             this.snapshot = snapshot;
             this.stack = stack;
             this.count = count;
+            this.containerPath = (containerPath == null) ? List.of() : List.copyOf(containerPath);
         }
 
         public ContainerSnapshot snapshot() {
             return snapshot;
+        }
+
+        /** ネスト親コンテナ列 (= 階層 UI / ハイライト経路に使う)。 トップレベルは空。 */
+        public List<ItemStack> containerPath() {
+            return containerPath;
+        }
+
+        /** この結果がシュルカー等のネスト内アイテムか (= 階層表示の要否判定)。 */
+        public boolean isNested() {
+            return !containerPath.isEmpty();
         }
 
         /** UI 表示用の代表 ItemStack (個数フィールドは元の値のままなので注意)。 */

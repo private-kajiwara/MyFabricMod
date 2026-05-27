@@ -108,6 +108,59 @@ public final class SearchConfig {
     // {@link com.kajiwara.omnichest.client.render.SearchBeaconRenderer} が担う。
     // ════════════════════════════════════════════════════════════════════
 
+    // ════════════════════════════════════════════════════════════════════
+    // Shulker / Ender Chest 統合ストレージ検索 (= 階層型ストレージ対応)
+    // ────────────────────────────────────────────────────────────────────
+    // すべて「検索対象の拡張オプション」 で、 既存の検索ロジック・ピン座標・Overlay 描画・
+    // GUI テーマ・検索 UX には踏み込まない。 全 OFF にすれば従来 (= チェスト/樽/コンテナ直置きのみ)
+    // と同一の検索結果になる。
+    // ════════════════════════════════════════════════════════════════════
+
+    /**
+     * シュルカーボックスの中身を検索対象に含めるか。
+     * <p>
+     * OFF: シュルカーは「1 アイテム」 としてのみヒット (= 従来挙動)。
+     * ON : チェスト内シュルカーの中身まで検索し、 階層 (Chest › Shulker › Item) を保持して表示する。
+     */
+    public boolean enableShulkerSearch = true;
+
+    /**
+     * エンダーチェストを検索対象に含めるか (= プレイヤー固有 / ディメンション非依存ストレージ)。
+     * <p>
+     * OFF にすると、 エンダーチェストを開いてもスナップショットを記録しない (= 検索結果に出ない)。
+     */
+    public boolean enableEnderChestSearch = true;
+
+    /**
+     * シュルカー in シュルカー のような「入れ子コンテナ」 をさらに深く辿るか。
+     * <p>
+     * OFF: シュルカー直下 (深さ 1) のみ。 ON: {@link #maxNestedDepth} まで再帰する。
+     * {@link #enableShulkerSearch} が OFF の場合は本設定に関わらず一切潜らない。
+     */
+    public boolean enableNestedContainerSearch = true;
+
+    /**
+     * 入れ子コンテナを辿る最大深さ (推奨 2〜3)。 無限再帰防止のため絶対上限あり。
+     * 1 = シュルカー直下のみ。 2 = シュルカー in シュルカー。 3 = さらに 1 段。
+     */
+    public int maxNestedDepth = 2;
+
+    /**
+     * ALT を押しながらシュルカーボックスにホバーすると中身をプレビュー表示するか (= 読み取り専用)。
+     */
+    public boolean enableAltPreview = true;
+
+    /**
+     * ALT プレビューのグリッド列数 (= "Preview Grid Size")。 5〜11。 既定 9 (= シュルカー実体と同じ並び)。
+     */
+    public int previewGridColumns = 9;
+
+    /**
+     * ALT プレビューのパネル背後に減光レイヤ (= 疑似フロスト背景) を敷くか。
+     * 真の Gaussian blur ではなく、 背景を暗く落として中身を読みやすくする軽量効果。
+     */
+    public boolean previewBackgroundBlur = false;
+
     /**
      * 検索ピン位置から上空へ伸びる Minecraft ビーコン風ビームを描画するか。
      * <p>

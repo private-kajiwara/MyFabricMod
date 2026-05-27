@@ -321,6 +321,7 @@
   "omnichest.container_type.double_trapped_chest": "Large Trapped Chest",
   "omnichest.container_type.barrel": "Barrel",
   "omnichest.container_type.shulker_box": "Shulker Box",
+  "omnichest.container_type.ender_chest": "Ender Chest",
   "omnichest.container_type.other": "Container",
 
   "omnichest.storage_category.building": "Building Storage",
@@ -480,5 +481,20 @@
   "config.omnichest.search.beaconDistanceFade": "Distance Fade",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Dim the beam gradually with distance (it never fully disappears).",
   "config.omnichest.search.beaconAnimation": "Beacon Animation",
-  "config.omnichest.search.beaconAnimation.tooltip": "Enable a slow pulsing brightness animation on the beam."
+  "config.omnichest.search.beaconAnimation.tooltip": "Enable a slow pulsing brightness animation on the beam.",
+  "config.omnichest.sub.search.nested": "Nested Storage Search",
+  "config.omnichest.search.enableShulkerSearch": "Enable Shulker Search",
+  "config.omnichest.search.enableShulkerSearch.tooltip": "Search inside shulker boxes too. Results keep the hierarchy (Chest > Shulker > Item) and highlight each step.",
+  "config.omnichest.search.enableEnderChestSearch": "Enable Ender Chest Search",
+  "config.omnichest.search.enableEnderChestSearch.tooltip": "Treat the ender chest as player-specific storage and include it in search (dimension-independent, safe across dimensions).",
+  "config.omnichest.search.enableNestedContainerSearch": "Enable Nested Container Search",
+  "config.omnichest.search.enableNestedContainerSearch.tooltip": "Also descend into shulker-in-shulker (nested) containers, up to Max Nested Depth. Requires Enable Shulker Search.",
+  "config.omnichest.search.maxNestedDepth": "Max Nested Depth",
+  "config.omnichest.search.maxNestedDepth.tooltip": "How deep to follow nested containers (1 = shulker only). Higher costs more.",
+  "config.omnichest.search.enableAltPreview": "Enable ALT Preview",
+  "config.omnichest.search.enableAltPreview.tooltip": "Hold ALT and hover a shulker box to preview its contents (read-only).",
+  "config.omnichest.search.previewGridColumns": "Preview Grid Size",
+  "config.omnichest.search.previewGridColumns.tooltip": "Number of columns in the ALT preview grid.",
+  "config.omnichest.search.previewBackgroundBlur": "Preview Background Blur",
+  "config.omnichest.search.previewBackgroundBlur.tooltip": "Dim the area behind the ALT preview panel for readability (lightweight frosted look)."
 }

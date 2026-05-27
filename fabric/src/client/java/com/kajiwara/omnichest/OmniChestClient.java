@@ -115,6 +115,12 @@ public class OmniChestClient implements ClientModInitializer {
         ChestHighlighter.register();
         ClientKeyBindings.register();
 
+        // ─── Shulker / Ender Chest 統合ストレージ検索 ───
+        // ネスト走査結果のキャッシュ無効化 listener を ChestNetworkManager へ早期に装着する。
+        // (= スナップショット更新/削除時にキャッシュを破棄。 初回検索時に lazy 登録もされるが、
+        //  ここで明示登録しておくと最初の検索より前の変更も正しく無効化される。)
+        com.kajiwara.omnichest.search.nested.ContainerSearchCache.register();
+
         // ─── Smart Storage Classification ───
         // 設定ロード (遅延初期化なので明示呼び出し不要だが、起動時にエラーログを出させたいので一度引いておく)
         ClassifyConfig.get();

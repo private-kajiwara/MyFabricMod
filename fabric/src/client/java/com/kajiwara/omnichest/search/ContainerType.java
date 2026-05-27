@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.EnderChestBlock;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.TrappedChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -32,6 +33,13 @@ public enum ContainerType {
             Keys.CONTAINER_TYPE_DOUBLE_TRAPPED_CHEST, "Large Trapped Chest"),
     BARREL("樽", Keys.CONTAINER_TYPE_BARREL, "Barrel"),
     SHULKER_BOX("シュルカーボックス", Keys.CONTAINER_TYPE_SHULKER_BOX, "Shulker Box"),
+    /**
+     * エンダーチェスト。 ブロック自体はワールドに設置されているが、 中身は
+     * 「プレイヤー固有 (= ディメンション非依存)」 のストレージである点が他コンテナと異なる。
+     * 中身はプレイヤーがエンダーチェストを開いた瞬間に {@code ChestMenu} 経由で観測する
+     * (= 既存の収集パイプラインにそのまま乗る)。
+     */
+    ENDER_CHEST("エンダーチェスト", Keys.CONTAINER_TYPE_ENDER_CHEST, "Ender Chest"),
     OTHER("コンテナ", Keys.CONTAINER_TYPE_OTHER, "Container");
 
     private final String displayName;
@@ -85,6 +93,11 @@ public enum ContainerType {
         }
         if (block instanceof ShulkerBoxBlock) {
             return SHULKER_BOX;
+        }
+        // EnderChestBlock は AbstractChestBlock を継承するが ChestBlock ではないため、
+        // 上の ChestBlock 分岐には掛からない。 専用分岐で明示的に判定する。
+        if (block instanceof EnderChestBlock) {
+            return ENDER_CHEST;
         }
         return null;
     }

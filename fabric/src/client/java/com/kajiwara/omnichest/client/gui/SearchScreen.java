@@ -81,15 +81,22 @@ public class SearchScreen extends Screen {
     private boolean draggingTabScroll = false;
     private double tabScrollDragOffsetY = 0.0;
 
-    /** 選択中の行データ。 行 = チェスト × アイテム種、 LinkedHashMap で順序安定。 */
+    /** 選択中の行データ。 行 = チェスト × アイテム種 × 階層、 LinkedHashMap で順序安定。 */
     private final Map<String, SelectedRow> selectedRows = new LinkedHashMap<>();
 
-    private record SelectedRow(ContainerSnapshot snapshot, ItemStack stack, int count) {
+    private record SelectedRow(ContainerSnapshot snapshot, ItemStack stack, int count,
+                               List<ItemStack> containerPath) {
     }
 
     private static String makeRowKey(SearchIndex.SearchResult r) {
         ContainerSnapshot.Key c = r.snapshot().key();
-        return c.dimension() + "|" + c.pos() + "|" + r.stack();
+        // 階層 (= シュルカー経路) を含めることで「チェスト直置きの Diamond」 と
+        // 「シュルカー内の Diamond」 を別行として扱う (= 選択トグルが衝突しない)。
+        StringBuilder path = new StringBuilder();
+        for (ItemStack cont : r.containerPath()) {
+            path.append('/').append(cont.getHoverName().getString());
+        }
+        return c.dimension() + "|" + c.pos() + "|" + r.stack() + "|" + path;
     }
 
     // ─── 拡張 UI 状態 ───────────────────────────────────────────────
@@ -219,7 +226,14 @@ public class SearchScreen extends Screen {
 
     private void highlightSelectedAndClose() {
         for (SelectedRow sr : this.selectedRows.values()) {
-            ChestHighlighter.get().highlight(sr.snapshot(), sr.stack(), sr.count());
+            if (sr.containerPath() != null && !sr.containerPath().isEmpty()) {
+                // 階層 (= シュルカー内) アイテム: チェスト → シュルカー → アイテム の段階ハイライト。
+                com.kajiwara.omnichest.client.render.NestedHighlightRenderer.highlight(
+                        sr.snapshot(), sr.stack(), sr.count(), sr.containerPath());
+            } else {
+                // トップレベル: 既存挙動を維持。
+                ChestHighlighter.get().highlight(sr.snapshot(), sr.stack(), sr.count());
+            }
             FavoritesManager.get().touch(sr.stack());
         }
         this.onClose();
@@ -627,7 +641,8 @@ public class SearchScreen extends Screen {
             this.selectedRows.remove(key);
         } else {
             this.selectedRows.put(key,
-                    new SelectedRow(clicked.snapshot(), clicked.stack().copy(), clicked.count()));
+                    new SelectedRow(clicked.snapshot(), clicked.stack().copy(), clicked.count(),
+                            clicked.containerPath()));
             if (cfg.enableFavorites) FavoritesManager.get().touch(clicked.stack());
         }
         return true;

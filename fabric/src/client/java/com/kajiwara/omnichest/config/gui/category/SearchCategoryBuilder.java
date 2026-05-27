@@ -84,6 +84,54 @@ public final class SearchCategoryBuilder {
                 ItemDisplayMode::displayName);
 
         // ───────────────────────────────────────────────────────────────
+        // Shulker / Ender Chest 統合ストレージ検索 (= 階層型ストレージ対応)
+        // 既存の検索ロジック・ピン・Overlay・テーマには踏み込まない拡張オプション群。
+        // ───────────────────────────────────────────────────────────────
+        b.subHeader(ConfigLabels.sub("search.nested", "Nested Storage Search"), sub -> {
+            sub.toggle(ConfigLabels.entry("search.enableShulkerSearch", "Enable Shulker Search"),
+                    cfg.enableShulkerSearch, v -> cfg.enableShulkerSearch = v,
+                    ConfigLabels.tooltip("search.enableShulkerSearch",
+                            "Search inside shulker boxes too. Results keep the hierarchy "
+                                    + "(Chest > Shulker > Item) and highlight each step."));
+
+            sub.toggle(ConfigLabels.entry("search.enableEnderChestSearch", "Enable Ender Chest Search"),
+                    cfg.enableEnderChestSearch, v -> cfg.enableEnderChestSearch = v,
+                    ConfigLabels.tooltip("search.enableEnderChestSearch",
+                            "Treat the ender chest as player-specific storage and include it "
+                                    + "in search (dimension-independent, safe across dimensions)."));
+
+            sub.toggle(ConfigLabels.entry("search.enableNestedContainerSearch", "Enable Nested Container Search"),
+                    cfg.enableNestedContainerSearch, v -> cfg.enableNestedContainerSearch = v,
+                    ConfigLabels.tooltip("search.enableNestedContainerSearch",
+                            "Also descend into shulker-in-shulker (nested) containers, up to Max Nested Depth. "
+                                    + "Requires Enable Shulker Search."));
+
+            sub.intSlider(ConfigLabels.entry("search.maxNestedDepth", "Max Nested Depth"),
+                    1, 3, cfg.maxNestedDepth, v -> cfg.maxNestedDepth = v,
+                    ConfigLabels.tooltip("search.maxNestedDepth",
+                            "How deep to follow nested containers (1 = shulker only). Higher costs more."),
+                    v -> Component.literal(String.valueOf(v)));
+
+            sub.toggle(ConfigLabels.entry("search.enableAltPreview", "Enable ALT Preview"),
+                    cfg.enableAltPreview, v -> cfg.enableAltPreview = v,
+                    ConfigLabels.tooltip("search.enableAltPreview",
+                            "Hold ALT and hover a shulker box to preview its contents (read-only)."));
+
+            sub.intSlider(ConfigLabels.entry("search.previewGridColumns", "Preview Grid Size"),
+                    com.kajiwara.omnichest.client.gui.search.preview.ShulkerPreviewRenderer.MIN_COLUMNS,
+                    com.kajiwara.omnichest.client.gui.search.preview.ShulkerPreviewRenderer.MAX_COLUMNS,
+                    cfg.previewGridColumns, v -> cfg.previewGridColumns = v,
+                    ConfigLabels.tooltip("search.previewGridColumns",
+                            "Number of columns in the ALT preview grid."),
+                    v -> Component.literal(v + " cols"));
+
+            sub.toggle(ConfigLabels.entry("search.previewBackgroundBlur", "Preview Background Blur"),
+                    cfg.previewBackgroundBlur, v -> cfg.previewBackgroundBlur = v,
+                    ConfigLabels.tooltip("search.previewBackgroundBlur",
+                            "Dim the area behind the ALT preview panel for readability (lightweight frosted look)."));
+        });
+
+        // ───────────────────────────────────────────────────────────────
         // Beacon Effect (= 検索ピンのビーコン風ビーム補助演出)
         // ピン座標・Overlay anchor・検索ロジックは変更しない。 OFF にすれば従来どおりピンのみ。
         // ───────────────────────────────────────────────────────────────

@@ -212,6 +212,43 @@ public final class ChestHighlighter {
      * (= 加算オーバーフローを避けるため expiresAt 計算をバイパスする)。
      */
     public void highlight(ContainerSnapshot snapshot, ItemStack labelItem, int labelCount, long durationMs) {
+        addEntry(snapshot, labelItem, labelCount, durationMs, false);
+    }
+
+    /**
+     * 「経由コンテナ (= シュルカーボックス)」 をハイライト対象に追加する。
+     *
+     * <p>
+     * <b>用途</b> (= 階層型ストレージ検索のハイライト):
+     * <pre>Chest A └ Blue Shulker └ Diamond</pre>
+     * の Diamond を検索したとき、
+     * <ol>
+     *   <li>Chest A を {@link #highlight} で登録 (= ワールド枠 + ピンに Diamond を表示)。</li>
+     *   <li>Blue Shulker をこのメソッドで <b>waypoint</b> として登録 → Chest A を開くと
+     *       Blue Shulker のスロットが既存のスロット overlay で光る。</li>
+     *   <li>Diamond 自体も {@link #highlight} の対象なので、 Blue Shulker を開くと
+     *       Diamond のスロットが光る。</li>
+     * </ol>
+     * これにより「チェスト → シュルカー → アイテム」 の段階的ハイライトが、 既存のスロット overlay
+     * 機構の再利用だけで成立する。
+     *
+     * <p>
+     * <b>waypoint の特性</b>: スロット overlay の一致判定 ({@link #isHighlightedItem}) には効くが、
+     * ワールドのピン (= 名前タグ スタック) には<b>表示しない</b> (= ピンは leaf アイテムのみで簡潔に保つ。
+     * 経路はGUIの検索結果リスト側でパンくず表示する)。
+     */
+    public void highlightWaypoint(ContainerSnapshot snapshot, ItemStack containerStack, long durationMs) {
+        addEntry(snapshot, containerStack, containerStack == null ? 0 : containerStack.getCount(),
+                durationMs, true);
+    }
+
+    /**
+     * ハイライトエントリ追加の共通実装。
+     *
+     * @param waypoint true なら経由コンテナ (= ピン非表示・スロット overlay のみ)。
+     */
+    private void addEntry(ContainerSnapshot snapshot, ItemStack labelItem, int labelCount,
+                          long durationMs, boolean waypoint) {
         if (snapshot == null)
             return;
         long expiresAt = (durationMs == Long.MAX_VALUE)
@@ -221,10 +258,10 @@ public final class ChestHighlighter {
         ItemStack labelCopy = hasLabel ? labelItem.copy() : ItemStack.EMPTY;
 
         // デバッグモード時のみ: どのチェストに何のピンを立てたかを記録する。
-        DebugLog.log("Highlight registered: {} x{} at {} (durationMs={})",
+        DebugLog.log("Highlight registered: {} x{} at {} (durationMs={}, waypoint={})",
                 hasLabel ? labelItem.getHoverName().getString() : "(no label)",
                 labelCount, snapshot.pos(),
-                durationMs == Long.MAX_VALUE ? "persistent" : durationMs);
+                durationMs == Long.MAX_VALUE ? "persistent" : durationMs, waypoint);
 
         active.compute(snapshot.key(), (key, existing) -> {
             ActiveHighlight target = (existing != null)
@@ -236,13 +273,14 @@ public final class ChestHighlighter {
                 boolean dup = false;
                 for (HighlightEntry e : target.entries) {
                     if (e.count == labelCount
+                            && e.waypoint == waypoint
                             && ItemStack.isSameItemSameComponents(e.stack, labelCopy)) {
                         dup = true;
                         break;
                     }
                 }
                 if (!dup) {
-                    target.entries.add(new HighlightEntry(labelCopy, labelCount));
+                    target.entries.add(new HighlightEntry(labelCopy, labelCount, waypoint));
                 }
             }
             return target;
@@ -255,6 +293,11 @@ public final class ChestHighlighter {
 
     public void highlight(ContainerSnapshot snapshot) {
         highlight(snapshot, ItemStack.EMPTY, 0, resolveDefaultDuration());
+    }
+
+    /** 既定継続時間で経由コンテナ (= シュルカー) を waypoint 登録する。 */
+    public void highlightWaypoint(ContainerSnapshot snapshot, ItemStack containerStack) {
+        highlightWaypoint(snapshot, containerStack, resolveDefaultDuration());
     }
 
     /**
@@ -449,7 +492,9 @@ public final class ChestHighlighter {
             submitMergedBox(queue, matrices, xray, snap, camPos, color);
 
             // ─── ピン (ネームタグ): ワールド ビルボード として常時 チェスト 真上 に固定 ───
-            submitPinStack(queue, matrices, camState, snap, camPos, h.entries, themeRgb);
+            // waypoint (= 経由シュルカー) はピンに出さず、 検索対象アイテムだけを表示する。
+            List<HighlightEntry> pinEntries = h.pinEntries();
+            submitPinStack(queue, matrices, camState, snap, camPos, pinEntries, themeRgb);
 
             // ─── ビーコン風ビーム (ピンの補助演出) ───
             // ピン座標 / anchor / 検索ロジックには一切触れず、 同じ中心位置から上空へ伸びる
@@ -457,7 +502,7 @@ public final class ChestHighlighter {
             //
             // 発射基準は「ピン (名前タグ スタック) の一番真上」。 表示行数 (= アイテム行数) と
             // 距離スケールに連動するため、 表示テキスト量が増えるほど発射位置が上がる。
-            double beamBaseY = pinTopWorldY(snap, h.entries.size(), camPos);
+            double beamBaseY = pinTopWorldY(snap, pinEntries.size(), camPos);
             BeaconEffectLayer.submit(queue, matrices, snap, camPos, themeRgb, alphaF, beamBaseY);
         }
 
@@ -953,7 +998,13 @@ public final class ChestHighlighter {
         return (a << 24) | (rgb & 0x00FFFFFF);
     }
 
-    private record HighlightEntry(ItemStack stack, int count) {
+    /**
+     * 1 つのハイライト対象。
+     *
+     * @param waypoint true = 経由コンテナ (シュルカー)。 スロット overlay 一致には使うが、
+     *                 ワールドのピン (名前タグ) には表示しない。 false = 通常の検索対象アイテム。
+     */
+    private record HighlightEntry(ItemStack stack, int count, boolean waypoint) {
     }
 
     private static final class ActiveHighlight {
@@ -983,6 +1034,20 @@ public final class ChestHighlighter {
             this.expiresAt = expiresAt;
             this.worldRenderSuppressed = false;
             this.chestBroken = false;
+        }
+
+        /**
+         * ワールドのピン (名前タグ スタック) に表示すべきエントリ (= waypoint を除いた検索対象アイテム)。
+         * waypoint (= 経由シュルカー) はスロット overlay 専用なのでピンには出さない。
+         */
+        List<HighlightEntry> pinEntries() {
+            List<HighlightEntry> out = new ArrayList<>(entries.size());
+            for (HighlightEntry e : entries) {
+                if (!e.waypoint) {
+                    out.add(e);
+                }
+            }
+            return out;
         }
     }
 }

@@ -7,6 +7,7 @@ import com.kajiwara.omnichest.i18n.Keys;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import com.kajiwara.omnichest.search.SearchIndex;
+import com.kajiwara.omnichest.search.nested.ContainerHierarchyResolver;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
@@ -153,9 +154,17 @@ public final class SearchItemCardRenderer {
         // (5) 補助情報 (= サブテキスト: 種別 + 座標) — 文字 1 行ぶん下に出す
         // h が十分高い時のみ描画 (= レスポンシブ)
         if (h >= 22) {
-            String typeName = result.containerType() != null
-                    ? result.containerType().displayString()
-                    : OmniChestLocale.getString(Keys.CONTAINER_TYPE_OTHER, "Container");
+            // 階層 (= シュルカー内) アイテムは「Chest › Blue Shulker」 のパンくずを、
+            // トップレベルは従来どおりコンテナ種別名を出す (= 視認性優先で階層を明示)。
+            String typeName;
+            if (result.isNested()) {
+                typeName = ContainerHierarchyResolver
+                        .breadcrumb(result.containerType(), result.containerPath()).getString();
+            } else {
+                typeName = result.containerType() != null
+                        ? result.containerType().displayString()
+                        : OmniChestLocale.getString(Keys.CONTAINER_TYPE_OTHER, "Container");
+            }
             String subText = typeName + " (" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + ")";
             int subY = nameY + font.lineHeight - 1;
             if (subY + font.lineHeight <= y + h) {

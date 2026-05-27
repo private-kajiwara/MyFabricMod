@@ -109,7 +109,9 @@ public final class ContainerScanner {
             BlockPos pos = hit.getBlockPos();
             BlockState state = level.getBlockState(pos);
             ContainerType ct = ContainerType.fromBlockState(state);
-            if (ct != null) {
+            // エンダーチェストは設定で OFF のとき収集しない (= 既存検索に混ぜない)。
+            // 他コンテナは EnderChestStorageBridge.shouldTrack が常に true を返すため影響なし。
+            if (ct != null && EnderChestStorageBridge.shouldTrack(ct)) {
                 BlockPos other = ContainerType.otherHalfOrNull(level, pos, state);
                 pendingOpen = new PendingOpen(level.dimension(), pos.immutable(),
                         other == null ? null : other.immutable(), ct, System.currentTimeMillis());
