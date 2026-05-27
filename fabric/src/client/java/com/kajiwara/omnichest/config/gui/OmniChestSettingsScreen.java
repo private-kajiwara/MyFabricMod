@@ -5,6 +5,7 @@ import com.kajiwara.omnichest.config.gui.widget.ControlSize;
 import com.kajiwara.omnichest.config.gui.widget.DropdownPopup;
 import com.kajiwara.omnichest.config.gui.widget.NavyFooterButton;
 import com.kajiwara.omnichest.config.gui.widget.OverlayPopup;
+import com.kajiwara.omnichest.config.gui.widget.ResetConfirmationPopup;
 import com.kajiwara.omnichest.config.gui.widget.RowEntry;
 import com.kajiwara.omnichest.config.gui.widget.TabGroup;
 import com.kajiwara.omnichest.config.gui.widget.TabModel;
@@ -179,6 +180,8 @@ public final class OmniChestSettingsScreen extends Screen {
     private boolean draggingSidebarV = false;
     /** サイドバー横スクロールバーを drag 中か。 */
     private boolean draggingSidebarH = false;
+    /** コンテンツ領域 (= 右端) の縦スクロールバーを drag 中か。 */
+    private boolean draggingContentV = false;
     /** drag 開始時に「thumb 内のどこを掴んだか」(= drag 中はこの距離を維持)。 */
     private double sbDragOffset = 0.0;
 
@@ -426,9 +429,15 @@ public final class OmniChestSettingsScreen extends Screen {
                 startX, footerY, btnW, btnH,
                 OmniChestLocale.get(Keys.BUTTON_RESET, "Reset"),
                 b -> {
-                    this.onReset.run();
-                    // reset 直後の値を row に再注入する手段がないため、 Screen を作り直して反映する。
-                    Minecraft.getInstance().setScreen(this.parent);
+                    // 即時リセットせず、 まず確認 Popup を出す (= 誤操作で全設定を失う事故を防ぐ)。
+                    // 「はい」 が押されたときだけ onReset を実行して画面を作り直す。
+                    // reset 直後の値を row に再注入する手段がないため、 Screen を parent へ戻して反映する。
+                    this.activePopup = new ResetConfirmationPopup(
+                            this.width, this.height,
+                            () -> {
+                                this.onReset.run();
+                                Minecraft.getInstance().setScreen(this.parent);
+                            });
                 }));
 
         this.footerSaveBtn = addRenderableWidget(new NavyFooterButton(
@@ -456,6 +465,22 @@ public final class OmniChestSettingsScreen extends Screen {
             }
         }
         this.onSave.run();
+    }
+
+    /**
+     * 開いている popup を閉じて参照を破棄する。
+     *
+     * <p>
+     * 単に {@code activePopup = null} とするだけでなく <b>フォーカスも解除</b> する。
+     * バニラの widget はクリックされた直後にキーボードフォーカスを受け取るため、
+     * Reset ボタンを押して popup を開くと Reset ボタンが focused 状態のまま残り、
+     * popup を閉じた後も {@link NavyFooterButton#isHoveredOrFocused()} が true を返して
+     * 「ホバー時の黄色反転」 表示が固定されてしまう。 ここでフォーカスを切ることで
+     * マウスを外せば通常の紺色表示へ戻るようにする。
+     */
+    private void dismissPopup() {
+        this.activePopup = null;
+        this.setFocused(null);
     }
 
     /** 現在のタブだけ visible にし、他は不可視化する。 */
@@ -547,7 +572,7 @@ public final class OmniChestSettingsScreen extends Screen {
         // closed フラグが立っていたら参照を切る (= popup 自身が cancel/commit で閉じる)。
         if (this.activePopup != null) {
             if (this.activePopup.isClosed()) {
-                this.activePopup = null;
+                dismissPopup();
             } else {
                 this.activePopup.render(g, mouseX, mouseY);
             }
@@ -881,7 +906,9 @@ public final class OmniChestSettingsScreen extends Screen {
             int thumbH = Math.max(20, (int) ((double) viewportHeight / totalHeight * sbH));
             int thumbY = sbY + (int) ((double) this.scrollPx / (totalHeight - viewportHeight)
                     * (sbH - thumbH));
-            g.fill(sbRightX - 4, thumbY, sbRightX, thumbY + thumbH, COLOR_SB_THUMB);
+            // drag 中はサイドバー スクロールバーと同様に thumb を明るくして反応を伝える。
+            int thumbColor = this.draggingContentV ? COLOR_SB_THUMB_DRAG : COLOR_SB_THUMB;
+            g.fill(sbRightX - 4, thumbY, sbRightX, thumbY + thumbH, thumbColor);
         }
     }
 
@@ -889,6 +916,92 @@ public final class OmniChestSettingsScreen extends Screen {
         int max = Math.max(0, totalHeight - viewportHeight);
         if (this.scrollPx < 0) this.scrollPx = 0;
         if (this.scrollPx > max) this.scrollPx = max;
+    }
+
+    // ─── コンテンツ領域 ジオメトリ ヘルパ ───────────────────────────────
+    // {@link #prepareActiveTabLayout} / {@link #renderContent} と同じ式で
+    // コンテンツ領域 / スクロールバーの座標を再現する (= 描画とクリック判定をズラさない)。
+
+    /** コンテンツ領域の左端 X。 RTL ではコンテンツが左側に来る。 */
+    private int contentLeft() {
+        return rtl() ? CONTENT_PAD_X : SIDEBAR_WIDTH + 1 + SIDEBAR_GAP + CONTENT_PAD_X;
+    }
+    /** コンテンツ領域の右端 X。 */
+    private int contentRight() {
+        return rtl() ? this.width - SIDEBAR_WIDTH - 1 - SIDEBAR_GAP - CONTENT_PAD_X
+                : this.width - CONTENT_PAD_X;
+    }
+    /** コンテンツ領域の上端 Y。 */
+    private int contentTop() {
+        return HEADER_HEIGHT + 4;
+    }
+    /** コンテンツ領域の下端 Y (= フッタ上辺)。 */
+    private int contentBottom() {
+        return this.height - FOOTER_HEIGHT;
+    }
+
+    /** アクティブタブの全 row 合計高さ。 */
+    private int activeTabContentHeight() {
+        if (this.tabs.isEmpty()) return 0;
+        int total = 0;
+        for (RowEntry row : this.tabs.get(this.activeTab).rows()) {
+            total += row.getHeight();
+        }
+        return total;
+    }
+
+    /**
+     * コンテンツ用縦スクロールバー (= 右端、 RTL では左端) の矩形 {@code [x0, y0, x1, y1]} を返す。
+     * 全 row がビューポートに収まりスクロール不要なら null。
+     * {@link #renderContent} の描画式と完全に一致させる。
+     */
+    @Nullable
+    private int[] contentScrollbarRect() {
+        int total = activeTabContentHeight();
+        int top = contentTop();
+        int bottom = contentBottom();
+        int viewportHeight = bottom - top;
+        if (total <= viewportHeight) return null;
+        int sbRightX = rtl() ? contentLeft() - 1 : contentRight() + 1;
+        return new int[] { sbRightX - 4, top, sbRightX, top + viewportHeight };
+    }
+
+    private boolean isOverContentVScrollbar(double mx, double my) {
+        int[] r = contentScrollbarRect();
+        if (r == null) return false;
+        return mx >= r[0] && mx < r[2] && my >= r[1] && my < r[3];
+    }
+
+    /** コンテンツ スクロールバーの drag 開始。 thumb を掴めばオフセット保持、 track なら thumb 中央へジャンプ。 */
+    private void startContentVDrag(double mouseY) {
+        this.draggingContentV = true;
+        int total = activeTabContentHeight();
+        int top = contentTop();
+        int viewportHeight = contentBottom() - top;
+        int thumbH = Math.max(20, (int) ((double) viewportHeight / total * viewportHeight));
+        int thumbY = top + (int) ((double) this.scrollPx / (total - viewportHeight) * (viewportHeight - thumbH));
+        if (mouseY >= thumbY && mouseY < thumbY + thumbH) {
+            this.sbDragOffset = mouseY - thumbY;
+        } else {
+            this.sbDragOffset = thumbH / 2.0;
+            setContentScrollFromThumbTop(mouseY - thumbH / 2.0);
+        }
+    }
+
+    private void updateContentVDrag(double mouseY) {
+        setContentScrollFromThumbTop(mouseY - this.sbDragOffset);
+    }
+
+    /** thumb 上端 Y から {@link #scrollPx} を逆算する (= {@link #renderContent} の thumbY 式の逆)。 */
+    private void setContentScrollFromThumbTop(double thumbTopY) {
+        int total = activeTabContentHeight();
+        int top = contentTop();
+        int viewportHeight = contentBottom() - top;
+        if (total <= viewportHeight) return;
+        int thumbH = Math.max(20, (int) ((double) viewportHeight / total * viewportHeight));
+        double frac = (thumbTopY - top) / Math.max(1.0, (viewportHeight - thumbH));
+        frac = Math.max(0.0, Math.min(1.0, frac));
+        this.scrollPx = frac * (total - viewportHeight);
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -908,7 +1021,7 @@ public final class OmniChestSettingsScreen extends Screen {
         if (this.activePopup != null) {
             this.activePopup.mouseClicked(mx, my, event.button());
             if (this.activePopup.isClosed()) {
-                this.activePopup = null;
+                dismissPopup();
             }
             return true;
         }
@@ -921,6 +1034,12 @@ public final class OmniChestSettingsScreen extends Screen {
         // ─── サイドバー横スクロールバー ───
         if (event.button() == 0 && isOverSidebarHScrollbar(mx, my)) {
             startSidebarHDrag(mx);
+            return true;
+        }
+        // ─── コンテンツ領域 (右端) 縦スクロールバー ───
+        // widget 群より <b>先に</b> 判定して、 右端の widget とスクロールバーの当たり判定衝突を防ぐ。
+        if (event.button() == 0 && isOverContentVScrollbar(mx, my)) {
+            startContentVDrag(my);
             return true;
         }
 
@@ -981,6 +1100,10 @@ public final class OmniChestSettingsScreen extends Screen {
             updateSidebarHDrag(event.x());
             return true;
         }
+        if (this.draggingContentV) {
+            updateContentVDrag(event.y());
+            return true;
+        }
         return super.mouseDragged(event, dx, dy);
     }
 
@@ -994,13 +1117,18 @@ public final class OmniChestSettingsScreen extends Screen {
         if (event.button() == 0) {
             this.draggingSidebarV = false;
             this.draggingSidebarH = false;
+            this.draggingContentV = false;
         }
         return super.mouseReleased(event);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        // ポップアップが開いている時はホイールもそちらへ (= dropdown のリスト スクロール用)。
+        // ポップアップが開いている時はホイールもそちらへ (= dropdown / 確認 Popup のリスト スクロール用)。
+        // OverlayPopup#mouseScrolled は default false なので、 スクロールを持たない popup は素通り。
+        if (this.activePopup != null && this.activePopup.mouseScrolled(mouseX, mouseY, scrollY)) {
+            return true;
+        }
         if (this.activePopup instanceof DropdownPopup<?> dd
                 && dd.mouseScrolled(mouseX, mouseY, scrollY)) {
             return true;
@@ -1030,7 +1158,7 @@ public final class OmniChestSettingsScreen extends Screen {
         if (this.activePopup != null) {
             if (this.activePopup.keyPressed(event.key())) {
                 if (this.activePopup.isClosed()) {
-                    this.activePopup = null;
+                    dismissPopup();
                 }
                 return true;
             }

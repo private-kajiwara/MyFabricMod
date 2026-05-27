@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Aktarım animasyonunu göster",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Menüde aktarım oklarında akan noktayı canlandırır.",
   "config.omnichest.distribution.enableTransferHistory": "Aktarım geçmişini etkinleştir",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Tamamlanan ve başarısız aktarımları Geçmiş / Başarısız sekmeleri için kaydeder."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Tamamlanan ve başarısız aktarımları Geçmiş / Başarısız sekmeleri için kaydeder.",
+  "modmenu.descriptionTranslation.omnichest": "Tüm sandıklarındaki her eşyayı bir bakışta bul. OmniChest; dünya üzerinde işaretlerle ağ genelinde arama, akıllı yerleştirme, kategoriye göre sıralama, yuva kilitleme ve yeniden kullanılabilir sandık şablonları ekler — deponu düzenli tutmak için tek araç.",
+  "omnichest.reset_popup.title": "Tüm değişiklikler gerçekten sıfırlansın mı?",
+  "omnichest.reset_popup.yes": "Evet",
+  "omnichest.reset_popup.no": "Hayır",
+  "omnichest.reset_popup.no_changes": "Tüm ayarlar varsayılan değerlerinde.",
+  "config.omnichest.sub.search.beacon": "Fener efekti",
+  "config.omnichest.search.enableBeacon": "Fener efektini etkinleştir",
+  "config.omnichest.search.enableBeacon.tooltip": "Her arama işaretinden yükselen yarı saydam fener ışını çizer, böylece uzaktan görünür kalır. İşaretlerin kendisi değişmez.",
+  "config.omnichest.search.beaconOpacity": "Fener saydamlığı",
+  "config.omnichest.search.beaconOpacity.tooltip": "Işının temel opaklığı. Solma ve nabız ile birleşir.",
+  "config.omnichest.search.beaconWidth": "Fener genişliği",
+  "config.omnichest.search.beaconWidth.tooltip": "Işın çekirdeğinin blok cinsinden genişliği. Dış parıltı daha geniştir.",
+  "config.omnichest.search.beaconDistanceFade": "Mesafe solması",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Işını mesafeyle kademeli olarak soldurur (asla tamamen kaybolmaz).",
+  "config.omnichest.search.beaconAnimation": "Fener animasyonu",
+  "config.omnichest.search.beaconAnimation.tooltip": "Işında yavaş, nabız gibi parlaklık animasyonu açar."
 }

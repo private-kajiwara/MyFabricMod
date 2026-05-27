@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "إظهار حركة النقل",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "يحرّك النقطة المتدفقة على طول أسهم النقل في القائمة.",
   "config.omnichest.distribution.enableTransferHistory": "تفعيل سجل النقل",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "يسجّل عمليات النقل الناجحة والفاشلة لعلامتي السجل / الفاشلة."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "يسجّل عمليات النقل الناجحة والفاشلة لعلامتي السجل / الفاشلة.",
+  "modmenu.descriptionTranslation.omnichest": "اعثر على أي عنصر في كل صناديقك بنظرة واحدة. يضيف OmniChest بحثًا عبر شبكة الصناديق مع علامات في العالم، إضافةً إلى الإيداع الذكي والفرز حسب الفئات وقفل الخانات وقوالب صناديق قابلة لإعادة الاستخدام — أداة واحدة للحفاظ على تخزين منظّم.",
+  "omnichest.reset_popup.title": "هل تريد فعلاً إعادة ضبط كل التغييرات؟",
+  "omnichest.reset_popup.yes": "نعم",
+  "omnichest.reset_popup.no": "لا",
+  "omnichest.reset_popup.no_changes": "جميع الإعدادات على القيم الافتراضية.",
+  "config.omnichest.sub.search.beacon": "تأثير المنارة",
+  "config.omnichest.search.enableBeacon": "تفعيل تأثير المنارة",
+  "config.omnichest.search.enableBeacon.tooltip": "يرسم شعاعًا شفافًا يشبه المنارة يرتفع من كل علامة بحث ليبقى مرئيًا من بعيد. العلامات نفسها لا تتغير.",
+  "config.omnichest.search.beaconOpacity": "عتامة المنارة",
+  "config.omnichest.search.beaconOpacity.tooltip": "العتامة الأساسية للشعاع. تُدمج مع التلاشي والنبض.",
+  "config.omnichest.search.beaconWidth": "عرض المنارة",
+  "config.omnichest.search.beaconWidth.tooltip": "عرض قلب الشعاع بالكتل. التوهج الخارجي أوسع.",
+  "config.omnichest.search.beaconDistanceFade": "تلاشٍ حسب المسافة",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "يُخفت الشعاع تدريجيًا مع المسافة (لا يختفي تمامًا أبدًا).",
+  "config.omnichest.search.beaconAnimation": "حركة المنارة",
+  "config.omnichest.search.beaconAnimation.tooltip": "يُفعّل حركة سطوع نابضة بطيئة على الشعاع."
 }

@@ -79,6 +79,12 @@ public final class ConfigManager {
             return; // get() より前に save() を呼ぶケースは想定しないが、保険として無視する。
         try {
             writeAtomic(resolveFile(), GSON.toJson(cfg));
+            // デバッグモード時のみ: 保存が走ったこと + 主要トグルの状態を 1 行残す。
+            // (debugMode を ON にした直後の Save で「ログが増えた」 ことがすぐ確認できる)
+            com.kajiwara.omnichest.debug.DebugLog.log(
+                    "Config saved (search={}, distribution={}, beacon={}, overlay={})",
+                    cfg.search.enable, cfg.distribution.enableAutoDistribution,
+                    cfg.search.enableBeacon, cfg.render.enableOverlay);
         } catch (IOException ioe) {
             OmniChest.LOGGER.warn(
                     "[omnichest] ConfigManager.save 失敗: {} (次回起動時に古い設定が読まれる可能性があります)",
@@ -91,6 +97,8 @@ public final class ConfigManager {
      * 「Reset Defaults」ボタンや手動リカバリ用。
      */
     public static synchronized void resetToDefaults() {
+        // reset 前の状態でログを出す (= reset 後は debugMode 自体も既定 false に戻り、 ログが出なくなるため)。
+        com.kajiwara.omnichest.debug.DebugLog.log("Resetting all settings to defaults");
         instance = ModConfig.defaults();
         save();
     }

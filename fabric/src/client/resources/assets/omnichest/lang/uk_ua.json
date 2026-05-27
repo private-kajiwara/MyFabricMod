@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Показувати анімацію передачі",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Анімує рухому крапку вздовж стрілок передачі в меню.",
   "config.omnichest.distribution.enableTransferHistory": "Увімкнути історію передач",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Записує успішні та невдалі передачі для вкладок Історія / Помилки."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Записує успішні та невдалі передачі для вкладок Історія / Помилки.",
+  "modmenu.descriptionTranslation.omnichest": "Знаходьте будь-який предмет у всіх скринях з першого погляду. OmniChest додає пошук по всій мережі скринь із позначками у світі, розумне складання, сортування за категоріями, блокування комірок і багаторазові шаблони скринь — єдиний інструмент для порядку у сховищі.",
+  "omnichest.reset_popup.title": "Справді скинути всі зміни?",
+  "omnichest.reset_popup.yes": "Так",
+  "omnichest.reset_popup.no": "Ні",
+  "omnichest.reset_popup.no_changes": "Усі налаштування мають типові значення.",
+  "config.omnichest.sub.search.beacon": "Ефект маяка",
+  "config.omnichest.search.enableBeacon": "Увімкнути ефект маяка",
+  "config.omnichest.search.enableBeacon.tooltip": "Малює напівпрозорий промінь у стилі маяка, що піднімається від кожної позначки пошуку, щоб її було видно здалеку. Самі позначки не змінюються.",
+  "config.omnichest.search.beaconOpacity": "Непрозорість маяка",
+  "config.omnichest.search.beaconOpacity.tooltip": "Базова непрозорість променя. Поєднується із згасанням і пульсацією.",
+  "config.omnichest.search.beaconWidth": "Ширина маяка",
+  "config.omnichest.search.beaconWidth.tooltip": "Ширина ядра променя у блоках. Зовнішнє сяйво ширше.",
+  "config.omnichest.search.beaconDistanceFade": "Згасання за відстанню",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Поступово приглушує промінь з відстанню (ніколи не зникає повністю).",
+  "config.omnichest.search.beaconAnimation": "Анімація маяка",
+  "config.omnichest.search.beaconAnimation.tooltip": "Увімкає повільну пульсуючу анімацію яскравості променя."
 }

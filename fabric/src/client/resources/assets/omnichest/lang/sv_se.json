@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Visa överföringsanimation",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animerar den flytande punkten längs överföringspilarna i menyn.",
   "config.omnichest.distribution.enableTransferHistory": "Aktivera överföringshistorik",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Registrerar lyckade och misslyckade överföringar för flikarna Historik / Misslyckade."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Registrerar lyckade och misslyckade överföringar för flikarna Historik / Misslyckade.",
+  "modmenu.descriptionTranslation.omnichest": "Hitta vilket föremål som helst i alla dina kistor med en blick. OmniChest lägger till nätverksbred sökning med markörer i världen, plus smart insättning, kategorisortering, fackslås och återanvändbara kistmallar — ett verktyg för att hålla förrådet i ordning.",
+  "omnichest.reset_popup.title": "Vill du verkligen återställa alla ändringar?",
+  "omnichest.reset_popup.yes": "Ja",
+  "omnichest.reset_popup.no": "Nej",
+  "omnichest.reset_popup.no_changes": "Alla inställningar har standardvärden.",
+  "config.omnichest.sub.search.beacon": "Fyrljuseffekt",
+  "config.omnichest.search.enableBeacon": "Aktivera fyrljuseffekt",
+  "config.omnichest.search.enableBeacon.tooltip": "Ritar en genomskinlig fyrliknande stråle som stiger från varje sökmarkör så att den syns på avstånd. Markörerna själva ändras inte.",
+  "config.omnichest.search.beaconOpacity": "Strålens opacitet",
+  "config.omnichest.search.beaconOpacity.tooltip": "Strålens grundopacitet. Kombineras med uttoning och puls.",
+  "config.omnichest.search.beaconWidth": "Strålbredd",
+  "config.omnichest.search.beaconWidth.tooltip": "Bredden på strålens kärna i block. Det yttre skenet är bredare.",
+  "config.omnichest.search.beaconDistanceFade": "Avståndstoning",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Tonar gradvis ner strålen med avståndet (försvinner aldrig helt).",
+  "config.omnichest.search.beaconAnimation": "Fyranimering",
+  "config.omnichest.search.beaconAnimation.tooltip": "Aktiverar en långsam pulserande ljusstyrkeanimering på strålen."
 }

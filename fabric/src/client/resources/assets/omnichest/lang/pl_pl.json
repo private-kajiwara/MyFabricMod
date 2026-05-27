@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Pokaż animację transferu",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animuje płynącą kropkę wzdłuż strzałek transferu w menu.",
   "config.omnichest.distribution.enableTransferHistory": "Włącz historię transferów",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Zapisuje udane i nieudane transfery dla kart Historia / Błędy."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Zapisuje udane i nieudane transfery dla kart Historia / Błędy.",
+  "modmenu.descriptionTranslation.omnichest": "Znajdź dowolny przedmiot we wszystkich skrzyniach jednym spojrzeniem. OmniChest dodaje wyszukiwanie w całej sieci skrzyń ze znacznikami w świecie, inteligentne odkładanie, sortowanie według kategorii, blokady slotów i wielokrotnego użytku szablony skrzyń — jeden zestaw narzędzi do porządku w magazynie.",
+  "omnichest.reset_popup.title": "Na pewno zresetować wszystkie zmiany?",
+  "omnichest.reset_popup.yes": "Tak",
+  "omnichest.reset_popup.no": "Nie",
+  "omnichest.reset_popup.no_changes": "Wszystkie ustawienia mają wartości domyślne.",
+  "config.omnichest.sub.search.beacon": "Efekt sygnalizatora",
+  "config.omnichest.search.enableBeacon": "Włącz efekt sygnalizatora",
+  "config.omnichest.search.enableBeacon.tooltip": "Rysuje półprzezroczystą wiązkę w stylu sygnalizatora unoszącą się z każdego znacznika wyszukiwania, by był widoczny z daleka. Same znaczniki się nie zmieniają.",
+  "config.omnichest.search.beaconOpacity": "Krycie sygnalizatora",
+  "config.omnichest.search.beaconOpacity.tooltip": "Podstawowe krycie wiązki. Łączy się z zanikaniem i pulsowaniem.",
+  "config.omnichest.search.beaconWidth": "Szerokość sygnalizatora",
+  "config.omnichest.search.beaconWidth.tooltip": "Szerokość rdzenia wiązki w blokach. Zewnętrzna poświata jest szersza.",
+  "config.omnichest.search.beaconDistanceFade": "Zanikanie z odległością",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Stopniowo przygasza wiązkę wraz z odległością (nigdy nie znika całkowicie).",
+  "config.omnichest.search.beaconAnimation": "Animacja sygnalizatora",
+  "config.omnichest.search.beaconAnimation.tooltip": "Włącza powolną animację pulsującej jasności wiązki."
 }

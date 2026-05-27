@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Zobrazit animaci přesunu",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animuje plynoucí tečku podél šipek přesunu v menu.",
   "config.omnichest.distribution.enableTransferHistory": "Zapnout historii přesunů",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Zaznamenává úspěšné a neúspěšné přesuny pro karty Historie / Chyby."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Zaznamenává úspěšné a neúspěšné přesuny pro karty Historie / Chyby.",
+  "modmenu.descriptionTranslation.omnichest": "Najděte jakýkoli předmět ve všech truhlách jediným pohledem. OmniChest přidává vyhledávání napříč sítí truhel se značkami ve světě, chytré ukládání, třídění podle kategorií, zámky slotů a opakovaně použitelné šablony truhel — jeden nástroj pro pořádek ve skladu.",
+  "omnichest.reset_popup.title": "Opravdu obnovit všechny změny?",
+  "omnichest.reset_popup.yes": "Ano",
+  "omnichest.reset_popup.no": "Ne",
+  "omnichest.reset_popup.no_changes": "Všechna nastavení jsou na výchozích hodnotách.",
+  "config.omnichest.sub.search.beacon": "Efekt majáku",
+  "config.omnichest.search.enableBeacon": "Zapnout efekt majáku",
+  "config.omnichest.search.enableBeacon.tooltip": "Vykreslí průsvitný paprsek jako maják stoupající z každé vyhledávací značky, aby byla vidět zdálky. Samotné značky se nemění.",
+  "config.omnichest.search.beaconOpacity": "Krytí majáku",
+  "config.omnichest.search.beaconOpacity.tooltip": "Základní krytí paprsku. Kombinuje se s blednutím a pulzováním.",
+  "config.omnichest.search.beaconWidth": "Šířka majáku",
+  "config.omnichest.search.beaconWidth.tooltip": "Šířka jádra paprsku v blocích. Vnější záře je širší.",
+  "config.omnichest.search.beaconDistanceFade": "Blednutí podle vzdálenosti",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Postupně ztlumí paprsek se vzdáleností (nikdy zcela nezmizí).",
+  "config.omnichest.search.beaconAnimation": "Animace majáku",
+  "config.omnichest.search.beaconAnimation.tooltip": "Zapne pomalou pulzující animaci jasu paprsku."
 }

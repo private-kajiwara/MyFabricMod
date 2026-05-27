@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Tunjuk animasi pemindahan",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Menganimasikan titik yang mengalir di sepanjang anak panah pemindahan dalam menu.",
   "config.omnichest.distribution.enableTransferHistory": "Dayakan sejarah pemindahan",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Merekod pemindahan berjaya dan gagal untuk tab Sejarah / Gagal."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Merekod pemindahan berjaya dan gagal untuk tab Sejarah / Gagal.",
+  "modmenu.descriptionTranslation.omnichest": "Cari apa-apa item dalam semua peti anda dengan sekali pandang. OmniChest menambah carian seluruh rangkaian dengan penanda dalam dunia, simpanan pintar, isihan mengikut kategori, kunci slot dan templat peti boleh guna semula — satu alat untuk memastikan stor kemas.",
+  "omnichest.reset_popup.title": "Betul-betul tetapkan semula semua perubahan?",
+  "omnichest.reset_popup.yes": "Ya",
+  "omnichest.reset_popup.no": "Tidak",
+  "omnichest.reset_popup.no_changes": "Semua tetapan pada nilai lalai.",
+  "config.omnichest.sub.search.beacon": "Kesan suar",
+  "config.omnichest.search.enableBeacon": "Dayakan kesan suar",
+  "config.omnichest.search.enableBeacon.tooltip": "Melukis pancaran lut sinar seperti suar yang naik dari setiap penanda carian supaya kelihatan dari jauh. Penanda itu sendiri tidak berubah.",
+  "config.omnichest.search.beaconOpacity": "Kelegapan suar",
+  "config.omnichest.search.beaconOpacity.tooltip": "Kelegapan asas pancaran. Digabung dengan lutsinar dan denyutan.",
+  "config.omnichest.search.beaconWidth": "Lebar suar",
+  "config.omnichest.search.beaconWidth.tooltip": "Lebar teras pancaran dalam blok. Cahaya luar lebih lebar.",
+  "config.omnichest.search.beaconDistanceFade": "Pudar jarak",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Memudarkan pancaran secara beransur dengan jarak (tidak pernah hilang sepenuhnya).",
+  "config.omnichest.search.beaconAnimation": "Animasi suar",
+  "config.omnichest.search.beaconAnimation.tooltip": "Mendayakan animasi kecerahan berdenyut perlahan pada pancaran."
 }

@@ -83,6 +83,40 @@ public final class SearchCategoryBuilder {
                         "Initial display mode when opening the search screen (= Detailed by default)."),
                 ItemDisplayMode::displayName);
 
+        // ───────────────────────────────────────────────────────────────
+        // Beacon Effect (= 検索ピンのビーコン風ビーム補助演出)
+        // ピン座標・Overlay anchor・検索ロジックは変更しない。 OFF にすれば従来どおりピンのみ。
+        // ───────────────────────────────────────────────────────────────
+        b.subHeader(ConfigLabels.sub("search.beacon", "Beacon Effect"), sub -> {
+            sub.toggle(ConfigLabels.entry("search.enableBeacon", "Enable Beacon Effect"),
+                    cfg.enableBeacon, v -> cfg.enableBeacon = v,
+                    ConfigLabels.tooltip("search.enableBeacon",
+                            "Draw a translucent beacon-like beam rising from each search pin "
+                                    + "so it stays visible from far away. Pins themselves are unchanged."));
+
+            sub.intSlider(ConfigLabels.entry("search.beaconOpacity", "Beacon Opacity"),
+                    0, 100, cfg.beaconOpacity, v -> cfg.beaconOpacity = v,
+                    ConfigLabels.tooltip("search.beaconOpacity",
+                            "Base opacity of the beam. Combined with fade and pulse."),
+                    v -> Component.literal(v + " %"));
+
+            sub.doubleSlider(ConfigLabels.entry("search.beaconWidth", "Beacon Width"),
+                    0.05, 1.0, cfg.beaconWidth, v -> cfg.beaconWidth = v,
+                    ConfigLabels.tooltip("search.beaconWidth",
+                            "Width of the beam core in blocks. The outer glow is wider."),
+                    v -> Component.literal(String.format(java.util.Locale.ROOT, "%.2f", v)));
+
+            sub.toggle(ConfigLabels.entry("search.beaconDistanceFade", "Distance Fade"),
+                    cfg.beaconDistanceFade, v -> cfg.beaconDistanceFade = v,
+                    ConfigLabels.tooltip("search.beaconDistanceFade",
+                            "Dim the beam gradually with distance (it never fully disappears)."));
+
+            sub.toggle(ConfigLabels.entry("search.beaconAnimation", "Beacon Animation"),
+                    cfg.beaconAnimation, v -> cfg.beaconAnimation = v,
+                    ConfigLabels.tooltip("search.beaconAnimation",
+                            "Enable a slow pulsing brightness animation on the beam."));
+        });
+
         return b.build();
     }
 }

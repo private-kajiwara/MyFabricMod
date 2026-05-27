@@ -86,6 +86,10 @@ public final class CategorySortEngine {
         if (queue.isBusy())
             return;
 
+        // デバッグモード時のみ: ソート開始を記録する。
+        com.kajiwara.omnichest.debug.DebugLog.log(
+                "Category sort started (containerSlots={})", containerSlotCount);
+
         CategoryClassifier cls = classifier == null ? TagCategoryClassifier.DEFAULT : classifier;
 
         // (1) live + ロック判定

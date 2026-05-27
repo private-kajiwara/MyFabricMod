@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "स्थानांतरण एनिमेशन दिखाएँ",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "मेनू में स्थानांतरण तीरों के साथ बहते बिंदु को एनिमेट करता है।",
   "config.omnichest.distribution.enableTransferHistory": "स्थानांतरण इतिहास सक्षम करें",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "इतिहास / विफल टैब हेतु सफल और विफल स्थानांतरण दर्ज करता है।"
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "इतिहास / विफल टैब हेतु सफल और विफल स्थानांतरण दर्ज करता है।",
+  "modmenu.descriptionTranslation.omnichest": "अपने सभी बक्सों में कोई भी वस्तु एक नज़र में खोजें। OmniChest दुनिया में चिह्नों के साथ नेटवर्क-व्यापी खोज जोड़ता है, साथ ही स्मार्ट जमा, श्रेणी छँटाई, स्लॉट लॉक और पुन: उपयोग योग्य बक्सा टेम्पलेट — भंडारण को व्यवस्थित रखने का एक ही उपकरण।",
+  "omnichest.reset_popup.title": "क्या वाकई सभी बदलाव रीसेट करें?",
+  "omnichest.reset_popup.yes": "हाँ",
+  "omnichest.reset_popup.no": "नहीं",
+  "omnichest.reset_popup.no_changes": "सभी सेटिंग्स ड़िफ़ॉल्ट मान पर हैं।",
+  "config.omnichest.sub.search.beacon": "बीकन प्रभाव",
+  "config.omnichest.search.enableBeacon": "बीकन प्रभाव सक्षम करें",
+  "config.omnichest.search.enableBeacon.tooltip": "हर खोज चिह्न से ऊपर उठती एक पारभासी बीकन किरण बनाता है ताकि वह दूर से भी दिखे। चिह्न स्वयं नहीं बदलते।",
+  "config.omnichest.search.beaconOpacity": "बीकन अपारदर्शिता",
+  "config.omnichest.search.beaconOpacity.tooltip": "किरण की आधार अपारदर्शिता। फ़ेड और स्पंदन के साथ मिलती है।",
+  "config.omnichest.search.beaconWidth": "बीकन चौड़ाई",
+  "config.omnichest.search.beaconWidth.tooltip": "किरण के कोर की चौड़ाई (ब्लॉक)। बाहरी चमक अधिक चौड़ी होती है।",
+  "config.omnichest.search.beaconDistanceFade": "दूरी फ़ेड",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "दूरी के साथ किरण को धीरे-धीरे मद्धम करता है (कभी पूरी तरह नहीं मिटती)।",
+  "config.omnichest.search.beaconAnimation": "बीकन एनिमेशन",
+  "config.omnichest.search.beaconAnimation.tooltip": "किरण पर धीमी स्पंदित चमक एनिमेशन चालू करता है।"
 }

@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "顯示轉移動畫",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "在選單中讓流動的點沿轉移箭頭移動。",
   "config.omnichest.distribution.enableTransferHistory": "啟用轉移歷史",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "為歷史 / 失敗分頁記錄成功與失敗的轉移。"
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "為歷史 / 失敗分頁記錄成功與失敗的轉移。",
+  "modmenu.descriptionTranslation.omnichest": "一眼找到所有箱子裡的物品。OmniChest 提供跨倉庫搜尋與世界內標記，還有智慧存放、分類整理、欄位鎖定和可重複使用的箱子範本，是讓收納井然有序的整合工具。",
+  "omnichest.reset_popup.title": "確定要重設所有變更嗎？",
+  "omnichest.reset_popup.yes": "是",
+  "omnichest.reset_popup.no": "否",
+  "omnichest.reset_popup.no_changes": "所有設定皆為預設值。",
+  "config.omnichest.sub.search.beacon": "信標效果",
+  "config.omnichest.search.enableBeacon": "啟用信標效果",
+  "config.omnichest.search.enableBeacon.tooltip": "從每個搜尋標記向上射出半透明的信標光束，讓你在遠處也能看見。標記本身不變。",
+  "config.omnichest.search.beaconOpacity": "信標不透明度",
+  "config.omnichest.search.beaconOpacity.tooltip": "光束的基礎不透明度，會與淡化和脈動疊加。",
+  "config.omnichest.search.beaconWidth": "信標寬度",
+  "config.omnichest.search.beaconWidth.tooltip": "光束核心的寬度（方塊）。外層光暈更寬。",
+  "config.omnichest.search.beaconDistanceFade": "距離淡化",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "隨距離逐漸變淡（不會完全消失）。",
+  "config.omnichest.search.beaconAnimation": "信標動畫",
+  "config.omnichest.search.beaconAnimation.tooltip": "為光束啟用緩慢的脈動亮度動畫。"
 }

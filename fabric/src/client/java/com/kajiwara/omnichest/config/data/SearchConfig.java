@@ -98,4 +98,49 @@ public final class SearchConfig {
      * </ul>
      */
     public String favoriteSortMode = "favorites_first";
+
+    // ════════════════════════════════════════════════════════════════════
+    // Beacon Effect (= 検索ピンの「ビーコン風ビーム」 補助演出)
+    // ────────────────────────────────────────────────────────────────────
+    // すべて「ピン演出の追加オプション」 で、 ピン座標・Overlay anchor・検索ロジック・
+    // Tracking system には一切触らない。 OFF にすれば従来通りピン/ボックスのみ表示。
+    // 実描画は {@link com.kajiwara.omnichest.client.render.BeaconEffectLayer} /
+    // {@link com.kajiwara.omnichest.client.render.SearchBeaconRenderer} が担う。
+    // ════════════════════════════════════════════════════════════════════
+
+    /**
+     * 検索ピン位置から上空へ伸びる Minecraft ビーコン風ビームを描画するか。
+     * <p>
+     * 遠距離 / 高所 / 障害物越しでも「どこにアイテムがあるか」 を一目で示す補助演出。
+     * OFF でも既存のピン (黄枠 + 名前タグ) は従来どおり表示される。
+     */
+    public boolean enableBeacon = true;
+
+    /**
+     * ビームの基準不透明度 (%) 0〜100。
+     * <p>
+     * 実際の alpha はここへハイライトのフェード量・パルス・距離フェードを掛け合わせて決まる。
+     * 既存テーマに自然に馴染ませるため、 100 ではなく半透明寄りの 60 を既定とする。
+     */
+    public int beaconOpacity = 60;
+
+    /**
+     * ビーム中心柱の幅 (ブロック)。 0.05〜1.0。
+     * <p>
+     * 外周グロー柱はこの値の約 2.2 倍で描かれる。 細いほど「精密なマーカー」、
+     * 太いほど「遠距離でも目立つ柱」 になる。 バニラビーコン (1.0 弱) より控えめな 0.25 を既定とする。
+     */
+    public double beaconWidth = 0.25;
+
+    /**
+     * 距離フェードを行うか。 ON にすると遠いビームほど薄く描画する
+     * (= 近くのピンが手前で潰れず、 遠くのピンは「ぼんやり」 見える)。
+     */
+    public boolean beaconDistanceFade = true;
+
+    /**
+     * ゆっくりした明滅 (slow pulse) アニメーションを行うか。
+     * OFF にすると一定 alpha の静的ビームになる (= アニメーション速度設定とは独立)。
+     */
+    public boolean beaconAnimation = true;
 }

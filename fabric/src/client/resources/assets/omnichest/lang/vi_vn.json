@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Hiện hoạt ảnh chuyển",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Tạo hiệu ứng chấm chạy dọc theo mũi tên chuyển trong menu.",
   "config.omnichest.distribution.enableTransferHistory": "Bật lịch sử chuyển",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Ghi lại các lượt chuyển thành công và thất bại cho tab Lịch sử / Thất bại."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Ghi lại các lượt chuyển thành công và thất bại cho tab Lịch sử / Thất bại.",
+  "modmenu.descriptionTranslation.omnichest": "Tìm bất kỳ vật phẩm nào trong mọi rương chỉ trong nháy mắt. OmniChest bổ sung tìm kiếm toàn mạng lưới với các ghim trong thế giới, gửi đồ thông minh, sắp xếp theo danh mục, khóa ô và mẫu rương tái sử dụng — một bộ công cụ để giữ kho gọn gàng.",
+  "omnichest.reset_popup.title": "Đặt lại tất cả thay đổi?",
+  "omnichest.reset_popup.yes": "Có",
+  "omnichest.reset_popup.no": "Không",
+  "omnichest.reset_popup.no_changes": "Tất cả thiết lập đang ở giá trị mặc định.",
+  "config.omnichest.sub.search.beacon": "Hiệu ứng đèn hiệu",
+  "config.omnichest.search.enableBeacon": "Bật hiệu ứng đèn hiệu",
+  "config.omnichest.search.enableBeacon.tooltip": "Vẽ một chùm sáng trong suốt kiểu đèn hiệu bốc lên từ mỗi ghim tìm kiếm để thấy được từ xa. Bản thân ghim không đổi.",
+  "config.omnichest.search.beaconOpacity": "Độ mờ đèn hiệu",
+  "config.omnichest.search.beaconOpacity.tooltip": "Độ mờ cơ bản của chùm sáng. Kết hợp với mờ dần và nhịp đập.",
+  "config.omnichest.search.beaconWidth": "Bề rộng đèn hiệu",
+  "config.omnichest.search.beaconWidth.tooltip": "Bề rộng lõi chùm sáng (khối). Ánh sáng bên ngoài rộng hơn.",
+  "config.omnichest.search.beaconDistanceFade": "Mờ theo khoảng cách",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Làm mờ dần chùm sáng theo khoảng cách (không bao giờ biến mất hẳn).",
+  "config.omnichest.search.beaconAnimation": "Hoạt ảnh đèn hiệu",
+  "config.omnichest.search.beaconAnimation.tooltip": "Bật hoạt ảnh độ sáng nhấp nháy chậm trên chùm sáng."
 }

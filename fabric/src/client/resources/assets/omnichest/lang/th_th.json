@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "แสดงแอนิเมชันการโอน",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "ทำให้จุดไหลไปตามลูกศรการโอนในเมนู",
   "config.omnichest.distribution.enableTransferHistory": "เปิดประวัติการโอน",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "บันทึกการโอนที่สำเร็จและล้มเหลวสำหรับแท็บประวัติ / ล้มเหลว"
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "บันทึกการโอนที่สำเร็จและล้มเหลวสำหรับแท็บประวัติ / ล้มเหลว",
+  "modmenu.descriptionTranslation.omnichest": "ค้นหาไอเท็มในหีบทุกใบได้ในพริบตา OmniChest เพิ่มการค้นหาทั่วเครือข่ายพร้อมหมุดในโลก รวมถึงการฝากอัจฉริยะ การจัดเรียงตามหมวดหมู่ การล็อกช่อง และเทมเพลตหีบที่ใช้ซ้ำได้ — เครื่องมือเดียวที่ทำให้ที่เก็บของเป็นระเบียบ",
+  "omnichest.reset_popup.title": "ต้องการรีเซ็ตการเปลี่ยนแปลงทั้งหมดจริงหรือ?",
+  "omnichest.reset_popup.yes": "ใช่",
+  "omnichest.reset_popup.no": "ไม่",
+  "omnichest.reset_popup.no_changes": "การตั้งค่าทั้งหมดเป็นค่าเริ่มต้น",
+  "config.omnichest.sub.search.beacon": "เอฟเฟกต์บีคอน",
+  "config.omnichest.search.enableBeacon": "เปิดเอฟเฟกต์บีคอน",
+  "config.omnichest.search.enableBeacon.tooltip": "วาดลำแสงโปร่งแสงคล้ายบีคอนพุ่งขึ้นจากหมุดค้นหาแต่ละจุด เพื่อให้มองเห็นได้แต่ไกล ตัวหมุดไม่เปลี่ยนแปลง",
+  "config.omnichest.search.beaconOpacity": "ความทึบของบีคอน",
+  "config.omnichest.search.beaconOpacity.tooltip": "ความทึบพื้นฐานของลำแสง รวมกับการจางและการกะพริบ",
+  "config.omnichest.search.beaconWidth": "ความกว้างของบีคอน",
+  "config.omnichest.search.beaconWidth.tooltip": "ความกว้างของแกนลำแสง (บล็อก) แสงเรืองรอบนอกจะกว้างกว่า",
+  "config.omnichest.search.beaconDistanceFade": "การจางตามระยะ",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "หรี่ลำแสงลงทีละน้อยตามระยะทาง (ไม่หายไปทั้งหมด)",
+  "config.omnichest.search.beaconAnimation": "แอนิเมชันบีคอน",
+  "config.omnichest.search.beaconAnimation.tooltip": "เปิดแอนิเมชันความสว่างที่เต้นช้าๆ บนลำแสง"
 }

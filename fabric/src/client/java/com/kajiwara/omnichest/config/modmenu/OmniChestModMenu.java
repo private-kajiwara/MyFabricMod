@@ -35,7 +35,13 @@ public final class OmniChestModMenu implements ModMenuApi {
         };
     }
 
-    // ─── (任意) MOD一覧でのバッジや概要 ──
-    // ここでは何もカスタマイズせず、 fabric.mod.json の description をそのまま使ってもらう。
+    // ─── MOD一覧での説明文 (多言語対応) ──
+    // Mod Menu は description を以下の優先順で解決する:
+    //   1) 翻訳キー modmenu.descriptionTranslation.omnichest (= Keys.MOD_DESCRIPTION) が
+    //      現在の言語に存在すればそれを使う。
+    //   2) 無ければ fabric.mod.json の "description" (英語 fallback) を使う。
+    // 全 lang ファイルに該当キーを追加済みなので、 ここで API 実装は不要 (= lang 経由で自動解決)。
+    // 詳細とユーティリティは {@link LocalizedModDescription} を参照。
+    //
     // 将来必要になったら getProvidedConfigScreenFactories() なども実装する。
 }

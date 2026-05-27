@@ -36,6 +36,22 @@ public final class Keys {
     public static final String SCREEN_TEMPLATE_MANAGER_TITLE = "omnichest.screen.template.manager.title";
     public static final String SCREEN_TEMPLATE_PREVIEW_TITLE = "omnichest.screen.template.preview.title";
 
+    // ─── Mod Menu metadata (= MOD 一覧での説明文) ────────────────
+    /**
+     * Mod Menu が MOD 一覧の説明文として参照する翻訳キー。
+     * <p>
+     * Mod Menu は {@code modmenu.descriptionTranslation.<modid>} という固定キーが
+     * 現在の言語に存在すれば、 {@code fabric.mod.json} の {@code description} より
+     * 優先して表示する。 各 lang ファイルにこのキーを置くことで MOD 説明文を多言語化する。
+     */
+    public static final String MOD_DESCRIPTION = "modmenu.descriptionTranslation.omnichest";
+
+    // ─── Reset 確認 Popup ──────────────────────────────────────
+    public static final String RESET_POPUP_TITLE = "omnichest.reset_popup.title";
+    public static final String RESET_POPUP_YES = "omnichest.reset_popup.yes";
+    public static final String RESET_POPUP_NO = "omnichest.reset_popup.no";
+    public static final String RESET_POPUP_NO_CHANGES = "omnichest.reset_popup.no_changes";
+
     // ─── ボタンラベル ──────────────────────────────────────────
     public static final String BUTTON_RESET = "omnichest.button.reset";
     public static final String BUTTON_SAVE = "omnichest.button.save";

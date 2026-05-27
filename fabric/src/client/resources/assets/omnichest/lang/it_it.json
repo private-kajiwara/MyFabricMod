@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Mostra animazione trasferimento",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Anima il punto che scorre lungo le frecce di trasferimento nel menu.",
   "config.omnichest.distribution.enableTransferHistory": "Attiva cronologia trasferimenti",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Registra i trasferimenti riusciti e falliti per le schede Cronologia / Falliti."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Registra i trasferimenti riusciti e falliti per le schede Cronologia / Falliti.",
+  "modmenu.descriptionTranslation.omnichest": "Trova qualsiasi oggetto in tutte le tue casse a colpo d'occhio. OmniChest aggiunge una ricerca in rete con segnalini nel mondo, deposito intelligente, ordinamento per categorie, blocco degli slot e modelli di cassa riutilizzabili: un unico strumento per tenere in ordine il magazzino.",
+  "omnichest.reset_popup.title": "Ripristinare davvero tutte le modifiche?",
+  "omnichest.reset_popup.yes": "Sì",
+  "omnichest.reset_popup.no": "No",
+  "omnichest.reset_popup.no_changes": "Tutte le impostazioni sono ai valori predefiniti.",
+  "config.omnichest.sub.search.beacon": "Effetto faro",
+  "config.omnichest.search.enableBeacon": "Attiva effetto faro",
+  "config.omnichest.search.enableBeacon.tooltip": "Disegna un fascio traslucido in stile faro che si alza da ogni segnalino di ricerca, così resta visibile da lontano. I segnalini non cambiano.",
+  "config.omnichest.search.beaconOpacity": "Opacità del faro",
+  "config.omnichest.search.beaconOpacity.tooltip": "Opacità di base del fascio. Si combina con dissolvenza e pulsazione.",
+  "config.omnichest.search.beaconWidth": "Larghezza del faro",
+  "config.omnichest.search.beaconWidth.tooltip": "Larghezza del nucleo del fascio in blocchi. Il bagliore esterno è più ampio.",
+  "config.omnichest.search.beaconDistanceFade": "Dissolvenza con la distanza",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Attenua gradualmente il fascio con la distanza (non scompare mai del tutto).",
+  "config.omnichest.search.beaconAnimation": "Animazione del faro",
+  "config.omnichest.search.beaconAnimation.tooltip": "Attiva un'animazione di luminosità pulsante lenta sul fascio."
 }

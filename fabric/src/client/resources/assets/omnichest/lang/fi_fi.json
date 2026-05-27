@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Näytä siirtoanimaatio",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animoi virtaavan pisteen siirtonuolia pitkin valikossa.",
   "config.omnichest.distribution.enableTransferHistory": "Ota siirtohistoria käyttöön",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Tallentaa onnistuneet ja epäonnistuneet siirrot Historia / Epäonnistuneet -välilehdille."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Tallentaa onnistuneet ja epäonnistuneet siirrot Historia / Epäonnistuneet -välilehdille.",
+  "modmenu.descriptionTranslation.omnichest": "Löydä mikä tahansa esine kaikista arkuistasi yhdellä silmäyksellä. OmniChest lisää verkonlaajuisen haun maailmaan asetettavilla merkeillä, älykkään tallettamisen, luokittelun, paikkalukot ja uudelleenkäytettävät arkkumallit — yksi työkalu varaston pitämiseen järjestyksessä.",
+  "omnichest.reset_popup.title": "Nollataanko varmasti kaikki muutokset?",
+  "omnichest.reset_popup.yes": "Kyllä",
+  "omnichest.reset_popup.no": "Ei",
+  "omnichest.reset_popup.no_changes": "Kaikki asetukset ovat oletusarvoissa.",
+  "config.omnichest.sub.search.beacon": "Majakkatehoste",
+  "config.omnichest.search.enableBeacon": "Ota majakkatehoste käyttöön",
+  "config.omnichest.search.enableBeacon.tooltip": "Piirtää läpikuultavan majakkasäteen, joka nousee jokaisesta hakumerkistä, jotta se näkyy kaukaa. Merkit itse eivät muutu.",
+  "config.omnichest.search.beaconOpacity": "Majakan peittävyys",
+  "config.omnichest.search.beaconOpacity.tooltip": "Säteen peruspeittävyys. Yhdistyy häivytykseen ja sykkeeseen.",
+  "config.omnichest.search.beaconWidth": "Majakan leveys",
+  "config.omnichest.search.beaconWidth.tooltip": "Säteen ytimen leveys lohkoina. Ulompi hehku on leveämpi.",
+  "config.omnichest.search.beaconDistanceFade": "Etäisyyshäivytys",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Himmentää sädettä vähitellen etäisyyden myötä (ei katoa koskaan kokonaan).",
+  "config.omnichest.search.beaconAnimation": "Majakka-animaatio",
+  "config.omnichest.search.beaconAnimation.tooltip": "Ottaa käyttöön hitaan sykkivän kirkkausanimaation säteessä."
 }

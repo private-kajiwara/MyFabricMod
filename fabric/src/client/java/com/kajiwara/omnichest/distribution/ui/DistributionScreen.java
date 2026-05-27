@@ -631,6 +631,11 @@ public final class DistributionScreen extends Screen {
         if (!cfg.showTransferAnimation) {
             return 0;
         }
+        // GUI 全般のアニメーション スイッチ (= RenderConfig.guiAnimation) を尊重する。
+        // OFF なら速度 0 (= アニメ無し / 即時最終状態) として扱う。
+        if (!ConfigManager.get().render.guiAnimation) {
+            return 0;
+        }
         double s = ConfigManager.get().general.animationSpeed;
         return s <= 0 ? 0 : s;
     }

@@ -40,7 +40,7 @@ public enum StorageCategory {
     POTION("ポーション倉庫", 0xB05DF5),
     NETHER("ネザー素材倉庫", 0x842A2A),
     END("エンド素材倉庫", 0x6E59B0),
-    MAGIC("魔法素材倉庫", 0xD862E0),
+    MAGIC("エンチャント素材倉庫", 0xD862E0),
     MOB_DROP("モブドロップ倉庫", 0x88AA66),
     DECORATION("装飾倉庫", 0xE0C97F),
     MIXED("混合倉庫", 0x8E8E8E),

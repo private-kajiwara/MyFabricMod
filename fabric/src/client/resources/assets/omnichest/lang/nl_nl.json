@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Overdrachtanimatie tonen",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animeert de stromende stip langs de overdrachtpijlen in het menu.",
   "config.omnichest.distribution.enableTransferHistory": "Overdrachtgeschiedenis inschakelen",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Registreert geslaagde en mislukte overdrachten voor de tabbladen Geschiedenis / Mislukt."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Registreert geslaagde en mislukte overdrachten voor de tabbladen Geschiedenis / Mislukt.",
+  "modmenu.descriptionTranslation.omnichest": "Vind elk item in al je kisten in één oogopslag. OmniChest voegt netwerkbreed zoeken toe met markeringen in de wereld, plus slim opbergen, sorteren op categorie, slotvergrendeling en herbruikbare kistsjablonen — één gereedschapskist om je opslag netjes te houden.",
+  "omnichest.reset_popup.title": "Echt alle wijzigingen resetten?",
+  "omnichest.reset_popup.yes": "Ja",
+  "omnichest.reset_popup.no": "Nee",
+  "omnichest.reset_popup.no_changes": "Alle instellingen staan op standaardwaarden.",
+  "config.omnichest.sub.search.beacon": "Bakeneffect",
+  "config.omnichest.search.enableBeacon": "Bakeneffect inschakelen",
+  "config.omnichest.search.enableBeacon.tooltip": "Tekent een doorschijnende bakenstraal die vanaf elke zoekmarkering omhoog gaat, zodat hij van veraf zichtbaar blijft. De markeringen zelf veranderen niet.",
+  "config.omnichest.search.beaconOpacity": "Bakendekking",
+  "config.omnichest.search.beaconOpacity.tooltip": "Basisdekking van de straal. Wordt gecombineerd met vervaging en puls.",
+  "config.omnichest.search.beaconWidth": "Bakenbreedte",
+  "config.omnichest.search.beaconWidth.tooltip": "Breedte van de straalkern in blokken. De buitenste gloed is breder.",
+  "config.omnichest.search.beaconDistanceFade": "Afstandsvervaging",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Vervaagt de straal geleidelijk met de afstand (verdwijnt nooit helemaal).",
+  "config.omnichest.search.beaconAnimation": "Bakenanimatie",
+  "config.omnichest.search.beaconAnimation.tooltip": "Schakelt een langzame pulserende helderheidsanimatie op de straal in."
 }

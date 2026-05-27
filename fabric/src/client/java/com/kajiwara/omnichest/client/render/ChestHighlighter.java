@@ -2,6 +2,7 @@ package com.kajiwara.omnichest.client.render;
 
 import com.kajiwara.omnichest.client.compat.SafeRenderDispatcher;
 import com.kajiwara.omnichest.config.ConfigManager;
+import com.kajiwara.omnichest.debug.DebugLog;
 import com.kajiwara.omnichest.mixin.RenderTypeAccessor;
 import com.kajiwara.omnichest.search.ContainerScanner;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
@@ -219,6 +220,12 @@ public final class ChestHighlighter {
         boolean hasLabel = labelItem != null && !labelItem.isEmpty();
         ItemStack labelCopy = hasLabel ? labelItem.copy() : ItemStack.EMPTY;
 
+        // デバッグモード時のみ: どのチェストに何のピンを立てたかを記録する。
+        DebugLog.log("Highlight registered: {} x{} at {} (durationMs={})",
+                hasLabel ? labelItem.getHoverName().getString() : "(no label)",
+                labelCount, snapshot.pos(),
+                durationMs == Long.MAX_VALUE ? "persistent" : durationMs);
+
         active.compute(snapshot.key(), (key, existing) -> {
             ActiveHighlight target = (existing != null)
                     ? existing
@@ -373,6 +380,17 @@ public final class ChestHighlighter {
         if (active.isEmpty())
             return;
 
+        // 「オーバーレイ全体を OFF」 設定 (= RenderConfig.enableOverlay) を尊重する。
+        // OFF なら expire 掃除だけ済ませてワールド側の枠 / ピン / ビームを描かない
+        // (= GUI 内スロット overlay は isHighlightedItem 経由で別管理なので影響しない)。
+        try {
+            if (!ConfigManager.get().render.enableOverlay) {
+                return;
+            }
+        } catch (Throwable ignored) {
+            // 設定が読めない時は従来どおり描画する (= 安全側 / 既定 ON 相当)。
+        }
+
         CameraRenderState camState = ctx.worldState().cameraRenderState;
         if (camState == null || camState.pos == null)
             return;
@@ -432,6 +450,15 @@ public final class ChestHighlighter {
 
             // ─── ピン (ネームタグ): ワールド ビルボード として常時 チェスト 真上 に固定 ───
             submitPinStack(queue, matrices, camState, snap, camPos, h.entries, themeRgb);
+
+            // ─── ビーコン風ビーム (ピンの補助演出) ───
+            // ピン座標 / anchor / 検索ロジックには一切触れず、 同じ中心位置から上空へ伸びる
+            // 半透明ビームを「足すだけ」。 Config で OFF のとき BeaconEffectLayer 内で即 return する。
+            //
+            // 発射基準は「ピン (名前タグ スタック) の一番真上」。 表示行数 (= アイテム行数) と
+            // 距離スケールに連動するため、 表示テキスト量が増えるほど発射位置が上がる。
+            double beamBaseY = pinTopWorldY(snap, h.entries.size(), camPos);
+            BeaconEffectLayer.submit(queue, matrices, snap, camPos, themeRgb, alphaF, beamBaseY);
         }
 
         // ─── ドロップアイテム / プレイヤーインベントリ への引き継ぎハイライト ───
@@ -742,6 +769,54 @@ public final class ChestHighlighter {
         } finally {
             matrices.popPose();
         }
+    }
+
+    /**
+     * 検索ピン (= 名前タグ スタック) の <b>最上端</b> のワールド Y を返す。
+     * ビーコン ビームの「発射基準点 (= ピンの一番真上)」 として {@link BeaconEffectLayer} へ渡す。
+     *
+     * <p>
+     * {@link #submitPinStack} と同じ式 (= ピン アンカ {@link #PIN_BASE_HEIGHT} +
+     * 行数 × 行間 × 距離連動ワールドスケール) を再現して計算する。 これにより:
+     * <ul>
+     *   <li>表示テキスト量 (= ヘッダ + アイテム行数) が増えるほど発射位置が上がる
+     *       (= 「文字量に合わせて発射位置を変動」 要件)。</li>
+     *   <li>距離に応じてピンの見かけサイズが一定になるのと同様、 発射位置もピン上端に追従する。</li>
+     * </ul>
+     * ピン本体の描画には一切影響しない (= 読み取り計算のみ)。
+     *
+     * @param entryCount アイテム行数 ({@code ActiveHighlight#entries.size()})
+     */
+    private static double pinTopWorldY(ContainerSnapshot snap, int entryCount, Vec3 camPos) {
+        BlockPos primary = snap.pos();
+        BlockPos secondary = snap.secondaryPos();
+        double cx;
+        double cz;
+        if (secondary != null && snap.type() != null && snap.type().isDouble()) {
+            cx = (primary.getX() + secondary.getX()) * 0.5 + 0.5;
+            cz = (primary.getZ() + secondary.getZ()) * 0.5 + 0.5;
+        } else {
+            cx = primary.getX() + 0.5;
+            cz = primary.getZ() + 0.5;
+        }
+        // ピン アンカ (= テキスト スタック最下段) の世界 Y。
+        double baseY = primary.getY() + 1.0 + PIN_BASE_HEIGHT;
+
+        // ワールドスケールは submitPinStack と同じく「アンカまでの距離」 で決まる。
+        double dx = cx - camPos.x;
+        double dy = baseY - camPos.y;
+        double dz = cz - camPos.z;
+        double distM = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        float distScaleFactor = (float) (Math.max(distM, PIN_SCALE_REF_DISTANCE)
+                / PIN_SCALE_REF_DISTANCE);
+        float worldScale = PIN_TEXT_SCALE * distScaleFactor;
+
+        // テキスト スタックの行数 (= ヘッダ「▼ 距離」 + アイテム行)。 entries が空でもヘッダ 1 行分はある。
+        int rowSpacing = Minecraft.getInstance().font.lineHeight + 1;
+        int totalRows = (entryCount <= 0 ? 1 : entryCount + 1);
+        // スタックの世界高さ + わずかな余白 (= ビームが最上段の文字に被らないように 2px ぶん上へ)。
+        double stackWorldHeight = (totalRows * rowSpacing + 2) * worldScale;
+        return baseY + stackWorldHeight;
     }
 
     /**

@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Átviteli animáció megjelenítése",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animálja az átviteli nyilakon haladó pontot a menüben.",
   "config.omnichest.distribution.enableTransferHistory": "Átviteli előzmények engedélyezése",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Rögzíti a sikeres és sikertelen átviteleket az Előzmények / Sikertelen füleknek."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Rögzíti a sikeres és sikertelen átviteleket az Előzmények / Sikertelen füleknek.",
+  "modmenu.descriptionTranslation.omnichest": "Találj meg bármilyen tárgyat az összes ládádban egyetlen pillantással. Az OmniChest hálózati keresést ad világbeli jelölőkkel, valamint okos lerakást, kategória szerinti rendezést, rekeszzárakat és újrahasználható láda-sablonokat — egyetlen eszköz a rendezett tárolásért.",
+  "omnichest.reset_popup.title": "Biztosan visszaállítod az összes módosítást?",
+  "omnichest.reset_popup.yes": "Igen",
+  "omnichest.reset_popup.no": "Nem",
+  "omnichest.reset_popup.no_changes": "Minden beállítás alapértelmezett értéken van.",
+  "config.omnichest.sub.search.beacon": "Jelzőfény-effekt",
+  "config.omnichest.search.enableBeacon": "Jelzőfény-effekt bekapcsolása",
+  "config.omnichest.search.enableBeacon.tooltip": "Áttetsző, jelzőfényszerű sugarat rajzol minden keresési jelölőből felfelé, hogy messziről is látsszódjon. A jelölők maguk nem változnak.",
+  "config.omnichest.search.beaconOpacity": "Jelzőfény átlátszatlansága",
+  "config.omnichest.search.beaconOpacity.tooltip": "A sugár alap átlátszatlansága. Az elhalványulással és lüktetéssel kombinálódik.",
+  "config.omnichest.search.beaconWidth": "Jelzőfény szélessége",
+  "config.omnichest.search.beaconWidth.tooltip": "A sugármag szélessége blokkban. A külső ragyogás szélesebb.",
+  "config.omnichest.search.beaconDistanceFade": "Távolsági elhalványulás",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Fokozatosan halványítja a sugarat a távolsággal (sosem tűnik el teljesen).",
+  "config.omnichest.search.beaconAnimation": "Jelzőfény-animáció",
+  "config.omnichest.search.beaconAnimation.tooltip": "Lassú, lüktető fényerő-animációt kapcsol be a sugáron."
 }

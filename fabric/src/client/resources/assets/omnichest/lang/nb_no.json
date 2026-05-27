@@ -407,5 +407,21 @@
   "config.omnichest.distribution.showTransferAnimation": "Vis overføringsanimasjon",
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animerer den flytende prikken langs overføringspilene i menyen.",
   "config.omnichest.distribution.enableTransferHistory": "Aktiver overføringshistorikk",
-  "config.omnichest.distribution.enableTransferHistory.tooltip": "Registrerer vellykkede og mislykkede overføringer for fanene Historikk / Mislykkede."
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Registrerer vellykkede og mislykkede overføringer for fanene Historikk / Mislykkede.",
+  "modmenu.descriptionTranslation.omnichest": "Finn hvilken som helst gjenstand i alle kistene dine med et øyekast. OmniChest legger til nettverksbredt søk med markører i verden, smart innsetting, kategorisortering, plasslåser og gjenbrukbare kistemaler — ett verktøy for å holde lageret ryddig.",
+  "omnichest.reset_popup.title": "Vil du virkelig tilbakestille alle endringer?",
+  "omnichest.reset_popup.yes": "Ja",
+  "omnichest.reset_popup.no": "Nei",
+  "omnichest.reset_popup.no_changes": "Alle innstillinger er på standardverdier.",
+  "config.omnichest.sub.search.beacon": "Fyrlykt-effekt",
+  "config.omnichest.search.enableBeacon": "Aktiver fyrlykt-effekt",
+  "config.omnichest.search.enableBeacon.tooltip": "Tegner en gjennomsiktig fyrlykt-stråle som stiger fra hver søkemarkør, så den synes på avstand. Selve markørene endres ikke.",
+  "config.omnichest.search.beaconOpacity": "Strålens tetthet",
+  "config.omnichest.search.beaconOpacity.tooltip": "Strålens grunntetthet. Kombineres med uttoning og puls.",
+  "config.omnichest.search.beaconWidth": "Strålebredde",
+  "config.omnichest.search.beaconWidth.tooltip": "Bredden på strålekjernen i blokker. Den ytre gløden er bredere.",
+  "config.omnichest.search.beaconDistanceFade": "Avstandsuttoning",
+  "config.omnichest.search.beaconDistanceFade.tooltip": "Demper strålen gradvis med avstanden (forsvinner aldri helt).",
+  "config.omnichest.search.beaconAnimation": "Fyrlykt-animasjon",
+  "config.omnichest.search.beaconAnimation.tooltip": "Aktiverer en langsom pulserende lysstyrkeanimasjon på strålen."
 }

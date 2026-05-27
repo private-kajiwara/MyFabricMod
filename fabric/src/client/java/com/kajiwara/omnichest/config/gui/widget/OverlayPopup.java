@@ -39,4 +39,18 @@ public interface OverlayPopup {
      * @return キー入力が consume されたか (= true なら Screen の通常 keyPressed に流さない)。
      */
     boolean keyPressed(int key);
+
+    /**
+     * popup でのホイールスクロール。 内部に縦スクロール領域を持つ popup
+     * ({@link ResetConfirmationPopup} の変更設定一覧など) が override する。
+     *
+     * <p>
+     * 既存 popup ({@link ColorPickerPopup} など) はスクロールを持たないため、
+     * デフォルトは「消費しない (= false)」。 これにより本メソッドの追加は後方互換。
+     *
+     * @return スクロールが consume されたか (= true なら Screen の通常 scroll 処理に流さない)。
+     */
+    default boolean mouseScrolled(double mx, double my, double amount) {
+        return false;
+    }
 }
