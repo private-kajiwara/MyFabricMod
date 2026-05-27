@@ -2,6 +2,7 @@ package com.kajiwara.omnichest.client;
 
 import com.kajiwara.omnichest.classify.AutoDepositManager;
 import com.kajiwara.omnichest.client.gui.SearchScreen;
+import com.kajiwara.omnichest.distribution.ui.DistributionScreen;
 import com.kajiwara.omnichest.i18n.Keys;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.mixin.AbstractContainerScreenAccessor;
@@ -38,6 +39,8 @@ import org.lwjgl.glfw.GLFW;
 public final class ClientKeyBindings {
 
     public static final String OPEN_SEARCH_KEY = "key.omnichest.open_search";
+    /** Storage Auto Distribution: 倉庫振り分けメニューを開くキー。 デフォルト <b>J</b>。 */
+    public static final String OPEN_DISTRIBUTION_KEY = "key.omnichest.open_distribution";
     /** Smart Storage Classification: 自動投入プランをチャットに表示するキー。 */
     public static final String SMART_DEPOSIT_KEY = "key.omnichest.smart_deposit";
     /**
@@ -63,6 +66,7 @@ public final class ClientKeyBindings {
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath("omnichest", "search"));
 
     private static KeyMapping openSearch;
+    private static KeyMapping openDistribution;
     private static KeyMapping smartDeposit;
     private static KeyMapping toggleSlotLock;
     private static KeyMapping clearAllSlotLocks;
@@ -82,6 +86,13 @@ public final class ClientKeyBindings {
                 OPEN_SEARCH_KEY,
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_G,
+                CATEGORY));
+
+        // 倉庫振り分けメニュー。デフォルト「J」 (= 検索 G の隣)。
+        openDistribution = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                OPEN_DISTRIBUTION_KEY,
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_J,
                 CATEGORY));
 
         // 自動投入プランの一括表示。デフォルト「H」 (= "Home for items")。
@@ -117,6 +128,15 @@ public final class ClientKeyBindings {
             // 別の Screen が開いている時はオープンを抑止する (誤発火防止)。
             if (mc.screen == null) {
                 SearchScreen.open();
+            }
+        }
+
+        if (openDistribution != null) {
+            while (openDistribution.consumeClick()) {
+                // 倉庫振り分けメニューもゲーム画面 (Screen 無し) からのみ開く。
+                if (mc.screen == null) {
+                    DistributionScreen.open();
+                }
             }
         }
 

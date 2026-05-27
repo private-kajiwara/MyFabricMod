@@ -156,6 +156,10 @@ public final class ConfigManager {
             if (c.search.defaultDisplayMode == null) c.search.defaultDisplayMode = d.search.defaultDisplayMode;
             if (c.search.favoriteSortMode == null) c.search.favoriteSortMode = d.search.favoriteSortMode;
         }
+        if (c.distribution == null) c.distribution = d.distribution;
+        if (c.distribution != null && c.distribution.priorityMode == null) {
+            c.distribution.priorityMode = d.distribution.priorityMode;
+        }
         if (c.ai == null) c.ai = d.ai;
         if (c.template == null) c.template = d.template;
         if (c.render == null) c.render = d.render;

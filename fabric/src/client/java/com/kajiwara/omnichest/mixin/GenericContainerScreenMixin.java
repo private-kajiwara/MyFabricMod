@@ -4,6 +4,8 @@ import com.kajiwara.omnichest.catsort.engine.CategorySortEngine;
 import com.kajiwara.omnichest.catsort.ui.SortButtonWidget;
 import com.kajiwara.omnichest.client.gui.CategoryBadgeRenderer;
 import com.kajiwara.omnichest.client.gui.SearchScreen;
+import com.kajiwara.omnichest.config.ConfigManager;
+import com.kajiwara.omnichest.distribution.StorageDistributionManager;
 import com.kajiwara.omnichest.i18n.Keys;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.search.ContainerScanner;
@@ -95,6 +97,18 @@ public abstract class GenericContainerScreenMixin extends Screen {
     // 16 カテゴリ分類 + tick 安全移動を行う {@link CategorySortEngine} を呼ぶ。
     @Unique
     private Button cits$categorySortButton;
+
+    // ───────────────────────────────────────────────────────────
+    // Storage Auto Distribution のボタン群 (= 検索/整理/テンプレとは独立機能):
+    //   - Set Category    : このチェストを登録倉庫として設定/更新
+    //   - Auto Distribute : 開いているチェスト + インベントリを既知倉庫へ振り分け
+    // 設定 (distribution.enableAutoDistribution && showButtons) が ON のときのみ生成。
+    // ───────────────────────────────────────────────────────────
+    @Unique
+    private Button cits$setCategoryButton;
+
+    @Unique
+    private Button cits$autoDistributeButton;
 
     // Deposit / Compact ボタン用の寸法定数 (ボタン右上配置の右端基準)
     @Unique
@@ -444,6 +458,30 @@ public abstract class GenericContainerScreenMixin extends Screen {
                         .build();
                 this.addRenderableWidget(this.cits$manageTemplateButton);
             }
+
+            // ───────────────────────────────────────────────────────────
+            // Storage Auto Distribution のボタン (= テンプレの更に下に縦並び)。
+            // 検索系とは独立した {@link StorageDistributionManager} に委譲するだけで、
+            // 位置情報 (= どのチェストか) は DistributionOpenTracker 側が保持している。
+            // ───────────────────────────────────────────────────────────
+            if (ConfigManager.get().distribution.enableAutoDistribution
+                    && ConfigManager.get().distribution.showButtons) {
+                Screen distSelf = (Screen) (Object) this;
+
+                this.cits$setCategoryButton = Button.builder(
+                        OmniChestLocale.get("omnichest.button.set_category", "Set Category"),
+                        btn -> StorageDistributionManager.openSetCategoryForCurrent(distSelf))
+                        .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
+                        .build();
+                this.addRenderableWidget(this.cits$setCategoryButton);
+
+                this.cits$autoDistributeButton = Button.builder(
+                        OmniChestLocale.get("omnichest.button.auto_distribute", "Auto Distribute"),
+                        btn -> StorageDistributionManager.distributeFromOpen())
+                        .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
+                        .build();
+                this.addRenderableWidget(this.cits$autoDistributeButton);
+            }
         }
 
         // ───────────────────────────────────────────────────────────
@@ -670,6 +708,19 @@ public abstract class GenericContainerScreenMixin extends Screen {
             this.cits$manageTemplateButton.setX(x);
             this.cits$manageTemplateButton.setY(y + 108);
             this.cits$manageTemplateButton.setWidth(width);
+        }
+
+        // Storage Auto Distribution の 2 ボタンは、 縦並びの最後尾に配置する。
+        // テンプレ 3 連が非表示でも独立して位置決めできるよう、 個別に null チェックする。
+        if (this.cits$setCategoryButton != null) {
+            this.cits$setCategoryButton.setX(x);
+            this.cits$setCategoryButton.setY(y + 126);
+            this.cits$setCategoryButton.setWidth(width);
+        }
+        if (this.cits$autoDistributeButton != null) {
+            this.cits$autoDistributeButton.setX(x);
+            this.cits$autoDistributeButton.setY(y + 144);
+            this.cits$autoDistributeButton.setWidth(width);
         }
     }
 }

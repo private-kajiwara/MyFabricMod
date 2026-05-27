@@ -8,6 +8,7 @@ import com.kajiwara.omnichest.config.gui.category.AICategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.CompactCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.CompatCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.DepositCategoryBuilder;
+import com.kajiwara.omnichest.config.gui.category.DistributionCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.GeneralCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.KeybindCategoryBuilder;
 import com.kajiwara.omnichest.config.gui.category.LanguageCategoryBuilder;
@@ -75,6 +76,7 @@ public final class ConfigScreenFactory {
                         SortCategoryBuilder.build(cfg.sort),
                         CompactCategoryBuilder.build(cfg.compact),
                         DepositCategoryBuilder.build(cfg.deposit),
+                        DistributionCategoryBuilder.build(cfg.distribution),
                         AICategoryBuilder.build(cfg.ai),
                         TemplateCategoryBuilder.build(cfg.template))));
         groups.add(new TabGroup(

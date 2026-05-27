@@ -356,5 +356,66 @@
   "omnichest.search.display_mode.icon_only": "アイコンのみ",
   "omnichest.search.favorites.add_tooltip": "右クリックまたは Alt+クリックでお気に入り登録",
   "omnichest.search.favorites.remove_tooltip": "右クリックまたは Alt+クリックでお気に入り解除",
-  "omnichest.search.favorites.empty": "お気に入り未登録。アイテムを右クリックで★が付けられます。"
+  "omnichest.search.favorites.empty": "お気に入り未登録。アイテムを右クリックで★が付けられます。",
+
+  "key.omnichest.open_distribution": "倉庫振り分けを開く",
+
+  "omnichest.button.set_category": "カテゴリ設定",
+  "omnichest.button.auto_distribute": "自動振り分け",
+
+  "omnichest.distribution.title": "倉庫自動振り分け",
+  "omnichest.distribution.summary": "倉庫: %1$d  /  予約: %2$d  /  キュー: %3$d",
+  "omnichest.distribution.hint": "チェストを開く → [カテゴリ設定]で登録  /  [自動振り分け]で整理  /  ESC = 閉じる",
+  "omnichest.distribution.this_chest": "このチェスト",
+  "omnichest.distribution.source.player": "プレイヤーインベントリ",
+
+  "omnichest.distribution.tab.all": "すべて",
+  "omnichest.distribution.tab.favorites": "お気に入り",
+
+  "omnichest.distribution.section.storage": "倉庫一覧",
+  "omnichest.distribution.section.pending": "予約",
+  "omnichest.distribution.section.queue": "キュー",
+  "omnichest.distribution.section.history": "履歴",
+  "omnichest.distribution.section.failed": "失敗",
+
+  "omnichest.distribution.empty.storage": "登録倉庫がありません。チェストを開いて[カテゴリ設定]を押してください。",
+  "omnichest.distribution.empty.pending": "予約転送はありません。チェストの近くで[自動振り分け]を押してください。",
+  "omnichest.distribution.empty.queue": "キューは空です。",
+  "omnichest.distribution.empty.history": "転送履歴はまだありません。",
+  "omnichest.distribution.empty.failed": "失敗した転送はありません。",
+
+  "omnichest.distribution.priority.nearest_first": "最も近い順",
+  "omnichest.distribution.priority.emptiest_first": "空いている順",
+  "omnichest.distribution.priority.priority_order": "優先度順",
+
+  "omnichest.distribution.chat.no_open": "§7[自動振り分け] まずチェストを開いてください。",
+  "omnichest.distribution.chat.disabled": "§7[自動振り分け] 設定で無効化されています。",
+  "omnichest.distribution.chat.summary": "§a[自動振り分け] §r投入 %1$d / 遠隔予約 %2$d / 取り出し %3$d。",
+  "omnichest.distribution.chat.busy": "§7[自動振り分け] 処理中です… 少し待って再実行してください。",
+
+  "omnichest.distribution.set_category.title": "倉庫カテゴリの設定",
+  "omnichest.distribution.set_category.name": "チェスト名",
+  "omnichest.distribution.set_category.category_label": "カテゴリ: %1$s",
+  "omnichest.distribution.set_category.priority_label": "優先度: %1$d",
+  "omnichest.distribution.set_category.favorite_label": "お気に入り: %1$s",
+  "omnichest.distribution.set_category.unregister": "登録解除",
+  "omnichest.distribution.set_category.hint": "カテゴリを選んで保存。  ESC = キャンセル",
+
+  "config.omnichest.category.distribution": "倉庫振り分け",
+  "config.omnichest.distribution.enableAutoDistribution": "自動振り分けを有効化",
+  "config.omnichest.distribution.enableAutoDistribution.tooltip": "倉庫自動振り分けシステム全体のスイッチ（OFF でチェスト内ボタンも非表示）。",
+  "config.omnichest.distribution.autoApplyPendingTransfers": "予約転送を自動適用",
+  "config.omnichest.distribution.autoApplyPendingTransfers.tooltip": "チェストを開いた瞬間、そのチェスト宛ての予約アイテムを自動で投入します。",
+  "config.omnichest.distribution.showButtons": "GUI 内ボタンを表示",
+  "config.omnichest.distribution.showButtons.tooltip": "チェスト GUI 内に[カテゴリ設定]/[自動振り分け]ボタンを表示します。",
+  "config.omnichest.distribution.priorityMode": "送り先の優先順位",
+  "config.omnichest.distribution.priorityMode.tooltip": "同カテゴリの倉庫が複数あるとき: 最も近い / 空いている / 優先度値順。",
+  "config.omnichest.distribution.queueSpeedTicks": "キュー速度 (tick)",
+  "config.omnichest.distribution.queueSpeedTicks.tooltip": "発火間隔の tick 数。大きいほど遅く・厳しいサーバでも安全。",
+  "config.omnichest.distribution.maxMovesPerTick": "1tick あたり最大移動数",
+  "config.omnichest.distribution.maxMovesPerTick.tooltip": "1 tick に発行する移動操作の上限。",
+  "config.omnichest.distribution.showTransferAnimation": "転送アニメを表示",
+  "config.omnichest.distribution.showTransferAnimation.tooltip": "振り分けメニューの矢印に流れるドットのアニメを表示します。",
+  "config.omnichest.distribution.enableTransferHistory": "転送履歴を有効化",
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "完了/失敗した転送を履歴・失敗タブ用に記録します。"
 }

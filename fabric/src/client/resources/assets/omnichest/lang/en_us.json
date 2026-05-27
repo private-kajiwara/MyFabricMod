@@ -403,5 +403,66 @@
   "omnichest.keybind.line.open_search": "• Open Search: %1$s",
   "omnichest.keybind.line.smart_deposit": "• Smart Deposit: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• Toggle Slot Lock: %1$s",
-  "omnichest.keybind.line.clear_all_locks": "• Clear All Slot Locks: %1$s"
+  "omnichest.keybind.line.clear_all_locks": "• Clear All Slot Locks: %1$s",
+
+  "key.omnichest.open_distribution": "Open Storage Distribution",
+
+  "omnichest.button.set_category": "Set Category",
+  "omnichest.button.auto_distribute": "Auto Distribute",
+
+  "omnichest.distribution.title": "Storage Distribution",
+  "omnichest.distribution.summary": "Storages: %1$d  /  Pending: %2$d  /  Queue: %3$d",
+  "omnichest.distribution.hint": "Open a chest → [Set Category] to register  /  [Auto Distribute] to sort  /  ESC = close",
+  "omnichest.distribution.this_chest": "This Chest",
+  "omnichest.distribution.source.player": "Player Inventory",
+
+  "omnichest.distribution.tab.all": "All",
+  "omnichest.distribution.tab.favorites": "Favorites",
+
+  "omnichest.distribution.section.storage": "Storage",
+  "omnichest.distribution.section.pending": "Pending",
+  "omnichest.distribution.section.queue": "Queue",
+  "omnichest.distribution.section.history": "History",
+  "omnichest.distribution.section.failed": "Failed",
+
+  "omnichest.distribution.empty.storage": "No registered storages. Open a chest and press [Set Category].",
+  "omnichest.distribution.empty.pending": "No pending transfers. Press [Auto Distribute] near a chest.",
+  "omnichest.distribution.empty.queue": "Queue is idle.",
+  "omnichest.distribution.empty.history": "No transfer history yet.",
+  "omnichest.distribution.empty.failed": "No failed transfers.",
+
+  "omnichest.distribution.priority.nearest_first": "Nearest First",
+  "omnichest.distribution.priority.emptiest_first": "Emptiest First",
+  "omnichest.distribution.priority.priority_order": "Priority Order",
+
+  "omnichest.distribution.chat.no_open": "§7[Auto Distribute] Open a chest first.",
+  "omnichest.distribution.chat.disabled": "§7[Auto Distribute] Feature is disabled in config.",
+  "omnichest.distribution.chat.summary": "§a[Auto Distribute] §rDeposited %1$d, queued %2$d for remote chests, pulled %3$d.",
+  "omnichest.distribution.chat.busy": "§7[Auto Distribute] Still working… try again in a moment.",
+
+  "omnichest.distribution.set_category.title": "Set Storage Category",
+  "omnichest.distribution.set_category.name": "Chest Name",
+  "omnichest.distribution.set_category.category_label": "Category: %1$s",
+  "omnichest.distribution.set_category.priority_label": "Priority: %1$d",
+  "omnichest.distribution.set_category.favorite_label": "Favorite: %1$s",
+  "omnichest.distribution.set_category.unregister": "Unregister",
+  "omnichest.distribution.set_category.hint": "Choose a category, then Save.  ESC = cancel",
+
+  "config.omnichest.category.distribution": "Storage Distribution",
+  "config.omnichest.distribution.enableAutoDistribution": "Enable Auto Distribution",
+  "config.omnichest.distribution.enableAutoDistribution.tooltip": "Master switch for the Storage Auto Distribution system (also hides the in-chest buttons when off).",
+  "config.omnichest.distribution.autoApplyPendingTransfers": "Auto Apply Pending Transfers",
+  "config.omnichest.distribution.autoApplyPendingTransfers.tooltip": "When you open a chest, automatically deposit items that were queued for it.",
+  "config.omnichest.distribution.showButtons": "Show In-GUI Buttons",
+  "config.omnichest.distribution.showButtons.tooltip": "Show [Set Category] and [Auto Distribute] buttons inside the chest GUI.",
+  "config.omnichest.distribution.priorityMode": "Destination Priority",
+  "config.omnichest.distribution.priorityMode.tooltip": "When several chests share a category: nearest, emptiest, or by priority value.",
+  "config.omnichest.distribution.queueSpeedTicks": "Queue Speed (ticks)",
+  "config.omnichest.distribution.queueSpeedTicks.tooltip": "Ticks between dispatch batches. Higher = slower & safer on strict servers.",
+  "config.omnichest.distribution.maxMovesPerTick": "Max Moves Per Tick",
+  "config.omnichest.distribution.maxMovesPerTick.tooltip": "Upper bound for item moves dispatched per tick.",
+  "config.omnichest.distribution.showTransferAnimation": "Show Transfer Animation",
+  "config.omnichest.distribution.showTransferAnimation.tooltip": "Animate the flowing dot along transfer arrows in the distribution menu.",
+  "config.omnichest.distribution.enableTransferHistory": "Enable Transfer History",
+  "config.omnichest.distribution.enableTransferHistory.tooltip": "Record completed and failed transfers for the History / Failed tabs."
 }

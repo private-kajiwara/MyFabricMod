@@ -9,6 +9,9 @@ import com.kajiwara.omnichest.client.compat.CompatManager;
 import com.kajiwara.omnichest.client.compat.resource.ResourcePackCompatManager;
 import com.kajiwara.omnichest.client.render.ChestHighlighter;
 import com.kajiwara.omnichest.config.ConfigManager;
+import com.kajiwara.omnichest.distribution.DistributionOpenTracker;
+import com.kajiwara.omnichest.distribution.DistributionQueue;
+import com.kajiwara.omnichest.distribution.DistributionStorage;
 import com.kajiwara.omnichest.i18n.LanguageManager;
 import com.kajiwara.omnichest.i18n.LanguageOption;
 import com.kajiwara.omnichest.i18n.RTLLayoutManager;
@@ -137,6 +140,16 @@ public class OmniChestClient implements ClientModInitializer {
         // tick ベースで {@link com.kajiwara.omnichest.catsort.engine.SortPlan} を発火する
         // {@link SortMoveQueue} を起動。 二重登録は内部でガードされる。
         SortMoveQueue.get().register();
+
+        // ─── Storage Auto Distribution System ───
+        // 既存の検索 / 整理 / テンプレートとは完全に独立したサブシステム。
+        //   - DistributionStorage: 登録倉庫 / 予約転送 / 履歴の NBT 永続化 (JOIN load / DISCONNECT save)。
+        //     ChestCacheStorage と同じく JOIN listener を持つので、 ここで早めに register しておく。
+        //   - DistributionOpenTracker: チェスト開封の監視 (= fill 更新 + pending 自動適用)。
+        //   - DistributionQueue: tick 分散の安全移動キュー。
+        DistributionStorage.register();
+        DistributionOpenTracker.get().register();
+        DistributionQueue.get().register();
 
         // ─── Favorite Slot Lock System ───
         // (1) Config を引いてデフォルト値を初期化 (load 失敗時のログを起動時に出す)。
