@@ -316,6 +316,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Clic mijloc: blochează slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Clic: blocare obiect",
   "omnichest.controls.line.alt_drag": "Alt+Tragere: blocare continuă",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Plasează pe Cutia Shulker: previzualizare conținut",
   "omnichest.controls.line.shift_compact": "Shift+Comprimare: și jucător",
   "config.omnichest.group.basics": "De bază",
   "config.omnichest.group.item_sorting": "Sortare obiecte",

@@ -76,6 +76,20 @@ public final class Keys {
     public static final String BUTTON_LAYOUT_RIGHT = "omnichest.button.layout_right";
     public static final String BUTTON_CATEGORY_SORT = "omnichest.button.category_sort";
 
+    // ─── チェスト GUI ボタン Tooltip ──────────────────────────────
+    /** ボタンが何をするのか、 ホバー時に説明する短い tooltip 群。 */
+    public static final String BUTTON_DEPOSIT_TOOLTIP = "omnichest.button.deposit.tooltip";
+    public static final String BUTTON_COMPACT_TOOLTIP = "omnichest.button.compact.tooltip";
+    public static final String BUTTON_SEARCH_NETWORK_TOOLTIP = "omnichest.button.search_network.tooltip";
+    public static final String BUTTON_SAVE_TEMPLATE_TOOLTIP = "omnichest.button.save_template.tooltip";
+    public static final String BUTTON_APPLY_TEMPLATE_TOOLTIP = "omnichest.button.apply_template.tooltip";
+    public static final String BUTTON_MANAGE_TEMPLATES_TOOLTIP = "omnichest.button.manage_templates.tooltip";
+    public static final String BUTTON_SORT_BY_TYPE_TOOLTIP = "omnichest.button.sort_by_type.tooltip";
+    public static final String BUTTON_SORT_BY_COUNT_TOOLTIP = "omnichest.button.sort_by_count.tooltip";
+    public static final String BUTTON_LAYOUT_LEFT_TOOLTIP = "omnichest.button.layout_left.tooltip";
+    public static final String BUTTON_LAYOUT_RIGHT_TOOLTIP = "omnichest.button.layout_right.tooltip";
+    public static final String EDITBOX_SEARCH_TOOLTIP = "omnichest.editbox.search.tooltip";
+
     public static final String BUTTON_SORT_DISTANCE = "omnichest.button.sort_distance";
     public static final String BUTTON_SORT_COUNT = "omnichest.button.sort_count";
     public static final String BUTTON_SORT_NAME = "omnichest.button.sort_name";
@@ -106,6 +120,9 @@ public final class Keys {
     public static final String CONTROLS_LINE_ITEM_LOCK_CYCLE = "omnichest.controls.line.item_lock_cycle";
     public static final String CONTROLS_LINE_ALT_DRAG = "omnichest.controls.line.alt_drag";
     public static final String CONTROLS_LINE_SHIFT_COMPACT = "omnichest.controls.line.shift_compact";
+    /** ALT を押しながらシュルカーボックスにホバーすると中身プレビューを出す機能の説明行。 */
+    public static final String CONTROLS_LINE_ALT_HOVER_SHULKER_PREVIEW =
+            "omnichest.controls.line.alt_hover_shulker_preview";
 
     // ─── テンプレート関連 ─────────────────────────────────────
     public static final String TEMPLATE_DEFAULT_NAME = "omnichest.template.default_name";

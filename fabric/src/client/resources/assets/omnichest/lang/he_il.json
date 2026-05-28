@@ -239,6 +239,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "לחיצה אמצעית: נעילת תא",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+לחיצה: נעילת פריט",
   "omnichest.controls.line.alt_drag": "Alt+גרירה: נעילה רציפה",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+ריחוף מעל שאלקר: תצוגה מקדימה",
   "omnichest.controls.line.shift_compact": "Shift+איחוד: כולל השחקן",
 
   "omnichest.button.sort_distance": "לפי מרחק",

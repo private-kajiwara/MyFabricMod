@@ -316,6 +316,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Keskiklikkaus: lukitse paikka",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klikkaus: esinelukko",
   "omnichest.controls.line.alt_drag": "Alt+Vedä: jatkuva lukitus",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Shulker-laatikon yllä: sisällön esikatselu",
   "omnichest.controls.line.shift_compact": "Shift+Pakkaa: myös pelaaja",
   "config.omnichest.group.basics": "Perusasiat",
   "config.omnichest.group.item_sorting": "Esineiden lajittelu",

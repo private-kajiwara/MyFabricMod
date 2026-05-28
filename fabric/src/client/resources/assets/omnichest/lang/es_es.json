@@ -204,6 +204,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Clic central: Bloquear hueco",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Clic: Bloqueo de objeto",
   "omnichest.controls.line.alt_drag": "Alt+Arrastrar: Bloqueo continuo",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Pasar por Caja shulker: vista previa",
   "omnichest.controls.line.shift_compact": "Shift+Compactar: Inv. tamb.",
   "omnichest.button.sort_distance": "Distancia",
   "omnichest.button.sort_count": "Cantidad",

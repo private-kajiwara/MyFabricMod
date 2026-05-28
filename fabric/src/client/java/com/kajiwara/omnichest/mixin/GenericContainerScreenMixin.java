@@ -4,6 +4,7 @@ import com.kajiwara.omnichest.catsort.engine.CategorySortEngine;
 import com.kajiwara.omnichest.catsort.ui.SortButtonWidget;
 import com.kajiwara.omnichest.client.gui.CategoryBadgeRenderer;
 import com.kajiwara.omnichest.client.gui.SearchScreen;
+import com.kajiwara.omnichest.client.gui.search.preview.UnifiedPanelRenderer;
 import com.kajiwara.omnichest.config.ConfigManager;
 import com.kajiwara.omnichest.distribution.StorageDistributionManager;
 import com.kajiwara.omnichest.i18n.Keys;
@@ -19,8 +20,10 @@ import com.kajiwara.omnichest.util.StackCompactor;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
@@ -207,23 +210,54 @@ public abstract class GenericContainerScreenMixin extends Screen {
         if (this.cits$depositButton == null)
             return;
 
-        // ─── 1) 表示する行を組み立て (SlotLockConfig の個別フラグを尊重) ───
+        // ─── 1) 表示する行を組み立て (= 実際にコードが反応するキー組合せだけ) ───
+        // 「実際に効く入力」 と「説明テキスト」 を 1:1 に保つため、 各エントリは対応する設定 /
+        // ボタン生成状況に紐付けて条件付き表示する (= ユーザーが OFF にした入力は説明にも出さない)。
+        //
+        // 各行の対応コード:
+        //   (1) Alt + 左クリック   → SlotLockScreenMixin#cits_slotLock$onMouseClicked
+        //                            (button=0, hasAltDown, !hasShiftDown)
+        //   (2) 中クリック          → 同上 (button=2)
+        //   (3) Shift + Alt + 左   → 同上 (button=0, hasAltDown, hasShiftDown) サイクル モード
+        //   (4) Alt + ドラッグ      → SlotLockScreenMixin#cits_slotLock$onMouseDragged
+        //                            (Alt 押下中の drag)
+        //   (5) Alt + シュルカー上ホバー → ShulkerPreviewScreenMixin / AltPreviewTooltip
+        //                                   (search.enableAltPreview)
+        //   (6) Shift + [Compact] → GenericContainerScreenMixin の Compact ボタン Lambda
+        //                            (hasShiftDown 時に compactContainerAndPlayer)
         SlotLockConfig lockCfg = SlotLockConfig.get();
-        java.util.List<Component> lines = new java.util.ArrayList<>(5);
+        java.util.List<Component> lines = new java.util.ArrayList<>(6);
         if (lockCfg.toggleWithAltClick) {
-            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_SLOT_LOCK_ALT_CLICK, "Alt+Click: Lock slot"));
+            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_SLOT_LOCK_ALT_CLICK,
+                    "Alt + Left Click: Toggle slot lock"));
         }
         if (lockCfg.toggleWithMiddleClick) {
-            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_SLOT_LOCK_MIDDLE_CLICK, "Middle Click: Lock slot"));
+            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_SLOT_LOCK_MIDDLE_CLICK,
+                    "Middle Click: Toggle slot lock"));
         }
         if (lockCfg.cycleWithShiftAltClick) {
-            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_ITEM_LOCK_CYCLE, "Shift+Alt+Click: Item lock"));
+            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_ITEM_LOCK_CYCLE,
+                    "Shift + Alt + Click: Cycle slot/item lock"));
         }
         if (lockCfg.toggleWithAltClick) {
-            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_ALT_DRAG, "Alt+Drag: Continuous lock"));
+            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_ALT_DRAG,
+                    "Alt + Drag: Multi-slot lock toggle"));
+        }
+        // ALT ホバーシュルカープレビューは search.enableAltPreview が ON のときのみ表示する。
+        // 設定が OFF なら入力は無効化されているので、 説明欄からも消す (= 1:1 整合性)。
+        boolean altPreviewOn;
+        try {
+            altPreviewOn = com.kajiwara.omnichest.config.ConfigManager.get().search.enableAltPreview;
+        } catch (Throwable ignored) {
+            altPreviewOn = false;
+        }
+        if (altPreviewOn) {
+            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_ALT_HOVER_SHULKER_PREVIEW,
+                    "Alt + Hover Shulker Box: Preview contents"));
         }
         if (this.cits$compactButton != null) {
-            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_SHIFT_COMPACT, "Shift+Compact: Player too"));
+            lines.add(OmniChestLocale.get(Keys.CONTROLS_LINE_SHIFT_COMPACT,
+                    "Shift + Click Compact: Compact player too"));
         }
         if (lines.isEmpty())
             return;
@@ -331,6 +365,116 @@ public abstract class GenericContainerScreenMixin extends Screen {
         return smallChestWithSearchRow ? this.topPos - 32 : this.topPos - 14;
     }
 
+    /**
+     * 任意ボタン (= 実体は {@link AbstractWidget}) に Tooltip を貼るユーティリティ。
+     * 翻訳キーが lang に存在しなければ {@code fallback} (= 英語固定) を使う。
+     *
+     * <p>
+     * <b>なぜヘルパ化するか</b>:
+     * <ul>
+     *   <li>呼び出し側を「行 1 本」 に揃え、 ボタン生成ブロックの読みやすさを保つ。</li>
+     *   <li>将来 Tooltip の遅延 / 配色 を統一する際の 1 点に集約する。</li>
+     *   <li>{@link Tooltip#create(Component)} を直接 import するノイズを mixin 側に持ち込まない。</li>
+     * </ul>
+     */
+    @Unique
+    private static void cits$applyTooltip(AbstractWidget widget, String key, String fallback) {
+        if (widget == null) return;
+        widget.setTooltip(Tooltip.create(OmniChestLocale.get(key, fallback)));
+    }
+
+    // ───────────────────────────────────────────────────────────
+    // ボタン群の背景パネル
+    //
+    // 既存ボタン (Deposit / Compact / Category Sort / Chest Search / Save・Apply・Manage
+    // Template / Set Category / Auto Distribute) は、 配置・ハンドラ・サイズを<b>変更せず</b>に、
+    // 後ろに統一テーマのパネル ({@link UnifiedPanelRenderer}) を 1 枚だけ敷く。
+    //
+    // 目的:
+    //   - 視覚的に「これらは一連の倉庫操作ボタンである」 と グループ化する (= デザイン 4 原則
+    //     「proximity」 を明示する)
+    //   - チェスト本体 (= バニラ UI) と地面 (= world) との視覚的コントラストを上げ、 押し間違いを減らす
+    //   - 既存配色と浮かないよう、 倉庫検索 / 設定 GUI と同じ {@link UnifiedPanelRenderer} を流用
+    //
+    // 描き方: 描画は @At("HEAD") に挟む。 こうすると Screen 自身がウィジェット (= 各 Button) を
+    // 描く前に 1 度だけ背景が出るため、 「ボタンより手前にパネル」 にならず、 押下も阻害しない。
+    //
+    // グループ間の境目には {@link UnifiedPanelRenderer#drawSeparator} で 1px の薄い水平線を引き、
+    // 操作カテゴリ (= Inventory ops / Search / Templates / Distribution) を区切る。
+    // セパレータは「ボタン同士の間 (= y+18 きざみの中間)」 に置くため、 18 / 2 = 9px 下にオフセットする。
+    // ───────────────────────────────────────────────────────────
+    /** パネル外周マージン (= ボタン四辺と背景四辺の隙間, px)。 */
+    @Unique
+    private static final int CITS_PANEL_MARGIN = 3;
+
+    /**
+     * ボタン群の背景パネルを描画する。 描かない条件 (Deposit ボタン未生成 etc.) では即 return。
+     */
+    @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", at = @At("HEAD"))
+    private void cits$renderButtonPanel(GuiGraphics g, int mouseX, int mouseY, float partialTick,
+            CallbackInfo ci) {
+        if (this.cits$depositButton == null) return;
+
+        // ─── パネル矩形の決定 (= 実際に存在するボタンの BB を 1 つに合体させる) ───
+        // 「null チェック付きで union」 することで、 テンプレ系/Distribution が OFF のときに
+        // パネルがそこまで伸びない (= 余白だらけのパネルにならない)。
+        int x = this.cits$depositButton.getX() - CITS_PANEL_MARGIN;
+        int y = this.cits$depositButton.getY() - CITS_PANEL_MARGIN;
+        int right = this.cits$depositButton.getX() + this.cits$depositButton.getWidth();
+        int bottom = this.cits$depositButton.getY() + this.cits$depositButton.getHeight();
+
+        AbstractWidget[] inGroup = new AbstractWidget[] {
+                this.cits$depositButton,
+                this.cits$compactButton,
+                this.cits$categorySortButton,
+                this.cits$searchNetworkButton,
+                this.cits$saveTemplateButton,
+                this.cits$applyTemplateButton,
+                this.cits$manageTemplateButton,
+                this.cits$setCategoryButton,
+                this.cits$autoDistributeButton,
+        };
+        for (AbstractWidget w : inGroup) {
+            if (w == null) continue;
+            right = Math.max(right, w.getX() + w.getWidth());
+            bottom = Math.max(bottom, w.getY() + w.getHeight());
+        }
+        int w = right - x + CITS_PANEL_MARGIN;
+        int h = bottom - y + CITS_PANEL_MARGIN;
+
+        UnifiedPanelRenderer.drawPanel(g, x, y, w, h, 1.0f);
+
+        // ─── 機能グループ間の薄いセパレータ ───
+        // ボタンは 18 px ピッチで縦並び (= Deposit y, Compact y+18, ...)。 グループ境界:
+        //   - [Inventory ops] (Deposit / Compact / Category Sort)
+        //   - [Network search] (Chest Search)
+        //   - [Templates] (Save / Apply / Manage)
+        //   - [Distribution] (Set Category / Auto Distribute)
+        // 「グループの直前のボタン下 +CITS_DEPOSIT_HEIGHT/2」 にラインを置く (= ボタン間の中央)。
+        int sepLeft = x + 2;
+        int sepWidth = w - 4;
+        cits$drawSepBetween(g, this.cits$categorySortButton, this.cits$searchNetworkButton,
+                sepLeft, sepWidth);
+        cits$drawSepBetween(g, this.cits$searchNetworkButton, this.cits$saveTemplateButton,
+                sepLeft, sepWidth);
+        cits$drawSepBetween(g, this.cits$manageTemplateButton, this.cits$setCategoryButton,
+                sepLeft, sepWidth);
+    }
+
+    /**
+     * 「上のボタンの下端 と 下のボタンの上端 の中央」 に 1px の水平セパレータを引く。
+     * どちらか欠けていれば何もしない (= 自動的にグループが消えたときは線も消える)。
+     */
+    @Unique
+    private void cits$drawSepBetween(GuiGraphics g, AbstractWidget above, AbstractWidget below,
+            int sepLeft, int sepWidth) {
+        if (above == null || below == null) return;
+        int aboveBottom = above.getY() + above.getHeight();
+        int belowTop = below.getY();
+        int mid = (aboveBottom + belowTop) / 2;
+        UnifiedPanelRenderer.drawSeparator(g, sepLeft, mid, sepWidth, 1.0f);
+    }
+
     @Inject(method = "init", at = @At("TAIL"))
     private void cits$initWidgets(CallbackInfo ci) {
         // ───────────────────────────────────────────────────────────
@@ -356,6 +500,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
                             Minecraft.getInstance(), anyMenu, containerSlotCount))
                     .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                     .build();
+            cits$applyTooltip(this.cits$depositButton, Keys.BUTTON_DEPOSIT_TOOLTIP,
+                    "Move items from your inventory into this chest, "
+                            + "but only items already present in the chest.");
             this.addRenderableWidget(this.cits$depositButton);
 
             // ───────────────────────────────────────────────────────────
@@ -379,6 +526,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     })
                     .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                     .build();
+            cits$applyTooltip(this.cits$compactButton, Keys.BUTTON_COMPACT_TOOLTIP,
+                    "Merge partial stacks of the same item together.\n"
+                            + "Shift + Click: also compacts your inventory.");
             this.addRenderableWidget(this.cits$compactButton);
 
             // ───────────────────────────────────────────────────────────
@@ -390,6 +540,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
                 this.cits$categorySortButton = SortButtonWidget.create(
                         anyMenu, containerSlotCount,
                         0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT);
+                // SortButtonWidget は内部で setTooltip 済 (Keys.CATEGORY_SORT_TOOLTIP)。
+                // 二重 setTooltip すると上書きされてしまうので、 ここでは付け直さない。
                 this.addRenderableWidget(this.cits$categorySortButton);
             }
 
@@ -421,6 +573,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     })
                     .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                     .build();
+            cits$applyTooltip(this.cits$searchNetworkButton, Keys.BUTTON_SEARCH_NETWORK_TOOLTIP,
+                    "Search every chest you have opened on this server. "
+                            + "Find any item and see where it is stored.");
             this.addRenderableWidget(this.cits$searchNetworkButton);
 
             // ───────────────────────────────────────────────────────────
@@ -436,6 +591,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
                                 new TemplateSaveScreen(selfScreen, anyMenu, containerSlotCount)))
                         .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                         .build();
+                cits$applyTooltip(this.cits$saveTemplateButton, Keys.BUTTON_SAVE_TEMPLATE_TOOLTIP,
+                        "Save the current arrangement of this chest as a reusable template.");
                 this.addRenderableWidget(this.cits$saveTemplateButton);
 
                 this.cits$applyTemplateButton = Button.builder(
@@ -448,6 +605,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
                         })
                         .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                         .build();
+                cits$applyTooltip(this.cits$applyTemplateButton, Keys.BUTTON_APPLY_TEMPLATE_TOOLTIP,
+                        "Reorganise this chest to match a saved template.");
                 this.addRenderableWidget(this.cits$applyTemplateButton);
 
                 this.cits$manageTemplateButton = Button.builder(
@@ -456,6 +615,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
                                 new TemplateManagerScreen(selfScreen, anyMenu, containerSlotCount)))
                         .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                         .build();
+                cits$applyTooltip(this.cits$manageTemplateButton, Keys.BUTTON_MANAGE_TEMPLATES_TOOLTIP,
+                        "Browse, rename, duplicate, reorder, or delete your saved templates.");
                 this.addRenderableWidget(this.cits$manageTemplateButton);
             }
 
@@ -473,6 +634,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
                         btn -> StorageDistributionManager.openSetCategoryForCurrent(distSelf))
                         .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                         .build();
+                cits$applyTooltip(this.cits$setCategoryButton,
+                        "omnichest.button.set_category.tooltip",
+                        "Mark this chest as the destination for a category of items.");
                 this.addRenderableWidget(this.cits$setCategoryButton);
 
                 this.cits$autoDistributeButton = Button.builder(
@@ -480,6 +644,10 @@ public abstract class GenericContainerScreenMixin extends Screen {
                         btn -> StorageDistributionManager.distributeFromOpen())
                         .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                         .build();
+                cits$applyTooltip(this.cits$autoDistributeButton,
+                        "omnichest.button.auto_distribute.tooltip",
+                        "Send items from this chest and your inventory to "
+                                + "each registered category chest automatically.");
                 this.addRenderableWidget(this.cits$autoDistributeButton);
             }
         }
@@ -504,6 +672,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
         this.cits$searchBox.setBordered(true);
         this.cits$searchBox.setHint(OmniChestLocale.get(
                 Keys.EDITBOX_SEARCH_HINT_GENERIC, "Search..."));
+        cits$applyTooltip(this.cits$searchBox, Keys.EDITBOX_SEARCH_TOOLTIP,
+                "Highlight items in this chest by name.");
         this.addRenderableWidget(this.cits$searchBox);
 
         // 「種類」 ショートカット: 新しい {@link CategorySortEngine} (タグベース 16 カテゴリ) を起動。
@@ -514,12 +684,16 @@ public abstract class GenericContainerScreenMixin extends Screen {
                 btn -> CategorySortEngine.sort(Minecraft.getInstance(), menu, slotCount))
                 .bounds(0, 0, 26, 14)
                 .build();
+        cits$applyTooltip(this.cits$sortByTypeButton, Keys.BUTTON_SORT_BY_TYPE_TOOLTIP,
+                "Sort this chest by item type (building, wood, ore, food, ...).");
         this.addRenderableWidget(this.cits$sortByTypeButton);
 
         this.cits$sortByCountButton = Button.builder(
                 OmniChestLocale.get(Keys.BUTTON_SORT_BY_COUNT, "Count"),
                 btn -> ContainerSorter.sortByCount(Minecraft.getInstance(), menu, slotCount)).bounds(0, 0, 26, 14)
                 .build();
+        cits$applyTooltip(this.cits$sortByCountButton, Keys.BUTTON_SORT_BY_COUNT_TOOLTIP,
+                "Sort this chest by item count, largest stacks first.");
         this.addRenderableWidget(this.cits$sortByCountButton);
 
         // ◀▶ レイアウト切替ボタンは「小型チェスト」「ラージチェスト」両方で生成する。
@@ -532,6 +706,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     this.cits$layoutRight = false;
                     this.cits$applyLayout();
                 }).bounds(0, 0, 20, 14).build();
+        cits$applyTooltip(this.cits$layoutLeftButton, Keys.BUTTON_LAYOUT_LEFT_TOOLTIP,
+                "Move the button panel to the left of the chest.");
         this.addRenderableWidget(this.cits$layoutLeftButton);
 
         this.cits$layoutRightButton = Button.builder(
@@ -540,6 +716,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     this.cits$layoutRight = true;
                     this.cits$applyLayout();
                 }).bounds(0, 0, 20, 14).build();
+        cits$applyTooltip(this.cits$layoutRightButton, Keys.BUTTON_LAYOUT_RIGHT_TOOLTIP,
+                "Move the button panel to the right of the chest.");
         this.addRenderableWidget(this.cits$layoutRightButton);
 
         this.cits$applyLayout();

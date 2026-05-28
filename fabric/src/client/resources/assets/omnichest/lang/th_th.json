@@ -316,6 +316,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "คลิกล้อ: ล็อกช่อง",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+คลิก: ล็อกไอเทม",
   "omnichest.controls.line.alt_drag": "Alt+ลาก: ล็อกต่อเนื่อง",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+เลื่อนเมาส์ไปที่กล่องชัลเกอร์: ดูเนื้อหา",
   "omnichest.controls.line.shift_compact": "Shift+ยุบ: รวมผู้เล่นด้วย",
   "config.omnichest.group.basics": "พื้นฐาน",
   "config.omnichest.group.item_sorting": "จัดเรียงไอเทม",

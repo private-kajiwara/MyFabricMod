@@ -316,6 +316,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Środkowy klik: zablokuj slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klik: blokada przedmiotu",
   "omnichest.controls.line.alt_drag": "Alt+Przeciąganie: ciągła blokada",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Najedź na Pudełko Shulkera: podgląd zawartości",
   "omnichest.controls.line.shift_compact": "Shift+Połącz: razem z graczem",
   "config.omnichest.group.basics": "Podstawy",
   "config.omnichest.group.item_sorting": "Sortowanie",

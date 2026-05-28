@@ -316,6 +316,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Middelste klik: vak vergrendelen",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klik: item vergrendelen",
   "omnichest.controls.line.alt_drag": "Alt+Slepen: doorlopend vergrendelen",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Boven Shulkerdoos: voorbeeld inhoud",
   "omnichest.controls.line.shift_compact": "Shift+Samenvoegen: ook speler",
   "config.omnichest.group.basics": "Basis",
   "config.omnichest.group.item_sorting": "Itemsortering",

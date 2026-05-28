@@ -14,10 +14,12 @@ import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
@@ -35,6 +37,8 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -139,6 +143,42 @@ public final class ChestHighlighter {
     /** 現在有効なハイライト。 1 entry = 1 チェスト。 */
     private final Map<ContainerSnapshot.Key, ActiveHighlight> active = new ConcurrentHashMap<>();
 
+    /**
+     * 1 フレーム分の「ピンアイコン HUD 描画キュー」。
+     *
+     * <p>
+     * <b>なぜ HUD 描画にするか</b>:
+     * バニラの世界パスでのアイテム描画 ({@link ItemStackRenderState#submit}) はレイヤごとに
+     * DEPTH_TEST 有効なパイプラインを使うため、 チェストの手前にあるブロック (ガラス含む) で
+     * <b>必ず</b> 隠れる (= NO_DEPTH_TEST にカスタムオーバーライドする手段がレイヤ依存で実用的でない)。
+     * 一方で「テキスト」 「黒帯背景」 「ワイヤーフレーム」 はもともと NO_DEPTH_TEST 系の
+     * RenderType を使っているのでブロック越しに見える。
+     *
+     * <p>
+     * 「ピンを絶対に貫通表示」 する根本対処として、 ピンの<b>アイコンだけ</b>を世界パスから
+     * 切り離し、 HUD パス (= 2D 描画、 world depth とは独立) で描く。 これにより:
+     * <ul>
+     *   <li>不透明 / 半透明問わずどんなブロック越しでもアイコンが消えない。</li>
+     *   <li>Iris / Sodium 等の shader 環境でも HUD は影響を受けない (= shader-safe)。</li>
+     *   <li>ピンの座標 / レイアウト / アニメーション / アンカ / ビーコン / ワイヤー枠 など
+     *       他のロジックには一切踏み込まない (= 「関係ないロジックは変更しない」 要件遵守)。</li>
+     * </ul>
+     */
+    private final List<PendingHudIcon> pendingHudIcons = new ArrayList<>();
+
+    /**
+     * HUD パスで描画するピンアイコン 1 件の DTO。
+     * 世界パスで「画面座標」 まで投影しておき、 HUD パスでは {@link GuiGraphics#renderItem} に
+     * 渡すだけ (= HUD pass で world transform を持ち越さない)。
+     *
+     * <p>
+     * <b>座標精度</b>: 移動 / ターン中の 1-px ジッタを抑えるため、 screen X/Y は浮動小数で保持する。
+     * 整数化は HUD pass 内の {@code pose.translate} に float をそのまま渡して
+     * GuiGraphics に sub-pixel オフセットを任せる (= 整数 snap によるカクツキ排除)。
+     */
+    private record PendingHudIcon(ItemStack stack, float screenX, float screenY, float sizePx) {
+    }
+
     /** X-ray 用 lines RenderType (初回参照時に lazy 構築)。 */
     private static volatile RenderType xrayLinesType;
 
@@ -155,6 +195,13 @@ public final class ChestHighlighter {
         // 正常系では try/catch 1 段ぶんしか overhead を足さないので既存の描画挙動は変わらない。
         WorldRenderEvents.BEFORE_ENTITIES.register(ctx ->
                 SafeRenderDispatcher.safeRun("chest-highlight-world", () -> INSTANCE.onWorldRender(ctx)));
+
+        // ─── ピンアイコンを HUD パスで貫通描画 ───
+        // 世界パスで投影した画面座標 (= pendingHudIcons) を、 ここで 2D アイテム描画する。
+        // HUD は world depth と無関係なので、 ブロック越しでも必ず最前面に出る。
+        HudRenderCallback.EVENT.register((g, deltaTracker) ->
+                SafeRenderDispatcher.safeRun("chest-highlight-hud-icons",
+                        () -> INSTANCE.onHudRender(g)));
 
         // ────────────────────────────────────────────────────────────
         // 「ピン永続表示 (= チェストを開くまで残す)」設定用のフック。
@@ -415,6 +462,9 @@ public final class ChestHighlighter {
     // ════════════════════════════════════════════════════════════════════
 
     private void onWorldRender(WorldRenderContext ctx) {
+        // 新フレームの開始: HUD パス用キューを空にする (= 前フレームの取り残しを残さない)。
+        pendingHudIcons.clear();
+
         if (active.isEmpty())
             return;
 
@@ -793,9 +843,19 @@ public final class ChestHighlighter {
                         (float) lineHeight,
                         PIN_BG_ARGB);
 
-                // アイコン本体 (ワールド ビルボード)。 pose を独立 push して item 描画の内部変換を隔離する。
-                submitPinIcon(matrices, queue, itemModelResolver,
-                        e.stack, entryBlockLeftX, rowY, entryIconSize);
+                // ─── アイコン: 世界パスではなく HUD パスで 2D 描画する ───
+                // 世界パスの {@link ItemStackRenderState#submit} は DEPTH_TEST 必須レイヤで
+                // 構成されており、 ガラス含む手前ブロックで隠れる。 ピン要件 「絶対に貫通」 を
+                // 満たすため、 アイコン中心のワールド座標を画面座標に投影して キュー へ積み、
+                // HUD パスで {@code GuiGraphics.renderItem} で描く (= world depth と無関係)。
+                INSTANCE.enqueueHudIcon(e.stack, cx, baseY, cz,
+                        entryBlockLeftX + entryIconSize / 2.0f,
+                        rowY + entryIconSize / 2.0f,
+                        worldScale, entryIconSize,
+                        camPos, camState.orientation);
+                // 既存の itemModelResolver は HUD パスのアイテム描画が GuiGraphics 経由で
+                // 自前解決するため不要だが、 引数互換のため変数だけ参照しておく (= 未使用警告抑止)。
+                @SuppressWarnings("unused") ItemModelResolver _ignored = itemModelResolver;
 
                 // テキストはアイコンの右隣 (icon size + gap だけずらす)。
                 // テキストのみ局所スケールを適用 (アイコン / 行 bg はサイズ維持)。
@@ -862,6 +922,177 @@ public final class ChestHighlighter {
         // スタックの世界高さ + わずかな余白 (= ビームが最上段の文字に被らないように 2px ぶん上へ)。
         double stackWorldHeight = (totalRows * rowSpacing + 2) * worldScale;
         return baseY + stackWorldHeight;
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // HUD パス アイコン: 世界パス DEPTH_TEST を回避してピンを完全貫通させる
+    // ════════════════════════════════════════════════════════════════════
+
+    /**
+     * HUD パス用アイコンキューに 1 件積む。 世界パスで「アイコン中心のワールド座標」 を計算し、
+     * 即座に画面座標へ投影しておく (= HUD パスでは GuiGraphics に渡すだけにする)。
+     *
+     * @param chestX, chestY, chestZ   ピンが立っているチェスト中心のワールド座標
+     * @param pinLocalX, pinLocalY     ピン内ローカル座標 (= フォント px 単位)
+     * @param worldScale               ピンのワールドスケール (= フォント px → ワールド単位)
+     * @param iconSizeFontPx           アイコン サイズ (= フォント px)
+     * @param camPos                   カメラ位置 (ワールド)
+     * @param camOrientation           カメラ回転 (= ローカル軸を ワールド軸へ写すクォータニオン)
+     */
+    private void enqueueHudIcon(ItemStack stack,
+            double chestX, double chestY, double chestZ,
+            float pinLocalX, float pinLocalY,
+            float worldScale, int iconSizeFontPx,
+            Vec3 camPos, Quaternionf camOrientation) {
+        if (stack == null || stack.isEmpty()) return;
+
+        // ─── ピンローカル座標 → ワールドオフセット ───
+        // 元のポーズスタック (= submitPinStack 内) の順序は:
+        //   translate(dx,dy,dz) → mulPose(orientation) → scale(s, -s, s)
+        // 従って、 ローカル (pinLocalX, pinLocalY, 0) は
+        //   1) scale で (px*s, -py*s, 0)
+        //   2) orientation で ワールド軸 ベクトル に rotate
+        // となる。
+        Vector3f offset = new Vector3f(
+                pinLocalX * worldScale,
+                -pinLocalY * worldScale,
+                0.0f);
+        camOrientation.transform(offset);
+
+        double iconWorldX = chestX + offset.x;
+        double iconWorldY = chestY + offset.y;
+        double iconWorldZ = chestZ + offset.z;
+
+        float[] center = worldToScreen(iconWorldX, iconWorldY, iconWorldZ, camPos, camOrientation);
+        if (center == null) return; // カメラ背後 / 投影 W ≤ 0
+
+        // ─── アイコン スクリーンサイズ ───
+        // 世界パスで表示されていたサイズに揃えるため、 「ワールドで iconSizeFontPx*worldScale ぶんの
+        // ベクトル」 を投影して 画面 px に変換する (= 距離 / GUI スケール / FOV に自動追従)。
+        float sizePx = computeIconScreenSize(iconWorldX, iconWorldY, iconWorldZ,
+                iconSizeFontPx * worldScale, camPos, camOrientation);
+
+        pendingHudIcons.add(new PendingHudIcon(stack.copy(), center[0], center[1], sizePx));
+    }
+
+    /**
+     * HUD パス: キューに溜まったピンアイコンを 2D 描画する。
+     * GuiGraphics の通常描画なので世界 depth とは無関係 = 必ず最前面に出る (= 貫通保証)。
+     */
+    private void onHudRender(GuiGraphics g) {
+        if (pendingHudIcons.isEmpty()) return;
+        // スナップショットを取って描画 (= HUD 中に世界パスが再 enqueue する場合の保険)。
+        // 描画後は clear せず、 次フレームの onWorldRender が冒頭で clear する。
+        List<PendingHudIcon> snapshot = new ArrayList<>(pendingHudIcons);
+        for (PendingHudIcon icon : snapshot) {
+            // 整数 snap を避けるため pose.translate に float をそのまま渡す。
+            // renderItem(stack, 0, 0) の (0,0) は整数だが、 pose の sub-pixel オフセットが
+            // そのまま反映されるため、 1-px ジッタは発生しない。
+            float scale = icon.sizePx / 16.0f;
+            float topLeftX = icon.screenX - icon.sizePx * 0.5f;
+            float topLeftY = icon.screenY - icon.sizePx * 0.5f;
+            var pose = g.pose();
+            pose.pushMatrix();
+            try {
+                pose.translate(topLeftX, topLeftY);
+                if (Math.abs(scale - 1.0f) > 1.0e-4f) {
+                    pose.scale(scale, scale);
+                }
+                g.renderItem(icon.stack, 0, 0);
+            } finally {
+                pose.popMatrix();
+            }
+        }
+    }
+
+    /**
+     * ワールド座標 → GUI スケール後のスクリーン座標 (= GuiGraphics 用 px、 sub-pixel float) に投影する。
+     * カメラ背後など投影不能なら null。
+     *
+     * <p>
+     * <b>ジッタ対策の要</b>: 1.21.11 で {@code RenderSystem.getProjectionMatrix()} が消えた後、
+     * 旧実装は {@code GameRenderer.getProjectionMatrix(options.fov())} を再構築していたが、
+     * これは <b>設定 FOV</b> (= ズーム / 走り FOV ブースト / コンジット / 暗視 等の効果を無視した素値)
+     * しか取れない。 一方、 ワールドレンダラ本体は内部で
+     * {@code GameRenderer#getFov(camera, 0F, true)} (= effective FOV) を使うので、 走り出した瞬間の
+     * 1.15× FOV ブースト 中など、 「テキストは effective FOV、 アイコンは設定 FOV」 でズレが出て
+     * 1-px 単位のジッタ (= 「歩くと文字横アイコンが震える」 バグ) になっていた。
+     *
+     * <p>
+     * 1.21.11 から {@link net.minecraft.client.renderer.GameRenderer#projectPointToScreen(Vec3)} が
+     * 追加され、 内部で <b>そのフレームと同一</b> の (effective FOV + main camera) で proj * invRot を
+     * 組んだ上で {@code Matrix4f.transformProject} (= NDC = clip/w) を返す。 これに乗り換えれば、
+     * テキスト / 黒帯 / アイコン の 3 経路がすべて同じフレーム投影行列を使う = 1-px ジッタが消える。
+     *
+     * <p>
+     * <b>背後判定</b>: {@code projectPointToScreen} 自体は w≤0 を null で弾かないので、 ここで
+     * 「ビュー空間 Z &gt; 0 (= 背後 / 退化)」 を別途チェックして false-positive を防ぐ。
+     *
+     * @return {@code {screenX, screenY}} の sub-pixel float 配列。 背後なら null。
+     */
+    private static float[] worldToScreen(double worldX, double worldY, double worldZ,
+                                         Vec3 camPos, Quaternionf camOrientation) {
+        Minecraft mc = Minecraft.getInstance();
+
+        // ─── 背後 / 退化 判定 (ビュー空間 Z で行う) ───
+        // ビルボード描画と同じ inverse-orientation を使い、 ビュー空間 Z を見る。
+        // バニラ projectPointToScreen は w 補正 (transformProject) で背後だと結果が反転する仕様だが、
+        // 反転を許すと「カメラ真後ろの ピン」 が画面端に張り付くので、 ここで明示的に弾く。
+        Vector3f camSpace = new Vector3f(
+                (float) (worldX - camPos.x),
+                (float) (worldY - camPos.y),
+                (float) (worldZ - camPos.z));
+        Quaternionf invOrient = new Quaternionf(camOrientation).conjugate();
+        invOrient.transform(camSpace);
+        // MC のカメラは -Z 方向を向くため、 ビュー空間で「前方」 は Z &lt; 0。
+        // 0.05m より近い or 背後の点は描画対象外 (= 退化投影の暴れを回避)。
+        if (camSpace.z > -0.05f) return null;
+
+        // ─── effective FOV を使った投影 (フレームと一致) ───
+        Vec3 ndc = mc.gameRenderer.projectPointToScreen(new Vec3(worldX, worldY, worldZ));
+        if (ndc == null) return null;
+        double nx = ndc.x;
+        double ny = ndc.y;
+        if (!Double.isFinite(nx) || !Double.isFinite(ny)) return null;
+
+        // ─── NDC ([-1, 1]) → GUI スケール後の screen px (top-down 座標で Y 反転) ───
+        var window = mc.getWindow();
+        int sw = window.getGuiScaledWidth();
+        int sh = window.getGuiScaledHeight();
+        float screenX = (float) ((nx * 0.5 + 0.5) * sw);
+        float screenY = (float) ((1.0 - (ny * 0.5 + 0.5)) * sh);
+        return new float[]{screenX, screenY};
+    }
+
+    /**
+     * ワールドの長さ {@code worldSpaceSize} (m) が画面上で何 px になるかを動的に算出する。
+     * カメラ右方向に伸ばした端点を 2 度投影し、 画面距離を測ることで FOV / GUI スケール /
+     * 距離 すべてに正しく追従する (= 世界パスのアイコン サイズと視覚的に揃う)。
+     *
+     * <p>
+     * 戻り値は sub-pixel float。 ジッタ対策のため、 ピン位置と同じ精度で保持する
+     * (= 投影 1px に達しない 揺らぎが整数 snap で 1-px 化するのを避ける)。
+     */
+    private static float computeIconScreenSize(double wx, double wy, double wz,
+                                               float worldSpaceSize,
+                                               Vec3 camPos, Quaternionf camOrientation) {
+        float[] center = worldToScreen(wx, wy, wz, camPos, camOrientation);
+        if (center == null) return 16.0f;
+        Vector3f camRight = new Vector3f(1.0f, 0.0f, 0.0f);
+        camOrientation.transform(camRight);
+        float[] edge = worldToScreen(
+                wx + camRight.x * worldSpaceSize,
+                wy + camRight.y * worldSpaceSize,
+                wz + camRight.z * worldSpaceSize,
+                camPos, camOrientation);
+        if (edge == null) return 16.0f;
+        float dx = edge[0] - center[0];
+        float dy = edge[1] - center[1];
+        float size = (float) Math.sqrt((double) dx * dx + (double) dy * dy);
+        // クランプ: 極端な近距離で巨大化、 極遠で消えないようにする。
+        if (size < 8.0f) size = 8.0f;
+        if (size > 64.0f) size = 64.0f;
+        return size;
     }
 
     /**

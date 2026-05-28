@@ -316,6 +316,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "نقر بالعجلة: قفل الخانة",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+نقر: قفل العنصر",
   "omnichest.controls.line.alt_drag": "Alt+سحب: قفل متتابع",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+التحويم فوق صندوق شالكر: معاينة المحتويات",
   "omnichest.controls.line.shift_compact": "Shift+ضغط: يشمل اللاعب",
   "config.omnichest.group.basics": "أساسيات",
   "config.omnichest.group.item_sorting": "ترتيب العناصر",

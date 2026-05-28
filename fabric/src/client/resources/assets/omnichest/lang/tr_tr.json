@@ -204,6 +204,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Orta Tık: Yuva kilitle",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Tık: Eşya kilidi",
   "omnichest.controls.line.alt_drag": "Alt+Sürükle: Sürekli kilit",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Shulker kutusu üzerinde gezdir: içerik önizleme",
   "omnichest.controls.line.shift_compact": "Shift+Sıkıştır: Envanter de",
   "omnichest.button.sort_distance": "Mesafe",
   "omnichest.button.sort_count": "Adet",

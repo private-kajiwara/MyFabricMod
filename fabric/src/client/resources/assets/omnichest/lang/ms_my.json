@@ -316,6 +316,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Klik tengah: kunci slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klik: kunci item",
   "omnichest.controls.line.alt_drag": "Alt+Seret: kunci berturutan",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Tuding pada Kotak Shulker: pratonton kandungan",
   "omnichest.controls.line.shift_compact": "Shift+Mampat: dan pemain",
   "config.omnichest.group.basics": "Asas",
   "config.omnichest.group.item_sorting": "Susunan item",

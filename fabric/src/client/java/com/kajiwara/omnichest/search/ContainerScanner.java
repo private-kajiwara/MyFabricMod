@@ -3,6 +3,7 @@ package com.kajiwara.omnichest.search;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.event.client.player.ClientPlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -96,6 +97,57 @@ public final class ContainerScanner {
             active = null;
             ChestNetworkManager.get().clear();
         });
+
+        // ────────────────────────────────────────────────────────────
+        // (5) クライアントが見ているプレイヤーがチェスト/シュルカー等を壊した瞬間に、
+        //     対応スナップショットを即座に取り除く (= 1 秒の periodic sweep を待たない)。
+        //
+        // 周期 sweep ({@link #sweepBrokenContainers}) は爆発 / 他 MOD / 採掘ボット等
+        // 「自プレイヤー以外の経路で消えたコンテナ」 もカバーする保険として残す。
+        // ここで AFTER をハンドルする目的は、 ユーザ自身の操作に対して「壊した瞬間に
+        // 検索一覧から消える」 体感を出すこと (= UX 要件)。
+        //
+        // ChestHighlighter のピン側もまとめて掃除して、 取り残しを防ぐ。
+        // ────────────────────────────────────────────────────────────
+        ClientPlayerBlockBreakEvents.AFTER.register((world, player, pos, state) -> {
+            if (world == null || pos == null || state == null) return;
+            // 壊された state がコンテナでなければ何もしない (= 速い早期 return)。
+            if (ContainerType.fromBlockState(state) == null) return;
+
+            ResourceKey<Level> dim = world.dimension();
+            // 単体 + ラージチェスト両半 (もし state から相棒が分かるなら) を 1 回でクリアする。
+            BlockPos other = ContainerType.otherHalfOrNull(world, pos, state);
+            invalidateBrokenContainerAt(dim, pos);
+            if (other != null) {
+                invalidateBrokenContainerAt(dim, other);
+            }
+        });
+    }
+
+    /**
+     * 指定位置のコンテナスナップショットと、 そこに対応する {@link ChestHighlighter} のピン /
+     * ワイヤーを即座に取り除く。
+     *
+     * <p>
+     * スナップショットの {@code Key} はラージチェストの「normalize 済み座標」 を含むため、
+     * 単純な {@code (dim, pos)} 一致だけでなく、 ペア相手 {@code secondaryPos()} の一致でも
+     * ヒットする必要がある。 ここでは {@link ChestNetworkManager#snapshots()} を 1 度走査し、
+     * 「primary or secondary が指定 pos と一致する」 ものをすべて消す。
+     */
+    private static void invalidateBrokenContainerAt(ResourceKey<Level> dim, BlockPos pos) {
+        java.util.List<ContainerSnapshot.Key> toRemove = new ArrayList<>();
+        for (ContainerSnapshot snap : ChestNetworkManager.get().snapshots()) {
+            if (!dim.equals(snap.dimension())) continue;
+            boolean match = pos.equals(snap.pos())
+                    || (snap.secondaryPos() != null && pos.equals(snap.secondaryPos()));
+            if (match) {
+                toRemove.add(snap.key());
+            }
+        }
+        for (ContainerSnapshot.Key key : toRemove) {
+            ChestNetworkManager.get().remove(key);
+            com.kajiwara.omnichest.client.render.ChestHighlighter.get().clearForKey(key);
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════

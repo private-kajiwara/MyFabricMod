@@ -204,6 +204,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "휠 클릭: 슬롯 잠금",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+클릭: 아이템 잠금",
   "omnichest.controls.line.alt_drag": "Alt+드래그: 연속 잠금",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+셜커 상자 위에 마우스: 내용물 미리 보기",
   "omnichest.controls.line.shift_compact": "Shift+압축: 인벤토리도",
   "omnichest.button.sort_distance": "거리순",
   "omnichest.button.sort_count": "수량순",

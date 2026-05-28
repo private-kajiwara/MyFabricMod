@@ -216,6 +216,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Middle Click: Lock slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Click: Item lock",
   "omnichest.controls.line.alt_drag": "Alt+Drag: Continuous lock",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Hover Shulker Box: Preview contents",
   "omnichest.controls.line.shift_compact": "Shift+Compact: Player too",
   "omnichest.button.sort_distance": "By Distance",
   "omnichest.button.sort_count": "By Count",

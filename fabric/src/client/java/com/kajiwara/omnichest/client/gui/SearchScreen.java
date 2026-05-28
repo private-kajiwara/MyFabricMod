@@ -30,6 +30,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import com.mojang.blaze3d.platform.InputConstants;
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -90,13 +91,28 @@ public class SearchScreen extends Screen {
 
     private static String makeRowKey(SearchIndex.SearchResult r) {
         ContainerSnapshot.Key c = r.snapshot().key();
-        // 階層 (= シュルカー経路) を含めることで「チェスト直置きの Diamond」 と
-        // 「シュルカー内の Diamond」 を別行として扱う (= 選択トグルが衝突しない)。
+        // 「同じチェスト × 同じアイテム ID × 同じ Data Components × 同じネスト経路」 を
+        // ユニーク識別する。
+        //
+        // <p>
+        // <b>旧実装のバグ</b>: 鍵に {@link ItemStack#toString} を使っていたが、 これは
+        // {@code "count itemId"} だけで Data Components を含まないため、 Sharpness V と
+        // Sharpness IV の同一 ID のソードが同じ鍵に潰れて 1 行扱い (= 一括選択) になっていた。
+        // 装備全般 / ポーション / エンチャ本 / カスタム名 / 染色 / 旗パターン 等の
+        // components 違いアイテムで再現する一般バグだった。
+        //
+        // <p>
+        // <b>修正</b>: {@link ItemStack#hashItemAndComponents} は アイテム ID と
+        // 全 Data Components を畳んだ 32bit ハッシュを返す。 異なる components のスタックは
+        // ほぼ確実に異なる値になるため、 装備違い / 効果違い / 名前違い を個別行として扱える。
+        // ネスト経路の各コンテナにも同じハッシュを使うことで、 染色違いシュルカーも別経路に分かれる。
         StringBuilder path = new StringBuilder();
         for (ItemStack cont : r.containerPath()) {
-            path.append('/').append(cont.getHoverName().getString());
+            path.append('/').append(ItemStack.hashItemAndComponents(cont));
         }
-        return c.dimension() + "|" + c.pos() + "|" + r.stack() + "|" + path;
+        return c.dimension() + "|" + c.pos()
+                + "|" + ItemStack.hashItemAndComponents(r.stack())
+                + "|" + path;
     }
 
     // ─── 拡張 UI 状態 ───────────────────────────────────────────────
@@ -271,9 +287,44 @@ public class SearchScreen extends Screen {
                 this.results.size(), this.layout.list.w());
     }
 
+    /**
+     * スクロール最大時に <b>最終行と下端フレームの間に確保する</b> 追加余白 (px)。
+     *
+     * <p>
+     * 選択行のハイライト (= 行全体を覆う黄色 tint) が黄色フレームに張り付いて見えないよう、
+     * フレーム厚 ({@link UILayoutMetrics#LIST_FRAME_THICKNESS} = 1px) を超える視覚的な
+     * 余裕を持たせるための値。 値が大きいほど下方向のクリア スペースが広がる
+     * (= 4 原則 「コントラスト・近接」 の観点で、 行ハイライトと枠を視覚的に分離する)。
+     */
+    private static final int LIST_BOTTOM_BREATHING_ROOM = 6;
+
+    /**
+     * 「実際にコンテンツを描画して見せられる」 垂直方向の有効ビューポート高さ。
+     *
+     * <p>
+     * リスト矩形 ({@link #layout.list}) の高さから:
+     * <ul>
+     *   <li>上下の黄色フレーム ({@link UILayoutMetrics#LIST_FRAME_THICKNESS} × 2)</li>
+     *   <li>下端の追加余白 ({@link #LIST_BOTTOM_BREATHING_ROOM})</li>
+     * </ul>
+     * を差し引いた値。 スクロール量 / scrollbar の handle 比率はすべてこの値を基準にする
+     * (= 旧実装は素の {@code list.h()} を使っていたため、 最終行の下端が黄色フレームに
+     * 隠れる「下端見切れ」 が発生していた)。
+     *
+     * <p>
+     * 下端の追加余白により、 スクロール最大時に最終行の選択ハイライトと黄色フレームの間に
+     * クリア スペースが残り、 視認性が向上する (= ハイライトの四角が枠に張り付かない)。
+     */
+    private int contentViewportHeight() {
+        if (this.layout == null) return 0;
+        return Math.max(0, this.layout.list.h()
+                - 2 * UILayoutMetrics.LIST_FRAME_THICKNESS
+                - LIST_BOTTOM_BREATHING_ROOM);
+    }
+
     private void clampScroll() {
         if (this.layout == null) return;
-        double maxScroll = Math.max(0, contentHeight() - this.layout.list.h());
+        double maxScroll = Math.max(0, contentHeight() - contentViewportHeight());
         if (this.scrollPx < 0) this.scrollPx = 0;
         if (this.scrollPx > maxScroll) this.scrollPx = maxScroll;
     }
@@ -345,6 +396,29 @@ public class SearchScreen extends Screen {
                 this.displayDropdown = null;
             } else {
                 this.displayDropdown.render(g, mouseX, mouseY);
+            }
+        }
+
+        // ─── ALT ホバー: アイテムリスト行に対する vanilla Item Tooltip ───
+        // ALT を押している間、 リスト内でホバー中の検索結果行のアイテムについて、
+        // バニラのアイテムツールチップ (Advanced Tooltip 含む / カスタム名 / エンチャ / 効果) を
+        // 1 フレーム遅延描画で表示する。
+        // 制約:
+        //  - dropdown 表示中はユーザーが選択操作中なので出さない。
+        //  - hitTest が -1 を返す場合 (= マウスがリスト外, 例えばタブ上) は出さない。
+        //  - 既存のタブ Tooltip ロジックとは独立 (= タブ上では tooltip = タブ名のまま)。
+        if (this.displayDropdown == null && isAltDown()) {
+            int hoveredIdx = StorageSearchListRenderer.hitTest(this.displayMode, this.results,
+                    this.layout.list.x(), this.layout.list.y(),
+                    this.layout.list.right(), this.layout.list.bottom(),
+                    this.scrollPx, mouseX, mouseY);
+            if (hoveredIdx >= 0 && hoveredIdx < this.results.size()) {
+                ItemStack hoveredStack = this.results.get(hoveredIdx).stack();
+                if (!hoveredStack.isEmpty()) {
+                    g.setComponentTooltipForNextFrame(this.font,
+                            Screen.getTooltipFromItem(Minecraft.getInstance(), hoveredStack),
+                            mouseX, mouseY);
+                }
             }
         }
 
@@ -518,18 +592,21 @@ public class SearchScreen extends Screen {
 
     private int scrollbarHandleHeight() {
         int contentH = contentHeight();
-        int viewH = this.layout.list.h();
+        int viewH = contentViewportHeight();
         if (contentH <= viewH) return 0;
-        return Math.max(20, (int) ((long) viewH * viewH / contentH));
+        // handle 大きさ = 「見える割合 × トラック全長」。 トラックはフレーム込みのリスト全高
+        // (= 視覚的にバーがリスト両端まで届く) を採用、 比率は有効ビューポートを基準。
+        int trackH = this.layout.list.h();
+        return Math.max(20, (int) ((long) trackH * viewH / contentH));
     }
 
     private int scrollbarHandleY() {
         int barH = scrollbarHandleHeight();
-        int viewH = this.layout.list.h();
+        int viewH = contentViewportHeight();
         int contentH = contentHeight();
         if (barH == 0) return this.layout.list.y();
         int maxScroll = contentH - viewH;
-        int trackH = viewH;
+        int trackH = this.layout.list.h();
         return this.layout.list.y() + (int) ((this.scrollPx / maxScroll) * (trackH - barH));
     }
 
@@ -544,10 +621,11 @@ public class SearchScreen extends Screen {
 
     private void setScrollFromHandleTopY(double desiredHandleTopY) {
         int barH = scrollbarHandleHeight();
-        int viewH = this.layout.list.h();
         int contentH = contentHeight();
+        int viewH = contentViewportHeight();
         if (barH == 0 || contentH <= viewH) return;
-        int trackRange = viewH - barH;
+        int trackH = this.layout.list.h();
+        int trackRange = trackH - barH;
         if (trackRange <= 0) return;
         double frac = (desiredHandleTopY - this.layout.list.y()) / trackRange;
         if (frac < 0) frac = 0;
@@ -736,5 +814,15 @@ public class SearchScreen extends Screen {
     @SuppressWarnings("unused")
     private Screen parentForReference() {
         return this.parent;
+    }
+
+    /**
+     * ALT (左右いずれか) が押されているか。
+     * 既存コードの Shift / Alt 判定と同じ {@link InputConstants} 経由方式 (= マッピング差異吸収済み)。
+     */
+    private static boolean isAltDown() {
+        var window = Minecraft.getInstance().getWindow();
+        return InputConstants.isKeyDown(window, InputConstants.KEY_LALT)
+                || InputConstants.isKeyDown(window, InputConstants.KEY_RALT);
     }
 }

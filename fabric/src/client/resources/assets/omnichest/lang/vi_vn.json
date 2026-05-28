@@ -316,6 +316,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Nhấp giữa: khóa ô",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Nhấp: khóa vật phẩm",
   "omnichest.controls.line.alt_drag": "Alt+Kéo: khóa liên tục",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Di chuột lên Hộp Shulker: xem trước nội dung",
   "omnichest.controls.line.shift_compact": "Shift+Gộp: cả người chơi",
   "config.omnichest.group.basics": "Cơ bản",
   "config.omnichest.group.item_sorting": "Sắp xếp vật phẩm",

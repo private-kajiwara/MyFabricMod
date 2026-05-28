@@ -316,6 +316,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Prostřední klik: zamknout slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klik: zámek předmětu",
   "omnichest.controls.line.alt_drag": "Alt+Tažení: průběžné zamykání",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Najetí na Shulker box: náhled obsahu",
   "omnichest.controls.line.shift_compact": "Shift+Sloučit: i hráč",
   "config.omnichest.group.basics": "Základy",
   "config.omnichest.group.item_sorting": "Třídění předmětů",

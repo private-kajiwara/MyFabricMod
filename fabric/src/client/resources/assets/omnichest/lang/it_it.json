@@ -204,6 +204,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Clic centrale: Blocca slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Clic: Blocca oggetto",
   "omnichest.controls.line.alt_drag": "Alt+Trascina: Blocco continuo",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Passa su Shulker Box: anteprima del contenuto",
   "omnichest.controls.line.shift_compact": "Shift+Compatta: Anche giocatore",
   "omnichest.button.sort_distance": "Distanza",
   "omnichest.button.sort_count": "Quantità",

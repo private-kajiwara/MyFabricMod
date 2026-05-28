@@ -37,23 +37,26 @@ public final class FavoriteInteractionHandler {
 
     /**
      * {@link MouseButtonEvent} と Config からクリック種別を判定する。
+     *
+     * <p>
+     * <b>ALT 修飾の扱い</b>: 倉庫検索メニューでは ALT は <b>「インスペクション用の修飾キー」</b>
+     * として再定義済み (= ALT+ホバーで vanilla アイテムツールチップ表示 / ALT+シュルカーホバーで
+     * 中身プレビュー)。 これと整合させるため、 ALT+左クリックは <b>お気に入りトグルから外す</b>。
+     * お気に入りトグルは右クリック専用とする (= 入力の役割衝突を避ける)。
+     *
      * <ul>
      *   <li>button == 1 (右) → TOGGLE_FAVORITE (favorites 有効時のみ。 無効なら IGNORE)</li>
-     *   <li>button == 0 + Alt → TOGGLE_FAVORITE (同上)</li>
-     *   <li>button == 0 → SELECT_ROW (= 通常)</li>
+     *   <li>button == 0 (左、 ALT の有無に関わらず) → SELECT_ROW (= 行選択)</li>
      *   <li>その他 (= middle click 等) → IGNORE</li>
      * </ul>
      */
     public static ClickKind classify(MouseButtonEvent event, SearchConfig cfg) {
         int btn = event.button();
-        boolean alt = event.hasAltDown();
         if (btn == 1) {
             return cfg.enableFavorites ? ClickKind.TOGGLE_FAVORITE : ClickKind.IGNORE;
         }
-        if (btn == 0 && alt) {
-            return cfg.enableFavorites ? ClickKind.TOGGLE_FAVORITE : ClickKind.SELECT_ROW;
-        }
         if (btn == 0) {
+            // ALT は viewing modifier として透過させる (= 行選択は通常通り発火)。
             return ClickKind.SELECT_ROW;
         }
         return ClickKind.IGNORE;

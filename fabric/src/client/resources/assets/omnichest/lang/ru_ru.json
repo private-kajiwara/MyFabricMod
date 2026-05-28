@@ -204,6 +204,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "СКМ: Блок. слот",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+ЛКМ: Блок. предмет",
   "omnichest.controls.line.alt_drag": "Alt+Тащить: Серия блок.",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Навести на ящик шалкера: предпросмотр",
   "omnichest.controls.line.shift_compact": "Shift+Сжать: И инв.",
   "omnichest.button.sort_distance": "По расстоянию",
   "omnichest.button.sort_count": "По кол-ву",

@@ -316,6 +316,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Midtklikk: lås slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klikk: item-lås",
   "omnichest.controls.line.alt_drag": "Alt+Dra: fortløpende låsing",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Hold over Shulker-boks: forhåndsvis innhold",
   "omnichest.controls.line.shift_compact": "Shift+Stable: også spilleren",
   "config.omnichest.group.basics": "Grunnleggende",
   "config.omnichest.group.item_sorting": "Item-sortering",

@@ -316,6 +316,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Középső kattintás: slot zárolása",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Kattintás: tárgy-zár",
   "omnichest.controls.line.alt_drag": "Alt+Húzás: folyamatos zárolás",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Shulker-doboz fölé: tartalom előnézete",
   "omnichest.controls.line.shift_compact": "Shift+Kötegelés: játékossal is",
   "config.omnichest.group.basics": "Alapok",
   "config.omnichest.group.item_sorting": "Tárgyrendezés",

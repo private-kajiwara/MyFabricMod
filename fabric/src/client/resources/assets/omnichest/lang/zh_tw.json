@@ -204,6 +204,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "中鍵: 鎖定欄位",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+左鍵: 物品鎖定",
   "omnichest.controls.line.alt_drag": "Alt+拖動: 連續鎖定",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+滑鼠停留於潛影盒: 預覽內容",
   "omnichest.controls.line.shift_compact": "Shift+壓縮: 含背包",
   "omnichest.button.sort_distance": "距離",
   "omnichest.button.sort_count": "數量",

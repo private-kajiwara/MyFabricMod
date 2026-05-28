@@ -8,7 +8,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,8 +59,20 @@ public final class SearchIndex {
     public static List<SearchResult> search(String query) {
         String q = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
 
+        // ─── エンダーチェスト 二重表示の抑制 ───
+        // エンダーチェストはどの個体を開いても中身がプレイヤー固有 (= 全箇所同一) なので、
+        // 複数開封済みだと結果が個体数分だけ重複する。 走査前に「代表 1 つ」 を選び、 残り
+        // (= 非代表) のスナップショットはこのループで skip する。
+        // 代表選定: 現ディメンションで最新 → 全体最新 (= ハイライト先が「使える」 場所になる)
+        ContainerSnapshot enderRep = pickEnderChestRepresentative();
+
         List<SearchResult> results = new ArrayList<>();
         for (ContainerSnapshot snapshot : ChestNetworkManager.get().snapshots()) {
+            // エンダーチェストの非代表スナップショットはここで早期スキップ
+            // (= top-level 集計も、 nested 走査も、 両方とも代表 1 つ分に絞る)。
+            if (snapshot.type() == ContainerType.ENDER_CHEST && snapshot != enderRep) {
+                continue;
+            }
             // 同 1 コンテナ内では、 (Item + Components) 単位で個数を合計する。
             // Key は「同一性比較用の代表 ItemStack」とし、
             // SearchMatcher#exactComponentsEqual で同一判定する
@@ -189,6 +203,50 @@ public final class SearchIndex {
         if (mc.player == null)
             return null;
         return mc.player.position();
+    }
+
+    /**
+     * 全 {@link ChestNetworkManager} スナップショットから、 検索に使う「エンダーチェストの代表 1 つ」
+     * を選び出す。 結果が null なら現在エンダーチェストのスナップショットは未登録。
+     *
+     * <p>
+     * <b>選定ルール</b>:
+     * <ol>
+     *   <li>現ディメンションで最も <em>新しく</em> 観測されたエンダーチェスト
+     *       (= 「同じ世界に居る」 = ハイライト先がそのまま使える)。</li>
+     *   <li>現ディメンションに該当が無ければ、 ディメンション横断で最新の 1 つ。</li>
+     * </ol>
+     *
+     * <p>
+     * 内容 (= 中身アイテム) はどの個体も同じになる前提だが、 古いスナップショットは投入 / 取出後に
+     * 更新されていない可能性があるため <b>最も新しい</b> を選ぶ (= ground truth 寄り)。
+     */
+    @Nullable
+    private static ContainerSnapshot pickEnderChestRepresentative() {
+        ResourceKey<Level> currentDim = currentDimensionOrNull();
+        ContainerSnapshot bestInCurrent = null;
+        ContainerSnapshot mostRecent = null;
+        for (ContainerSnapshot s : ChestNetworkManager.get().snapshots()) {
+            if (s.type() != ContainerType.ENDER_CHEST) continue;
+            if (mostRecent == null || s.lastSeenMillis() > mostRecent.lastSeenMillis()) {
+                mostRecent = s;
+            }
+            if (currentDim != null && currentDim.equals(s.dimension())) {
+                if (bestInCurrent == null
+                        || s.lastSeenMillis() > bestInCurrent.lastSeenMillis()) {
+                    bestInCurrent = s;
+                }
+            }
+        }
+        return bestInCurrent != null ? bestInCurrent : mostRecent;
+    }
+
+    /** クライアントの現在ディメンション (= world key)。 取れなければ null。 */
+    @Nullable
+    private static ResourceKey<Level> currentDimensionOrNull() {
+        var mc = Minecraft.getInstance();
+        if (mc.level == null) return null;
+        return mc.level.dimension();
     }
 
     /**

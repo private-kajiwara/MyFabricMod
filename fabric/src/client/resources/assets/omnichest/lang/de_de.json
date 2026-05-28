@@ -204,6 +204,7 @@
   "omnichest.controls.line.slot_lock_middle_click": "Mittelklick: Slot sperren",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Klick: Item sperren",
   "omnichest.controls.line.alt_drag": "Alt+Ziehen: Reihen sperren",
+  "omnichest.controls.line.alt_hover_shulker_preview": "Alt+Über Shulker: Inhaltsvorschau",
   "omnichest.controls.line.shift_compact": "Shift+Stapeln: Auch Spieler",
   "omnichest.button.sort_distance": "Distanz",
   "omnichest.button.sort_count": "Anzahl",
