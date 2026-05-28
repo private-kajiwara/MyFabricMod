@@ -243,6 +243,7 @@ public final class Keys {
     public static final String LANGUAGE_PT_BR = "omnichest.language.pt_br";
     public static final String LANGUAGE_TR_TR = "omnichest.language.tr_tr";
     public static final String LANGUAGE_AR_SA = "omnichest.language.ar_sa";
+    public static final String LANGUAGE_HE_IL = "omnichest.language.he_il";
     public static final String LANGUAGE_HI_IN = "omnichest.language.hi_in";
     public static final String LANGUAGE_TH_TH = "omnichest.language.th_th";
     public static final String LANGUAGE_VI_VN = "omnichest.language.vi_vn";

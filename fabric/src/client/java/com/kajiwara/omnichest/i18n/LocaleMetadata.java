@@ -51,6 +51,7 @@ public record LocaleMetadata(
         CYRILLIC,   // Russian, Ukrainian
         CJK,        // Japanese, Korean, Chinese (= 大量グリフ、 Unicode フォント必須)
         ARABIC,     // RTL の代表
+        HEBREW,     // RTL (= ARABIC と並ぶ独立スクリプト。 グリフは別系統)
         DEVANAGARI, // Hindi
         THAI,       // Thai
         VIETNAMESE, // 拡張ラテン + 声調記号

@@ -101,9 +101,11 @@ public enum LanguageOption {
     MS_MY(LocaleMetadata.withFallback("ms_my", "Bahasa Melayu", "Malay",
             LocaleMetadata.Script.LATIN, "id_id"), "omnichest.language.ms_my"),
 
-    // ─── RTL (アラビア語) ─────────────────────────────────
+    // ─── RTL (アラビア語 / ヘブライ語) ──────────────────────
     AR_SA(LocaleMetadata.rtl("ar_sa", "العربية", "Arabic", LocaleMetadata.Script.ARABIC),
-            "omnichest.language.ar_sa");
+            "omnichest.language.ar_sa"),
+    HE_IL(LocaleMetadata.rtl("he_il", "עברית", "Hebrew", LocaleMetadata.Script.HEBREW),
+            "omnichest.language.he_il");
 
     private final LocaleMetadata metadata;
     private final String translationKey;
