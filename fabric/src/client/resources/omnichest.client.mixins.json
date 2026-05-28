@@ -9,7 +9,8 @@
 		"SoundManagerMixin",
 		"RenderTypeAccessor",
 		"SearchMatchSlotMixin",
-		"ShulkerPreviewScreenMixin"
+		"ShulkerPreviewScreenMixin",
+		"VanillaTooltipSuppressMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

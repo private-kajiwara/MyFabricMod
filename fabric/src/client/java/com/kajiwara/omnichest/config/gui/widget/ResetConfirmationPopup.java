@@ -127,9 +127,13 @@ public final class ResetConfirmationPopup implements OverlayPopup {
         g.renderOutline(L.x - 1, L.y - 1, L.w + 2, L.h + 2, COLOR_RIM);
 
         // タイトルバー + タイトル文字 (中央寄せ)。
+        // 変更なしモードでは確認文ではなく「変更された設定がありません」 を出す
+        // (= リセットしようがない旨を一目で伝え、 「本当に？」 という不安を与えない)。
         g.fill(L.x, L.y, L.x + L.w, L.y + PopupLayoutManager.TITLE_H, COLOR_TITLE_BAR);
-        Component title = OmniChestLocale.get(
-                Keys.RESET_POPUP_TITLE, "Really reset all changes?");
+        Component title = this.list.isEmpty()
+                ? OmniChestLocale.get(Keys.RESET_POPUP_TITLE_NO_CHANGES,
+                        "No settings have been changed")
+                : OmniChestLocale.get(Keys.RESET_POPUP_TITLE, "Really reset all changes?");
         int tw = font.width(title);
         g.drawString(font, title, L.x + (L.w - tw) / 2, L.titleCenterY - 4,
                 COLOR_TITLE_TEXT, false);
@@ -152,11 +156,25 @@ public final class ResetConfirmationPopup implements OverlayPopup {
 
     private void renderButtons(GuiGraphics g, PopupLayoutManager L, Font font,
             int mouseX, int mouseY) {
-        int yesX = L.buttonX(true);
-        int noX = L.buttonX(false);
         int by = L.buttonY;
         int bw = PopupLayoutManager.BUTTON_W;
         int bh = PopupLayoutManager.BUTTON_H;
+
+        // 変更が 1 件も無い場合は「はい/いいえ」ではなく中央寄せの「戻る」 1 ボタンに切り替える
+        // (= 押す意味の無いリセットを誤って実行させない / 確認 UI を最小化)。
+        if (this.list.isEmpty()) {
+            int backX = backButtonX(L, bw);
+            boolean hoverBack = inRect(mouseX, mouseY, backX, by, bw, bh);
+            g.fill(backX, by, backX + bw, by + bh,
+                    hoverBack ? COLOR_NO_BG_HOVER : COLOR_NO_BG);
+            g.renderOutline(backX, by, bw, bh, COLOR_RIM);
+            drawCentered(g, font, OmniChestLocale.get(Keys.RESET_POPUP_BACK, "Back"),
+                    backX, by, bw, bh, COLOR_NO_TEXT);
+            return;
+        }
+
+        int yesX = L.buttonX(true);
+        int noX = L.buttonX(false);
 
         boolean hoverYes = inRect(mouseX, mouseY, yesX, by, bw, bh);
         boolean hoverNo = inRect(mouseX, mouseY, noX, by, bw, bh);
@@ -172,6 +190,11 @@ public final class ResetConfirmationPopup implements OverlayPopup {
         g.renderOutline(noX, by, bw, bh, COLOR_RIM);
         drawCentered(g, font, OmniChestLocale.get(Keys.RESET_POPUP_NO, "No"),
                 noX, by, bw, bh, COLOR_NO_TEXT);
+    }
+
+    /** 「戻る」 ボタンを Popup 中央に置いたときの X 座標 (RTL でも中央配置で同じ)。 */
+    private static int backButtonX(PopupLayoutManager L, int bw) {
+        return L.x + (L.w - bw) / 2;
     }
 
     private static void drawCentered(GuiGraphics g, Font font, Component text,
@@ -196,6 +219,19 @@ public final class ResetConfirmationPopup implements OverlayPopup {
             int by = L.buttonY;
             int bw = PopupLayoutManager.BUTTON_W;
             int bh = PopupLayoutManager.BUTTON_H;
+            // 変更なしモード: 「戻る」 1 ボタン (中央) のみ受け付ける。
+            if (this.list.isEmpty()) {
+                if (inRect(mx, my, backButtonX(L, bw), by, bw, bh)) {
+                    this.closed = true;
+                    return true;
+                }
+                // Popup 外クリックも閉じる (= 通常モードと同じ挙動)。
+                if (!inRect(mx, my, L.x, L.y, L.w, L.h)) {
+                    this.closed = true;
+                    return false;
+                }
+                return true;
+            }
             if (inRect(mx, my, L.buttonX(true), by, bw, bh)) {
                 confirm();
                 return true;
@@ -233,11 +269,16 @@ public final class ResetConfirmationPopup implements OverlayPopup {
     @Override
     public boolean keyPressed(int key) {
         if (key == GLFW.GLFW_KEY_ESCAPE) {
-            this.closed = true; // Esc = いいえ。
+            this.closed = true; // Esc = いいえ / 戻る。
             return true;
         }
         if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
-            confirm(); // Enter = はい。
+            // 変更なしモードでは Enter も「戻る」 (= 確認するリセットが無いため)。
+            if (this.list.isEmpty()) {
+                this.closed = true;
+            } else {
+                confirm(); // Enter = はい。
+            }
             return true;
         }
         return false;

@@ -30,8 +30,12 @@ public enum LanguageOption {
     SYSTEM_DEFAULT(LocaleMetadata.systemDefault(), "omnichest.language.system_default"),
 
     // ─── ラテン系 (Tier 1) ──────────────────────────────────────
-    EN_US(LocaleMetadata.ltr("en_us", "English", "English", LocaleMetadata.Script.LATIN),
-            "omnichest.language.en_us"),
+    // 英米併存のため両者ともに地域サフィックスを付ける (= ドロップダウンで一目で見分け可能)。
+    EN_US(LocaleMetadata.ltr("en_us", "English (US)", "English (United States)",
+            LocaleMetadata.Script.LATIN), "omnichest.language.en_us"),
+    // 英国英語は米国英語にフォールバック (= 大半のキーが共通で、 en_gb 側は綴り差分のみ上書き)。
+    EN_GB(LocaleMetadata.withFallback("en_gb", "English (UK)", "English (United Kingdom)",
+            LocaleMetadata.Script.LATIN, "en_us"), "omnichest.language.en_gb"),
     ES_ES(LocaleMetadata.ltr("es_es", "Español", "Spanish", LocaleMetadata.Script.LATIN),
             "omnichest.language.es_es"),
     DE_DE(LocaleMetadata.ltr("de_de", "Deutsch", "German", LocaleMetadata.Script.LATIN),
@@ -130,9 +134,29 @@ public enum LanguageOption {
         return this.metadata.rtl();
     }
 
-    /** GUI ラベル用の翻訳キー。 fallback には {@link #nativeName()} を使う。 */
+    /**
+     * 言語選択 GUI に表示するラベル。
+     *
+     * <p>
+     * 実言語 (= {@link #SYSTEM_DEFAULT} 以外) は <b>常にネイティブ表記</b> を返す。
+     * 現在の MOD 表示言語が何であれ「Français」 は "Français"、 「日本語」 は "日本語" のまま
+     * 統一する (= バニラ Minecraft のオプション → 言語ピッカと同じ挙動)。
+     * <ul>
+     *   <li>「日本語にしたら他言語のラベルまで翻訳されて読みにくい」 を回避できる。</li>
+     *   <li>各言語のネイティブ話者が、 自分の言語のラベルを 1 度の目視で見つけられる。</li>
+     * </ul>
+     *
+     * <p>
+     * {@link #SYSTEM_DEFAULT} は「Minecraft 本体に追従」 という UI 概念で言語名ではないため、
+     * 現在の MOD 表示言語に応じてローカライズする (= "System Default" / "システムのデフォルト" 等)。
+     */
     public Component displayName() {
-        return OmniChestLocale.get(this.translationKey, this.metadata.nativeName());
+        if (this.code() == null) {
+            // SYSTEM_DEFAULT のみローカライズ (= 概念ラベル)。
+            return OmniChestLocale.get(this.translationKey, this.metadata.nativeName());
+        }
+        // 実言語はネイティブ表記で固定。
+        return Component.literal(this.metadata.nativeName());
     }
 
     /**

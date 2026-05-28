@@ -48,9 +48,13 @@ public final class Keys {
 
     // ─── Reset 確認 Popup ──────────────────────────────────────
     public static final String RESET_POPUP_TITLE = "omnichest.reset_popup.title";
+    /** 変更が 1 件も無いときの大見出し (= 「本当にリセット？」 ではなく「変更なし」 と知らせる)。 */
+    public static final String RESET_POPUP_TITLE_NO_CHANGES = "omnichest.reset_popup.title_no_changes";
     public static final String RESET_POPUP_YES = "omnichest.reset_popup.yes";
     public static final String RESET_POPUP_NO = "omnichest.reset_popup.no";
     public static final String RESET_POPUP_NO_CHANGES = "omnichest.reset_popup.no_changes";
+    /** 変更が無いときの Popup で唯一表示する「閉じる」 系ボタン。 */
+    public static final String RESET_POPUP_BACK = "omnichest.reset_popup.back";
 
     // ─── ボタンラベル ──────────────────────────────────────────
     public static final String BUTTON_RESET = "omnichest.button.reset";
@@ -233,6 +237,7 @@ public final class Keys {
     public static final String CONFIG_LANGUAGE_UNICODE_FONT_SAFETY_TOOLTIP = "config.omnichest.language.unicode_font_safety.tooltip";
 
     // 16 new language names (Config Selector の現地語表示)
+    public static final String LANGUAGE_EN_GB = "omnichest.language.en_gb";
     public static final String LANGUAGE_FR_FR = "omnichest.language.fr_fr";
     public static final String LANGUAGE_RU_RU = "omnichest.language.ru_ru";
     public static final String LANGUAGE_PT_BR = "omnichest.language.pt_br";

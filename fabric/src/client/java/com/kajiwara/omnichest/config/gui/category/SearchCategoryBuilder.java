@@ -118,8 +118,8 @@ public final class SearchCategoryBuilder {
                             "Hold ALT and hover a shulker box to preview its contents (read-only)."));
 
             sub.intSlider(ConfigLabels.entry("search.previewGridColumns", "Preview Grid Size"),
-                    com.kajiwara.omnichest.client.gui.search.preview.ShulkerPreviewRenderer.MIN_COLUMNS,
-                    com.kajiwara.omnichest.client.gui.search.preview.ShulkerPreviewRenderer.MAX_COLUMNS,
+                    com.kajiwara.omnichest.client.gui.search.preview.PopupThemeResolver.MIN_COLUMNS,
+                    com.kajiwara.omnichest.client.gui.search.preview.PopupThemeResolver.MAX_COLUMNS,
                     cfg.previewGridColumns, v -> cfg.previewGridColumns = v,
                     ConfigLabels.tooltip("search.previewGridColumns",
                             "Number of columns in the ALT preview grid."),

@@ -1,13 +1,11 @@
 {
-  "_comment": "OmniChest English (en_us) — also acts as the canonical fallback for missing keys in other locales.",
-
+  "_comment": "OmniChest British English (en_gb) — copied from en_us with UK spellings; fallback chain still goes en_gb -> en_us.",
   "config.omnichest.title": "OmniChest Settings",
-
   "config.omnichest.category.general": "General",
   "config.omnichest.category.sort": "Category Sort",
   "config.omnichest.category.compact": "Stack Compact",
   "config.omnichest.category.deposit": "Smart Deposit",
-  "config.omnichest.category.lock": "Favorite Slot Lock",
+  "config.omnichest.category.lock": "Favourite Slot Lock",
   "config.omnichest.category.search": "Chest Network Search",
   "config.omnichest.category.ai": "AI Classification",
   "config.omnichest.category.template": "Chest Template",
@@ -15,13 +13,11 @@
   "config.omnichest.category.compat": "Compatibility",
   "config.omnichest.category.keybind": "Keybinds",
   "config.omnichest.category.language": "Language",
-
   "config.omnichest.sub.lock.overlay": "Overlay & Visuals",
   "config.omnichest.sub.lock.protect": "Default Protection",
   "config.omnichest.sub.ai.advanced": "Advanced (existing ClassifyConfig)",
   "config.omnichest.sub.template.advanced": "Advanced (existing TemplateConfig)",
   "config.omnichest.sub.compat_detection": "Detected Mods",
-
   "config.omnichest.general.enableMod": "Enable Mod",
   "config.omnichest.general.enableMod.tooltip": "Master switch. Disabling this turns off every feature in this mod.",
   "config.omnichest.general.debugMode": "Debug Mode",
@@ -30,7 +26,6 @@
   "config.omnichest.general.animationSpeed.tooltip": "0 = no animation, 1.0 = default, 2.0 = double speed.",
   "config.omnichest.general.enableSounds": "Enable Sounds",
   "config.omnichest.general.enableSounds.tooltip": "Play mod-specific UI sounds (sort complete, deposit, etc.).",
-
   "config.omnichest.sort.enable": "Enable Category Sort",
   "config.omnichest.sort.enable.tooltip": "Toggle the entire category-sort feature.",
   "config.omnichest.sort.insertEmptySeparator": "Insert Empty Separator Slots",
@@ -43,7 +38,6 @@
   "config.omnichest.sort.useCreativeTabGrouping.tooltip": "Order categories the same way the creative inventory tabs do.",
   "config.omnichest.sort.autoCompactAfterSort": "Auto Compact After Sort",
   "config.omnichest.sort.autoCompactAfterSort.tooltip": "After sorting, automatically merge partial stacks.",
-
   "config.omnichest.compact.enable": "Enable Compact",
   "config.omnichest.compact.compactPlayerInventory": "Compact Player Inventory",
   "config.omnichest.compact.compactPlayerInventory.tooltip": "Also merge stacks inside the player inventory.",
@@ -52,14 +46,12 @@
   "config.omnichest.compact.mergeAnimation": "Merge Animation",
   "config.omnichest.compact.maxActionsPerTick": "Max Actions Per Tick",
   "config.omnichest.compact.maxActionsPerTick.tooltip": "Upper bound for click actions dispatched per tick.",
-
   "config.omnichest.deposit.enable": "Enable Smart Deposit",
   "config.omnichest.deposit.matchNbtComponents": "Match NBT / Data Components",
   "config.omnichest.deposit.matchNbtComponents.tooltip": "Strict mode: enchanted items only stack with identical enchantments.",
   "config.omnichest.deposit.ignoreEmptySlots": "Ignore Empty Slots",
   "config.omnichest.deposit.ignoreEmptySlots.tooltip": "Only deposit into chests already holding that item.",
   "config.omnichest.deposit.hotkey.notice": "Auto Deposit hotkey: use the vanilla Controls screen → ‘OmniChest’ category.",
-
   "config.omnichest.lock.enable": "Enable Slot Lock",
   "config.omnichest.lock.enableItemLockMode": "Enable Item Lock Mode",
   "config.omnichest.lock.enableItemLockMode.tooltip": "Track item by identity (e.g. follow Diamond Pickaxe across slots).",
@@ -70,9 +62,8 @@
   "config.omnichest.lock.showTooltipLine": "Show Tooltip Line",
   "config.omnichest.lock.protectHotbarByDefault": "Protect Hotbar By Default",
   "config.omnichest.lock.protectOffhandByDefault": "Protect Off-hand By Default",
-  "config.omnichest.lock.protectArmorByDefault": "Protect Armor By Default",
+  "config.omnichest.lock.protectArmorByDefault": "Protect Armour By Default",
   "config.omnichest.lock.hotkey.notice": "Lock hotkeys live in vanilla Controls → ‘OmniChest’ category.",
-
   "config.omnichest.search.enable": "Enable Search System",
   "config.omnichest.search.searchRadius": "Search Radius (blocks)",
   "config.omnichest.search.searchRadius.tooltip": "Higher = more chests found, but heavier scan cost.",
@@ -85,21 +76,20 @@
   "config.omnichest.search.pinPersistUntilOpened.tooltip": "Keep the pin / highlight visible until you actually open that chest. Overrides Highlight Duration when ON.",
   "config.omnichest.search.enableCategoryTabs": "Enable Category Tabs",
   "config.omnichest.search.enableCategoryTabs.tooltip": "Show Creative Inventory-style tabs at the top of the search screen.",
-  "config.omnichest.search.enableFavorites": "Enable Favorites",
-  "config.omnichest.search.enableFavorites.tooltip": "Star items so they sort to the top and can be filtered in the Favorites tab.",
-  "config.omnichest.search.favoriteHighlight": "Favorite Highlight",
-  "config.omnichest.search.favoriteHighlight.tooltip": "Add a golden glow to favorited items in the result list.",
+  "config.omnichest.search.enableFavorites": "Enable Favourites",
+  "config.omnichest.search.enableFavorites.tooltip": "Star items so they sort to the top and can be filtered in the Favourites tab.",
+  "config.omnichest.search.favoriteHighlight": "Favourite Highlight",
+  "config.omnichest.search.favoriteHighlight.tooltip": "Add a golden glow to favourited items in the result list.",
   "config.omnichest.search.rememberLastDisplayMode": "Remember Last Display Mode",
   "config.omnichest.search.rememberLastDisplayMode.tooltip": "If ON, the last selected display mode is reused next time you open the screen.",
   "config.omnichest.search.compactTabMode": "Compact Tab Mode",
   "config.omnichest.search.compactTabMode.tooltip": "Show icon-only category tabs (no expanded label even for the current tab).",
   "config.omnichest.search.defaultDisplayMode": "Default Display Mode",
   "config.omnichest.search.defaultDisplayMode.tooltip": "Initial display mode when opening the search screen.",
-
   "config.omnichest.ai.enableClassification": "Enable AI Classification",
   "config.omnichest.ai.learningMode": "Learning Mode",
   "config.omnichest.ai.learningMode.tooltip": "Update category weights from your deposit history.",
-  "config.omnichest.ai.autoCategorizeEmptyChests": "Auto Categorize Empty Chests",
+  "config.omnichest.ai.autoCategorizeEmptyChests": "Auto Categorise Empty Chests",
   "config.omnichest.ai.autoCategorizeEmptyChests.tooltip": "Prompt for the category when opening a newly placed empty chest.",
   "config.omnichest.ai.confidenceThreshold": "Confidence Threshold",
   "config.omnichest.ai.confidenceThreshold.tooltip": "Below this value the chest is treated as MIXED storage.",
@@ -109,7 +99,6 @@
   "config.omnichest.ai.autoDepositAllowMixed": "Allow MIXED Chests as Target",
   "config.omnichest.ai.autoDepositMaxDistance": "Auto Deposit Max Distance",
   "config.omnichest.ai.persistEnabled": "Persist Learning Data",
-
   "config.omnichest.template.enable": "Enable Templates",
   "config.omnichest.template.autoApplyTemplate": "Auto Apply Template",
   "config.omnichest.template.autoApplyTemplate.tooltip": "Apply matching saved template automatically when opening a chest.",
@@ -123,14 +112,12 @@
   "config.omnichest.template.integrateDepositAndCompact": "Integrate Deposit + Compact during Apply",
   "config.omnichest.template.lockHotbar": "Lock Hotbar During Apply",
   "config.omnichest.template.skipPreview": "Skip Confirmation Dialog",
-
   "config.omnichest.render.enableOverlay": "Enable Overlay",
-  "config.omnichest.render.highlightColorRgb": "Highlight Color",
-  "config.omnichest.render.highlightColorRgb.tooltip": "Outline color used to highlight matched chests.",
+  "config.omnichest.render.highlightColorRgb": "Highlight Colour",
+  "config.omnichest.render.highlightColorRgb.tooltip": "Outline colour used to highlight matched chests.",
   "config.omnichest.render.showCategoryLabels": "Show Category Labels",
   "config.omnichest.render.enableTooltips": "Enable Tooltips",
   "config.omnichest.render.guiAnimation": "GUI Animation",
-
   "config.omnichest.compat.enableShaderCompatibility": "Shader Compatibility",
   "config.omnichest.compat.enableShaderCompatibility.tooltip": "Switch to a shader-safe render path when Iris or Oculus is installed.",
   "config.omnichest.compat.safeOverlayRendering": "Safe Overlay Rendering",
@@ -146,19 +133,16 @@
   "config.omnichest.compat.status.yes": "yes",
   "config.omnichest.compat.status.no": "no",
   "config.omnichest.compat.detection.shader_active": "Shader pack active",
-
   "config.omnichest.sub.compat_resourcepack": "Resource Pack Compatibility",
   "config.omnichest.compat.enableResourcePackCompatibility": "Enable Resource Pack Compatibility",
-  "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "Master switch for texture / atlas / font safety layers. UI layout, colors and animations are not affected.",
+  "config.omnichest.compat.enableResourcePackCompatibility.tooltip": "Master switch for texture / atlas / font safety layers. UI layout, colours and animations are not affected.",
   "config.omnichest.compat.safeTextureFallback": "Safe Texture Fallback",
   "config.omnichest.compat.safeTextureFallback.tooltip": "When a texture or sprite is missing, draw a vanilla missing-texture placeholder instead of crashing or dropping the frame.",
   "config.omnichest.compat.fontSafetyMode": "Font Safety Mode",
   "config.omnichest.compat.fontSafetyMode.tooltip": "Truncate or wrap text safely so unicode / CJK / bitmap font packs do not overflow. UI sizes stay unchanged.",
   "config.omnichest.compat.debugTextureLogs": "Debug Texture Logs",
   "config.omnichest.compat.debugTextureLogs.tooltip": "Print verbose logs whenever a texture / sprite / font falls back. Recommended only when diagnosing a resource pack.",
-
   "config.omnichest.keybind.intro": "All hotkeys live under ‘OmniChest’ in vanilla Controls → Key Binds.",
-
   "config.omnichest.language.intro": "Choose how the mod displays text. \"System Default\" follows Minecraft's language.",
   "config.omnichest.language.override": "Display Language",
   "config.omnichest.language.override.tooltip": "Override the in-mod language. Use \"System Default\" to follow Minecraft.",
@@ -170,15 +154,12 @@
   "config.omnichest.language.unicode_font_safety": "Unicode Font Safety",
   "config.omnichest.language.unicode_font_safety.tooltip": "Prefer safe truncation for non-ASCII text so it never overflows widget boxes.",
   "config.omnichest.language.restart_hint": "Most labels update immediately. A few cached titles may need re-opening the screen.",
-
   "config.omnichest.group.basics": "Basics",
   "config.omnichest.group.item_sorting": "Item Sorting",
   "config.omnichest.group.protection_search": "Protection & Search",
   "config.omnichest.group.appearance_input": "Appearance & Input",
-
-
   "omnichest.language.system_default": "System Default",
-  "omnichest.language.en_us": "English",
+  "omnichest.language.en_us": "English (US)",
   "omnichest.language.ja_jp": "Japanese",
   "omnichest.language.ko_kr": "Korean",
   "omnichest.language.zh_cn": "Chinese (Simplified)",
@@ -207,19 +188,16 @@
   "omnichest.language.id_id": "Indonesian",
   "omnichest.language.ms_my": "Malay",
   "omnichest.language.en_gb": "English (UK)",
-
   "omnichest.screen.search.title": "Chest Search",
   "omnichest.screen.template.save.title": "Save Template",
   "omnichest.screen.template.manager.title": "Templates",
   "omnichest.screen.template.preview.title": "Template Preview",
-
   "omnichest.button.reset": "Reset",
   "omnichest.button.save": "Save",
   "omnichest.button.cancel": "Cancel",
   "omnichest.button.apply": "Apply",
   "omnichest.button.close": "Close",
   "omnichest.button.ok": "OK",
-
   "omnichest.button.deposit": "Deposit",
   "omnichest.button.compact": "Compact",
   "omnichest.button.search_network": "Chest Search",
@@ -232,57 +210,46 @@
   "omnichest.button.layout_right": "▶",
   "omnichest.button.category_sort": "Sort by Category",
   "omnichest.button.category_sort.tooltip": "Sort chest contents by category.\n\nItems are grouped by meaning — building, wood, ore, food, and so on —\nand identical stacks are merged into one.\n\nLocked slots stay where they are.",
-
   "omnichest.controls.title": "Controls",
   "omnichest.controls.line.slot_lock_alt_click": "Alt+Click: Lock slot",
   "omnichest.controls.line.slot_lock_middle_click": "Middle Click: Lock slot",
   "omnichest.controls.line.item_lock_cycle": "Shift+Alt+Click: Item lock",
   "omnichest.controls.line.alt_drag": "Alt+Drag: Continuous lock",
   "omnichest.controls.line.shift_compact": "Shift+Compact: Player too",
-
   "omnichest.button.sort_distance": "By Distance",
   "omnichest.button.sort_count": "By Count",
   "omnichest.button.sort_name": "By Name",
   "omnichest.button.search_selected": "Find Selected",
   "omnichest.button.clear_selection": "Clear Selection",
   "omnichest.button.save_current_chest": "Save Current Chest",
-
   "omnichest.editbox.search.label": "Search",
   "omnichest.editbox.name.label": "Name",
   "omnichest.editbox.search.hint.generic": "Search...",
   "omnichest.editbox.search.hint.network": "Search (e.g. diamond, food, mekanism)",
   "omnichest.editbox.search.hint.template": "Filter by template name",
   "omnichest.editbox.template_name.hint": "Template name",
-
   "omnichest.search.summary": "Registered: %1$d  /  Hits: %2$d  /  Selected: %3$d",
   "omnichest.search.hint": "Click row = toggle selection  /  \"Find Selected\" pins them  /  ESC = cancel",
-
   "omnichest.template.default_name": "Template %1$d",
   "omnichest.template.untitled": "(untitled)",
-
   "omnichest.template.kind.label": "Kind: %1$s",
   "omnichest.template.kind.exact": "Exact (fixed items)",
   "omnichest.template.kind.category": "Category (substitutes allowed)",
   "omnichest.template.kind.hybrid": "Hybrid (recommended)",
-
   "omnichest.template.kind.badge.exact": "[Exact]",
   "omnichest.template.kind.badge.category": "[Category]",
   "omnichest.template.kind.badge.hybrid": "[Hybrid]",
-
   "omnichest.template.kind.help.exact": "Oak Planks and Birch Planks are treated as different items.",
   "omnichest.template.kind.help.category": "Items in the same category can substitute each other. (Best for material chests)",
   "omnichest.template.kind.help.hybrid": "Prefers the original item, falls back to same-category substitutes.",
-
   "omnichest.template.manager.summary": "Saved: %1$d  /  Shown: %2$d",
   "omnichest.template.manager.hint": "Click row = Apply (requires a chest) / Buttons on the right / ESC = close",
   "omnichest.template.manager.slot_rule_count": "%1$d slots / %2$d rules",
-
   "omnichest.template.row.action.apply": "Apply",
   "omnichest.template.row.action.duplicate": "Duplicate",
   "omnichest.template.row.action.delete": "Delete",
   "omnichest.template.row.action.up": "↑",
   "omnichest.template.row.action.down": "↓",
-
   "omnichest.template.preview.title_format": "Preview: %1$s",
   "omnichest.template.preview.title_null": "(none)",
   "omnichest.template.preview.computing": "Computing...",
@@ -293,29 +260,24 @@
   "omnichest.template.preview.move_row": "  slot %1$d  →  slot %2$d   ×%3$d %4$s",
   "omnichest.template.preview.move_swap": "(swap)",
   "omnichest.template.preview.more_items": "...and %1$d more",
-
   "omnichest.slot_lock.tooltip.locked_slot": "§9§l[LOCKED SLOT] §r§7Auto-sort protected",
   "omnichest.slot_lock.tooltip.locked_item": "§6§l[LOCKED ITEM] §r§7%1$s protected",
   "omnichest.slot_lock.tooltip.session": "§b§l[SESSION LOCK] §r§7Chest body slot (until close)",
   "omnichest.slot_lock.tooltip.default_hotbar": "§b§l[PROTECTED] §r§7Hotbar default protection",
   "omnichest.slot_lock.tooltip.default_offhand": "§b§l[PROTECTED] §r§7Off-hand default protection",
   "omnichest.slot_lock.tooltip.default_armor": "§b§l[PROTECTED] §r§7Armor default protection",
-
   "omnichest.slot_lock.chat.toggled": "[Slot Lock] toggled slot %1$d",
   "omnichest.slot_lock.chat.nothing_to_clear": "§7[Slot Lock] §oNo locks to clear.",
   "omnichest.slot_lock.chat.cleared": "§a[Slot Lock] §rCleared %1$d persistent + %2$d session locks.",
   "omnichest.slot_lock.chat.confirm_clear": "§e[Slot Lock] §rPress again within 1.5s to clear %1$d locks.",
-
   "omnichest.smart_storage.prefix": "[Smart Storage]",
   "omnichest.smart_storage.plan_empty": "[Smart Storage] Deposit plan: no items / feature off",
   "omnichest.smart_storage.plan_header": "[Smart Storage] Deposit plan:",
   "omnichest.smart_storage.plan_line": "  %1$s × %2$d → %3$s (%4$d, %5$d, %6$d)",
   "omnichest.smart_storage.plan_line_no_destination": "  %1$s × %2$d → %3$s",
   "omnichest.smart_storage.no_destination": "§7no destination",
-
   "omnichest.category_badge.confidence": " Confidence: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
-
   "omnichest.container_type.chest": "Chest",
   "omnichest.container_type.trapped_chest": "Trapped Chest",
   "omnichest.container_type.double_chest": "Large Chest",
@@ -324,7 +286,6 @@
   "omnichest.container_type.shulker_box": "Shulker Box",
   "omnichest.container_type.ender_chest": "Ender Chest",
   "omnichest.container_type.other": "Container",
-
   "omnichest.storage_category.building": "Building Storage",
   "omnichest.storage_category.wood": "Wood Storage",
   "omnichest.storage_category.ore": "Ore Storage",
@@ -341,7 +302,6 @@
   "omnichest.storage_category.decoration": "Decoration Storage",
   "omnichest.storage_category.mixed": "Mixed Storage",
   "omnichest.storage_category.unknown": "Unsorted",
-
   "omnichest.item_category.building": "Building",
   "omnichest.item_category.wood": "Wood",
   "omnichest.item_category.stone": "Stone",
@@ -358,9 +318,8 @@
   "omnichest.item_category.mob_drop": "Drops",
   "omnichest.item_category.decoration": "Decoration",
   "omnichest.item_category.misc": "Misc",
-
   "omnichest.search_category.all": "All",
-  "omnichest.search_category.favorites": "Favorites",
+  "omnichest.search_category.favorites": "Favourites",
   "omnichest.search_category.building": "Building",
   "omnichest.search_category.wood": "Wood",
   "omnichest.search_category.stone": "Stone",
@@ -376,80 +335,64 @@
   "omnichest.search_category.nether": "Nether",
   "omnichest.search_category.end": "End",
   "omnichest.search_category.misc": "Misc",
-
   "omnichest.search.display_mode.label": "Display Mode",
   "omnichest.search.display_mode.compact_grid": "Compact Grid",
   "omnichest.search.display_mode.large_grid": "Large Grid",
   "omnichest.search.display_mode.list": "List",
   "omnichest.search.display_mode.detailed": "Detailed",
   "omnichest.search.display_mode.icon_only": "Icon Only",
-
-  "omnichest.search.favorites.add_tooltip": "Right-click or Alt+Click to add to favorites",
-  "omnichest.search.favorites.remove_tooltip": "Right-click or Alt+Click to remove from favorites",
-  "omnichest.search.favorites.empty": "No favorites yet. Right-click any item to star it.",
-
+  "omnichest.search.favorites.add_tooltip": "Right-click or Alt+Click to add to favourites",
+  "omnichest.search.favorites.remove_tooltip": "Right-click or Alt+Click to remove from favourites",
+  "omnichest.search.favorites.empty": "No favourites yet. Right-click any item to star it.",
   "omnichest.toggle.on": "§a✔ ON",
   "omnichest.toggle.off": "§c✘ OFF",
-
-  "omnichest.color_picker.title": "Color Picker",
+  "omnichest.color_picker.title": "Colour Picker",
   "omnichest.color_picker.rgb_line": "R %1$3d  G %2$3d  B %3$3d",
   "omnichest.color_picker.hex_line": "Hex  #%1$06X",
   "omnichest.color_picker.ok": "OK",
   "omnichest.color_picker.cancel": "Cancel",
-
   "key.omnichest.open_search": "Open Chest Search",
   "key.omnichest.smart_deposit": "Show Smart Deposit Plan",
   "key.omnichest.toggle_slot_lock": "Toggle Hovered Slot Lock",
   "key.omnichest.clear_all_slot_locks": "Clear All Slot Locks",
-
   "omnichest.keybind.line.open_search": "• Open Search: %1$s",
   "omnichest.keybind.line.smart_deposit": "• Smart Deposit: %1$s",
   "omnichest.keybind.line.toggle_slot_lock": "• Toggle Slot Lock: %1$s",
   "omnichest.keybind.line.clear_all_locks": "• Clear All Slot Locks: %1$s",
-
   "key.omnichest.open_distribution": "Open Storage Distribution",
-
   "omnichest.button.set_category": "Set Category",
   "omnichest.button.auto_distribute": "Auto Distribute",
-
   "omnichest.distribution.title": "Storage Distribution",
   "omnichest.distribution.summary": "Storages: %1$d  /  Pending: %2$d  /  Queue: %3$d",
   "omnichest.distribution.hint": "Open a chest → [Set Category] to register  /  [Auto Distribute] to sort  /  ESC = close",
   "omnichest.distribution.this_chest": "This Chest",
   "omnichest.distribution.source.player": "Player Inventory",
-
   "omnichest.distribution.tab.all": "All",
-  "omnichest.distribution.tab.favorites": "Favorites",
-
+  "omnichest.distribution.tab.favorites": "Favourites",
   "omnichest.distribution.section.storage": "Storage",
   "omnichest.distribution.section.pending": "Pending",
   "omnichest.distribution.section.queue": "Queue",
   "omnichest.distribution.section.history": "History",
   "omnichest.distribution.section.failed": "Failed",
-
   "omnichest.distribution.empty.storage": "No registered storages. Open a chest and press [Set Category].",
   "omnichest.distribution.empty.pending": "No pending transfers. Press [Auto Distribute] near a chest.",
   "omnichest.distribution.empty.queue": "Queue is idle.",
   "omnichest.distribution.empty.history": "No transfer history yet.",
   "omnichest.distribution.empty.failed": "No failed transfers.",
-
   "omnichest.distribution.priority.nearest_first": "Nearest First",
   "omnichest.distribution.priority.emptiest_first": "Emptiest First",
   "omnichest.distribution.priority.priority_order": "Priority Order",
-
   "omnichest.distribution.chat.no_open": "§7[Auto Distribute] Open a chest first.",
   "omnichest.distribution.chat.disabled": "§7[Auto Distribute] Feature is disabled in config.",
   "omnichest.distribution.chat.summary": "§a[Auto Distribute] §rDeposited %1$d, queued %2$d for remote chests, pulled %3$d.",
   "omnichest.distribution.chat.busy": "§7[Auto Distribute] Still working… try again in a moment.",
-
   "omnichest.distribution.set_category.title": "Set Storage Category",
   "omnichest.distribution.set_category.name": "Chest Name",
   "omnichest.distribution.set_category.category_label": "Category: %1$s",
   "omnichest.distribution.set_category.priority_label": "Priority: %1$d",
-  "omnichest.distribution.set_category.favorite_label": "Favorite: %1$s",
+  "omnichest.distribution.set_category.favorite_label": "Favourite: %1$s",
   "omnichest.distribution.set_category.unregister": "Unregister",
   "omnichest.distribution.set_category.hint": "Choose a category, then Save.  ESC = cancel",
-
   "config.omnichest.category.distribution": "Storage Distribution",
   "config.omnichest.distribution.enableAutoDistribution": "Enable Auto Distribution",
   "config.omnichest.distribution.enableAutoDistribution.tooltip": "Master switch for the Storage Auto Distribution system (also hides the in-chest buttons when off).",
