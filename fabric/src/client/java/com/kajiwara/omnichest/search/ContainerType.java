@@ -7,7 +7,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.CrafterBlock;
+import net.minecraft.world.level.block.DispenserBlock;
+import net.minecraft.world.level.block.DropperBlock;
 import net.minecraft.world.level.block.EnderChestBlock;
+import net.minecraft.world.level.block.HopperBlock;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.TrappedChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -40,6 +44,19 @@ public enum ContainerType {
      * (= 既存の収集パイプラインにそのまま乗る)。
      */
     ENDER_CHEST("エンダーチェスト", Keys.CONTAINER_TYPE_ENDER_CHEST, "Ender Chest"),
+
+    // ─── Redstone 系インベントリブロック (= 5〜9 スロットの小型コンテナ) ─────────
+    // 仕様: ChestMenu / ShulkerBoxMenu と同様、 プレイヤーが開いた瞬間に menu 経由で
+    // 中身を観測する (= サーバ通信なしで client が正規に読める情報のみ使う既存方針を維持)。
+    /** ホッパー (= 5 スロット)。 メニューは {@code HopperMenu}。 */
+    HOPPER("ホッパー", Keys.CONTAINER_TYPE_HOPPER, "Hopper"),
+    /** ディスペンサー (= 3x3 = 9 スロット)。 メニューは {@code DispenserMenu}。 */
+    DISPENSER("ディスペンサー", Keys.CONTAINER_TYPE_DISPENSER, "Dispenser"),
+    /** ドロッパー (= 3x3 = 9 スロット)。 メニューはディスペンサーと同じ {@code DispenserMenu}。 */
+    DROPPER("ドロッパー", Keys.CONTAINER_TYPE_DROPPER, "Dropper"),
+    /** クラフター (= 3x3 = 9 スロット)。 メニューは {@code CrafterMenu}。 */
+    CRAFTER("クラフター", Keys.CONTAINER_TYPE_CRAFTER, "Crafter"),
+
     OTHER("コンテナ", Keys.CONTAINER_TYPE_OTHER, "Container");
 
     private final String displayName;
@@ -98,6 +115,21 @@ public enum ContainerType {
         // 上の ChestBlock 分岐には掛からない。 専用分岐で明示的に判定する。
         if (block instanceof EnderChestBlock) {
             return ENDER_CHEST;
+        }
+        // ─── Redstone 系インベントリブロック ─────────────────────────────
+        // 「DropperBlock extends DispenserBlock」 のため、 先に DropperBlock を判定しないと
+        // ドロッパーが「ディスペンサー」 として誤分類される (= Java の instanceof 優先順位)。
+        if (block instanceof HopperBlock) {
+            return HOPPER;
+        }
+        if (block instanceof DropperBlock) {
+            return DROPPER;
+        }
+        if (block instanceof DispenserBlock) {
+            return DISPENSER;
+        }
+        if (block instanceof CrafterBlock) {
+            return CRAFTER;
         }
         return null;
     }

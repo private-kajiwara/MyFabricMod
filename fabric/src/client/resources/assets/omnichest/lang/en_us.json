@@ -271,7 +271,7 @@
   "omnichest.editbox.template_name.hint": "Template name",
 
   "omnichest.search.summary": "Registered: %1$d  /  Hits: %2$d  /  Selected: %3$d",
-  "omnichest.search.hint": "Click row = toggle selection  /  \"Find Selected\" pins them  /  ESC = cancel",
+  "omnichest.search.hint": "Hold ALT = Show item details",
 
   "omnichest.template.default_name": "Template %1$d",
   "omnichest.template.untitled": "(untitled)",
@@ -339,6 +339,10 @@
   "omnichest.container_type.barrel": "Barrel",
   "omnichest.container_type.shulker_box": "Shulker Box",
   "omnichest.container_type.ender_chest": "Ender Chest",
+  "omnichest.container_type.hopper": "Hopper",
+  "omnichest.container_type.dispenser": "Dispenser",
+  "omnichest.container_type.dropper": "Dropper",
+  "omnichest.container_type.crafter": "Crafter",
   "omnichest.container_type.other": "Container",
 
   "omnichest.storage_category.building": "Building Storage",
@@ -483,7 +487,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animate the flowing dot along transfer arrows in the distribution menu.",
   "config.omnichest.distribution.enableTransferHistory": "Enable Transfer History",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Record completed and failed transfers for the History / Failed tabs.",
-  "modmenu.descriptionTranslation.omnichest": "Find any item across all your chests at a glance. OmniChest adds a network-wide search with in-world pins, smart deposit, category sorting, slot locks, and reusable chest templates — one toolkit to keep your storage tidy.",
+  "modmenu.descriptionTranslation.omnichest": "A search-assistant mod for everyone who struggles to keep their storage tidy.",
   "omnichest.reset_popup.title": "Really reset all changes?",
   "omnichest.reset_popup.title_no_changes": "No settings have been changed",
   "omnichest.reset_popup.yes": "Yes",

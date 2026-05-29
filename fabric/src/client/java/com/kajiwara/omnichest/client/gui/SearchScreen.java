@@ -14,6 +14,9 @@ import com.kajiwara.omnichest.client.gui.search.layout.SearchScreenLayout;
 import com.kajiwara.omnichest.client.gui.search.layout.ThemeColorResolver;
 import com.kajiwara.omnichest.client.gui.search.layout.TooltipPlacementHelper;
 import com.kajiwara.omnichest.client.gui.search.layout.UILayoutMetrics;
+import com.kajiwara.omnichest.client.gui.search.preview.AdaptiveTooltipPositioner;
+import com.kajiwara.omnichest.client.gui.search.preview.AltPreviewPopupRenderer;
+import com.kajiwara.omnichest.search.nested.RecursiveContainerHelper;
 import com.kajiwara.omnichest.client.render.ChestHighlighter;
 import com.kajiwara.omnichest.config.ConfigManager;
 import com.kajiwara.omnichest.config.data.SearchConfig;
@@ -124,6 +127,25 @@ public class SearchScreen extends Screen {
 
     /** init() で算出されたレイアウト一式 (= 各 widget の位置)。 */
     private SearchScreenLayout layout;
+
+    // ───────────────────────────────────────────────────────────
+    // 「ALT + ホイールクリック」 で出す <b>固定 (sticky)</b> シュルカープレビュー。
+    //
+    // 既存の ALT ホバー Tooltip ({@link AltPreviewTooltip}) は ALT を離した瞬間に消えるため、
+    // 「中身を見ながらマウスを動かす / クリックする」 ことができない。
+    // ALT + 中ボタン (= ホイール押下) クリックを 1 つの「ピン留め」 トリガとして使い、
+    // 同じプレビュー描画 ({@link AltPreviewPopupRenderer}) を <b>離してもそのまま表示</b> させる。
+    //
+    // 動作:
+    //   - ALT + 中ボタン (button = 2) で行のアイテム (= 通常はシュルカー) を pin → stickyPreview 設定
+    //   - 同じ行を ALT + 中ボタンで再度クリック / ESC / シュルカー以外をクリック → 解除
+    //   - 描画は ALT ホバーと同じパス (= テーマ統一 + フェード考慮なし = 不動の安定描画)
+    // ───────────────────────────────────────────────────────────
+    /** 現在 pin 中のプレビュー対象スタック。 null = 非表示。 */
+    private ItemStack stickyPreviewStack = ItemStack.EMPTY;
+    /** プレビュー表示のアンカ (= クリックした位置)。 ALT を離してもここに固定。 */
+    private int stickyPreviewAnchorX = 0;
+    private int stickyPreviewAnchorY = 0;
 
     public SearchScreen(Screen parent) {
         super(OmniChestLocale.get(Keys.SCREEN_SEARCH_TITLE, "Chest Network Search"));
@@ -385,8 +407,12 @@ public class SearchScreen extends Screen {
         drawYellowConnectingFrame(g, stripForFrame, this.layout.list, selectedBox, this.layout.rtl);
 
         // ─── フッターヒント ───────────────────────────────────────
+        // ALT は本画面で「インスペクション修飾キー」として再定義済み (= ホバーでアイテム詳細、
+        // シュルカーにホバー or ALT+ホイールクリックで中身プレビュー)。 フッターはこの「ALT 押下で
+        // 詳細を見られる」 という最も重要な操作の存在だけを 1 行で伝える (= 行クリックや ESC など
+        // 直感的に分かる操作の説明は省く = 認知負荷を下げる)。
         Component hint = OmniChestLocale.get(Keys.SEARCH_HINT,
-                "Click row = toggle selection  /  Find Selected = pin  /  ESC = cancel");
+                "Hold ALT = Show item details");
         g.drawCenteredString(font, hint, this.layout.footerHint.centerX(),
                 this.layout.footerHint.y(), ThemeColorResolver.TEXT_DIM);
 
@@ -397,6 +423,15 @@ public class SearchScreen extends Screen {
             } else {
                 this.displayDropdown.render(g, mouseX, mouseY);
             }
+        }
+
+        // ─── 固定 (sticky) シュルカープレビュー (= ALT + ホイールクリックで pin した中身) ───
+        // dropdown の <b>後</b>、 ALT ホバー Tooltip の <b>前</b> に描画する:
+        //   - dropdown より手前 = 「上に開いた dropdown が pin を隠す」 のを避ける
+        //   - ALT Tooltip より奥 = ALT 押下中はバニラ詳細ツールチップが優先 (= ALT 同時押し時に
+        //     片方だけ見せる必要が無いよう、 詳細を見たいユーザの意図を妨げない)
+        if (!this.stickyPreviewStack.isEmpty()) {
+            renderStickyPreview(g, cfg);
         }
 
         // ─── ALT ホバー: アイテムリスト行に対する vanilla Item Tooltip ───
@@ -693,13 +728,50 @@ public class SearchScreen extends Screen {
         // 行クリック判定
         LayoutBox list = this.layout.list;
         if (mouseX < list.x() || mouseX > list.right()
-                || mouseY < list.y() || mouseY > list.bottom()) return false;
+                || mouseY < list.y() || mouseY > list.bottom()) {
+            // リスト外の左クリックは sticky preview を解除する (= 通常 GUI の「ダイアログ外をクリックで閉じる」 慣習)。
+            // 中ボタン / 右クリックは別系統 (= スクロール / 既存ハンドラ) なので解除しない。
+            if (event.button() == 0 && !this.stickyPreviewStack.isEmpty()) {
+                this.stickyPreviewStack = ItemStack.EMPTY;
+            }
+            return false;
+        }
 
         int index = StorageSearchListRenderer.hitTest(this.displayMode, this.results,
                 list.x(), list.y(), list.right(), list.bottom(), this.scrollPx, mouseX, mouseY);
-        if (index < 0) return false;
+        if (index < 0) {
+            // リスト矩形内で行の隙間 (= 行 hit ミス) を左クリックしたケースも、 上と同様に解除する。
+            if (event.button() == 0 && !this.stickyPreviewStack.isEmpty()) {
+                this.stickyPreviewStack = ItemStack.EMPTY;
+            }
+            return false;
+        }
 
         SearchIndex.SearchResult clicked = this.results.get(index);
+
+        // ─── ALT + ホイールクリック (= 中ボタン) でシュルカー中身プレビューを pin する ───
+        // クラシファイア ({@link FavoriteInteractionHandler#classify}) は ALT 修飾を「視覚補助」
+        // として透過する設計だが、 ホイールクリックは元々 IGNORE で「何もしない」 扱いだったので、
+        // ここで cls の手前で独自に拾い、 sticky preview の トグル に割り当てる:
+        //   - シュルカー (or 中身付きコンテナ) なら ON / 既に同じスタックを pin 中なら OFF
+        //   - 通常アイテムなら何もしない (= 誤動作で空 popup が出るのを防ぐ)
+        // 行選択 / お気に入り / その他既存挙動には触れない (= 既存ロジック保護)。
+        if (event.button() == 2 && isAltDown()) {
+            ItemStack rowStack = clicked.stack();
+            if (!rowStack.isEmpty() && RecursiveContainerHelper.isContainerItem(rowStack)) {
+                boolean sameAsPinned = !this.stickyPreviewStack.isEmpty()
+                        && ItemStack.isSameItemSameComponents(this.stickyPreviewStack, rowStack);
+                if (sameAsPinned) {
+                    this.stickyPreviewStack = ItemStack.EMPTY;
+                } else {
+                    this.stickyPreviewStack = rowStack.copy();
+                    this.stickyPreviewAnchorX = (int) Math.round(mouseX);
+                    this.stickyPreviewAnchorY = (int) Math.round(mouseY);
+                }
+            }
+            // ALT+ホイールクリックは行選択 / お気に入り には流さない (= consume)。
+            return true;
+        }
 
         // ─── クリック種別判定 (= FavoriteInteractionHandler に集約) ───
         FavoriteInteractionHandler.ClickKind kind = FavoriteInteractionHandler.classify(event, cfg);
@@ -787,6 +859,12 @@ public class SearchScreen extends Screen {
             }
         }
         if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
+            // ESC は「外側 → 内側」 で段階的にキャンセル: sticky preview が出ているなら
+            // 先にそれを閉じ、 画面ごと閉じない (= バニラ寄りの 1 ステップ ESC 慣習)。
+            if (!this.stickyPreviewStack.isEmpty()) {
+                this.stickyPreviewStack = ItemStack.EMPTY;
+                return true;
+            }
             return super.keyPressed(event);
         }
         if (this.searchBox != null && this.searchBox.isFocused()) {
@@ -794,6 +872,33 @@ public class SearchScreen extends Screen {
             if (this.searchBox.canConsumeInput()) return false;
         }
         return super.keyPressed(event);
+    }
+
+    /**
+     * sticky preview popup を描画する。
+     *
+     * <p>
+     * 表示位置は ALT ホバー版と同じ {@link AdaptiveTooltipPositioner#place} で「画面端クランプ +
+     * RTL」 を行うため、 マウスを離した後にカーソル を動かしても popup 自体は anchor 固定。
+     * 列数 / dim backdrop は ALT ホバー版と同じ設定 ({@code search.previewGridColumns} /
+     * {@code search.previewBackgroundBlur}) を流用する (= ユーザの好みを再宣言不要)。
+     */
+    private void renderStickyPreview(GuiGraphics g, SearchConfig cfg) {
+        if (this.stickyPreviewStack.isEmpty()) return;
+        if (!RecursiveContainerHelper.isContainerItem(this.stickyPreviewStack)) {
+            // 中身を持たないアイテムが何らかの理由で残ったケースの安全弁。
+            this.stickyPreviewStack = ItemStack.EMPTY;
+            return;
+        }
+        int columns = AltPreviewPopupRenderer.clampColumns(cfg.previewGridColumns);
+        int slotCount = RecursiveContainerHelper.DEFAULT_CONTAINER_SLOTS;
+        int w = AltPreviewPopupRenderer.panelWidth(columns);
+        int h = AltPreviewPopupRenderer.panelHeight(columns, slotCount);
+        int[] xy = AdaptiveTooltipPositioner.place(
+                this.stickyPreviewAnchorX, this.stickyPreviewAnchorY,
+                w, h, this.width, this.height);
+        AltPreviewPopupRenderer.render(g, this.font, this.stickyPreviewStack,
+                xy[0], xy[1], columns, cfg.previewBackgroundBlur);
     }
 
     @Override

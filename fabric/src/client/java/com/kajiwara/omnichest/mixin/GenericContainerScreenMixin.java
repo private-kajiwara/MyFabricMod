@@ -30,6 +30,7 @@ import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.ShulkerBoxMenu;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -653,18 +654,28 @@ public abstract class GenericContainerScreenMixin extends Screen {
         }
 
         // ───────────────────────────────────────────────────────────
-        // (2) 既存の検索/ソート関連は、これまで通り ContainerScreen のみで動作。
-        // ただし Deposit ボタンの位置決めは行うため、ここで早期 return せず
-        // 先に layout だけ呼ぶ。
+        // (2) 検索 / ソート / レイアウト切替 行の生成。
+        //
+        // <b>対象</b>: 小型チェスト系の <b>「上部行」</b> を持てる GUI:
+        //   - {@link ContainerScreen} (= ChestScreen): バニラチェスト / ラージチェスト
+        //   - {@link ShulkerBoxScreen}: 27 スロット固定の小型チェスト相当
+        //
+        // <b>なぜ Shulker も対象に含めるか</b>: 以前は ContainerScreen のみで生成していたため、
+        // シュルカーボックスを開いたときに「検索バー / 種類 / 数量 / ◀▶」 が出ず、 通常チェストと
+        // 機能差が生じていた (UX レビュー指摘: 「チェスト/シュルカーで挙動が一貫してない」)。
+        // 同じ「上部行 = topPos-18」 配置はシュルカーでも空いている領域なので、 同じ生成パスを共有する。
+        //
+        // <b>なぜラージチェストフラグが残るか</b>: ラージチェストはサイドパネル配置に切替えるため
+        // {@link #cits$applyLayout} で分岐するための情報。 シュルカーは常に「小型扱い」 で良い。
         // ───────────────────────────────────────────────────────────
-        if (!((Object) this instanceof ContainerScreen containerScreen)) {
+        int searchRowSlotCount = cits$searchRowSlotCount(anyMenu);
+        if (searchRowSlotCount <= 0) {
             this.cits$applyLayout();
             return;
         }
 
-        ChestMenu menu = containerScreen.getMenu();
-        int slotCount = menu.getRowCount() * 9;
-        this.cits$isLargeChest = menu.getRowCount() == 6;
+        // ラージチェスト判定は ChestMenu のときだけ (= シュルカーは固定で false = 小型扱い)。
+        this.cits$isLargeChest = (anyMenu instanceof ChestMenu chestMenu) && chestMenu.getRowCount() == 6;
 
         this.cits$searchBox = new EditBox(this.font, 0, 0, 100, 14,
                 OmniChestLocale.get(Keys.EDITBOX_SEARCH_LABEL, "Search"));
@@ -679,9 +690,12 @@ public abstract class GenericContainerScreenMixin extends Screen {
         // 「種類」 ショートカット: 新しい {@link CategorySortEngine} (タグベース 16 カテゴリ) を起動。
         // 旧 ContainerSorter.sortByCategory (= 7 種ハードコード) は ContainerSorter 側に互換用として残るが、
         // GUI からはこちらの本格的なエンジンを呼び出す。
+        // anyMenu / searchRowSlotCount は lambda 内で参照されるため effectively final。
+        final AbstractContainerMenu sortMenu = anyMenu;
+        final int sortSlotCount = searchRowSlotCount;
         this.cits$sortByTypeButton = Button.builder(
                 OmniChestLocale.get(Keys.BUTTON_SORT_BY_TYPE, "Type"),
-                btn -> CategorySortEngine.sort(Minecraft.getInstance(), menu, slotCount))
+                btn -> CategorySortEngine.sort(Minecraft.getInstance(), sortMenu, sortSlotCount))
                 .bounds(0, 0, 26, 14)
                 .build();
         cits$applyTooltip(this.cits$sortByTypeButton, Keys.BUTTON_SORT_BY_TYPE_TOOLTIP,
@@ -690,7 +704,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
         this.cits$sortByCountButton = Button.builder(
                 OmniChestLocale.get(Keys.BUTTON_SORT_BY_COUNT, "Count"),
-                btn -> ContainerSorter.sortByCount(Minecraft.getInstance(), menu, slotCount)).bounds(0, 0, 26, 14)
+                btn -> ContainerSorter.sortByCount(Minecraft.getInstance(), sortMenu, sortSlotCount))
+                .bounds(0, 0, 26, 14)
                 .build();
         cits$applyTooltip(this.cits$sortByCountButton, Keys.BUTTON_SORT_BY_COUNT_TOOLTIP,
                 "Sort this chest by item count, largest stacks first.");
@@ -721,6 +736,27 @@ public abstract class GenericContainerScreenMixin extends Screen {
         this.addRenderableWidget(this.cits$layoutRightButton);
 
         this.cits$applyLayout();
+    }
+
+    /**
+     * 「検索バー + 種類 + 数量 + ◀▶」 上部行に対応する画面 (= ChestMenu / ShulkerBoxMenu) の
+     * コンテナ側スロット数を返す。 対応外なら 0 を返して、 上部行生成をスキップさせる。
+     *
+     * <p>
+     * Compact / Deposit / カテゴリ整理 等の側面パネルは {@link DepositMatchingHelper} の
+     * containerSlotCount で別途生成判定するため、 ここでは <b>「ChestScreen と同じ
+     * 上部行レイアウトを与えて自然な GUI</b> かどうか」 だけを判定する。
+     */
+    @Unique
+    private static int cits$searchRowSlotCount(AbstractContainerMenu menu) {
+        if (menu instanceof ChestMenu chest) {
+            return chest.getRowCount() * 9;
+        }
+        if (menu instanceof ShulkerBoxMenu) {
+            // シュルカーは常に 27 スロット (= 3x9)、 ChestType.SINGLE と同サイズ扱い。
+            return 27;
+        }
+        return 0;
     }
 
     @Unique

@@ -195,6 +195,10 @@ public final class Keys {
     public static final String CONTAINER_TYPE_BARREL = "omnichest.container_type.barrel";
     public static final String CONTAINER_TYPE_SHULKER_BOX = "omnichest.container_type.shulker_box";
     public static final String CONTAINER_TYPE_ENDER_CHEST = "omnichest.container_type.ender_chest";
+    public static final String CONTAINER_TYPE_HOPPER = "omnichest.container_type.hopper";
+    public static final String CONTAINER_TYPE_DISPENSER = "omnichest.container_type.dispenser";
+    public static final String CONTAINER_TYPE_DROPPER = "omnichest.container_type.dropper";
+    public static final String CONTAINER_TYPE_CRAFTER = "omnichest.container_type.crafter";
     public static final String CONTAINER_TYPE_OTHER = "omnichest.container_type.other";
 
     // ─── StorageCategory displayName ───────────────────────────

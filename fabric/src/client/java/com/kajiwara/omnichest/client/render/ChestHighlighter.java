@@ -106,8 +106,22 @@ public final class ChestHighlighter {
     /** ボックスを実ブロックよりわずかに膨らませて z-fighting を回避する量。 */
     private static final float BOX_INFLATE = 0.0025f;
 
-    /** ピンの最下段がチェスト天面より上に何ブロック浮くか。 */
-    private static final double PIN_BASE_HEIGHT = 1.25;
+    /**
+     * ピンの最下段がチェスト天面より上に何ブロック浮くか。
+     *
+     * <p>
+     * 以前は 1.25m (= チェスト 1 個ぶんを丸ごと開けていた) で、 「ピンがブロックから浮きすぎ」
+     * というレビュー指摘を受けて 0.45m に短縮。 0.45m はバニラのプレイヤーネームタグの体感に
+     * 近い 「ブロックのすぐ上で読める」 距離で、 単チェスト直近 (= 距離 1m 程度) でも
+     * ブロック天面と文字が重ならない (= 文字下端 = base + 1px, スケールは {@link #PIN_TEXT_SCALE}
+     * × 距離係数 で十分小さい)。
+     *
+     * <p>
+     * <b>注意</b>: 値変更時に {@link #submitPinStack} と {@link #pinTopWorldY} の双方で
+     * 同じ baseY 計算 ({@code primary.getY() + 1.0 + PIN_BASE_HEIGHT}) を共有するため、
+     * ここを変えれば両方追従する (= 食い違いが起きない設計)。
+     */
+    private static final double PIN_BASE_HEIGHT = 0.45;
 
     /** ピンテキストのワールドスケール (= 1 font-pixel あたりのワールド単位)。 */
     private static final float PIN_TEXT_SCALE = 0.025f;

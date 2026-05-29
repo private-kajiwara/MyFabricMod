@@ -15,6 +15,9 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.CrafterMenu;
+import net.minecraft.world.inventory.DispenserMenu;
+import net.minecraft.world.inventory.HopperMenu;
 import net.minecraft.world.inventory.ShulkerBoxMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -319,19 +322,50 @@ public final class ContainerScanner {
     /**
      * 対象とする {@link AbstractContainerMenu} かどうか。
      * 将来 MOD コンテナ対応するときは、ここに分岐を増やせばよい。
+     *
+     * <p>
+     * <b>対応 vanilla メニュー</b> (= プレイヤーが開いて中身を観測できるストレージ系):
+     * <ul>
+     *   <li>{@link ChestMenu} (= 小型 / ラージチェスト / トラップチェスト / バレル / エンダーチェスト)</li>
+     *   <li>{@link ShulkerBoxMenu} (= シュルカーボックス)</li>
+     *   <li>{@link HopperMenu} (= ホッパー, 5 スロット)</li>
+     *   <li>{@link DispenserMenu} (= ディスペンサー / ドロッパー, 9 スロット)</li>
+     *   <li>{@link CrafterMenu} (= クラフター, 9 入力スロット)</li>
+     * </ul>
      */
     public static boolean isSupportedMenu(AbstractContainerMenu menu) {
-        return menu instanceof ChestMenu || menu instanceof ShulkerBoxMenu;
+        return menu instanceof ChestMenu
+                || menu instanceof ShulkerBoxMenu
+                || menu instanceof HopperMenu
+                || menu instanceof DispenserMenu
+                || menu instanceof CrafterMenu;
     }
 
     /**
      * 対象 menu のチェスト側スロット数 (= プレイヤーインベントリを除く先頭スロット数)。
+     *
+     * <p>
+     * <b>各 vanilla メニューのスロット数</b>:
+     * <ul>
+     *   <li>Chest: rows * 9 (3 or 6 行 → 27 / 54)</li>
+     *   <li>Shulker: 27 固定</li>
+     *   <li>Hopper: 5 固定 ({@code HopperMenu.CONTAINER_SIZE})</li>
+     *   <li>Dispenser / Dropper: 9 固定 (3x3 グリッド, 両者とも {@link DispenserMenu})</li>
+     *   <li>Crafter: 9 固定 (3x3 入力グリッド)</li>
+     * </ul>
+     * 不明な menu は -1 を返す (= 未対応扱い)。
      */
     public static int containerSlotCountOf(AbstractContainerMenu menu) {
         if (menu instanceof ChestMenu chest)
             return chest.getRowCount() * 9;
         if (menu instanceof ShulkerBoxMenu)
             return 27;
+        if (menu instanceof HopperMenu)
+            return 5;
+        if (menu instanceof DispenserMenu)
+            return 9;
+        if (menu instanceof CrafterMenu)
+            return 9;
         return -1;
     }
 

@@ -24,6 +24,12 @@ public final class RenderConfig {
     /** スロット ホバー時の補足 Tooltip (= [LOCKED] 等の追加行) を表示するか。 */
     public boolean enableTooltips = true;
 
-    /** GUI 全般のアニメーション (= フェード, スライド) を有効化するか。 */
-    public boolean guiAnimation = true;
+    /**
+     * GUI 全般のアニメーション (= フェード, スライド) を有効化するか。
+     * <p>
+     * 既定値は <b>false</b>: 大量にチェストを開閉する実プレイ中は、 アニメーションの遅延より
+     * 「今すぐ表示」 の即応性のほうが体感を損ねないため。 雰囲気重視で使いたい場合は
+     * 設定 GUI から ON に切り替える。
+     */
+    public boolean guiAnimation = false;
 }
