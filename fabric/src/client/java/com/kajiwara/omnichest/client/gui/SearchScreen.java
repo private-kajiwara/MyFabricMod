@@ -407,14 +407,14 @@ public class SearchScreen extends Screen {
         drawYellowConnectingFrame(g, stripForFrame, this.layout.list, selectedBox, this.layout.rtl);
 
         // ─── フッターヒント ───────────────────────────────────────
-        // ALT は本画面で「インスペクション修飾キー」として再定義済み (= ホバーでアイテム詳細、
-        // シュルカーにホバー or ALT+ホイールクリックで中身プレビュー)。 フッターはこの「ALT 押下で
-        // 詳細を見られる」 という最も重要な操作の存在だけを 1 行で伝える (= 行クリックや ESC など
-        // 直感的に分かる操作の説明は省く = 認知負荷を下げる)。
-        Component hint = OmniChestLocale.get(Keys.SEARCH_HINT,
-                "Hold ALT = Show item details");
-        g.drawCenteredString(font, hint, this.layout.footerHint.centerX(),
-                this.layout.footerHint.y(), ThemeColorResolver.TEXT_DIM);
+        // 3 つのショートカット説明を 1 行に並べる。 「4 デザイン原則」 を遵守:
+        //   - Proximity:  「キー = 動作」のペアを 1 単位として近接配置。 グループ間は広めの gap。
+        //   - Repetition: 全グループで同じフォーマット「<キー> = <短い動詞句>」 + 同じ色。
+        //   - Alignment:  全体を中央寄せに 1 行で横並び (= ベースラインも自動で揃う)。
+        //   - Contrast:   テキストは TEXT_DIM (= 控えめ) で本文より暗く描画 = 補助情報であることを示す。
+        // 翻訳長が増えても、 各テキストは個別に font.width で測ってから幅を確定するため
+        // 折り返しなしで自然に収まる (= レイアウト固定値に依存しない)。
+        cits$renderFooterHints(g);
 
         // ─── Display Mode dropdown (overlay) ───
         if (this.displayDropdown != null) {
@@ -867,11 +867,107 @@ public class SearchScreen extends Screen {
             }
             return super.keyPressed(event);
         }
+
+        // ─── 一括選択ショートカット (= ALT + W / ALT + S) ───
+        // テキスト入力との競合を避けるため:
+        //   - ALT が押されている (= バニラ MC のテキスト入力は ALT 修飾を使わない) ことを必須に。
+        //   - SearchBox が IME 変換中など特別な状態でも、 ALT 修飾は文字入力で発火しないため安全。
+        // 「修飾キーなしの W / S」 は引き続き SearchBox に流して通常タイプ可能 (= 検索クエリに文字追加)。
+        // ALT 単独 / ALT + 他のキー は通常入力ではないので、 ここで先に拾っても副作用なし。
+        if (isAltDown()) {
+            int k = event.key();
+            if (k == GLFW.GLFW_KEY_W) {
+                selectAllVisibleResults();
+                return true;
+            }
+            if (k == GLFW.GLFW_KEY_S) {
+                this.selectedRows.clear();
+                return true;
+            }
+        }
+
         if (this.searchBox != null && this.searchBox.isFocused()) {
             if (this.searchBox.keyPressed(event)) return true;
             if (this.searchBox.canConsumeInput()) return false;
         }
         return super.keyPressed(event);
+    }
+
+    /**
+     * 現在 GUI に表示されている全結果 (= 「カテゴリ + お気に入りフィルタを通過した」 セット) を
+     * 一括で選択状態に追加する (= 「ALT + W」 の動作)。
+     *
+     * <p>
+     * 「baseResults」 ではなく {@link #results} を対象にするのが重要: ユーザが目で見て
+     * 「今リストに出ているもの」 が「全て」 の対象。 カテゴリ絞り込み中なら絞り込み後の集合だけ、
+     * フィルタ無しなら全件 — どちらも操作モデルとして自然 (= "Select what I see")。
+     *
+     * <p>
+     * 既存選択は維持し、 重複しないように同じ {@code makeRowKey} で put する (= 既に選択中の
+     * 行は上書きされるだけで効果は変わらない / 順序も既存のものを優先 = LinkedHashMap)。
+     * Favorites の recency 更新は触らない (= 個別クリックと違って一括選択は閲覧寄りの操作で、
+     * 「使った印 (= touch)」 を全件にばら撒くと、 後で recency ベースの並び替えが破綻するため)。
+     */
+    private void selectAllVisibleResults() {
+        for (SearchIndex.SearchResult r : this.results) {
+            String key = makeRowKey(r);
+            if (this.selectedRows.containsKey(key)) continue;
+            this.selectedRows.put(key,
+                    new SelectedRow(r.snapshot(), r.stack().copy(), r.count(),
+                            r.containerPath()));
+        }
+    }
+
+    /**
+     * フッターのショートカットヒント行を描画する。
+     *
+     * <p>
+     * 3 つの「キー = 動作」 ペアを 1 行に並べる。 ペア間の <b>区切り</b> は同じ幅の gap (= グループ間
+     * spacing) で、 1 ペア内のキー / イコール / 動作 は <b>空白 1 つ</b> しか挟まない
+     * (= proximity: ペアを 1 つの認識単位として扱わせる)。
+     *
+     * <p>
+     * <b>センター配置の理由</b>: フッター幅 (= screenW) のうち、 3 ペア + 2 gap の合計幅を 1 度だけ
+     * 計算し、 そこから X = (screenW - totalW) / 2 で開始位置を決めると、 翻訳で文字数が変わっても
+     * 自動で再センタリングされる (= ハードコード x 座標に依存しない)。
+     */
+    private void cits$renderFooterHints(GuiGraphics g) {
+        Component[] hints = new Component[]{
+                OmniChestLocale.get(Keys.SEARCH_HINT,
+                        "ALT = Item details"),
+                OmniChestLocale.get(Keys.SEARCH_HINT_SELECT_ALL,
+                        "ALT + W = Select all"),
+                OmniChestLocale.get(Keys.SEARCH_HINT_CLEAR_SELECTION,
+                        "ALT + S = Clear selection"),
+        };
+
+        // グループ間 spacing (= ペア外余白)。
+        // 一般的なヒント帯と同じ「ピル区切り」 のような視覚距離を出すため、
+        // font の半角スペース 4 つぶん相当を取る (= 翻訳の長短に依存しない)。
+        int gap = this.font.width("    ");
+
+        // 全体幅 = 各ヒント文字幅 + (n-1) * gap。
+        int totalW = 0;
+        int[] widths = new int[hints.length];
+        for (int i = 0; i < hints.length; i++) {
+            widths[i] = this.font.width(hints[i]);
+            totalW += widths[i];
+        }
+        totalW += gap * (hints.length - 1);
+
+        // 中央寄せの開始 X。 1 px 単位の整数で確定 (= 浮動小数による滲み回避)。
+        int startX = (this.width - totalW) / 2;
+        int y = this.layout.footerHint.y();
+        int color = ThemeColorResolver.TEXT_DIM;
+
+        int cursor = startX;
+        for (int i = 0; i < hints.length; i++) {
+            // drawString は (font, text, x, y, color, shadow=true)。 footer は subtle なので
+            // shadow=false で「テキストだけ」 を描く (= 既存の TEXT_DIM 色と同じ控えめ表現)。
+            g.drawString(this.font, hints[i], cursor, y, color, false);
+            cursor += widths[i];
+            if (i < hints.length - 1) cursor += gap;
+        }
     }
 
     /**

@@ -271,7 +271,9 @@
   "omnichest.editbox.template_name.hint": "Template name",
 
   "omnichest.search.summary": "Registered: %1$d  /  Hits: %2$d  /  Selected: %3$d",
-  "omnichest.search.hint": "Hold ALT = Show item details",
+  "omnichest.search.hint": "ALT = Item details",
+  "omnichest.search.hint.select_all": "ALT + W = Select all",
+  "omnichest.search.hint.clear_selection": "ALT + S = Clear selection",
 
   "omnichest.template.default_name": "Template %1$d",
   "omnichest.template.untitled": "(untitled)",

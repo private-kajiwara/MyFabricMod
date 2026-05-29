@@ -257,7 +257,9 @@
   "omnichest.editbox.template_name.hint": "שם תבנית",
 
   "omnichest.search.summary": "רשומים: %1$d  /  התאמות: %2$d  /  נבחרו: %3$d",
-  "omnichest.search.hint": "לחיצה על שורה = החלפת בחירה  /  \"איתור הנבחרים\" מצמיד אותם  /  ESC = ביטול",
+  "omnichest.search.hint": "ALT = פרטי הפריט",
+  "omnichest.search.hint.select_all": "ALT + W = בחר הכול",
+  "omnichest.search.hint.clear_selection": "ALT + S = נקה בחירה",
 
   "omnichest.template.default_name": "תבנית %1$d",
   "omnichest.template.untitled": "(ללא שם)",

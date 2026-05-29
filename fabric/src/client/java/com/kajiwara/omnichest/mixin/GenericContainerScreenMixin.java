@@ -356,14 +356,28 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
     /**
      * バッジ描画用の y 座標を選ぶ。
-     * 小型チェスト (= 検索行ありの ContainerScreen) のときだけ、検索行 (topPos-18) を避けて
-     * 更に上に押し上げる。それ以外は GUI の直上 (topPos-14) で十分。
+     *
+     * <p>
+     * <b>判定軸</b>: 「画面に <b>検索行が出ているか</b>」 (= {@link #cits$searchBox} が非 null) で
+     * 分岐する。 検索行は ChestScreen / ShulkerBoxScreen の両方で {@code topPos - 18} に置かれる
+     * ため、 そこを避けて更に上 ({@code topPos - 32}) に押し上げる必要がある。
+     *
+     * <p>
+     * 旧実装は {@code instanceof ContainerScreen} で判定していたが、 シュルカーに検索行を
+     * 追加した時点でその前提が崩れ、 シュルカーで「バッジ y = topPos - 14」 と「検索行 y = topPos - 18」
+     * が縦に 4px しか開かず、 バッジ高 (= {@code font.lineHeight + 2}) との合計で大きく重なる
+     * バグ (= UX レビュー指摘: 「シュルカー分類 UI と検索バーが被って読めない」) が起きていた。
+     *
+     * <p>
+     * <b>原理</b>: 「検索行があるなら、 検索行の更に上にバッジ」 「無いなら GUI 直上にバッジ」 と
+     * 1 つの軸でレイアウトを決定する (= {@code instanceof Screen} で枝分かれせず、 実存するウィジェット
+     * に対して相対的に並べる)。 ラージチェストは検索行を <b>側面パネル</b> に持つので、 ここでは
+     * 「検索行が上に居ない」 状態。 旧コードの「ラージのときは topPos - 14」 と同じ結果になる。
      */
     @Unique
     private int cits$badgeY() {
-        boolean smallChestWithSearchRow =
-                ((Object) this instanceof ContainerScreen) && !this.cits$isLargeChest;
-        return smallChestWithSearchRow ? this.topPos - 32 : this.topPos - 14;
+        boolean hasTopSearchRow = (this.cits$searchBox != null) && !this.cits$isLargeChest;
+        return hasTopSearchRow ? this.topPos - 32 : this.topPos - 14;
     }
 
     /**

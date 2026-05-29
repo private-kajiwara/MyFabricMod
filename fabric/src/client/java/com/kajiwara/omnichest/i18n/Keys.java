@@ -109,6 +109,10 @@ public final class Keys {
     // ─── 検索画面 ───────────────────────────────────────────
     public static final String SEARCH_SUMMARY = "omnichest.search.summary";
     public static final String SEARCH_HINT = "omnichest.search.hint";
+    /** 「ALT + W」: 表示中の全件を選択。 */
+    public static final String SEARCH_HINT_SELECT_ALL = "omnichest.search.hint.select_all";
+    /** 「ALT + S」: 選択をすべて解除。 */
+    public static final String SEARCH_HINT_CLEAR_SELECTION = "omnichest.search.hint.clear_selection";
 
     // ─── Category Sort ボタン Tooltip ────────────────────────────
     public static final String CATEGORY_SORT_TOOLTIP = "omnichest.button.category_sort.tooltip";
