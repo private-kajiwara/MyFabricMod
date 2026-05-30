@@ -234,6 +234,7 @@
   "omnichest.search.hint": "ALT = Item details",
   "omnichest.search.hint.select_all": "ALT + W = Select all",
   "omnichest.search.hint.clear_selection": "ALT + S = Clear selection",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = Deselect hovered",
   "omnichest.template.default_name": "Template %1$d",
   "omnichest.template.untitled": "(untitled)",
   "omnichest.template.kind.label": "Kind: %1$s",

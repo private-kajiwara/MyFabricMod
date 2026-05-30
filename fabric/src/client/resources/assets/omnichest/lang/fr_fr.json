@@ -222,6 +222,7 @@
   "omnichest.search.hint": "ALT = Détails de l'objet",
   "omnichest.search.hint.select_all": "ALT + W = Tout sélectionner",
   "omnichest.search.hint.clear_selection": "ALT + S = Effacer la sélection",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = Désélectionner la ligne",
   "omnichest.template.default_name": "Modèle %1$d",
   "omnichest.template.untitled": "(sans titre)",
   "omnichest.template.kind.label": "Type : %1$s",

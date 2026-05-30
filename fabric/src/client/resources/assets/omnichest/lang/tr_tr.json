@@ -222,6 +222,7 @@
   "omnichest.search.hint": "ALT = Eşya ayrıntıları",
   "omnichest.search.hint.select_all": "ALT + W = Tümünü seç",
   "omnichest.search.hint.clear_selection": "ALT + S = Seçimi temizle",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = Satır seçimini kaldır",
   "omnichest.template.default_name": "Şablon %1$d",
   "omnichest.template.untitled": "(başlıksız)",
   "omnichest.template.kind.label": "Tür: %1$s",

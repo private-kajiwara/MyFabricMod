@@ -147,6 +147,14 @@ public class SearchScreen extends Screen {
     private int stickyPreviewAnchorX = 0;
     private int stickyPreviewAnchorY = 0;
 
+    /**
+     * 直近に {@code render()} が受け取ったマウス座標。 キーボードショートカット
+     * (ALT+D など) の hit-test 用に保持する。 keyPressed は mouseX/Y を引数で受け取らないため、
+     * render 経由で更新される最新値を参照するのが最も低コスト (= mouseHandler の毎フレーム再計算を回避)。
+     */
+    private int lastMouseX = -1;
+    private int lastMouseY = -1;
+
     public SearchScreen(Screen parent) {
         super(OmniChestLocale.get(Keys.SCREEN_SEARCH_TITLE, "Chest Network Search"));
         this.parent = parent;
@@ -169,6 +177,12 @@ public class SearchScreen extends Screen {
         super.init();
         SearchConfig cfg = ConfigManager.get().search;
         this.displayMode = (cfg.defaultDisplayMode != null) ? cfg.defaultDisplayMode : ItemDisplayMode.DETAILED;
+        // ─── Sort モードの永続復元 ───
+        // ユーザが前回画面を閉じる前に選んでいたソート順 (= 距離 / 数量 / 名前) を
+        // {@code cfg.resultSortMode} から戻す。 これにより「チェストを閉じて再度開く度に距離順に
+        // リセットされる」 旧挙動 (= 苛立たしいデフォルト戻り) を排除し、 検索ワークフローの連続性
+        // を保つ (= 「あなたの好みを覚えている UI」)。
+        this.sortMode = sortModeFromConfig(cfg.resultSortMode);
 
         // ─── ラベルを先に解決してから layout に渡す (= 翻訳長で幅が変わるため) ───
         Component sortDistanceLabel = OmniChestLocale.get(Keys.BUTTON_SORT_DISTANCE, "By Distance");
@@ -195,38 +209,61 @@ public class SearchScreen extends Screen {
                 layout.searchBox.w(), layout.searchBox.h(),
                 OmniChestLocale.get(Keys.EDITBOX_SEARCH_LABEL, "Search"));
         this.searchBox.setMaxLength(64);
-        this.searchBox.setHint(searchHint);
+        // <b>Hint テキストはボックス幅に収まるよう動的に切り詰める</b>。
+        // 旧仕様 (2 行レイアウト) では検索バーが画面幅いっぱい (= 約 250px) あったため
+        // 「Search (e.g. diamond, food, mekanism)」 のような長い hint が収まっていたが、
+        // 単行レイアウト化で SearchBox 幅が狭くなった結果、 hint が右側 (種類順 / 詳細ボタン) に
+        // <b>はみ出して描画</b> されてしまっていた。 EditBox の drawHint は scissor も clip もしないため、
+        // 「収まる長さ」 まで <em>呼び出し側</em> で短縮する必要がある。
+        this.searchBox.setHint(cits$fitHintToWidth(searchHint, layout.searchBox.w()));
         this.searchBox.setResponder(text -> rebuildResults());
         this.addRenderableWidget(this.searchBox);
         this.setInitialFocus(this.searchBox);
 
         // ─── Sort ボタン (3 つ) ───────────────────────────────────
-        this.addRenderableWidget(Button.builder(sortDistanceLabel, b -> {
-            this.sortMode = SortMode.DISTANCE;
-            rebuildResults();
-        }).bounds(layout.sortDistanceBtn.x(), layout.sortDistanceBtn.y(),
-                layout.sortDistanceBtn.w(), layout.sortDistanceBtn.h()).build());
+        // 押下時に sortMode を更新するだけでなく、 {@link #applyAndPersistSort} 経由で
+        // {@code SearchConfig.resultSortMode} に書き戻し → 永続化する。 これにより
+        // 「チェストを閉じても次回起動でも同じソート順」 が保たれる。
+        this.addRenderableWidget(Button.builder(sortDistanceLabel,
+                b -> applyAndPersistSort(SortMode.DISTANCE))
+                .bounds(layout.sortDistanceBtn.x(), layout.sortDistanceBtn.y(),
+                        layout.sortDistanceBtn.w(), layout.sortDistanceBtn.h()).build());
 
-        this.addRenderableWidget(Button.builder(sortCountLabel, b -> {
-            this.sortMode = SortMode.COUNT;
-            rebuildResults();
-        }).bounds(layout.sortCountBtn.x(), layout.sortCountBtn.y(),
-                layout.sortCountBtn.w(), layout.sortCountBtn.h()).build());
+        this.addRenderableWidget(Button.builder(sortCountLabel,
+                b -> applyAndPersistSort(SortMode.COUNT))
+                .bounds(layout.sortCountBtn.x(), layout.sortCountBtn.y(),
+                        layout.sortCountBtn.w(), layout.sortCountBtn.h()).build());
 
-        this.addRenderableWidget(Button.builder(sortNameLabel, b -> {
-            this.sortMode = SortMode.NAME;
-            rebuildResults();
-        }).bounds(layout.sortNameBtn.x(), layout.sortNameBtn.y(),
-                layout.sortNameBtn.w(), layout.sortNameBtn.h()).build());
+        this.addRenderableWidget(Button.builder(sortNameLabel,
+                b -> applyAndPersistSort(SortMode.NAME))
+                .bounds(layout.sortNameBtn.x(), layout.sortNameBtn.y(),
+                        layout.sortNameBtn.w(), layout.sortNameBtn.h()).build());
 
         // ─── アクションボタン ─────────────────────────────────────
-        this.addRenderableWidget(Button.builder(findSelectedLabel, b -> highlightSelectedAndClose())
-                .bounds(layout.findSelectedBtn.x(), layout.findSelectedBtn.y(),
-                        layout.findSelectedBtn.w(), layout.findSelectedBtn.h()).build());
+        // <b>Find Selected</b>: 単行レイアウトの「検索ボタン」 (mockup 左端)。 選択中アイテムを
+        // ワールド上でハイライトしつつ GUI を閉じる primary action。
+        //
+        // <b>スタイル</b>: 設定画面フッタの「Save」 と同じ {@link NavyFooterButton} を採用
+        // (= 紺塗り + 黄金枠 + BOLD + ホバーで色反転)。 これにより:
+        //   - 「重要操作 (= Save / Find)」 は MOD 内で同じ見た目に統一 = Repetition の徹底。
+        //   - 検索 GUI 内の他ボタン (= バニラ素地) に対しても主従が一目で分かる = Contrast の強化。
+        // サイズは layout 側で modeW より広く保証済み (= BUTTON_PRIMARY_CTA_MIN_WIDTH)。
+        com.kajiwara.omnichest.config.gui.widget.NavyFooterButton findBtn =
+                new com.kajiwara.omnichest.config.gui.widget.NavyFooterButton(
+                        layout.findSelectedBtn.x(), layout.findSelectedBtn.y(),
+                        layout.findSelectedBtn.w(), layout.findSelectedBtn.h(),
+                        findSelectedLabel,
+                        b -> highlightSelectedAndClose());
+        // 「同じラベルを 1 行で短縮表示」 する場合に備え、 ホバーで full label が読める tooltip を付ける。
+        findBtn.setTooltip(net.minecraft.client.gui.components.Tooltip.create(findSelectedLabel));
+        this.addRenderableWidget(findBtn);
 
-        this.addRenderableWidget(Button.builder(clearSelectionLabel, b -> this.selectedRows.clear())
-                .bounds(layout.clearSelectionBtn.x(), layout.clearSelectionBtn.y(),
-                        layout.clearSelectionBtn.w(), layout.clearSelectionBtn.h()).build());
+        // <b>Clear Selection</b>: 可視 UI から取り除いた (mockup に存在しない、 単行レイアウトの
+        // 圧迫を避けるため)。 同等機能はフッターで明示済みの <b>ALT + S ショートカット</b> で実行できる
+        // (= keyPressed の selectedRows.clear() に集約)。 翻訳ラベル
+        // {@code clearSelectionLabel} はフッター行の hint で「ALT + S = Clear selection」
+        // として依然ユーザに見えているので、 ラベル自体の翻訳は引き続き活きる。
+        @SuppressWarnings("unused") Component _keepClearLabel = clearSelectionLabel;
 
         // ─── Display Mode ボタン ──────────────────────────────────
         this.addRenderableWidget(Button.builder(displayModeLabel,
@@ -357,26 +394,57 @@ public class SearchScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        // キーボードショートカット (= ALT+D 等) 用に直近マウス座標を覚えておく。
+        this.lastMouseX = mouseX;
+        this.lastMouseY = mouseY;
+
+        // ─── ALT 押下中は検索バーを「無効化」 する ───
+        // ALT は本画面で「インスペクション修飾キー」 (= ホバーで詳細 / ALT+W で全選択 /
+        // ALT+S で選択解除 / ALT+中ボタンでシュルカープレビュー) に再定義されている。
+        // この間に検索バーが入力フォーカスを維持していると、 ALT+W/S 以外のキー (ALT+E, ALT+R…)
+        // やフォーカスを掴んだままの IME 変換などが、 意図しない文字として検索バーに紛れ込む
+        // 余地が残る。 setEditable(false) を毎フレーム同期することで:
+        //   - キー入力は EditBox 側で拒否される (= 入力統合の二重ガード)
+        //   - EditBox は disabled 時に色を落として描画 → ユーザに「今は打てない」 と明示
+        // フォーカス自体は失わせない (= ALT を離した瞬間にそのまま続行できる UX)。
+        // {@code super.render} がウィジェットを描く<b>前</b>に状態を同期するのが重要
+        // (= 描画直前の状態が反映される / 1 フレームの遅延を作らない)。
+        if (this.searchBox != null) {
+            this.searchBox.setEditable(!isAltDown());
+        }
+
         super.render(g, mouseX, mouseY, partialTick);
         Font font = this.font;
         SearchConfig cfg = ConfigManager.get().search;
 
-        // ─── タイトル (上部中央) ─────────────────────────────────
-        g.drawCenteredString(font, this.getTitle(), this.width / 2, UILayoutMetrics.SCREEN_INSET_TOP,
+        // ─── ヘッダ (= タイトル + 統計を 1 行で並べる) ─────────────────────────────
+        // <b>レイアウト</b>: 中央にタイトル、 右端 (LTR) / 左端 (RTL) に統計テキスト。
+        // 旧実装はタイトル中央 / 統計左寄せで配置していたが、 新レイアウト (= mockup 準拠) では
+        // タイトル「倉庫検索 (見出し)」 と 統計「ヒット/選択/総スタック数」 が
+        // <b>同一の水平線上</b> で「タイトル中央〜やや左 / 統計右」 と分かれている。
+        // 統計は数値情報 = 右寄せが視線移動として自然 (= 横書き言語で「結果は右で確認」 慣習)。
+        //
+        // <b>タイトルは bold で描画</b>: 統計テキスト (= dim, regular) との視覚的階層を作り、
+        // 「画面の主役は何か」 を一目で伝える (= 4 原則の Contrast)。 bold は <em>描画時に
+        // 適用</em> するため、 翻訳ファイル側で {@code §l} 等のフォーマットコードを書く必要がない
+        // (= 全言語に自動で乗る = 翻訳者の作業 0)。
+        Component boldTitle = this.getTitle().copy().withStyle(net.minecraft.ChatFormatting.BOLD);
+        g.drawCenteredString(font, boldTitle, this.width / 2, UILayoutMetrics.SCREEN_INSET_TOP,
                 ThemeColorResolver.TEXT_PRIMARY);
 
-        // ─── サマリ (= LTR では左、 RTL では右) ──
+        // ─── サマリ (= LTR では右、 RTL では左 ── mockup 準拠) ──
         int total = ChestNetworkManager.get().size();
         Component summary = OmniChestLocale.get(Keys.SEARCH_SUMMARY,
                 "Registered: %1$d  /  Hits: %2$d  /  Selected: %3$d",
                 total, this.results.size(), this.selectedRows.size());
         boolean rtl = LocalizationBridge.isRtl();
         if (rtl) {
-            int sw = font.width(summary);
-            g.drawString(font, summary, this.width - UILayoutMetrics.SCREEN_INSET_X - sw,
+            // RTL: 統計を画面左に貼り付け (= タイトルの「外側」 が 統計、 という対称性を保つ)。
+            g.drawString(font, summary, UILayoutMetrics.SCREEN_INSET_X,
                     UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
         } else {
-            g.drawString(font, summary, UILayoutMetrics.SCREEN_INSET_X,
+            int sw = font.width(summary);
+            g.drawString(font, summary, this.width - UILayoutMetrics.SCREEN_INSET_X - sw,
                     UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
         }
 
@@ -749,14 +817,16 @@ public class SearchScreen extends Screen {
 
         SearchIndex.SearchResult clicked = this.results.get(index);
 
-        // ─── ALT + ホイールクリック (= 中ボタン) でシュルカー中身プレビューを pin する ───
-        // クラシファイア ({@link FavoriteInteractionHandler#classify}) は ALT 修飾を「視覚補助」
-        // として透過する設計だが、 ホイールクリックは元々 IGNORE で「何もしない」 扱いだったので、
-        // ここで cls の手前で独自に拾い、 sticky preview の トグル に割り当てる:
-        //   - シュルカー (or 中身付きコンテナ) なら ON / 既に同じスタックを pin 中なら OFF
-        //   - 通常アイテムなら何もしない (= 誤動作で空 popup が出るのを防ぐ)
-        // 行選択 / お気に入り / その他既存挙動には触れない (= 既存ロジック保護)。
-        if (event.button() == 2 && isAltDown()) {
+        // ─── ホイールクリック (= 中ボタン) でシュルカー中身プレビューを <b>純粋トグル</b> ───
+        // 旧仕様は ALT+ホイールクリックの組合せだったが、 「ALT を押している間しか効かない」 ことが
+        // トグルとして自然でない (= 開く/閉じるという 2 状態の切替に修飾キーは要らない)。
+        // 新仕様: ホイールクリック単独 (= 修飾なし) で開閉:
+        //   - 同じ行を再度ホイールクリック → 閉じる (OFF)
+        //   - 別の行をホイールクリック → そっちに切替 (= 内容更新)
+        //   - 通常アイテム (= 中身を持たない) なら何もしない (= 誤動作で空 popup を出さない)
+        // ホイールクリックはバニラ MC 検索 GUI で別用途に当たっていないので、
+        // この単独入力で奪っても既存挙動に衝突しない (= 行クリック左/右、 スクロール ホイール は無傷)。
+        if (event.button() == 2) {
             ItemStack rowStack = clicked.stack();
             if (!rowStack.isEmpty() && RecursiveContainerHelper.isContainerItem(rowStack)) {
                 boolean sameAsPinned = !this.stickyPreviewStack.isEmpty()
@@ -769,7 +839,7 @@ public class SearchScreen extends Screen {
                     this.stickyPreviewAnchorY = (int) Math.round(mouseY);
                 }
             }
-            // ALT+ホイールクリックは行選択 / お気に入り には流さない (= consume)。
+            // ホイールクリックは行選択 / お気に入り には流さない (= consume)。
             return true;
         }
 
@@ -868,12 +938,11 @@ public class SearchScreen extends Screen {
             return super.keyPressed(event);
         }
 
-        // ─── 一括選択ショートカット (= ALT + W / ALT + S) ───
-        // テキスト入力との競合を避けるため:
-        //   - ALT が押されている (= バニラ MC のテキスト入力は ALT 修飾を使わない) ことを必須に。
-        //   - SearchBox が IME 変換中など特別な状態でも、 ALT 修飾は文字入力で発火しないため安全。
-        // 「修飾キーなしの W / S」 は引き続き SearchBox に流して通常タイプ可能 (= 検索クエリに文字追加)。
-        // ALT 単独 / ALT + 他のキー は通常入力ではないので、 ここで先に拾っても副作用なし。
+        // ─── ALT 押下中の入力ガード ───
+        // ALT 修飾下のキー入力は <b>全て</b> 画面側で処理し、 SearchBox へは一切流さない。
+        // 既知ショートカット (ALT+W / ALT+S / ALT+D) は所定の動作を実行、 それ以外 (ALT+任意) は
+        // 「何もしないが consume」 する (= ALT+E 等で検索バーに余計な文字が入るのを防ぐ)。
+        // 修飾なしの W / S / D は従来どおり SearchBox に流れ、 検索クエリへの通常タイプとして扱う。
         if (isAltDown()) {
             int k = event.key();
             if (k == GLFW.GLFW_KEY_W) {
@@ -884,6 +953,14 @@ public class SearchScreen extends Screen {
                 this.selectedRows.clear();
                 return true;
             }
+            if (k == GLFW.GLFW_KEY_D) {
+                deselectHoveredRow();
+                return true;
+            }
+            // ALT 修飾下の他のキー (= 文字キー / 矢印 etc.) は SearchBox に届けず黙って consume。
+            // ALT 自体の押下イベント (= LALT/RALT を押した瞬間) も consume されるが、
+            // 修飾キーは「離した時に何かする」 性質のものではないので副作用なし。
+            return true;
         }
 
         if (this.searchBox != null && this.searchBox.isFocused()) {
@@ -891,6 +968,28 @@ public class SearchScreen extends Screen {
             if (this.searchBox.canConsumeInput()) return false;
         }
         return super.keyPressed(event);
+    }
+
+    /**
+     * 文字入力イベントは {@code charTyped} 経由で来る (= IME / dead key / 多バイト文字)。
+     * ALT 押下中は SearchBox に文字を流さず、 ここで黙って消費する。
+     *
+     * <p>
+     * {@link #keyPressed} ガードだけだと、 OS の IME や一部キーボードレイアウトで
+     * 「keyPressed は ALT 抑止できても charTyped は素通り」 のケースが残るため、
+     * 両方の入口でガードを掛けて整合性を取る。
+     *
+     * <p>
+     * <b>シグネチャ</b>: 1.21.11 から {@code charTyped(char, int)} は
+     * {@code charTyped(CharacterEvent)} に置き換わっている (= modifier 等の追加情報が
+     * 1 つのイベントオブジェクトに纏まった)。 ここでも新シグネチャで override する。
+     */
+    @Override
+    public boolean charTyped(net.minecraft.client.input.CharacterEvent event) {
+        if (isAltDown()) {
+            return true; // 黙って consume
+        }
+        return super.charTyped(event);
     }
 
     /**
@@ -919,6 +1018,45 @@ public class SearchScreen extends Screen {
     }
 
     /**
+     * 「カーソル下の行」 を選択状態 + ワールド上のピンの両方から取り除く (= ALT+D の動作)。
+     *
+     * <p>
+     * <b>動作モデル</b>: 1 行 = 1 検索ヒット (= 「指定コンテナ × 指定アイテム」) なので、
+     * ALT+D 1 回で次の 2 処理を同時に行う:
+     * <ol>
+     *   <li>{@link #selectedRows} から行を削除 (= 次回 Find Selected で pin され直さなくする)。</li>
+     *   <li>{@link ChestHighlighter#removeItemForSnapshot} で <b>既に pin 中</b> の同行を世界から消す
+     *       (= 「以前 Find Selected を押した結果」 のピンも 1 行ぶん取り除く)。</li>
+     * </ol>
+     * 両者は独立して処理されるため、 staging だけある / pin だけある / 両方ある の 3 状態すべてで
+     * 期待通り動く (= idempotent)。
+     *
+     * <p>
+     * <b>カーソルが行外にある時は no-op</b> (= 誤発火を防ぐ)。 リスト上にホバーしている時のみ、
+     * 直近の {@link #lastMouseX} / {@link #lastMouseY} を使って row index を引く。
+     */
+    private void deselectHoveredRow() {
+        if (this.layout == null) return;
+        LayoutBox list = this.layout.list;
+        if (this.lastMouseX < list.x() || this.lastMouseX > list.right()
+                || this.lastMouseY < list.y() || this.lastMouseY > list.bottom()) {
+            return; // リスト外 → no-op
+        }
+        int idx = StorageSearchListRenderer.hitTest(this.displayMode, this.results,
+                list.x(), list.y(), list.right(), list.bottom(),
+                this.scrollPx, this.lastMouseX, this.lastMouseY);
+        if (idx < 0 || idx >= this.results.size()) return;
+
+        SearchIndex.SearchResult target = this.results.get(idx);
+
+        // (1) staging selection から除去 (= 同 row key で put 済みなら remove)。
+        this.selectedRows.remove(makeRowKey(target));
+
+        // (2) ワールド上のピン (= ChestHighlighter.active) から該当行を狙い撃ち削除。
+        ChestHighlighter.get().removeItemForSnapshot(target.snapshot().key(), target.stack());
+    }
+
+    /**
      * フッターのショートカットヒント行を描画する。
      *
      * <p>
@@ -939,6 +1077,8 @@ public class SearchScreen extends Screen {
                         "ALT + W = Select all"),
                 OmniChestLocale.get(Keys.SEARCH_HINT_CLEAR_SELECTION,
                         "ALT + S = Clear selection"),
+                OmniChestLocale.get(Keys.SEARCH_HINT_DESELECT_HOVERED,
+                        "ALT + D = Deselect hovered"),
         };
 
         // グループ間 spacing (= ペア外余白)。
@@ -959,6 +1099,24 @@ public class SearchScreen extends Screen {
         int startX = (this.width - totalW) / 2;
         int y = this.layout.footerHint.y();
         int color = ThemeColorResolver.TEXT_DIM;
+
+        // ─── 半透明黒の背景 backdrop ───
+        // フッターヒントは TEXT_DIM (= 暗めグレー) で描かれるため、 list 領域の黄色フレームや
+        // タブ表示と背景が被ると視認性が落ちる。 文字列の左右に小さい padding を入れた
+        // 「ピル状の」 半透明黒の帯を 1 本だけ敷くことで、 ヒント行をフォーカス フィルムとして
+        // 浮かせる (= 4 原則の Contrast: 「文字 vs 背景」 の輝度差を物理的に確保)。
+        //
+        // <b>採寸</b>:
+        //   - X 範囲: テキスト全体の中央寄せ box (= [startX, startX+totalW]) を padX で左右に膨らます。
+        //   - Y 範囲: テキスト行の上下 (= [y - padY, y + lineHeight + padY])。
+        //   - 色: 0xB0000000 (= alpha ≈ 69%、 黒)。 不透明にしすぎず、 下のフレームをぼんやり残す。
+        int padX = 6;
+        int padY = 2;
+        int bgLeft = startX - padX;
+        int bgRight = startX + totalW + padX;
+        int bgTop = y - padY;
+        int bgBottom = y + this.font.lineHeight + padY;
+        g.fill(bgLeft, bgTop, bgRight, bgBottom, 0xB0000000);
 
         int cursor = startX;
         for (int i = 0; i < hints.length; i++) {
@@ -1015,6 +1173,98 @@ public class SearchScreen extends Screen {
     @SuppressWarnings("unused")
     private Screen parentForReference() {
         return this.parent;
+    }
+
+    /**
+     * 「SearchConfig 側の {@link com.kajiwara.omnichest.config.data.SearchSortMode}」 から
+     * 「SearchScreen ローカルの {@link SortMode}」 への 1:1 マッピング。
+     *
+     * <p>
+     * 両方とも DISTANCE / COUNT / NAME の 3 値で共通。 設定側だけが将来 {@code RECENCY} 等を
+     * 持つかもしれないので、 未対応値が来た場合は安全に DISTANCE (= 既定) にフォールバックする。
+     */
+    private static SortMode sortModeFromConfig(com.kajiwara.omnichest.config.data.SearchSortMode cfgMode) {
+        if (cfgMode == null) return SortMode.DISTANCE;
+        return switch (cfgMode) {
+            case DISTANCE -> SortMode.DISTANCE;
+            case COUNT -> SortMode.COUNT;
+            case NAME -> SortMode.NAME;
+            // RECENCY 等は未実装なので DISTANCE にフォールバック。
+            default -> SortMode.DISTANCE;
+        };
+    }
+
+    /**
+     * Sort ボタン押下の統合エントリ。
+     * <ol>
+     *   <li>ローカル状態を更新 ({@code this.sortMode = newMode})。</li>
+     *   <li>{@link SearchConfig#resultSortMode} に書き戻し、 {@link ConfigManager#save()} で永続化。</li>
+     *   <li>結果リストを再構築 ({@link #rebuildResults})。</li>
+     * </ol>
+     *
+     * <p>
+     * <b>save() 呼び出しコスト</b>: 1 ファイル ~数 KB を gson で書き出すだけ。 ユーザクリックの粒度
+     * (= 秒オーダ) で 1 回なので連続発火しても問題なし (= debounce 不要)。
+     */
+    private void applyAndPersistSort(SortMode newMode) {
+        if (newMode == null) return;
+        this.sortMode = newMode;
+        try {
+            SearchConfig cfg = ConfigManager.get().search;
+            cfg.resultSortMode = switch (newMode) {
+                case DISTANCE -> com.kajiwara.omnichest.config.data.SearchSortMode.DISTANCE;
+                case COUNT -> com.kajiwara.omnichest.config.data.SearchSortMode.COUNT;
+                case NAME -> com.kajiwara.omnichest.config.data.SearchSortMode.NAME;
+            };
+            ConfigManager.save();
+        } catch (Throwable ignored) {
+            // 設定保存に失敗してもユーザ操作は止めない (= ローカル状態は更新済み、 次フレーム表示は OK)。
+        }
+        rebuildResults();
+    }
+
+    /**
+     * EditBox の placeholder (hint) が、 指定したボックス幅に収まる長さに切り詰めた {@link Component} を返す。
+     *
+     * <p>
+     * <b>背景</b>: {@code EditBox#drawHint} はテキスト幅が描画領域を超えても切り詰めずに描く
+     * (= 右側の他ウィジェットに被って描画されてしまう) 仕様。 単行レイアウト化で SearchBox 幅が
+     * 狭くなった結果、 翻訳済みの長い hint (例: 「Search (e.g. diamond, food, mekanism)」)
+     * が右側のソート / 詳細ボタンへはみ出すバグの修正用ヘルパ。
+     *
+     * <p>
+     * <b>処理</b>:
+     * <ol>
+     *   <li>EditBox 内部の左右 padding (≈ 4px ずつ) を控除して「実描画可能幅」 を出す。</li>
+     *   <li>hint の本来の幅が実描画可能幅以下なら、 そのまま返す (= 切り詰め不要)。</li>
+     *   <li>超えるなら、 末尾が <b>U+2026 HORIZONTAL ELLIPSIS</b> (「…」) で終わる最長文字列に
+     *       切り詰める。 文字単位の切断は {@link Font#plainSubstrByWidth} を使い、
+     *       マルチバイト / 合字 / RTL を考慮した安全な分割をフォントに任せる。</li>
+     * </ol>
+     *
+     * <p>
+     * <b>翻訳互換</b>: 切り詰めは「翻訳済みの文字列」 に対して動的に行うため、 各 lang JSON は
+     * 自然な完全文 (= 「検索 (例: diamond, food, mekanism)」 のような長文) のまま置けて、
+     * 表示時に必要に応じて短縮される (= 翻訳者が UI 幅を意識して文字数を削る必要がない)。
+     */
+    private Component cits$fitHintToWidth(Component hint, int boxWidth) {
+        String raw = hint.getString();
+        // EditBox 左右内部 padding (= 概ね 4 px ずつ)。 「概算で十分」 = 1px の余裕は許容。
+        int innerPad = 8;
+        int maxW = Math.max(0, boxWidth - innerPad);
+        int rawW = this.font.width(raw);
+        if (rawW <= maxW) {
+            return hint; // 元から収まる → 元のまま (= スタイルや format args を保持)
+        }
+        String ellipsis = "…";
+        int ellipsisW = this.font.width(ellipsis);
+        int budget = Math.max(0, maxW - ellipsisW);
+        // plainSubstrByWidth は「先頭から budget 幅に収まる substring」 を返す
+        // (= multi-byte / 結合文字 / RTL 安全)。
+        String trimmed = this.font.plainSubstrByWidth(raw, budget);
+        // RTL 言語では右から切るのが自然だが、 EditBox の hint は常に左から描かれるため
+        // 切断方向は同一でよい (= bidi 文字方向は Font が処理する)。
+        return Component.literal(trimmed + ellipsis);
     }
 
     /**

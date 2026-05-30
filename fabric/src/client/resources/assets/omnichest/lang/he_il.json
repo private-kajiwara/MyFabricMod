@@ -260,6 +260,7 @@
   "omnichest.search.hint": "ALT = פרטי הפריט",
   "omnichest.search.hint.select_all": "ALT + W = בחר הכול",
   "omnichest.search.hint.clear_selection": "ALT + S = נקה בחירה",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = ביטול בחירת השורה",
 
   "omnichest.template.default_name": "תבנית %1$d",
   "omnichest.template.untitled": "(ללא שם)",

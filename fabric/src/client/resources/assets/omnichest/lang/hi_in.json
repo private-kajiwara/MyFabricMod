@@ -211,6 +211,7 @@
   "omnichest.search.hint": "ALT = आइटम विवरण",
   "omnichest.search.hint.select_all": "ALT + W = सभी चुनें",
   "omnichest.search.hint.clear_selection": "ALT + S = चयन हटाएँ",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = इस पंक्ति का चयन हटाएँ",
   "omnichest.template.default_name": "टेम्पलेट %1$d",
   "omnichest.template.untitled": "(बिना शीर्षक)",
   "omnichest.template.kind.label": "प्रकार: %1$s",

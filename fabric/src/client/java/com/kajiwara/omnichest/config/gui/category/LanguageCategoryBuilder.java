@@ -59,7 +59,10 @@ public final class LanguageCategoryBuilder {
                     LanguageManager.get().setCurrent(v);
                 },
                 null,
-                LanguageOption::displayName);
+                // ボタンラベル先頭に「▼」 を付けて、 これがプルダウン (= 開くと選択肢が降りてくる)
+                // ことを視覚的に示す。 14 言語あるためサイクル方式ではなくプルダウンを使う仕様
+                // (= 既存コメント参照) を、 ラベル側でも 1 目で伝える。
+                v -> net.minecraft.network.chat.Component.literal("▼ ").append(v.displayName()));
 
         // ─── RTL モード (auto / force_on / force_off) ───
         // Arabic 等の RTL 言語を選ぶと AUTO で自動的にミラーされる。

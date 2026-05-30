@@ -211,6 +211,7 @@
   "omnichest.search.hint": "ALT = Chi tiết vật phẩm",
   "omnichest.search.hint.select_all": "ALT + W = Chọn tất cả",
   "omnichest.search.hint.clear_selection": "ALT + S = Bỏ chọn",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = Bỏ chọn dòng",
   "omnichest.template.default_name": "Mẫu %1$d",
   "omnichest.template.untitled": "(chưa đặt tên)",
   "omnichest.template.kind.label": "Loại: %1$s",

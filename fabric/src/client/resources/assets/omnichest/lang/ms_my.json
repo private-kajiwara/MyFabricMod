@@ -211,6 +211,7 @@
   "omnichest.search.hint": "ALT = Butiran item",
   "omnichest.search.hint.select_all": "ALT + W = Pilih semua",
   "omnichest.search.hint.clear_selection": "ALT + S = Kosongkan pilihan",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = Nyahpilih baris",
   "omnichest.template.default_name": "Templat %1$d",
   "omnichest.template.untitled": "(tanpa tajuk)",
   "omnichest.template.kind.label": "Jenis: %1$s",

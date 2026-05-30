@@ -65,6 +65,13 @@ public final class UILayoutMetrics {
     public static final int BUTTON_WIDE_MIN_WIDTH = 120;
     /** Display Mode ボタンの最小幅。 */
     public static final int BUTTON_MODE_MIN_WIDTH = 110;
+    /**
+     * 倉庫検索画面のメイン CTA (= Find Selected / 検索ボタン) の最小幅。
+     * {@link #BUTTON_MODE_MIN_WIDTH} より <b>大きく</b> 設定し、 「アクションの主役」 と
+     * 「補助トグル」 の視覚的なコントラスト (= 主従) を作る。
+     * 翻訳の長い言語でも、 反対側にアンカされた Display Mode より見劣りしないサイズを保証。
+     */
+    public static final int BUTTON_PRIMARY_CTA_MIN_WIDTH = 130;
 
     /** 同セクション内のボタン同士の隙間。 */
     public static final int BUTTON_GAP = 6;

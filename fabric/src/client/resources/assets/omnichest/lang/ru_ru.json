@@ -222,6 +222,7 @@
   "omnichest.search.hint": "ALT = Сведения о предмете",
   "omnichest.search.hint.select_all": "ALT + W = Выделить всё",
   "omnichest.search.hint.clear_selection": "ALT + S = Снять выделение",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = Снять выделение строки",
   "omnichest.template.default_name": "Шаблон %1$d",
   "omnichest.template.untitled": "(без имени)",
   "omnichest.template.kind.label": "Тип: %1$s",

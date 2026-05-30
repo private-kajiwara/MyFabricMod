@@ -74,6 +74,17 @@ public final class ClientKeyBindings {
     /** 一括解除キー押下時刻 (ms)。 1.5 秒以内の連続押下で確定。 */
     private static long lastClearAllPressMs = 0L;
 
+    /**
+     * 「直近の tick で Alt+D が両方とも押されていたか」 のエッジ検出用フラグ。
+     *
+     * <p>
+     * MC の {@link KeyMapping} は単一キーしか扱えず、 修飾キー (Alt) 込みのコンボには対応していない。
+     * そこで、 Alt+D は <b>毎 tick で GLFW から直接ポーリング</b> し、 「前 tick = OFF, 今 tick = ON」 の
+     * エッジを検出して 1 押下につき 1 回だけ発火させる。 押しっぱなしの 0.5 秒で連続発火する旧仕様
+     * (= keyPressed の OS リピート任せ) は採用しない (= ユーザの「1 押下 = 1 アクション」 期待に合わせる)。
+     */
+    private static boolean lastAltDDown = false;
+
     private ClientKeyBindings() {
     }
 
@@ -171,6 +182,32 @@ public final class ClientKeyBindings {
                     }
                 }
             }
+        }
+
+        // ─── グローバル Alt+D = ワールド上の全ピンを一括解除 ───
+        //
+        // SearchScreen の中では keyPressed が ALT+D を 「カーソル下の 1 行を解除」 として処理し、
+        // ここの onTick は <b>mc.screen == null</b> (= 何の GUI も開いていない) のときのみ動作する。
+        // つまり「ゲーム画面でプレイ中、 ピンが世界に残っているのを 1 キーで掃除する」 のが目的。
+        //
+        // <b>エッジ検出</b>: GLFW のキーは「押されているか / 離されているか」 しか持たないので、
+        // 「前 tick = OFF, 今 tick = ON」 の遷移を捉えて 1 押下 = 1 アクションに揃える。
+        // {@link #lastAltDDown} 自体は <em>screen の有無に関わらず</em> 毎 tick 更新する
+        // (= 「SearchScreen を開いたまま Alt+D を押し続け、 閉じた瞬間に発火」 等の意図しない暴発を防ぐ)。
+        {
+            // InputConstants.isKeyDown は Window オブジェクトを直接受け取る (= 既存パターンと一致。
+            // SortButtonWidget.java 等で同じ呼び方が成立済み)。
+            var win = mc.getWindow();
+            boolean altDown = InputConstants.isKeyDown(win, InputConstants.KEY_LALT)
+                    || InputConstants.isKeyDown(win, InputConstants.KEY_RALT);
+            boolean dDown = InputConstants.isKeyDown(win, GLFW.GLFW_KEY_D);
+            boolean nowDown = altDown && dDown;
+            if (nowDown && !lastAltDDown && mc.screen == null) {
+                // 全ピン解除。 ChestHighlighter.clear() は active map を空にするだけで、
+                // 配下の ChestNetworkManager スナップショットや SearchIndex には触れない (= 検索状態は保持)。
+                com.kajiwara.omnichest.client.render.ChestHighlighter.get().clear();
+            }
+            lastAltDDown = nowDown;
         }
 
         if (clearAllSlotLocks != null) {

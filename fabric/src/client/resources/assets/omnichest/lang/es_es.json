@@ -222,6 +222,7 @@
   "omnichest.search.hint": "ALT = Detalles del objeto",
   "omnichest.search.hint.select_all": "ALT + W = Seleccionar todo",
   "omnichest.search.hint.clear_selection": "ALT + S = Limpiar selección",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = Deseleccionar fila",
   "omnichest.template.default_name": "Plantilla %1$d",
   "omnichest.template.untitled": "(sin título)",
   "omnichest.template.kind.label": "Tipo: %1$s",

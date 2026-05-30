@@ -211,6 +211,7 @@
   "omnichest.search.hint": "ALT = Föremålsdetaljer",
   "omnichest.search.hint.select_all": "ALT + W = Markera alla",
   "omnichest.search.hint.clear_selection": "ALT + S = Rensa val",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = Avmarkera rad",
   "omnichest.template.default_name": "Mall %1$d",
   "omnichest.template.untitled": "(namnlös)",
   "omnichest.template.kind.label": "Typ: %1$s",

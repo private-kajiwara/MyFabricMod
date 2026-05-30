@@ -260,6 +260,42 @@ public final class ChestHighlighter {
         active.remove(key);
     }
 
+    /**
+     * 「指定コンテナ × 指定アイテム」 1 件 を狙い撃ちでハイライトから外す (= ピン上の 1 行を消す)。
+     *
+     * <p>
+     * <b>用途</b>: SearchScreen の ALT+D ショートカット (= 「カーソル下の行を選択解除 +
+     * ピンからも削除」) から呼ばれる。 ユーザが「この 1 アイテムだけピンを取り消したい」 と
+     * 思った時の最小単位の取消手段。
+     *
+     * <p>
+     * <b>動作</b>:
+     * <ol>
+     *   <li>指定 {@code key} の {@link ActiveHighlight} を探す。 無ければ no-op。</li>
+     *   <li>その entries から {@code stack} と <b>同一アイテム + 同一 Components</b> の
+     *       {@link HighlightEntry} を <em>全て</em> 削除 (= 同じスタックを複数行 highlight している
+     *       ケースを 1 ALT+D でクリーン)。</li>
+     *   <li>削除後 entries が空 になったら、 {@link ActiveHighlight} ごと {@code active} から
+     *       削除 (= 空のピンが宙に浮かないようにする)。</li>
+     * </ol>
+     *
+     * <p>
+     * <b>引数 {@code stack} の特性</b>: 「アイテム ID + Data Components」 で同一性判定する
+     * ({@code ItemStack.isSameItemSameComponents})。 count は無視 (= ピンは「あるか / ないか」 の
+     * 2 値で、 count フィルタは意図しない)。
+     */
+    public void removeItemForSnapshot(ContainerSnapshot.Key key, ItemStack stack) {
+        if (key == null || stack == null || stack.isEmpty()) return;
+        ActiveHighlight ah = active.get(key);
+        if (ah == null) return;
+        boolean removed = ah.entries.removeIf(e ->
+                ItemStack.isSameItemSameComponents(e.stack, stack));
+        if (!removed) return;
+        if (ah.entries.isEmpty()) {
+            active.remove(key);
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════════
     // 登録 API (SearchScreen から呼ばれる)
     // ════════════════════════════════════════════════════════════════════

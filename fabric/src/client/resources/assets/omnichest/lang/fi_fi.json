@@ -211,6 +211,7 @@
   "omnichest.search.hint": "ALT = Esineen tiedot",
   "omnichest.search.hint.select_all": "ALT + W = Valitse kaikki",
   "omnichest.search.hint.clear_selection": "ALT + S = Tyhjennä valinta",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = Poista rivi valinnasta",
   "omnichest.template.default_name": "Malli %1$d",
   "omnichest.template.untitled": "(nimetön)",
   "omnichest.template.kind.label": "Tyyppi: %1$s",

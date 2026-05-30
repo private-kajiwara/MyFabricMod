@@ -222,6 +222,7 @@
   "omnichest.search.hint": "ALT = 物品详情",
   "omnichest.search.hint.select_all": "ALT + W = 全选",
   "omnichest.search.hint.clear_selection": "ALT + S = 清除选择",
+  "omnichest.search.hint.deselect_hovered": "ALT + D = 取消选中此行",
   "omnichest.template.default_name": "模板 %1$d",
   "omnichest.template.untitled": "(未命名)",
   "omnichest.template.kind.label": "类型: %1$s",

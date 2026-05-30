@@ -113,6 +113,8 @@ public final class Keys {
     public static final String SEARCH_HINT_SELECT_ALL = "omnichest.search.hint.select_all";
     /** 「ALT + S」: 選択をすべて解除。 */
     public static final String SEARCH_HINT_CLEAR_SELECTION = "omnichest.search.hint.clear_selection";
+    /** 「ALT + D」: カーソル下の 1 行を選択解除 + ピンからも削除。 */
+    public static final String SEARCH_HINT_DESELECT_HOVERED = "omnichest.search.hint.deselect_hovered";
 
     // ─── Category Sort ボタン Tooltip ────────────────────────────
     public static final String CATEGORY_SORT_TOOLTIP = "omnichest.button.category_sort.tooltip";
