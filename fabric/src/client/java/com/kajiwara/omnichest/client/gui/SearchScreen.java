@@ -254,8 +254,8 @@ public class SearchScreen extends Screen {
                         layout.findSelectedBtn.w(), layout.findSelectedBtn.h(),
                         findSelectedLabel,
                         b -> highlightSelectedAndClose());
-        // 「同じラベルを 1 行で短縮表示」 する場合に備え、 ホバーで full label が読める tooltip を付ける。
-        findBtn.setTooltip(net.minecraft.client.gui.components.Tooltip.create(findSelectedLabel));
+        // <b>Tooltip 無し</b>: ラベルが常時可視 (= ボタン幅で必ず収まる) なので、 hover で
+        // 同じ文字列をもう一度出すのは冗長 = ユーザ要件で削除済み。 他ボタンの tooltip は維持。
         this.addRenderableWidget(findBtn);
 
         // <b>Clear Selection</b>: 可視 UI から取り除いた (mockup に存在しない、 単行レイアウトの
@@ -744,10 +744,32 @@ public class SearchScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        // ─── Display Mode dropdown のクリック処理 (= 「Find Selected が反応しない」 Bug 修正) ───
+        //
+        // <b>旧仕様の問題</b>: dropdown が開いている間、 dropdown.mouseClicked() を <em>すべての</em>
+        // クリックに対して呼び、 戻り値が常に true なので Screen 側の {@code super.mouseClicked}
+        // (= ボタン群へのディスパッチ) が走らず、 Find Selected が押せない時間帯ができていた。
+        // ユーザ報告 「Search ボタンが時々無反応」 の主因 (= 直前に Display Mode を開いた状態でクリックすると再現)。
+        //
+        // <b>修正</b>:
+        //   - クリック座標が dropdown popup の <b>内側</b> → これまで通り dropdown が処理 (= 項目選択)
+        //   - クリック座標が popup の <b>外側</b> → dropdown を閉じる <em>だけ</em>。 戻り値で
+        //     consume しない (= 同じクリックが super.mouseClicked にも届き、 ボタン押下が成立する)
+        //
+        // これで「dropdown 開いた状態で Find Selected を 1 回押す = dropdown 閉じる + Find Selected 発火」
+        // という直感的な 1-click 動作になる (= 2 回押す必要が無くなる)。
         if (this.displayDropdown != null && !this.displayDropdown.isClosed()) {
-            if (this.displayDropdown.mouseClicked(event.x(), event.y(), event.button())) {
-                if (this.displayDropdown.isClosed()) this.displayDropdown = null;
-                return true;
+            if (this.displayDropdown.contains(event.x(), event.y())) {
+                // 内側クリック: dropdown が消費。
+                if (this.displayDropdown.mouseClicked(event.x(), event.y(), event.button())) {
+                    if (this.displayDropdown.isClosed()) this.displayDropdown = null;
+                    return true;
+                }
+            } else {
+                // 外側クリック: dropdown を閉じるだけで、 クリックは下のウィジェットへ素通り。
+                this.displayDropdown.mouseClicked(event.x(), event.y(), event.button());
+                this.displayDropdown = null;
+                // ← return しない: そのまま下の処理 (= タブ判定 / ボタン押下 / 行クリック) へ続行。
             }
         }
 

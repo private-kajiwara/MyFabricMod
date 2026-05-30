@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "मेनू में स्थानांतरण तीरों के साथ बहते बिंदु को एनिमेट करता है।",
   "config.omnichest.distribution.enableTransferHistory": "स्थानांतरण इतिहास सक्षम करें",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "इतिहास / विफल टैब हेतु सफल और विफल स्थानांतरण दर्ज करता है।",
-  "modmenu.descriptionTranslation.omnichest": "अपने सभी बक्सों में कोई भी वस्तु एक नज़र में खोजें। OmniChest दुनिया में चिह्नों के साथ नेटवर्क-व्यापी खोज जोड़ता है, साथ ही स्मार्ट जमा, श्रेणी छँटाई, स्लॉट लॉक और पुन: उपयोग योग्य बक्सा टेम्पलेट — भंडारण को व्यवस्थित रखने का एक ही उपकरण।",
+  "modmenu.descriptionTranslation.omnichest": "उन खिलाड़ियों के लिए संगठन सहायक Mod जिन्हें भंडारण व्यवस्थित करना थका देता है।",
   "omnichest.reset_popup.title": "क्या वाकई सभी बदलाव रीसेट करें?",
   "omnichest.reset_popup.title_no_changes": "कोई बदली हुई सेटिंग नहीं",
   "omnichest.reset_popup.yes": "हाँ",

@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animuje plynoucí tečku podél šipek přesunu v menu.",
   "config.omnichest.distribution.enableTransferHistory": "Zapnout historii přesunů",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Zaznamenává úspěšné a neúspěšné přesuny pro karty Historie / Chyby.",
-  "modmenu.descriptionTranslation.omnichest": "Najděte jakýkoli předmět ve všech truhlách jediným pohledem. OmniChest přidává vyhledávání napříč sítí truhel se značkami ve světě, chytré ukládání, třídění podle kategorií, zámky slotů a opakovaně použitelné šablony truhel — jeden nástroj pro pořádek ve skladu.",
+  "modmenu.descriptionTranslation.omnichest": "Pomocník s tříděním pro hráče, kterým je úklid úložiště na obtíž.",
   "omnichest.reset_popup.title": "Opravdu obnovit všechny změny?",
   "omnichest.reset_popup.title_no_changes": "Žádná změněná nastavení",
   "omnichest.reset_popup.yes": "Ano",

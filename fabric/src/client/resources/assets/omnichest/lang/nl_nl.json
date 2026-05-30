@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animeert de stromende stip langs de overdrachtpijlen in het menu.",
   "config.omnichest.distribution.enableTransferHistory": "Overdrachtgeschiedenis inschakelen",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Registreert geslaagde en mislukte overdrachten voor de tabbladen Geschiedenis / Mislukt.",
-  "modmenu.descriptionTranslation.omnichest": "Vind elk item in al je kisten in één oogopslag. OmniChest voegt netwerkbreed zoeken toe met markeringen in de wereld, plus slim opbergen, sorteren op categorie, slotvergrendeling en herbruikbare kistsjablonen — één gereedschapskist om je opslag netjes te houden.",
+  "modmenu.descriptionTranslation.omnichest": "Een opruimhulp voor spelers die het ordenen van hun opslag een gedoe vinden.",
   "omnichest.reset_popup.title": "Echt alle wijzigingen resetten?",
   "omnichest.reset_popup.title_no_changes": "Geen gewijzigde instellingen",
   "omnichest.reset_popup.yes": "Ja",

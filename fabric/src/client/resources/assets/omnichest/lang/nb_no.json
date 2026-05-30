@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animerer den flytende prikken langs overføringspilene i menyen.",
   "config.omnichest.distribution.enableTransferHistory": "Aktiver overføringshistorikk",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Registrerer vellykkede og mislykkede overføringer for fanene Historikk / Mislykkede.",
-  "modmenu.descriptionTranslation.omnichest": "Finn hvilken som helst gjenstand i alle kistene dine med et øyekast. OmniChest legger til nettverksbredt søk med markører i verden, smart innsetting, kategorisortering, plasslåser og gjenbrukbare kistemaler — ett verktøy for å holde lageret ryddig.",
+  "modmenu.descriptionTranslation.omnichest": "En ryddehjelper for spillere som synes det er slitsomt å holde orden på lageret.",
   "omnichest.reset_popup.title": "Vil du virkelig tilbakestille alle endringer?",
   "omnichest.reset_popup.title_no_changes": "Ingen endrede innstillinger",
   "omnichest.reset_popup.yes": "Ja",

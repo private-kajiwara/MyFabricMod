@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Anime le point qui parcourt les flèches de transfert dans le menu.",
   "config.omnichest.distribution.enableTransferHistory": "Activer l'historique des transferts",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Enregistre les transferts réussis et échoués pour les onglets Historique / Échecs.",
-  "modmenu.descriptionTranslation.omnichest": "Trouvez n'importe quel objet dans tous vos coffres d'un coup d'œil. OmniChest ajoute une recherche en réseau avec des repères dans le monde, un dépôt intelligent, un tri par catégories, le verrouillage d'emplacements et des modèles de coffre réutilisables : une boîte à outils pour garder un stockage bien rangé.",
+  "modmenu.descriptionTranslation.omnichest": "Un assistant de rangement pour les joueurs qui trouvent l'organisation de leur stockage fastidieuse.",
   "omnichest.reset_popup.title": "Vraiment réinitialiser toutes les modifications ?",
   "omnichest.reset_popup.title_no_changes": "Aucun paramètre modifié",
   "omnichest.reset_popup.yes": "Oui",

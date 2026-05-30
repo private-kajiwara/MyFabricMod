@@ -616,10 +616,30 @@ public final class ChestHighlighter {
     /**
      * {@link BlockPos} の場所がまだコンテナブロックかを確認 (= 壊された検出)。
      * 失敗時 (= level == null) は true 扱い (= 余計に消さない安全側)。
+     *
+     * <p>
+     * <b>未ロードチャンク対応 (= 「ロード範囲外でも遠距離ピンを残す」 要件)</b>:
+     * {@code level.getBlockState(pos)} は未ロード位置に対して <em>例外を投げず</em> AIR
+     * (= 空気ブロック) を返す MC の仕様がある。 そのまま判定すると
+     * {@code ContainerType.fromBlockState(AIR) == null} → false → 「壊された」 と誤判定し、
+     * <b>未ロードチャンクのチェストはすべて pin が消える</b> バグになっていた
+     * (= 「遠距離ストレージ探索」 が事実上不能)。
+     *
+     * <p>
+     * <b>対処</b>: {@code level.isLoaded(pos)} を先に確認し、 未ロードなら <b>true</b> を返して
+     * 「不明 → 安全側で残す」 と解釈する。 これにより:
+     * <ul>
+     *   <li>未ロードチャンクのピンはスナップショット位置 (= 既知の世界座標) で描画継続。</li>
+     *   <li>チャンクを <b>強制ロードしない</b> (= isLoaded は読み取り専用クエリ、 副作用なし)。</li>
+     *   <li>チャンクが再ロードされた瞬間に通常のフローへ復帰 (= ブロックが消えていれば
+     *       次フレームで「壊された」 判定が走り、 ピンも適切に除去される)。</li>
+     * </ul>
      */
     private static boolean isStillContainerBlock(net.minecraft.client.multiplayer.ClientLevel level,
                                                  BlockPos pos) {
         if (level == null) return true;
+        // 未ロード → AIR を返す MC 仕様の罠を回避: 「分からない」 ときは「まだ存在する」 と仮定。
+        if (!level.isLoaded(pos)) return true;
         try {
             net.minecraft.world.level.block.state.BlockState state = level.getBlockState(pos);
             return com.kajiwara.omnichest.search.ContainerType.fromBlockState(state) != null;

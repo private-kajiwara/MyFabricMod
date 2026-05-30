@@ -490,7 +490,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animate the flowing dot along transfer arrows in the distribution menu.",
   "config.omnichest.distribution.enableTransferHistory": "Enable Transfer History",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Record completed and failed transfers for the History / Failed tabs.",
-  "modmenu.descriptionTranslation.omnichest": "A search-assistant mod for everyone who struggles to keep their storage tidy.",
+  "modmenu.descriptionTranslation.omnichest": "An organization helper for players who find tidying their storage a chore.",
   "omnichest.reset_popup.title": "Really reset all changes?",
   "omnichest.reset_popup.title_no_changes": "No settings have been changed",
   "omnichest.reset_popup.yes": "Yes",

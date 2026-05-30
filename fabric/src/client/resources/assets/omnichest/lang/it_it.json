@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Anima il punto che scorre lungo le frecce di trasferimento nel menu.",
   "config.omnichest.distribution.enableTransferHistory": "Attiva cronologia trasferimenti",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Registra i trasferimenti riusciti e falliti per le schede Cronologia / Falliti.",
-  "modmenu.descriptionTranslation.omnichest": "Trova qualsiasi oggetto in tutte le tue casse a colpo d'occhio. OmniChest aggiunge una ricerca in rete con segnalini nel mondo, deposito intelligente, ordinamento per categorie, blocco degli slot e modelli di cassa riutilizzabili: un unico strumento per tenere in ordine il magazzino.",
+  "modmenu.descriptionTranslation.omnichest": "Un assistente per riordinare, pensato per chi trova noioso sistemare il proprio magazzino.",
   "omnichest.reset_popup.title": "Ripristinare davvero tutte le modifiche?",
   "omnichest.reset_popup.title_no_changes": "Nessuna impostazione modificata",
   "omnichest.reset_popup.yes": "Sì",

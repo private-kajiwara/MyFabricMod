@@ -787,17 +787,21 @@ public abstract class GenericContainerScreenMixin extends Screen {
             return;
 
         if (!this.cits$isLargeChest) {
-            // 検索バー + 種類 + 数量 を、 チェスト内スロットグリッド幅 (= 9*18 = 162px,
-            // leftPos+8 〜 leftPos+170) ぴったりに揃える。
+            // 検索バー + 種類 + 数量 を、 上部のカテゴリ バッジ (= leftPos + 4 で描画)
+            // と左端を完全に揃える (= 4 原則の Alignment 厳守)。 旧実装は leftPos + 8 起点で
+            // バッジ より 4px 内側 (= 視覚的にズレ) だった。 全要素を 4px 左にシフトすると、
+            // 行末 (= count ボタン右端) は leftPos + 162 となり、 スロットグリッド右端
+            // (= leftPos + 8 + 162 = leftPos + 170) より 4px 内側になるが、 ここはバニラ
+            // チェスト テクスチャの内側 (= スロット背景内) で、 visual collision は起きない。
             //   search 106 + gap 2 + type 26 + gap 2 + count 26 = 162
             int y = this.topPos - 18;
-            this.cits$searchBox.setX(this.leftPos + 8);
+            this.cits$searchBox.setX(this.leftPos + 4);
             this.cits$searchBox.setY(y);
             this.cits$searchBox.setWidth(106);
-            this.cits$sortByTypeButton.setX(this.leftPos + 116);
+            this.cits$sortByTypeButton.setX(this.leftPos + 112);
             this.cits$sortByTypeButton.setY(y);
             this.cits$sortByTypeButton.setWidth(26);
-            this.cits$sortByCountButton.setX(this.leftPos + 144);
+            this.cits$sortByCountButton.setX(this.leftPos + 140);
             this.cits$sortByCountButton.setY(y);
             this.cits$sortByCountButton.setWidth(26);
 

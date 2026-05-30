@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "메뉴의 이동 화살표를 따라 흐르는 점을 애니메이션합니다.",
   "config.omnichest.distribution.enableTransferHistory": "이동 기록 활성화",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "성공/실패한 이동을 기록 / 실패 탭용으로 저장합니다.",
-  "modmenu.descriptionTranslation.omnichest": "모든 상자 속 아이템을 한눈에 찾으세요. OmniChest는 창고 통합 검색과 월드 내 핀 표시는 물론, 스마트 보관·카테고리 정리·슬롯 잠금·재사용 가능한 상자 템플릿까지 갖춘 정리 도구 모음입니다.",
+  "modmenu.descriptionTranslation.omnichest": "창고 정리가 번거로운 플레이어를 위한 정리 보조 모드.",
   "omnichest.reset_popup.title": "정말 모든 변경 사항을 초기화할까요?",
   "omnichest.reset_popup.title_no_changes": "변경된 설정이 없습니다",
   "omnichest.reset_popup.yes": "예",

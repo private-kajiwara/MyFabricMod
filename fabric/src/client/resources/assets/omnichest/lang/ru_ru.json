@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Анимирует движущуюся точку вдоль стрелок передачи в меню.",
   "config.omnichest.distribution.enableTransferHistory": "Включить историю передач",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Записывает успешные и неудачные передачи для вкладок История / Ошибки.",
-  "modmenu.descriptionTranslation.omnichest": "Находите любой предмет во всех сундуках с первого взгляда. OmniChest добавляет поиск по всей сети сундуков с метками в мире, умное складирование, сортировку по категориям, блокировку слотов и многоразовые шаблоны сундуков — единый инструмент для порядка в хранилище.",
+  "modmenu.descriptionTranslation.omnichest": "Мод-помощник для тех, кому лень разбирать своё хранилище.",
   "omnichest.reset_popup.title": "Действительно сбросить все изменения?",
   "omnichest.reset_popup.title_no_changes": "Нет изменённых настроек",
   "omnichest.reset_popup.yes": "Да",

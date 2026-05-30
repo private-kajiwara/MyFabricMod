@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animoi virtaavan pisteen siirtonuolia pitkin valikossa.",
   "config.omnichest.distribution.enableTransferHistory": "Ota siirtohistoria käyttöön",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Tallentaa onnistuneet ja epäonnistuneet siirrot Historia / Epäonnistuneet -välilehdille.",
-  "modmenu.descriptionTranslation.omnichest": "Löydä mikä tahansa esine kaikista arkuistasi yhdellä silmäyksellä. OmniChest lisää verkonlaajuisen haun maailmaan asetettavilla merkeillä, älykkään tallettamisen, luokittelun, paikkalukot ja uudelleenkäytettävät arkkumallit — yksi työkalu varaston pitämiseen järjestyksessä.",
+  "modmenu.descriptionTranslation.omnichest": "Järjestelyapuri pelaajille, joista varaston siivoaminen tuntuu työläältä.",
   "omnichest.reset_popup.title": "Nollataanko varmasti kaikki muutokset?",
   "omnichest.reset_popup.title_no_changes": "Ei muutettuja asetuksia",
   "omnichest.reset_popup.yes": "Kyllä",

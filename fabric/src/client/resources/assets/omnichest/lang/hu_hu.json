@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animálja az átviteli nyilakon haladó pontot a menüben.",
   "config.omnichest.distribution.enableTransferHistory": "Átviteli előzmények engedélyezése",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Rögzíti a sikeres és sikertelen átviteleket az Előzmények / Sikertelen füleknek.",
-  "modmenu.descriptionTranslation.omnichest": "Találj meg bármilyen tárgyat az összes ládádban egyetlen pillantással. Az OmniChest hálózati keresést ad világbeli jelölőkkel, valamint okos lerakást, kategória szerinti rendezést, rekeszzárakat és újrahasználható láda-sablonokat — egyetlen eszköz a rendezett tárolásért.",
+  "modmenu.descriptionTranslation.omnichest": "Rendszerező segéd játékosoknak, akiknek a raktár rendben tartása fáradságos.",
   "omnichest.reset_popup.title": "Biztosan visszaállítod az összes módosítást?",
   "omnichest.reset_popup.title_no_changes": "Nincsenek módosított beállítások",
   "omnichest.reset_popup.yes": "Igen",

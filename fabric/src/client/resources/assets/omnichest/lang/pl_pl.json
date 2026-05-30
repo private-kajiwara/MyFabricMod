@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animuje płynącą kropkę wzdłuż strzałek transferu w menu.",
   "config.omnichest.distribution.enableTransferHistory": "Włącz historię transferów",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Zapisuje udane i nieudane transfery dla kart Historia / Błędy.",
-  "modmenu.descriptionTranslation.omnichest": "Znajdź dowolny przedmiot we wszystkich skrzyniach jednym spojrzeniem. OmniChest dodaje wyszukiwanie w całej sieci skrzyń ze znacznikami w świecie, inteligentne odkładanie, sortowanie według kategorii, blokady slotów i wielokrotnego użytku szablony skrzyń — jeden zestaw narzędzi do porządku w magazynie.",
+  "modmenu.descriptionTranslation.omnichest": "Mod wspomagający porządkowanie dla graczy, którym ogarnianie magazynu sprawia kłopot.",
   "omnichest.reset_popup.title": "Na pewno zresetować wszystkie zmiany?",
   "omnichest.reset_popup.title_no_changes": "Brak zmienionych ustawień",
   "omnichest.reset_popup.yes": "Tak",

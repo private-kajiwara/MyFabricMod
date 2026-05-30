@@ -472,7 +472,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "אנימציה של נקודה זורמת לאורך חיצי ההעברה בתפריט החלוקה.",
   "config.omnichest.distribution.enableTransferHistory": "הפעלת היסטוריית העברות",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "תיעוד העברות שהושלמו ושנכשלו לטובת לשוניות 'היסטוריה' / 'נכשלו'.",
-  "modmenu.descriptionTranslation.omnichest": "איתור כל פריט בכל הארגזים שלך במבט אחד. OmniChest מוסיף חיפוש ברמת הרשת עם הצמדות בעולם, הפקדה חכמה, מיון לפי קטגוריות, נעילת תאים ותבניות ארגז לשימוש חוזר — ערכת כלים אחת לשמירה על אחסון מסודר.",
+  "modmenu.descriptionTranslation.omnichest": "מוד עזר לארגון לשחקנים שמתקשים לסדר את האחסון שלהם.",
   "omnichest.reset_popup.title": "באמת לאפס את כל השינויים?",
   "omnichest.reset_popup.title_no_changes": "לא בוצעו שינויים בהגדרות",
   "omnichest.reset_popup.yes": "כן",

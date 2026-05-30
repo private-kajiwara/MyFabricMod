@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animiert den laufenden Punkt entlang der Transfer-Pfeile im Menü.",
   "config.omnichest.distribution.enableTransferHistory": "Transfer-Verlauf aktivieren",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Erfasst erfolgreiche und fehlgeschlagene Transfers für die Tabs Verlauf / Fehler.",
-  "modmenu.descriptionTranslation.omnichest": "Finde jeden Gegenstand in all deinen Kisten auf einen Blick. OmniChest bietet eine netzwerkweite Suche mit Markierungen in der Welt, dazu smartes Einlagern, Kategoriesortierung, Slot-Sperren und wiederverwendbare Kistenvorlagen – ein Werkzeugkasten für ordentliche Lager.",
+  "modmenu.descriptionTranslation.omnichest": "Ein Aufräumhelfer für alle, denen das Sortieren ihres Lagers lästig ist.",
   "omnichest.reset_popup.title": "Wirklich alle Änderungen zurücksetzen?",
   "omnichest.reset_popup.title_no_changes": "Keine geänderten Einstellungen",
   "omnichest.reset_popup.yes": "Ja",

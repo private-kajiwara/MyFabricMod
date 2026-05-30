@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Anima el punto que recorre las flechas de transferencia del menú.",
   "config.omnichest.distribution.enableTransferHistory": "Activar historial de transferencias",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Registra transferencias completadas y fallidas para las pestañas Historial / Fallidos.",
-  "modmenu.descriptionTranslation.omnichest": "Encuentra cualquier objeto en todos tus cofres de un vistazo. OmniChest añade búsqueda en red con marcadores en el mundo, depósito inteligente, ordenado por categorías, bloqueo de ranuras y plantillas de cofres reutilizables: una única herramienta para mantener ordenado tu almacenamiento.",
+  "modmenu.descriptionTranslation.omnichest": "Un ayudante de organización para quienes ordenar su almacenamiento se les hace pesado.",
   "omnichest.reset_popup.title": "¿Restablecer todos los cambios?",
   "omnichest.reset_popup.title_no_changes": "No hay ajustes modificados",
   "omnichest.reset_popup.yes": "Sí",

@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "يحرّك النقطة المتدفقة على طول أسهم النقل في القائمة.",
   "config.omnichest.distribution.enableTransferHistory": "تفعيل سجل النقل",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "يسجّل عمليات النقل الناجحة والفاشلة لعلامتي السجل / الفاشلة.",
-  "modmenu.descriptionTranslation.omnichest": "اعثر على أي عنصر في كل صناديقك بنظرة واحدة. يضيف OmniChest بحثًا عبر شبكة الصناديق مع علامات في العالم، إضافةً إلى الإيداع الذكي والفرز حسب الفئات وقفل الخانات وقوالب صناديق قابلة لإعادة الاستخدام — أداة واحدة للحفاظ على تخزين منظّم.",
+  "modmenu.descriptionTranslation.omnichest": "أداة مساعدة في التنظيم للاعبين الذين يجدون ترتيب المخزون مرهقًا.",
   "omnichest.reset_popup.title": "هل تريد فعلاً إعادة ضبط كل التغييرات؟",
   "omnichest.reset_popup.title_no_changes": "لا توجد إعدادات معدّلة",
   "omnichest.reset_popup.yes": "نعم",

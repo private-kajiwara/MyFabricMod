@@ -3,7 +3,7 @@
 	"id": "omnichest",
 	"version": "${version}",
 	"name": "OmniChest",
-	"description": "Find any item across all your chests at a glance. OmniChest adds a network-wide search with in-world pins, smart deposit, category sorting, slot locks, and reusable chest templates — one toolkit to keep your storage tidy.",
+	"description": "An organization helper for players who find tidying their storage a chore.\n\nOmniChest adds a network-wide chest search with in-world pins, smart deposit, category sorting, slot locks, and reusable chest templates — one toolkit to keep your storage tidy.",
 	"authors": [
 		"kajiwara"
 	],

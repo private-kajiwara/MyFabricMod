@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Menganimasikan titik yang mengalir di sepanjang anak panah pemindahan dalam menu.",
   "config.omnichest.distribution.enableTransferHistory": "Dayakan sejarah pemindahan",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Merekod pemindahan berjaya dan gagal untuk tab Sejarah / Gagal.",
-  "modmenu.descriptionTranslation.omnichest": "Cari apa-apa item dalam semua peti anda dengan sekali pandang. OmniChest menambah carian seluruh rangkaian dengan penanda dalam dunia, simpanan pintar, isihan mengikut kategori, kunci slot dan templat peti boleh guna semula — satu alat untuk memastikan stor kemas.",
+  "modmenu.descriptionTranslation.omnichest": "Mod bantu penyusunan untuk pemain yang menganggap mengemas stor menyusahkan.",
   "omnichest.reset_popup.title": "Betul-betul tetapkan semula semua perubahan?",
   "omnichest.reset_popup.title_no_changes": "Tiada tetapan yang diubah",
   "omnichest.reset_popup.yes": "Ya",

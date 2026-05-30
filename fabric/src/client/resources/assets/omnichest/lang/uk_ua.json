@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Анімує рухому крапку вздовж стрілок передачі в меню.",
   "config.omnichest.distribution.enableTransferHistory": "Увімкнути історію передач",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Записує успішні та невдалі передачі для вкладок Історія / Помилки.",
-  "modmenu.descriptionTranslation.omnichest": "Знаходьте будь-який предмет у всіх скринях з першого погляду. OmniChest додає пошук по всій мережі скринь із позначками у світі, розумне складання, сортування за категоріями, блокування комірок і багаторазові шаблони скринь — єдиний інструмент для порядку у сховищі.",
+  "modmenu.descriptionTranslation.omnichest": "Мод-помічник для гравців, яким складно тримати своє сховище в порядку.",
   "omnichest.reset_popup.title": "Справді скинути всі зміни?",
   "omnichest.reset_popup.title_no_changes": "Немає змінених налаштувань",
   "omnichest.reset_popup.yes": "Так",

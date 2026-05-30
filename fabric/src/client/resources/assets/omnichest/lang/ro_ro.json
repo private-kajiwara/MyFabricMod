@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Animă punctul care curge de-a lungul săgeților de transfer din meniu.",
   "config.omnichest.distribution.enableTransferHistory": "Activează istoricul transferurilor",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Înregistrează transferurile reușite și eșuate pentru filele Istoric / Eșuate.",
-  "modmenu.descriptionTranslation.omnichest": "Găseşte orice obiect din toate cuferele tale dintr-o privire. OmniChest adaugă căutare în întreaga reţea cu marcaje în lume, depozitare inteligentă, sortare pe categorii, blocarea sloturilor şi şabloane de cufăr reutilizabile — un singur instrument pentru un depozit ordonat.",
+  "modmenu.descriptionTranslation.omnichest": "Un mod ajutător de organizare pentru jucătorii cărora le este greu să-și aranjeze depozitul.",
   "omnichest.reset_popup.title": "Sigur resetezi toate modificările?",
   "omnichest.reset_popup.title_no_changes": "Nicio setare modificată",
   "omnichest.reset_popup.yes": "Da",

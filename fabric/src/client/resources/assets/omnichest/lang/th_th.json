@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "ทำให้จุดไหลไปตามลูกศรการโอนในเมนู",
   "config.omnichest.distribution.enableTransferHistory": "เปิดประวัติการโอน",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "บันทึกการโอนที่สำเร็จและล้มเหลวสำหรับแท็บประวัติ / ล้มเหลว",
-  "modmenu.descriptionTranslation.omnichest": "ค้นหาไอเท็มในหีบทุกใบได้ในพริบตา OmniChest เพิ่มการค้นหาทั่วเครือข่ายพร้อมหมุดในโลก รวมถึงการฝากอัจฉริยะ การจัดเรียงตามหมวดหมู่ การล็อกช่อง และเทมเพลตหีบที่ใช้ซ้ำได้ — เครื่องมือเดียวที่ทำให้ที่เก็บของเป็นระเบียบ",
+  "modmenu.descriptionTranslation.omnichest": "ม็อดช่วยจัดระเบียบสำหรับผู้เล่นที่รู้สึกว่าจัดเก็บไอเท็มเป็นเรื่องยุ่งยาก",
   "omnichest.reset_popup.title": "ต้องการรีเซ็ตการเปลี่ยนแปลงทั้งหมดจริงหรือ?",
   "omnichest.reset_popup.title_no_changes": "ไม่มีการตั้งค่าที่ถูกแก้ไข",
   "omnichest.reset_popup.yes": "ใช่",

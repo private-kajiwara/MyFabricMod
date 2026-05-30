@@ -116,12 +116,22 @@ public final class DisplayModeDropdown {
         }
     }
 
+    /**
+     * クリック座標が popup 矩形の内側か。 SearchScreen が「dropdown 外クリックは
+     * dropdown に飲ませず下のウィジェットへ通す」 判定で使う (= Find Selected ボタン
+     * 押下が dropdown に吸われる Bug 修正)。
+     */
+    public boolean contains(double mx, double my) {
+        return mx >= this.x && mx < this.x + this.width
+                && my >= this.y && my < this.y + this.height;
+    }
+
     public boolean mouseClicked(double mx, double my, int button) {
         if (button != 0) {
             this.closed = true;
             return true;
         }
-        if (mx < this.x || mx >= this.x + this.width || my < this.y || my >= this.y + this.height) {
+        if (!contains(mx, my)) {
             this.closed = true;
             return true;
         }

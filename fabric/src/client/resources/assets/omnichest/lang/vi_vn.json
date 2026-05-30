@@ -414,7 +414,7 @@
   "config.omnichest.distribution.showTransferAnimation.tooltip": "Tạo hiệu ứng chấm chạy dọc theo mũi tên chuyển trong menu.",
   "config.omnichest.distribution.enableTransferHistory": "Bật lịch sử chuyển",
   "config.omnichest.distribution.enableTransferHistory.tooltip": "Ghi lại các lượt chuyển thành công và thất bại cho tab Lịch sử / Thất bại.",
-  "modmenu.descriptionTranslation.omnichest": "Tìm bất kỳ vật phẩm nào trong mọi rương chỉ trong nháy mắt. OmniChest bổ sung tìm kiếm toàn mạng lưới với các ghim trong thế giới, gửi đồ thông minh, sắp xếp theo danh mục, khóa ô và mẫu rương tái sử dụng — một bộ công cụ để giữ kho gọn gàng.",
+  "modmenu.descriptionTranslation.omnichest": "Mod hỗ trợ sắp xếp dành cho người chơi cảm thấy việc dọn dẹp kho là phiền hà.",
   "omnichest.reset_popup.title": "Đặt lại tất cả thay đổi?",
   "omnichest.reset_popup.title_no_changes": "Không có thiết lập nào đã thay đổi",
   "omnichest.reset_popup.yes": "Có",
