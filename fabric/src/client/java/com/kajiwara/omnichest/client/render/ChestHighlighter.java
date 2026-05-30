@@ -7,6 +7,7 @@ import com.kajiwara.omnichest.mixin.RenderTypeAccessor;
 import com.kajiwara.omnichest.search.ContainerScanner;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
 import com.mojang.blaze3d.pipeline.BlendFunction;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
@@ -248,6 +249,26 @@ public final class ChestHighlighter {
             if (ah.expiresAt > fin) {
                 ah.expiresAt = fin;
             }
+        });
+
+        // ────────────────────────────────────────────────────────────
+        // 切断時: ハイライト状態をワールド境界で解放する。
+        //
+        // {@link #active} は静的シングルトン {@link #INSTANCE} が保持するため
+        // プロセス寿命まで生き残る。 通常エントリは onWorldRender 内の時間ベース
+        // sweep (expiresAt) で自己消滅するが、 「ピン永続表示 (pinPersistUntilOpened)」
+        // のエントリは expiresAt = Long.MAX_VALUE なので sweep で消えず、 かつ sweep 自体が
+        // mc.level == null で早期 return するため、 切断時に消えた旧ワールドの
+        // BlockPos / ItemStack 参照を保持し続けてしまう。
+        //
+        // ここで明示的に clear することで、 ChestNetworkManager / DistributionStorage /
+        // SlotLockStorage と同じく「ワールド境界で解放」 のパターンに揃える。
+        // ハイライトは生成元ワールドの座標に紐づくため、 別ワールドへ再参加した時点で
+        // 既に無効: ここでの解放はゲーム内挙動 / UI / 検索 / ピン挙動を一切変えない。
+        // ────────────────────────────────────────────────────────────
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            INSTANCE.active.clear();
+            INSTANCE.pendingHudIcons.clear();
         });
     }
 

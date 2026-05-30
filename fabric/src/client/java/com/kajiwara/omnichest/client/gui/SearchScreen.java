@@ -1184,6 +1184,10 @@ public class SearchScreen extends Screen {
 
     @Override
     public void onClose() {
+        // ALT プレビューのフェード追跡が保持する最後のスタック参照を解放する
+        // (= 画面を閉じた後にプレビュー対象 1 個を残さない)。 識別比較専用の状態なので
+        // 次回プレビューは初回描画と同じフェード挙動になり、 ユーザー可視挙動は変わらない。
+        AltPreviewPopupRenderer.resetFadeTracking();
         if (this.minecraft != null) this.minecraft.setScreen(null);
     }
 

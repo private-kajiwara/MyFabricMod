@@ -480,9 +480,4 @@ public final class ContainerScanner {
         }
     }
 
-    /**
-     * Level 引数の型保持用 (未使用警告対策の参照保持)。
-     */
-    @SuppressWarnings("unused")
-    private static ClientLevel unusedKeepImport;
 }
