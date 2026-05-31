@@ -79,6 +79,11 @@ public final class OmniChestSettingsScreen extends Screen {
     private static final int GROUP_HEADER_TOP_GAP = 6;
     /** ヘッダ (= 木目バナーを置く領域) の高さ (px)。 */
     private static final int HEADER_HEIGHT = 48;
+    /**
+     * ポップアップ展開中に背後 widget へ渡す 「画面外」 のマウス座標。
+     * どの widget の矩形にも当たらない値にして hover (= ツールチップ/強調) を起こさせない。
+     */
+    private static final int OFFSCREEN_MOUSE = -10000;
     /** タイトル文字の拡大倍率 (= フォントを {@code n}倍にスケールして描画する)。 */
     private static final float HEADER_TITLE_SCALE = 1.6f;
     /** フッタ (= Save / Cancel / Reset ボタン) の高さ (px)。 */
@@ -536,9 +541,23 @@ public final class OmniChestSettingsScreen extends Screen {
         // そこで上側は scissor のみで物理的に描画を止め、 塗り (= 背景色) は追加しない。
         // 結果: widget は contentTop の真上で切れ、 切れた先には GameRenderer 側で既に敷かれた
         // 半透明 backdrop がそのまま見える。
+        // ─── ポップアップ展開中は背後 widget の hover を無効化する ───
+        //
+        // バニラ Button はホバー時に自前でツールチップを描画するため、 ドロップダウン
+        // (= DropdownPopup) を開いている間も、 その下にあるコントロール (RTL Layout /
+        // Unicode Font Safety など) にマウスが乗るとツールチップが開いたリストに重なって
+        // 読みづらくなる。 入力は既に activePopup 側へゲート済み (mouseClicked 等) なので、
+        // 描画フェーズでも背後 widget には 「画面外」 のマウス座標を渡して hover を起こさせない。
+        // → ツールチップもホバー強調も出ず、 ポップアップが最前面の唯一の操作対象になる。
+        // ポップアップを閉じれば通常のマウス座標に戻り、 ツールチップ挙動も完全復元される
+        // (= グローバル無効化ではなく、 この画面でポップアップが開いている間だけの抑制)。
+        boolean popupOpen = this.activePopup != null && !this.activePopup.isClosed();
+        int wMouseX = popupOpen ? OFFSCREEN_MOUSE : mouseX;
+        int wMouseY = popupOpen ? OFFSCREEN_MOUSE : mouseY;
+
         g.enableScissor(0, contentTop, this.width, this.height);
         for (Renderable renderable : this.myRenderables) {
-            renderable.render(g, mouseX, mouseY, partialTick);
+            renderable.render(g, wMouseX, wMouseY, partialTick);
         }
         g.disableScissor();
 
@@ -564,9 +583,10 @@ public final class OmniChestSettingsScreen extends Screen {
         g.fill(0, this.height - FOOTER_HEIGHT, this.width, this.height - FOOTER_HEIGHT + 1, COLOR_SEP);
 
         // ─── footer ボタンを mask の上から再描画 (= マスクで覆われたぶんを復元) ───
-        if (this.footerResetBtn != null) this.footerResetBtn.render(g, mouseX, mouseY, partialTick);
-        if (this.footerSaveBtn != null) this.footerSaveBtn.render(g, mouseX, mouseY, partialTick);
-        if (this.footerCancelBtn != null) this.footerCancelBtn.render(g, mouseX, mouseY, partialTick);
+        // フッタボタンも同様に、 ポップアップ展開中は hover を無効化する (= ツールチップ抑制)。
+        if (this.footerResetBtn != null) this.footerResetBtn.render(g, wMouseX, wMouseY, partialTick);
+        if (this.footerSaveBtn != null) this.footerSaveBtn.render(g, wMouseX, wMouseY, partialTick);
+        if (this.footerCancelBtn != null) this.footerCancelBtn.render(g, wMouseX, wMouseY, partialTick);
 
         // ─── ポップアップは最後に上から被せ描画する ───
         // closed フラグが立っていたら参照を切る (= popup 自身が cancel/commit で閉じる)。

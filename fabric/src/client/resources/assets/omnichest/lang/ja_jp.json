@@ -284,6 +284,7 @@
   "omnichest.smart_storage.no_destination": "§7行き先なし",
   "omnichest.category_badge.confidence": " 信頼度: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
+  "omnichest.category_badge.manual": " 手動",
   "omnichest.container_type.chest": "チェスト",
   "omnichest.container_type.trapped_chest": "トラップチェスト",
   "omnichest.container_type.double_chest": "ラージチェスト",
@@ -425,6 +426,17 @@
   "omnichest.distribution.set_category.unregister": "登録解除",
   "omnichest.distribution.set_category.hint": "カテゴリを選んで保存。  ESC = キャンセル",
 
+  "omnichest.distribution.preview.title": "自動振り分け — プレビュー",
+  "omnichest.distribution.preview.confirm": "振り分ける",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "いま振り分けるアイテムはありません。",
+  "omnichest.distribution.preview.more": "…他 %1$d 件",
+  "omnichest.distribution.preview.more_dest": "…他 %1$d 個のチェスト",
+  "omnichest.distribution.preview.source": "送り元",
+  "omnichest.distribution.preview.destinations": "送り先",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = 振り分け,  ESC = キャンセル",
+
   "config.omnichest.category.distribution": "倉庫振り分け",
   "config.omnichest.distribution.enableAutoDistribution": "自動振り分けを有効化",
   "config.omnichest.distribution.enableAutoDistribution.tooltip": "倉庫自動振り分けシステム全体のスイッチ（OFF でチェスト内ボタンも非表示）。",
@@ -474,5 +486,7 @@
   "config.omnichest.search.previewGridColumns": "プレビュー グリッド サイズ",
   "config.omnichest.search.previewGridColumns.tooltip": "ALT プレビュー グリッドの列数。",
   "config.omnichest.search.previewBackgroundBlur": "プレビュー背景ブラー",
-  "config.omnichest.search.previewBackgroundBlur.tooltip": "ALT プレビューパネルの背後を暗くして中身を読みやすくします (軽量なフロスト風効果)。"
+  "config.omnichest.search.previewBackgroundBlur.tooltip": "ALT プレビューパネルの背後を暗くして中身を読みやすくします (軽量なフロスト風効果)。",
+  "omnichest.distribution.preview.destination": "送り先",
+  "omnichest.distribution.preview.count": "×%1$d"
 }

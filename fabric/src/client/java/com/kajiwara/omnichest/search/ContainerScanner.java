@@ -178,9 +178,12 @@ public final class ContainerScanner {
 
     private static void onScreenInit(Screen screen) {
         if (!(screen instanceof AbstractContainerScreen<?> cs)) {
-            // コンテナ系 Screen でなければ pending を破棄して、誤適用を防ぐ。
+            // コンテナ系 Screen でなければ pending を破棄する (= 誤適用防止)。
+            // ただし active は<b>消さない</b>: Set Category / 振り分けプレビュー等の自前サブ画面を
+            // chest GUI の上に重ねている間もコンテナ自体は開いたままで、 復帰時にバッジ等が即座に
+            // カテゴリを引けるよう追跡を維持する。 実際にチェストが閉じた判定は onClientTick が
+            // player.containerMenu で行う (= 重ねただけでは消えない)。
             pendingOpen = null;
-            active = null;
             return;
         }
         AbstractContainerMenu menu = cs.getMenu();
@@ -195,6 +198,13 @@ public final class ContainerScanner {
         // (pending が無い場合: e.g. /open コマンド経由でいきなり開かれたケース等。
         // 位置情報が無いので追跡しない = 安全側に倒す)
         if (pendingOpen == null) {
+            // pending 無し。 ただし、 追跡中のコンテナへそのまま復帰した場合
+            // (= Set Category 等のサブ画面から chest GUI に戻った) は既存 active を維持する。
+            // これをしないと復帰直後にバッジのキー (currentActiveKey) が null になり、
+            // 手動カテゴリが即時に表示されない (= 再オープンが必要に見える) 問題が起きる。
+            if (active != null && active.menu == menu) {
+                return;
+            }
             active = null;
             return;
         }
@@ -215,9 +225,12 @@ public final class ContainerScanner {
     private static void onClientTick(Minecraft mc) {
         // 開いていた screen が閉じられた (= mc.screen が AbstractContainerScreen でなくなった) 検出。
         if (active != null) {
-            Screen current = mc.screen;
-            if (!(current instanceof AbstractContainerScreen<?> cs) || cs.getMenu() != active.menu) {
-                // GUI を閉じた瞬間に「最後の内容」をスナップショットしておく。
+            // 「チェストを閉じたか」 は mc.screen ではなく、 サーバと同期した実際の開コンテナ
+            // (player.containerMenu) で判定する。 自前のサブ画面 (Set Category / 振り分けプレビュー)
+            // を重ねている間もコンテナは開いたままなので追跡を維持し、 実際に閉じた
+            // (= 別コンテナ / インベントリへ復帰) ときだけクリアする。
+            if (mc.player == null || mc.player.containerMenu != active.menu) {
+                // 閉じる瞬間に「最後の内容」をスナップショットしておく。
                 captureNow("close");
                 active = null;
                 return;

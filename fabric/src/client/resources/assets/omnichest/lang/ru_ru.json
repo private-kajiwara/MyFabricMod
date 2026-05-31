@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Затухание по расстоянию",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Постепенно ослабляет луч с расстоянием (никогда не исчезает полностью).",
   "config.omnichest.search.beaconAnimation": "Анимация маяка",
-  "config.omnichest.search.beaconAnimation.tooltip": "Включает медленную пульсацию яркости луча."
+  "config.omnichest.search.beaconAnimation.tooltip": "Включает медленную пульсацию яркости луча.",
+  "omnichest.category_badge.manual": " Вручную",
+  "omnichest.distribution.preview.title": "Авто-распределение — Предпросмотр",
+  "omnichest.distribution.preview.confirm": "Распределить",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Сейчас нечего распределять.",
+  "omnichest.distribution.preview.more": "…и ещё %1$d",
+  "omnichest.distribution.preview.more_dest": "…и ещё %1$d сундуков",
+  "omnichest.distribution.preview.source": "Источник",
+  "omnichest.distribution.preview.destinations": "Назначения",
+  "omnichest.distribution.preview.destination": "Назначение",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = распределить,  ESC = отмена"
 }

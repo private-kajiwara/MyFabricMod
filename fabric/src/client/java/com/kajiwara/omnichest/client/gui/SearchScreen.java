@@ -305,6 +305,10 @@ public class SearchScreen extends Screen {
                 // 階層 (= シュルカー内) アイテム: チェスト → シュルカー → アイテム の段階ハイライト。
                 com.kajiwara.omnichest.client.render.NestedHighlightRenderer.highlight(
                         sr.snapshot(), sr.stack(), sr.count(), sr.containerPath());
+            } else if (sr.snapshot().type() == com.kajiwara.omnichest.search.ContainerType.ENDER_CHEST) {
+                // エンダーチェスト内のヒット: 全エンダーチェストは同一インベントリを共有するため、
+                // 現在ディメンションの全エンダーチェストをハイライトする (= どこからでも取り出せる)。
+                ChestHighlighter.get().highlightAllEnderChests(sr.stack(), sr.count());
             } else {
                 // トップレベル: 既存挙動を維持。
                 ChestHighlighter.get().highlight(sr.snapshot(), sr.stack(), sr.count());

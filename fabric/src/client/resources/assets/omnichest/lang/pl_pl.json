@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Zanikanie z odległością",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Stopniowo przygasza wiązkę wraz z odległością (nigdy nie znika całkowicie).",
   "config.omnichest.search.beaconAnimation": "Animacja sygnalizatora",
-  "config.omnichest.search.beaconAnimation.tooltip": "Włącza powolną animację pulsującej jasności wiązki."
+  "config.omnichest.search.beaconAnimation.tooltip": "Włącza powolną animację pulsującej jasności wiązki.",
+  "omnichest.category_badge.manual": " Ręczne",
+  "omnichest.distribution.preview.title": "Auto-dystrybucja — Podgląd",
+  "omnichest.distribution.preview.confirm": "Rozdziel",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Teraz nie ma nic do rozdzielenia.",
+  "omnichest.distribution.preview.more": "…i %1$d więcej",
+  "omnichest.distribution.preview.more_dest": "…i %1$d skrzyń więcej",
+  "omnichest.distribution.preview.source": "Źródło",
+  "omnichest.distribution.preview.destinations": "Cele",
+  "omnichest.distribution.preview.destination": "Cel",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = rozdziel,  ESC = anuluj"
 }

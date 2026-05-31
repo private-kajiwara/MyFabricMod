@@ -504,5 +504,18 @@
   "config.omnichest.search.previewGridColumns": "גודל רשת התצוגה המקדימה",
   "config.omnichest.search.previewGridColumns.tooltip": "מספר העמודות ברשת התצוגה המקדימה של ALT.",
   "config.omnichest.search.previewBackgroundBlur": "טשטוש רקע התצוגה המקדימה",
-  "config.omnichest.search.previewBackgroundBlur.tooltip": "עמעום האזור שמאחורי לוח התצוגה המקדימה של ALT לטובת הקריאות (מראה מטושטש קל)."
+  "config.omnichest.search.previewBackgroundBlur.tooltip": "עמעום האזור שמאחורי לוח התצוגה המקדימה של ALT לטובת הקריאות (מראה מטושטש קל).",
+  "omnichest.category_badge.manual": " ידני",
+  "omnichest.distribution.preview.title": "חלוקה אוטומטית — תצוגה מקדימה",
+  "omnichest.distribution.preview.confirm": "חלק",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "אין מה לחלק כרגע.",
+  "omnichest.distribution.preview.more": "…ועוד %1$d",
+  "omnichest.distribution.preview.more_dest": "…ועוד %1$d תיבות",
+  "omnichest.distribution.preview.source": "מקור",
+  "omnichest.distribution.preview.destinations": "יעדים",
+  "omnichest.distribution.preview.destination": "יעד",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = חלק,  ESC = ביטול"
 }

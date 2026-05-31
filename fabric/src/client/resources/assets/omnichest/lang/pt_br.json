@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Esmaecimento por distância",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Reduz o feixe gradualmente com a distância (nunca some por completo).",
   "config.omnichest.search.beaconAnimation": "Animação do sinalizador",
-  "config.omnichest.search.beaconAnimation.tooltip": "Ativa uma animação de brilho pulsante lento no feixe."
+  "config.omnichest.search.beaconAnimation.tooltip": "Ativa uma animação de brilho pulsante lento no feixe.",
+  "omnichest.category_badge.manual": " Manual",
+  "omnichest.distribution.preview.title": "Distribuição automática — Pré-visualização",
+  "omnichest.distribution.preview.confirm": "Distribuir",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Nada para distribuir agora.",
+  "omnichest.distribution.preview.more": "…e mais %1$d",
+  "omnichest.distribution.preview.more_dest": "…e mais %1$d baús",
+  "omnichest.distribution.preview.source": "Origem",
+  "omnichest.distribution.preview.destinations": "Destinos",
+  "omnichest.distribution.preview.destination": "Destino",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = distribuir,  ESC = cancelar"
 }

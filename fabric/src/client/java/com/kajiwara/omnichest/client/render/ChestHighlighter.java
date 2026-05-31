@@ -4,8 +4,10 @@ import com.kajiwara.omnichest.client.compat.SafeRenderDispatcher;
 import com.kajiwara.omnichest.config.ConfigManager;
 import com.kajiwara.omnichest.debug.DebugLog;
 import com.kajiwara.omnichest.mixin.RenderTypeAccessor;
+import com.kajiwara.omnichest.search.ChestNetworkManager;
 import com.kajiwara.omnichest.search.ContainerScanner;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
+import com.kajiwara.omnichest.search.ContainerType;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
@@ -233,11 +235,19 @@ public final class ChestHighlighter {
         //     SLOT_VIEW_REFRESH_MS 経過で自然に expire させる
         // ────────────────────────────────────────────────────────────
         ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
-            if (!ConfigManager.get().search.pinPersistUntilOpened) {
-                return;
-            }
             ContainerSnapshot.Key opened = ContainerScanner.currentActiveKey();
             if (opened == null) {
+                return;
+            }
+            // エンダーチェストを開いたら、 全エンダーチェストのハイライトを消す。
+            // 全エンダーチェストは同一インベントリを共有するため、 どれか 1 つに到達した時点で
+            // 探索ガイドは不要になる (= 仕様)。 永続ピン設定に関わらず即クリアする。
+            ContainerSnapshot openedSnap = ChestNetworkManager.get().get(opened);
+            if (openedSnap != null && openedSnap.type() == ContainerType.ENDER_CHEST) {
+                INSTANCE.clearAllEnderChestHighlights();
+                return;
+            }
+            if (!ConfigManager.get().search.pinPersistUntilOpened) {
                 return;
             }
             ActiveHighlight ah = INSTANCE.active.get(opened);
@@ -279,6 +289,31 @@ public final class ChestHighlighter {
     public void clearForKey(ContainerSnapshot.Key key) {
         if (key == null) return;
         active.remove(key);
+    }
+
+    /**
+     * 既知の<b>全エンダーチェスト</b> (= 現在ディメンション) を対象アイテムでハイライトする。
+     *
+     * <p>
+     * 全エンダーチェストは同一インベントリを共有するため、 検索ヒットがエンダーチェスト内に
+     * あるときは 「どのエンダーチェストからでも取り出せる」 ことを示すべく全箇所をピンする。
+     * 既存の {@link #highlight(ContainerSnapshot, ItemStack, int)} をそのまま再利用するので、
+     * タイムアウト/フェード/開封時クリア等の挙動は通常ピンと完全に共通になる。
+     */
+    public void highlightAllEnderChests(ItemStack labelItem, int labelCount) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        ResourceKey<Level> dim = mc.level.dimension();
+        for (ContainerSnapshot snap : ChestNetworkManager.get().snapshots()) {
+            if (snap.type() == ContainerType.ENDER_CHEST && dim.equals(snap.dimension())) {
+                highlight(snap, labelItem, labelCount);
+            }
+        }
+    }
+
+    /** 全エンダーチェストのハイライトを除去する (= どれか 1 つを開いた = ガイド不要になったとき)。 */
+    private void clearAllEnderChestHighlights() {
+        active.entrySet().removeIf(e -> e.getValue().snapshot.type() == ContainerType.ENDER_CHEST);
     }
 
     /**

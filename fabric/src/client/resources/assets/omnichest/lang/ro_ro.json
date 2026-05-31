@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Estompare cu distanţa",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Estompează treptat fasciculul cu distanţa (nu dispare niciodată complet).",
   "config.omnichest.search.beaconAnimation": "Animaţia farului",
-  "config.omnichest.search.beaconAnimation.tooltip": "Activează o animaţie lentă de luminozitate pulsatorie pe fascicul."
+  "config.omnichest.search.beaconAnimation.tooltip": "Activează o animaţie lentă de luminozitate pulsatorie pe fascicul.",
+  "omnichest.category_badge.manual": " Manual",
+  "omnichest.distribution.preview.title": "Distribuire automată — Previzualizare",
+  "omnichest.distribution.preview.confirm": "Distribuie",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Nimic de distribuit acum.",
+  "omnichest.distribution.preview.more": "…şi încă %1$d",
+  "omnichest.distribution.preview.more_dest": "…şi încă %1$d cufere",
+  "omnichest.distribution.preview.source": "Sursă",
+  "omnichest.distribution.preview.destinations": "Destinații",
+  "omnichest.distribution.preview.destination": "Destinație",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = distribuie,  ESC = anulează"
 }

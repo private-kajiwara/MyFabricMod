@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Fondu selon la distance",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Atténue progressivement le faisceau avec la distance (sans jamais disparaître totalement).",
   "config.omnichest.search.beaconAnimation": "Animation de la balise",
-  "config.omnichest.search.beaconAnimation.tooltip": "Active une animation de luminosité pulsée lente sur le faisceau."
+  "config.omnichest.search.beaconAnimation.tooltip": "Active une animation de luminosité pulsée lente sur le faisceau.",
+  "omnichest.category_badge.manual": " Manuel",
+  "omnichest.distribution.preview.title": "Distribution auto — Aperçu",
+  "omnichest.distribution.preview.confirm": "Distribuer",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Rien à distribuer pour le moment.",
+  "omnichest.distribution.preview.more": "…et %1$d de plus",
+  "omnichest.distribution.preview.more_dest": "…et %1$d coffres de plus",
+  "omnichest.distribution.preview.source": "Source",
+  "omnichest.distribution.preview.destinations": "Destinations",
+  "omnichest.distribution.preview.destination": "Destination",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Entrée = distribuer,  Échap = annuler"
 }

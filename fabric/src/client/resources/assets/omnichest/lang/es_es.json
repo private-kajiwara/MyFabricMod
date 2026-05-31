@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Desvanecimiento por distancia",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Atenúa el haz gradualmente con la distancia (nunca desaparece del todo).",
   "config.omnichest.search.beaconAnimation": "Animación de la baliza",
-  "config.omnichest.search.beaconAnimation.tooltip": "Activa una animación de brillo pulsante lento en el haz."
+  "config.omnichest.search.beaconAnimation.tooltip": "Activa una animación de brillo pulsante lento en el haz.",
+  "omnichest.category_badge.manual": " Manual",
+  "omnichest.distribution.preview.title": "Distribución automática — Vista previa",
+  "omnichest.distribution.preview.confirm": "Distribuir",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "No hay nada que distribuir ahora.",
+  "omnichest.distribution.preview.more": "…y %1$d más",
+  "omnichest.distribution.preview.more_dest": "…y %1$d cofres más",
+  "omnichest.distribution.preview.source": "Origen",
+  "omnichest.distribution.preview.destinations": "Destinos",
+  "omnichest.distribution.preview.destination": "Destino",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = distribuir,  ESC = cancelar"
 }

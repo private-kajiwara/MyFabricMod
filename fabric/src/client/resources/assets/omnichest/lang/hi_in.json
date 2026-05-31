@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "दूरी फ़ेड",
   "config.omnichest.search.beaconDistanceFade.tooltip": "दूरी के साथ किरण को धीरे-धीरे मद्धम करता है (कभी पूरी तरह नहीं मिटती)।",
   "config.omnichest.search.beaconAnimation": "बीकन एनिमेशन",
-  "config.omnichest.search.beaconAnimation.tooltip": "किरण पर धीमी स्पंदित चमक एनिमेशन चालू करता है।"
+  "config.omnichest.search.beaconAnimation.tooltip": "किरण पर धीमी स्पंदित चमक एनिमेशन चालू करता है।",
+  "omnichest.category_badge.manual": " मैनुअल",
+  "omnichest.distribution.preview.title": "ऑटो वितरण — पूर्वावलोकन",
+  "omnichest.distribution.preview.confirm": "वितरित करें",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "अभी वितरित करने के लिए कुछ नहीं है।",
+  "omnichest.distribution.preview.more": "…और %1$d अधिक",
+  "omnichest.distribution.preview.more_dest": "…और %1$d संदूक",
+  "omnichest.distribution.preview.source": "स्रोत",
+  "omnichest.distribution.preview.destinations": "गंतव्य",
+  "omnichest.distribution.preview.destination": "गंतव्य",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = वितरित करें,  ESC = रद्द करें"
 }

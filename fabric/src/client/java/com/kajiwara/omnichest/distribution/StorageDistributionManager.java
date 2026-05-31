@@ -4,8 +4,10 @@ import com.kajiwara.omnichest.classify.StorageCategory;
 import com.kajiwara.omnichest.config.ConfigManager;
 import com.kajiwara.omnichest.config.data.DistributionConfig;
 import com.kajiwara.omnichest.distribution.DistributionOpenTracker.OpenContext;
+import com.kajiwara.omnichest.distribution.ui.DistributePreviewScreen;
 import com.kajiwara.omnichest.distribution.ui.SetCategoryScreen;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
+import com.kajiwara.omnichest.search.ContainerType;
 import com.kajiwara.omnichest.slotlock.InventoryProtectionLayer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -258,6 +260,158 @@ public final class StorageDistributionManager {
     // Set Category 画面起動
     // ════════════════════════════════════════════════════════════════════
 
+    // ════════════════════════════════════════════════════════════════════
+    // Auto Distribute プレビュー (= 実行前に行き先を確認させる)
+    // ════════════════════════════════════════════════════════════════════
+
+    /**
+     * チェスト GUI 内の {@code [Auto Distribute]} ボタンから、 <b>実行前の確認画面</b> を開く。
+     *
+     * <p>
+     * 仕様 (= 自動整理の行き先プレビュー): 何がどこへ送られるのかを {@link DistributePreviewScreen}
+     * で提示し、 プレイヤーが Confirm したときだけ実際の {@link #distributeFromOpen()} を走らせる。
+     * これにより 「押したら何が起きるか」 を事前に理解でき、 自動化への信頼を高める。
+     *
+     * <p>
+     * <b>ロジック非変更</b>: 振り分け計算/実行は {@link #distribute(OpenContext)} のまま。 ここは
+     * 確認ステップを <b>前段に挿入する</b> だけで、 プレビューは完全にクライアント側の読み取り専用処理。
+     */
+    public static void openDistributePreview(@Nullable Screen parent) {
+        OpenContext ctx = DistributionOpenTracker.get().active();
+        Minecraft mc = Minecraft.getInstance();
+        if (ctx == null) {
+            postChat(OmniChestLocale.get("omnichest.distribution.chat.no_open",
+                    "§7[Auto Distribute] Open a chest first."));
+            return;
+        }
+        if (!ConfigManager.get().distribution.enableAutoDistribution) {
+            postChat(DistributionResult.disabled().toComponent());
+            return;
+        }
+        mc.setScreen(new DistributePreviewScreen(parent, computePreview(ctx)));
+    }
+
+    /**
+     * 振り分けの<b>プレビュー</b>を、 実際の {@link #distribute} と同じ判定ロジック
+     * ({@link CategoryMapper#toStorageCategory} + {@link StoragePriorityResolver#resolve} +
+     * Slot Lock 尊重) で<b>副作用なし</b>に算出する。 キュー登録/予約/履歴記録はしない。
+     *
+     * <p>
+     * 戻り値は 「送り元チェストの中身」 と 「送り先チェストごとに振り分けられるアイテム」 を
+     * インベントリ風に可視化するための {@link DistributionPreview}。 行き先は StorageKey 単位で
+     * まとめ、 同一アイテムは型単位で個数を合算する。
+     */
+    public static DistributionPreview computePreview(OpenContext ctx) {
+        Minecraft mc = Minecraft.getInstance();
+        DistributionConfig cfg = ConfigManager.get().distribution;
+
+        StorageKey openKey = ctx == null ? null : ctx.key();
+        StorageAssignment openAssignment = openKey == null
+                ? null : StorageAssignmentManager.get().get(openKey);
+        String openLabel = ctx == null ? "" : openChestLabel(ctx, openAssignment);
+        StorageCategory sourceCat = openAssignment != null ? openAssignment.category() : null;
+        ContainerType sourceType = ctx != null ? ctx.type() : ContainerType.OTHER;
+
+        List<ItemStack> sourceItems = new ArrayList<>();
+        java.util.LinkedHashMap<StorageKey, GroupBuilder> groups = new java.util.LinkedHashMap<>();
+
+        if (cfg.enableAutoDistribution && mc.player != null && ctx != null) {
+            AbstractContainerMenu menu = ctx.menu();
+            int slotCount = ctx.slotCount();
+            if (menu != null && mc.player.containerMenu == menu
+                    && slotCount > 0 && slotCount < menu.slots.size()) {
+
+                ResourceKey<Level> dim = mc.player.level().dimension();
+                Vec3 playerPos = mc.player.position();
+                DistributionPriorityMode mode = cfg.priorityMode;
+
+                // 送り元パネル用: 開いているチェストの現在の中身 (= 実スロット順)。
+                for (int i = 0; i < slotCount; i++) {
+                    ItemStack stack = menu.slots.get(i).getItem();
+                    if (!stack.isEmpty()) {
+                        sourceItems.add(stack.copy());
+                    }
+                }
+
+                // (A) プレイヤーインベントリ → 行き先 (= distribute() の (A) と同じ判定)。
+                for (int i = slotCount; i < menu.slots.size(); i++) {
+                    ItemStack stack = menu.slots.get(i).getItem();
+                    if (stack.isEmpty() || InventoryProtectionLayer.isProtectedByMenuSlot(menu, i)) {
+                        continue;
+                    }
+                    StorageCategory cat = CategoryMapper.toStorageCategory(stack);
+                    if (openAssignment != null && openAssignment.category() == cat) {
+                        addToGroup(groups, openKey, openLabel, sourceType, cat, stack); // 開チェストへ投入。
+                    } else {
+                        StorageAssignment target = StoragePriorityResolver.resolve(cat, mode, dim, playerPos);
+                        if (target != null) {
+                            addToGroup(groups, target.key(), target.name(), target.type(), cat, stack);
+                        }
+                    }
+                }
+
+                // (B) 開いているチェスト内の場違いなアイテム → 本来の倉庫 (= distribute() の (B) と同じ)。
+                for (int i = 0; i < slotCount; i++) {
+                    ItemStack stack = menu.slots.get(i).getItem();
+                    if (stack.isEmpty()) {
+                        continue;
+                    }
+                    StorageCategory cat = CategoryMapper.toStorageCategory(stack);
+                    if (openAssignment != null && openAssignment.category() == cat) {
+                        continue;
+                    }
+                    StorageAssignment target = StoragePriorityResolver.resolve(cat, mode, dim, playerPos);
+                    if (target == null || (openKey != null && target.key().equals(openKey))) {
+                        continue;
+                    }
+                    addToGroup(groups, target.key(), target.name(), target.type(), cat, stack);
+                }
+            }
+        }
+
+        List<DestinationGroup> dests = new ArrayList<>();
+        for (GroupBuilder b : groups.values()) {
+            // 実際に 1 個以上受け取る行き先だけを残す (= 何も移動しない行き先はプレビューに出さない)。
+            if (b.total > 0 && !b.items.isEmpty()) {
+                dests.add(new DestinationGroup(b.name, b.type, b.category, b.items, b.total));
+            }
+        }
+        return new DistributionPreview(openLabel, sourceCat, sourceType, sourceItems, dests);
+    }
+
+    /** {@link #computePreview} 用: 行き先 (StorageKey) ごとにアイテムを型単位で合算する。 */
+    private static void addToGroup(java.util.LinkedHashMap<StorageKey, GroupBuilder> groups,
+            StorageKey key, String name, ContainerType type, StorageCategory cat, ItemStack stack) {
+        GroupBuilder b = groups.computeIfAbsent(key, k -> new GroupBuilder(name, type, cat));
+        b.total += stack.getCount();
+        for (ItemStack s : b.items) {
+            if (ItemStack.isSameItemSameComponents(s, stack)) {
+                s.grow(stack.getCount());
+                return;
+            }
+        }
+        b.items.add(stack.copy());
+    }
+
+    /** {@link #computePreview} の集計用 可変ビルダ (= 内部限定)。 */
+    private static final class GroupBuilder {
+        final String name;
+        final ContainerType type;
+        final StorageCategory category;
+        final List<ItemStack> items = new ArrayList<>();
+        int total;
+
+        GroupBuilder(String name, ContainerType type, StorageCategory category) {
+            this.name = name;
+            this.type = type;
+            this.category = category;
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // Set Category 画面起動
+    // ════════════════════════════════════════════════════════════════════
+
     /** チェスト GUI 内の {@code [Set Category]} ボタンから、 現在のチェストの登録画面を開く。 */
     public static void openSetCategoryForCurrent(@Nullable Screen parent) {
         OpenContext ctx = DistributionOpenTracker.get().active();
@@ -346,5 +500,35 @@ public final class StorageDistributionManager {
                     "§a[Auto Distribute] §rDeposited %1$d, queued %2$d for remote chests, pulled %3$d.",
                     movedToOpen, pending, pulledOut);
         }
+    }
+
+    /**
+     * Auto Distribute プレビュー全体のデータ。 送り元チェスト (= 開いているチェスト) の中身と、
+     * 送り先チェストごとに振り分けられるアイテム群を、 インベントリ風に並べて見せるための表現。
+     *
+     * @param sourceLabel    送り元チェスト名
+     * @param sourceCategory 送り元チェストの<b>割り当て</b>カテゴリ (= 無ければ null)。 ヘッダ色に使う。
+     * @param sourceItems    送り元チェストの現在の中身 (= 実スロット順のコピー)
+     * @param destinations   送り先チェストごとのグループ (= 受け取るアイテム群)
+     */
+    public record DistributionPreview(String sourceLabel, @Nullable StorageCategory sourceCategory,
+            ContainerType sourceType, List<ItemStack> sourceItems, List<DestinationGroup> destinations) {
+
+        /** 振り分け先が 1 件も無い (= 動かすものが無い) か。 */
+        public boolean isEmpty() {
+            return destinations.isEmpty();
+        }
+    }
+
+    /**
+     * 1 つの送り先チェストに振り分けられるアイテム群。
+     *
+     * @param name       送り先チェスト名
+     * @param category   送り先のカテゴリ (= 色とカテゴリ名の元)
+     * @param items      送られるアイテム (= 型単位で合算済み)
+     * @param totalCount 送られる総個数
+     */
+    public record DestinationGroup(String name, ContainerType type, StorageCategory category,
+            List<ItemStack> items, int totalCount) {
     }
 }

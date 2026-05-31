@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "การจางตามระยะ",
   "config.omnichest.search.beaconDistanceFade.tooltip": "หรี่ลำแสงลงทีละน้อยตามระยะทาง (ไม่หายไปทั้งหมด)",
   "config.omnichest.search.beaconAnimation": "แอนิเมชันบีคอน",
-  "config.omnichest.search.beaconAnimation.tooltip": "เปิดแอนิเมชันความสว่างที่เต้นช้าๆ บนลำแสง"
+  "config.omnichest.search.beaconAnimation.tooltip": "เปิดแอนิเมชันความสว่างที่เต้นช้าๆ บนลำแสง",
+  "omnichest.category_badge.manual": " กำหนดเอง",
+  "omnichest.distribution.preview.title": "กระจายอัตโนมัติ — ตัวอย่าง",
+  "omnichest.distribution.preview.confirm": "กระจาย",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "ตอนนี้ไม่มีอะไรให้กระจาย",
+  "omnichest.distribution.preview.more": "…และอีก %1$d",
+  "omnichest.distribution.preview.more_dest": "…และหีบอีก %1$d ใบ",
+  "omnichest.distribution.preview.source": "ต้นทาง",
+  "omnichest.distribution.preview.destinations": "ปลายทาง",
+  "omnichest.distribution.preview.destination": "ปลายทาง",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = กระจาย,  ESC = ยกเลิก"
 }

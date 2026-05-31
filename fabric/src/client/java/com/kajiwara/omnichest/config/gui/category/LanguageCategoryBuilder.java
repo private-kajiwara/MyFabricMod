@@ -62,7 +62,10 @@ public final class LanguageCategoryBuilder {
                 // ボタンラベル先頭に「▼」 を付けて、 これがプルダウン (= 開くと選択肢が降りてくる)
                 // ことを視覚的に示す。 14 言語あるためサイクル方式ではなくプルダウンを使う仕様
                 // (= 既存コメント参照) を、 ラベル側でも 1 目で伝える。
-                v -> net.minecraft.network.chat.Component.literal("▼ ").append(v.displayName()));
+                v -> Component.literal("▼ ").append(v.displayName()),
+                // 開いた後のリスト項目は言語名だけを表示する。 各項目に「▼」 を繰り返すと視覚的に
+                // 煩雑で、 標準的なドロップダウン挙動とも異なるため (= アフォーダンスはボタン側で担保済み)。
+                v -> v.displayName());
 
         // ─── RTL モード (auto / force_on / force_off) ───
         // Arabic 等の RTL 言語を選ぶと AUTO で自動的にミラーされる。

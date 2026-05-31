@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Avståndstoning",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Tonar gradvis ner strålen med avståndet (försvinner aldrig helt).",
   "config.omnichest.search.beaconAnimation": "Fyranimering",
-  "config.omnichest.search.beaconAnimation.tooltip": "Aktiverar en långsam pulserande ljusstyrkeanimering på strålen."
+  "config.omnichest.search.beaconAnimation.tooltip": "Aktiverar en långsam pulserande ljusstyrkeanimering på strålen.",
+  "omnichest.category_badge.manual": " Manuell",
+  "omnichest.distribution.preview.title": "Autofördelning — Förhandsvisning",
+  "omnichest.distribution.preview.confirm": "Fördela",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Inget att fördela just nu.",
+  "omnichest.distribution.preview.more": "…och %1$d till",
+  "omnichest.distribution.preview.more_dest": "…och %1$d kistor till",
+  "omnichest.distribution.preview.source": "Källa",
+  "omnichest.distribution.preview.destinations": "Mål",
+  "omnichest.distribution.preview.destination": "Mål",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = fördela,  ESC = avbryt"
 }

@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "距离淡化",
   "config.omnichest.search.beaconDistanceFade.tooltip": "随距离逐渐变淡（不会完全消失）。",
   "config.omnichest.search.beaconAnimation": "信标动画",
-  "config.omnichest.search.beaconAnimation.tooltip": "为光束启用缓慢的脉动亮度动画。"
+  "config.omnichest.search.beaconAnimation.tooltip": "为光束启用缓慢的脉动亮度动画。",
+  "omnichest.category_badge.manual": " 手动",
+  "omnichest.distribution.preview.title": "自动分配 — 预览",
+  "omnichest.distribution.preview.confirm": "分配",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "暂时没有可分配的物品。",
+  "omnichest.distribution.preview.more": "…还有 %1$d 个",
+  "omnichest.distribution.preview.more_dest": "…还有 %1$d 个箱子",
+  "omnichest.distribution.preview.source": "来源",
+  "omnichest.distribution.preview.destinations": "目的地",
+  "omnichest.distribution.preview.destination": "目的地",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = 分配,  ESC = 取消"
 }

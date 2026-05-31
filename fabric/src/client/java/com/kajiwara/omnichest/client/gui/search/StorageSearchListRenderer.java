@@ -40,6 +40,21 @@ public final class StorageSearchListRenderer {
     private StorageSearchListRenderer() {
     }
 
+    /**
+     * リスト内容領域の上下 padding を返す。 描画 ({@link #render}) と当たり判定 ({@link #hitTest})
+     * で必ず同じ値を使い、 クリック位置と表示行がずれないようにするため 1 箇所に集約する。
+     *
+     * <p>
+     * DETAILED モードは行高が大きいので専用の控えめな padding を与え、 最初/最後の行が
+     * ヘッダや枠に密着しないようにする。 padding は上下対称に効くため、 スクロール量
+     * (= {@code contentBottom - contentTop} で決まる viewport) も自動的に整合する。
+     */
+    private static int listVerticalPad(ItemDisplayMode mode) {
+        return (mode == ItemDisplayMode.DETAILED)
+                ? UILayoutMetrics.LIST_CONTENT_PAD_Y_DETAILED
+                : UILayoutMetrics.LIST_CONTENT_PAD_Y;
+    }
+
     /** モード別 cellWidth (= 既定値, AdaptiveGridHelper にデフォルトとして渡す)。 */
     private static int desiredCellWidth(ItemDisplayMode mode) {
         return switch (mode) {
@@ -103,11 +118,12 @@ public final class StorageSearchListRenderer {
         Vec3 player = playerPos();
 
         // 内容領域: 黄色外枠とアイテムが被らないよう左右上下に padding を取る。
-        // DETAILED モードは既存挙動温存のため上下 padding は <b>0</b> (= 元レイアウト)。
+        // DETAILED モードは行が大きいので専用の控えめな上下 padding を使い、 最初の行が
+        // ヘッダ/枠に密着しないよう「呼吸できる」 余白を確保する (= 他モードと同じ vPad 機構で対称に適用)。
         int contentLeft = listLeft + UILayoutMetrics.LIST_CONTENT_PAD_X;
         int contentRight = listRight - UILayoutMetrics.CONTENT_RIGHT_PAD_FROM_SCROLLBAR;
         int contentWidth = Math.max(0, contentRight - contentLeft);
-        int vPad = (mode == ItemDisplayMode.DETAILED) ? 0 : UILayoutMetrics.LIST_CONTENT_PAD_Y;
+        int vPad = listVerticalPad(mode);
         int contentTop = listTop + vPad;
         int contentBottom = listBottom - vPad;
         int rowH = mode.rowHeight();
@@ -171,7 +187,7 @@ public final class StorageSearchListRenderer {
         int contentLeft = listLeft + UILayoutMetrics.LIST_CONTENT_PAD_X;
         int contentRight = listRight - UILayoutMetrics.CONTENT_RIGHT_PAD_FROM_SCROLLBAR;
         int contentWidth = Math.max(0, contentRight - contentLeft);
-        int vPad = (mode == ItemDisplayMode.DETAILED) ? 0 : UILayoutMetrics.LIST_CONTENT_PAD_Y;
+        int vPad = listVerticalPad(mode);
         int contentTop = listTop + vPad;
         int contentBottom = listBottom - vPad;
         if (mouseX < contentLeft || mouseX > contentRight

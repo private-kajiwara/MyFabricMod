@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Pemudaran jarak",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Meredupkan sinar secara bertahap sesuai jarak (tidak pernah hilang sepenuhnya).",
   "config.omnichest.search.beaconAnimation": "Animasi mercusuar",
-  "config.omnichest.search.beaconAnimation.tooltip": "Mengaktifkan animasi kecerahan berdenyut lambat pada sinar."
+  "config.omnichest.search.beaconAnimation.tooltip": "Mengaktifkan animasi kecerahan berdenyut lambat pada sinar.",
+  "omnichest.category_badge.manual": " Manual",
+  "omnichest.distribution.preview.title": "Distribusi Otomatis — Pratinjau",
+  "omnichest.distribution.preview.confirm": "Distribusikan",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Tidak ada yang bisa didistribusikan sekarang.",
+  "omnichest.distribution.preview.more": "…dan %1$d lainnya",
+  "omnichest.distribution.preview.more_dest": "…dan %1$d peti lainnya",
+  "omnichest.distribution.preview.source": "Sumber",
+  "omnichest.distribution.preview.destinations": "Tujuan",
+  "omnichest.distribution.preview.destination": "Tujuan",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = distribusikan,  ESC = batal"
 }

@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Avstandsuttoning",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Demper strålen gradvis med avstanden (forsvinner aldri helt).",
   "config.omnichest.search.beaconAnimation": "Fyrlykt-animasjon",
-  "config.omnichest.search.beaconAnimation.tooltip": "Aktiverer en langsom pulserende lysstyrkeanimasjon på strålen."
+  "config.omnichest.search.beaconAnimation.tooltip": "Aktiverer en langsom pulserende lysstyrkeanimasjon på strålen.",
+  "omnichest.category_badge.manual": " Manuell",
+  "omnichest.distribution.preview.title": "Auto-fordeling — Forhåndsvisning",
+  "omnichest.distribution.preview.confirm": "Fordel",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Ingenting å fordele akkurat nå.",
+  "omnichest.distribution.preview.more": "…og %1$d til",
+  "omnichest.distribution.preview.more_dest": "…og %1$d kister til",
+  "omnichest.distribution.preview.source": "Kilde",
+  "omnichest.distribution.preview.destinations": "Mål",
+  "omnichest.distribution.preview.destination": "Mål",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = fordel,  ESC = avbryt"
 }

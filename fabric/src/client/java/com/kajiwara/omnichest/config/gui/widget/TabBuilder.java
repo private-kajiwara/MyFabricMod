@@ -78,8 +78,25 @@ public final class TabBuilder {
     public <E extends Enum<E>> TabBuilder dropdownSelect(Component label, Class<E> enumClass,
             E current, Consumer<E> save, @Nullable Component tooltip,
             @Nullable Function<E, Component> labelFormatter) {
+        return dropdownSelect(label, enumClass, current, save, tooltip, labelFormatter, null);
+    }
+
+    /**
+     * {@link #dropdownSelect(Component, Class, Enum, Consumer, Component, Function)} の拡張版。
+     * ボタン用とは別に、 <b>開いた後のリスト項目専用</b>のラベルフォーマッタを指定できる。
+     *
+     * <p>
+     * 例: 言語選択でボタンには「▼ English」 とアフォーダンスを出しつつ、 ドロップダウンを開いた後の
+     * リストは「English」 のように値だけをクリーンに並べたい場合に使う ({@code popupLabelFormatter}
+     * が null ならボタンと同じ {@code labelFormatter} がリストにも使われる = 従来挙動)。
+     */
+    public <E extends Enum<E>> TabBuilder dropdownSelect(Component label, Class<E> enumClass,
+            E current, Consumer<E> save, @Nullable Component tooltip,
+            @Nullable Function<E, Component> labelFormatter,
+            @Nullable Function<E, Component> popupLabelFormatter) {
         java.util.List<E> values = java.util.List.of(enumClass.getEnumConstants());
-        this.rows.add(new DropdownRow<>(label, tooltip, values, current, save, labelFormatter));
+        this.rows.add(new DropdownRow<>(label, tooltip, values, current, save,
+                labelFormatter, popupLabelFormatter));
         return this;
     }
 

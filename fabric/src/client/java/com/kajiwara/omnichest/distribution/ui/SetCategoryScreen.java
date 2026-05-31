@@ -1,13 +1,17 @@
 package com.kajiwara.omnichest.distribution.ui;
 
+import com.kajiwara.omnichest.classify.ClassificationCache;
 import com.kajiwara.omnichest.classify.StorageCategory;
+import com.kajiwara.omnichest.client.gui.CategoryBadgeRenderer;
 import com.kajiwara.omnichest.client.gui.search.layout.ThemeColorResolver;
 import com.kajiwara.omnichest.client.gui.search.layout.UILayoutMetrics;
 import com.kajiwara.omnichest.distribution.CategoryMapper;
 import com.kajiwara.omnichest.distribution.DistributionOpenTracker.OpenContext;
 import com.kajiwara.omnichest.distribution.StorageAssignment;
 import com.kajiwara.omnichest.distribution.StorageAssignmentManager;
+import com.kajiwara.omnichest.distribution.StorageKey;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
+import com.kajiwara.omnichest.search.ContainerSnapshot;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -161,12 +165,32 @@ public final class SetCategoryScreen extends Screen {
                 name, category, priority, favorite,
                 System.currentTimeMillis(), used, ctx.slotCount());
         StorageAssignmentManager.get().put(assignment);
+
+        // 手動で決めたカテゴリを、 バッジ等が参照する分類キャッシュにも <b>ロック付き</b> で反映する。
+        // これをしないと、 Set Category で設定したカテゴリが in-world バッジに出てこない
+        // (= 旧実装は StorageAssignment にしか書かず、 バッジが読む ClassificationCache と
+        // 分断されていた)。 locked=true なので以後の自動再分類で上書きされず、 「手動」 表示になる。
+        ClassificationCache.get().override(snapshotKey(), category, true);
+
         onClose();
     }
 
     private void unregister() {
         StorageAssignmentManager.get().remove(ctx.key());
+        // 登録解除したら手動ロックも解いて、 自動分類を再開させる (= 次のスナップショット更新で再判定)。
+        ClassificationCache.get().unlock(snapshotKey());
         onClose();
+    }
+
+    /**
+     * このチェストの {@link StorageKey} を、 分類キャッシュ/バッジが使う
+     * {@link ContainerSnapshot.Key} に変換する。 どちらも (dimension, 正規化 BlockPos) で、
+     * ラージチェストの正規化アルゴリズムも一致しているため、 値はそのまま対応する
+     * (= 型だけが検索系/分配系で分かれている)。
+     */
+    private ContainerSnapshot.Key snapshotKey() {
+        StorageKey k = ctx.key();
+        return new ContainerSnapshot.Key(k.dimension(), k.pos());
     }
 
     private int countUsed() {
@@ -242,6 +266,17 @@ public final class SetCategoryScreen extends Screen {
         int accent = 0xFF000000 | category.rgb();
         int cx = this.width / 2;
         g.fill(cx - 110, this.height / 2 - 74, cx + 110, this.height / 2 - 72, accent);
+
+        // カテゴリ選択ボタンを、 in-world バッジと同じ視覚言語 (カテゴリ色) で上書き描画する。
+        // バニラボタンは入力 (クリック/フォーカス/読み上げ) のためにそのまま残し、 見た目だけ
+        // カテゴリ色チップで覆うことで、 「カテゴリ設定」 と 「在庫上のカテゴリ表示」 を一目で結びつける。
+        if (this.categoryButton != null) {
+            CategoryBadgeRenderer.renderCategoryChip(g,
+                    this.categoryButton.getX(), this.categoryButton.getY(),
+                    this.categoryButton.getWidth(), this.categoryButton.getHeight(),
+                    this.category, this.categoryButton.isHovered(), this.categoryButton.isFocused(),
+                    categoryLabel());
+        }
 
         // 名前ラベル。
         if (this.nameBox != null) {

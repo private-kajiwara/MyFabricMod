@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Afstandsvervaging",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Vervaagt de straal geleidelijk met de afstand (verdwijnt nooit helemaal).",
   "config.omnichest.search.beaconAnimation": "Bakenanimatie",
-  "config.omnichest.search.beaconAnimation.tooltip": "Schakelt een langzame pulserende helderheidsanimatie op de straal in."
+  "config.omnichest.search.beaconAnimation.tooltip": "Schakelt een langzame pulserende helderheidsanimatie op de straal in.",
+  "omnichest.category_badge.manual": " Handmatig",
+  "omnichest.distribution.preview.title": "Automatisch verdelen — Voorbeeld",
+  "omnichest.distribution.preview.confirm": "Verdelen",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Nu niets te verdelen.",
+  "omnichest.distribution.preview.more": "…en nog %1$d",
+  "omnichest.distribution.preview.more_dest": "…en nog %1$d kisten",
+  "omnichest.distribution.preview.source": "Bron",
+  "omnichest.distribution.preview.destinations": "Bestemmingen",
+  "omnichest.distribution.preview.destination": "Bestemming",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = verdelen,  ESC = annuleren"
 }

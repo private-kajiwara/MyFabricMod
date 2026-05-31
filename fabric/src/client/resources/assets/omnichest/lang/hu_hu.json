@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Távolsági elhalványulás",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Fokozatosan halványítja a sugarat a távolsággal (sosem tűnik el teljesen).",
   "config.omnichest.search.beaconAnimation": "Jelzőfény-animáció",
-  "config.omnichest.search.beaconAnimation.tooltip": "Lassú, lüktető fényerő-animációt kapcsol be a sugáron."
+  "config.omnichest.search.beaconAnimation.tooltip": "Lassú, lüktető fényerő-animációt kapcsol be a sugáron.",
+  "omnichest.category_badge.manual": " Kézi",
+  "omnichest.distribution.preview.title": "Automatikus elosztás — Előnézet",
+  "omnichest.distribution.preview.confirm": "Elosztás",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Most nincs mit elosztani.",
+  "omnichest.distribution.preview.more": "…és még %1$d",
+  "omnichest.distribution.preview.more_dest": "…és még %1$d láda",
+  "omnichest.distribution.preview.source": "Forrás",
+  "omnichest.distribution.preview.destinations": "Célok",
+  "omnichest.distribution.preview.destination": "Cél",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = elosztás,  ESC = mégse"
 }

@@ -127,9 +127,20 @@ public final class DistributionOpenTracker {
         if (active == null) {
             return;
         }
-        Screen current = mc.screen;
-        if (!(current instanceof AbstractContainerScreen<?> cs) || cs.getMenu() != active.menu()) {
-            // GUI を閉じた。
+        // 「チェストがまだ開いているか」 は mc.screen ではなく、 サーバと同期した実際の
+        // 開コンテナ (player.containerMenu) で判定する。
+        //
+        // 理由 (= 再オープン bug 修正): Set Category 画面など自前のサブ Screen を chest GUI の
+        // 上に重ねている間、 mc.screen は AbstractContainerScreen ではなくなるが、 コンテナ自体は
+        // 開いたまま (server とのセッションは継続) なので player.containerMenu は chest のままになる。
+        // 旧実装は mc.screen で判定していたため、 サブ画面を開いた瞬間に active を誤ってクリアし、
+        // 閉じて戻っても (= 物理的に開き直していないので pendingOpen が無く onScreenInit が復元しない)
+        // 二度目以降の [Set Category] / [Auto Distribute] が 「Open a chest first」 で弾かれていた。
+        // player.containerMenu 基準なら、 サブ画面の重ね開き中も active が保たれ、 実際に
+        // チェストを閉じた (= containerMenu がプレイヤーインベントリに戻る) ときだけクリアされる。
+        Player player = mc.player;
+        if (player == null || player.containerMenu != active.menu()) {
+            // チェストを閉じた (= 別コンテナへ遷移 / インベントリへ復帰)。
             active = null;
         }
     }

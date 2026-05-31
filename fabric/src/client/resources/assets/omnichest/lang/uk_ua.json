@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Згасання за відстанню",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Поступово приглушує промінь з відстанню (ніколи не зникає повністю).",
   "config.omnichest.search.beaconAnimation": "Анімація маяка",
-  "config.omnichest.search.beaconAnimation.tooltip": "Увімкає повільну пульсуючу анімацію яскравості променя."
+  "config.omnichest.search.beaconAnimation.tooltip": "Увімкає повільну пульсуючу анімацію яскравості променя.",
+  "omnichest.category_badge.manual": " Вручну",
+  "omnichest.distribution.preview.title": "Авторозподіл — Попередній перегляд",
+  "omnichest.distribution.preview.confirm": "Розподілити",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Зараз немає чого розподіляти.",
+  "omnichest.distribution.preview.more": "…і ще %1$d",
+  "omnichest.distribution.preview.more_dest": "…і ще %1$d скринь",
+  "omnichest.distribution.preview.source": "Джерело",
+  "omnichest.distribution.preview.destinations": "Призначення",
+  "omnichest.distribution.preview.destination": "Призначення",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = розподілити,  ESC = скасувати"
 }

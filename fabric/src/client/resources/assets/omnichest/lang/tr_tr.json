@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Mesafe solması",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Işını mesafeyle kademeli olarak soldurur (asla tamamen kaybolmaz).",
   "config.omnichest.search.beaconAnimation": "Fener animasyonu",
-  "config.omnichest.search.beaconAnimation.tooltip": "Işında yavaş, nabız gibi parlaklık animasyonu açar."
+  "config.omnichest.search.beaconAnimation.tooltip": "Işında yavaş, nabız gibi parlaklık animasyonu açar.",
+  "omnichest.category_badge.manual": " Manuel",
+  "omnichest.distribution.preview.title": "Otomatik Dağıtım — Önizleme",
+  "omnichest.distribution.preview.confirm": "Dağıt",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Şu anda dağıtılacak bir şey yok.",
+  "omnichest.distribution.preview.more": "…ve %1$d daha",
+  "omnichest.distribution.preview.more_dest": "…ve %1$d sandık daha",
+  "omnichest.distribution.preview.source": "Kaynak",
+  "omnichest.distribution.preview.destinations": "Hedefler",
+  "omnichest.distribution.preview.destination": "Hedef",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = dağıt,  ESC = iptal"
 }

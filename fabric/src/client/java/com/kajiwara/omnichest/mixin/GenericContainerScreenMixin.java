@@ -153,7 +153,12 @@ public abstract class GenericContainerScreenMixin extends Screen {
     private void cits$renderCategoryBadge(GuiGraphics g, int mouseX, int mouseY, float partialTick,
             CallbackInfo ci) {
         int badgeY = cits$badgeY();
-        CategoryBadgeRenderer.renderBadge(g, this.leftPos + 4, badgeY, ContainerScanner.currentActiveKey());
+        // バッジの帯 (背景) の左端を上部コンテンツ列のアンカーに揃える。 帯は描画 x より
+        // BADGE_PAD_X だけ外側に張り出すため、 描画 x = アンカー + BADGE_PAD_X とすることで
+        // 帯の左端 (= バッジの視覚的な左端) が検索行の左端と同じ縦ラインに乗る。
+        int anchorX = this.leftPos + CITS_TOP_CONTENT_LEFT;
+        CategoryBadgeRenderer.renderBadge(g, anchorX + CategoryBadgeRenderer.BADGE_PAD_X, badgeY,
+                ContainerScanner.currentActiveKey());
     }
 
     // ───────────────────────────────────────────────────────────
@@ -422,6 +427,27 @@ public abstract class GenericContainerScreenMixin extends Screen {
     @Unique
     private static final int CITS_PANEL_MARGIN = 3;
 
+    // ───────────────────────────────────────────────────────────
+    // GUI 上部コンテンツ列 (= カテゴリ バッジ + 検索行) の共通アンカー
+    //
+    // バッジの帯・検索ボックス・種類ボタン・数量ボタンは、 すべて <b>1 つのアンカー</b>
+    // ({@code leftPos + CITS_TOP_CONTENT_LEFT}) から x を導出する。 これにより
+    // 「同じ縦ライン」 を構造的に保証し、 マジックオフセット (旧: leftPos+112 / +140) を排除する。
+    // GUI スケール / 翻訳長が変わってもアンカー基準なのでズレない。
+    // ───────────────────────────────────────────────────────────
+    /** 上部コンテンツ列の共通左端 (leftPos からのオフセット, px)。 */
+    @Unique
+    private static final int CITS_TOP_CONTENT_LEFT = 4;
+    /** 上部検索行: 検索ボックスの幅 (px)。 */
+    @Unique
+    private static final int CITS_SEARCH_BOX_WIDTH = 106;
+    /** 上部検索行: 種類/数量ボタンの幅 (px)。 */
+    @Unique
+    private static final int CITS_TOP_SORT_BUTTON_WIDTH = 26;
+    /** 上部検索行: 要素間の隙間 (px)。 */
+    @Unique
+    private static final int CITS_TOP_ROW_GAP = 2;
+
     /**
      * ボタン群の背景パネルを描画する。 描かない条件 (Deposit ボタン未生成 etc.) では即 return。
      */
@@ -656,7 +682,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
                 this.cits$autoDistributeButton = Button.builder(
                         OmniChestLocale.get("omnichest.button.auto_distribute", "Auto Distribute"),
-                        btn -> StorageDistributionManager.distributeFromOpen())
+                        btn -> StorageDistributionManager.openDistributePreview(distSelf))
                         .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                         .build();
                 cits$applyTooltip(this.cits$autoDistributeButton,
@@ -787,23 +813,28 @@ public abstract class GenericContainerScreenMixin extends Screen {
             return;
 
         if (!this.cits$isLargeChest) {
-            // 検索バー + 種類 + 数量 を、 上部のカテゴリ バッジ (= leftPos + 4 で描画)
-            // と左端を完全に揃える (= 4 原則の Alignment 厳守)。 旧実装は leftPos + 8 起点で
-            // バッジ より 4px 内側 (= 視覚的にズレ) だった。 全要素を 4px 左にシフトすると、
-            // 行末 (= count ボタン右端) は leftPos + 162 となり、 スロットグリッド右端
-            // (= leftPos + 8 + 162 = leftPos + 170) より 4px 内側になるが、 ここはバニラ
-            // チェスト テクスチャの内側 (= スロット背景内) で、 visual collision は起きない。
-            //   search 106 + gap 2 + type 26 + gap 2 + count 26 = 162
+            // 検索バー + 種類 + 数量 を、 上部カテゴリ バッジと<b>同じアンカー</b>
+            // ({@code leftPos + CITS_TOP_CONTENT_LEFT}) から左→右へ連結配置する。
+            // 各 x は「前要素の右端 + GAP」 で導出し、 マジックオフセット (旧: leftPos+112 / +140)
+            // を排除する。 これによりバッジの帯・検索ボックス・種類・数量がすべて同じ縦ラインに乗り、
+            // GUI スケールや翻訳長が変わってもアンカー基準で整列が保たれる。
+            //   search 106 + gap 2 + type 26 + gap 2 + count 26 = 162 (= 旧来と同じ行末)
             int y = this.topPos - 18;
-            this.cits$searchBox.setX(this.leftPos + 4);
+            int anchorX = this.leftPos + CITS_TOP_CONTENT_LEFT;
+
+            this.cits$searchBox.setX(anchorX);
             this.cits$searchBox.setY(y);
-            this.cits$searchBox.setWidth(106);
-            this.cits$sortByTypeButton.setX(this.leftPos + 112);
+            this.cits$searchBox.setWidth(CITS_SEARCH_BOX_WIDTH);
+
+            int typeX = anchorX + CITS_SEARCH_BOX_WIDTH + CITS_TOP_ROW_GAP;
+            this.cits$sortByTypeButton.setX(typeX);
             this.cits$sortByTypeButton.setY(y);
-            this.cits$sortByTypeButton.setWidth(26);
-            this.cits$sortByCountButton.setX(this.leftPos + 140);
+            this.cits$sortByTypeButton.setWidth(CITS_TOP_SORT_BUTTON_WIDTH);
+
+            int countX = typeX + CITS_TOP_SORT_BUTTON_WIDTH + CITS_TOP_ROW_GAP;
+            this.cits$sortByCountButton.setX(countX);
             this.cits$sortByCountButton.setY(y);
-            this.cits$sortByCountButton.setWidth(26);
+            this.cits$sortByCountButton.setWidth(CITS_TOP_SORT_BUTTON_WIDTH);
 
             // ◀▶ レイアウト切替ボタンは、 GUI の右隣 (または ◀ が押されていれば左隣) の、
             // 検索行と同じ高さ (= topPos - 18) に並べる。
@@ -822,6 +853,10 @@ public abstract class GenericContainerScreenMixin extends Screen {
             return;
         }
 
+        // ラージ (ダブル) チェスト: GUI 上部にウィジェットを置く余白が無いため、 検索バー +
+        // 種類 + 数量 は <b>意図的に側面パネル</b> (sideX) に縦積みする。 3 つとも同じ sideX を
+        // 共有するので相互の左端は揃っており、 上部カテゴリ バッジとは別領域として独立させる
+        // (= 小型チェストの「上部行アンカー」 とは設計上別系統)。
         int panelWidth = 80;
         int margin = 4;
         int sideX = this.cits$layoutRight

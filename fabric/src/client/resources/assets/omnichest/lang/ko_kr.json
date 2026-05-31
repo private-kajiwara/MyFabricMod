@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "거리 페이드",
   "config.omnichest.search.beaconDistanceFade.tooltip": "거리에 따라 빔을 점차 흐릿하게 합니다(완전히 사라지지는 않음).",
   "config.omnichest.search.beaconAnimation": "신호기 애니메이션",
-  "config.omnichest.search.beaconAnimation.tooltip": "빔에 느리게 깜빡이는 밝기 애니메이션을 켭니다."
+  "config.omnichest.search.beaconAnimation.tooltip": "빔에 느리게 깜빡이는 밝기 애니메이션을 켭니다.",
+  "omnichest.category_badge.manual": " 수동",
+  "omnichest.distribution.preview.title": "자동 분배 — 미리보기",
+  "omnichest.distribution.preview.confirm": "분배",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "지금은 분배할 항목이 없습니다.",
+  "omnichest.distribution.preview.more": "…외 %1$d개",
+  "omnichest.distribution.preview.more_dest": "…외 상자 %1$d개",
+  "omnichest.distribution.preview.source": "출처",
+  "omnichest.distribution.preview.destinations": "대상",
+  "omnichest.distribution.preview.destination": "대상",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = 분배,  ESC = 취소"
 }

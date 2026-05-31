@@ -36,6 +36,15 @@ public final class DropdownRow<E> extends RowEntry {
     /** 表示ラベル生成関数。 null なら {@code value.toString()} を使う (= 旧 EnumRow 互換挙動)。 */
     @Nullable
     private final Function<E, Component> labelFormatter;
+    /**
+     * popup リスト項目<b>専用</b>のラベル生成関数。 null ならボタンと同じ {@link #labelFormatter} を使う。
+     *
+     * <p>
+     * ボタン側には「▼」のようなドロップダウン アフォーダンスを付けつつ、 開いた後のリスト項目は
+     * 値そのものだけを表示したい (= 標準的なドロップダウン挙動) ケースで使う。
+     */
+    @Nullable
+    private final Function<E, Component> popupLabelFormatter;
     private int index;
     @Nullable
     private Button button;
@@ -46,10 +55,18 @@ public final class DropdownRow<E> extends RowEntry {
     public DropdownRow(Component label, @Nullable Component tooltip,
             List<E> values, E initial, Consumer<E> saveConsumer,
             @Nullable Function<E, Component> labelFormatter) {
+        this(label, tooltip, values, initial, saveConsumer, labelFormatter, null);
+    }
+
+    public DropdownRow(Component label, @Nullable Component tooltip,
+            List<E> values, E initial, Consumer<E> saveConsumer,
+            @Nullable Function<E, Component> labelFormatter,
+            @Nullable Function<E, Component> popupLabelFormatter) {
         super(label, tooltip);
         this.values = new ArrayList<>(values);
         this.saveConsumer = saveConsumer;
         this.labelFormatter = labelFormatter;
+        this.popupLabelFormatter = popupLabelFormatter;
 
         int idx = 0;
         for (int i = 0; i < this.values.size(); i++) {
@@ -77,9 +94,17 @@ public final class DropdownRow<E> extends RowEntry {
 
     private void openMenu() {
         if (this.sinkRef == null || this.button == null) return;
-        Function<E, Component> fmt = (this.labelFormatter != null)
-                ? this.labelFormatter
-                : v -> Component.literal(String.valueOf(v));
+        // popup 項目のラベル: 専用フォーマッタ優先 → なければボタンと同じ labelFormatter →
+        // それも無ければ toString。 (ボタンには「▼」 等のアフォーダンスを残しつつ、
+        // リスト項目は値だけを表示する用途に対応。)
+        Function<E, Component> fmt;
+        if (this.popupLabelFormatter != null) {
+            fmt = this.popupLabelFormatter;
+        } else if (this.labelFormatter != null) {
+            fmt = this.labelFormatter;
+        } else {
+            fmt = v -> Component.literal(String.valueOf(v));
+        }
         this.sinkRef.openDropdown(
                 this.values,
                 currentValue(),

@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Pudar jarak",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Memudarkan pancaran secara beransur dengan jarak (tidak pernah hilang sepenuhnya).",
   "config.omnichest.search.beaconAnimation": "Animasi suar",
-  "config.omnichest.search.beaconAnimation.tooltip": "Mendayakan animasi kecerahan berdenyut perlahan pada pancaran."
+  "config.omnichest.search.beaconAnimation.tooltip": "Mendayakan animasi kecerahan berdenyut perlahan pada pancaran.",
+  "omnichest.category_badge.manual": " Manual",
+  "omnichest.distribution.preview.title": "Pengagihan Auto — Pratonton",
+  "omnichest.distribution.preview.confirm": "Agihkan",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Tiada apa-apa untuk diagihkan sekarang.",
+  "omnichest.distribution.preview.more": "…dan %1$d lagi",
+  "omnichest.distribution.preview.more_dest": "…dan %1$d peti lagi",
+  "omnichest.distribution.preview.source": "Sumber",
+  "omnichest.distribution.preview.destinations": "Destinasi",
+  "omnichest.distribution.preview.destination": "Destinasi",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = agihkan,  ESC = batal"
 }

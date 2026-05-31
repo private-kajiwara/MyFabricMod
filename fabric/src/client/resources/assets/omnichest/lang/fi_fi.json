@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Etäisyyshäivytys",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Himmentää sädettä vähitellen etäisyyden myötä (ei katoa koskaan kokonaan).",
   "config.omnichest.search.beaconAnimation": "Majakka-animaatio",
-  "config.omnichest.search.beaconAnimation.tooltip": "Ottaa käyttöön hitaan sykkivän kirkkausanimaation säteessä."
+  "config.omnichest.search.beaconAnimation.tooltip": "Ottaa käyttöön hitaan sykkivän kirkkausanimaation säteessä.",
+  "omnichest.category_badge.manual": " Manuaalinen",
+  "omnichest.distribution.preview.title": "Automaattijako — Esikatselu",
+  "omnichest.distribution.preview.confirm": "Jaa",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Ei jaettavaa juuri nyt.",
+  "omnichest.distribution.preview.more": "…ja %1$d lisää",
+  "omnichest.distribution.preview.more_dest": "…ja %1$d arkkua lisää",
+  "omnichest.distribution.preview.source": "Lähde",
+  "omnichest.distribution.preview.destinations": "Kohteet",
+  "omnichest.distribution.preview.destination": "Kohde",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = jaa,  ESC = peruuta"
 }

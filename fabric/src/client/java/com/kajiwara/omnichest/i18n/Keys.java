@@ -192,6 +192,8 @@ public final class Keys {
     // ─── Category Badge ──────────────────────────────────────
     public static final String CATEGORY_BADGE_CONFIDENCE = "omnichest.category_badge.confidence";
     public static final String CATEGORY_BADGE_LOCK = "omnichest.category_badge.lock";
+    /** 手動割り当てカテゴリの目印 (= 予測ではなくプレイヤーが決めたことを示す)。 */
+    public static final String CATEGORY_BADGE_MANUAL = "omnichest.category_badge.manual";
 
     // ─── ContainerType displayName ─────────────────────────────
     public static final String CONTAINER_TYPE_CHEST = "omnichest.container_type.chest";

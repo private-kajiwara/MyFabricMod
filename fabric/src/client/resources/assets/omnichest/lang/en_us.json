@@ -334,6 +334,7 @@
 
   "omnichest.category_badge.confidence": " Confidence: %1$d%%",
   "omnichest.category_badge.lock": " [L]",
+  "omnichest.category_badge.manual": " Manual",
 
   "omnichest.container_type.chest": "Chest",
   "omnichest.container_type.trapped_chest": "Trapped Chest",
@@ -473,6 +474,17 @@
   "omnichest.distribution.set_category.unregister": "Unregister",
   "omnichest.distribution.set_category.hint": "Choose a category, then Save.  ESC = cancel",
 
+  "omnichest.distribution.preview.title": "Auto Distribute — Preview",
+  "omnichest.distribution.preview.confirm": "Distribute",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Nothing to distribute right now.",
+  "omnichest.distribution.preview.more": "…and %1$d more",
+  "omnichest.distribution.preview.more_dest": "…and %1$d more chests",
+  "omnichest.distribution.preview.source": "Source",
+  "omnichest.distribution.preview.destinations": "Destinations",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = distribute,  ESC = cancel",
+
   "config.omnichest.category.distribution": "Storage Distribution",
   "config.omnichest.distribution.enableAutoDistribution": "Enable Auto Distribution",
   "config.omnichest.distribution.enableAutoDistribution.tooltip": "Master switch for the Storage Auto Distribution system (also hides the in-chest buttons when off).",
@@ -522,5 +534,7 @@
   "config.omnichest.search.previewGridColumns": "Preview Grid Size",
   "config.omnichest.search.previewGridColumns.tooltip": "Number of columns in the ALT preview grid.",
   "config.omnichest.search.previewBackgroundBlur": "Preview Background Blur",
-  "config.omnichest.search.previewBackgroundBlur.tooltip": "Dim the area behind the ALT preview panel for readability (lightweight frosted look)."
+  "config.omnichest.search.previewBackgroundBlur.tooltip": "Dim the area behind the ALT preview panel for readability (lightweight frosted look).",
+  "omnichest.distribution.preview.destination": "Destination",
+  "omnichest.distribution.preview.count": "×%1$d"
 }

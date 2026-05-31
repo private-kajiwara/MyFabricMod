@@ -27,6 +27,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class CategoryBadgeRenderer {
 
+    /**
+     * バッジ背景帯がテキスト左端 ({@code x}) より外側に張り出す量 (px)。
+     *
+     * <p>
+     * 背景は {@code x - BADGE_PAD_X} から塗られるため、 バッジの<b>視覚的な左端</b>は
+     * {@code x - BADGE_PAD_X} になる。 呼び出し側はこの値を使って、 バッジの帯の左端を
+     * 他のウィジェット列 (= 検索行など) と同じ縦ラインに揃えられる。
+     */
+    public static final int BADGE_PAD_X = 3;
+
     private CategoryBadgeRenderer() {
     }
 
@@ -63,35 +73,93 @@ public final class CategoryBadgeRenderer {
 
         // カテゴリ名 (例: "[FOOD STORAGE]") — 各言語の displayName を [] で囲む。
         Component left = Component.literal("[").append(cat.displayComponent()).append("]");
-        Component right = cat.isConcrete()
-                ? OmniChestLocale.get(Keys.CATEGORY_BADGE_CONFIDENCE,
-                        " Confidence: %1$d%%", cl.confidencePercent())
-                : Component.empty(); // MIXED / UNKNOWN のときは confidence 表示はしない
-        Component lockComp = cl.locked()
-                ? OmniChestLocale.get(Keys.CATEGORY_BADGE_LOCK, " [L]")
-                : Component.empty();
+
+        // ─── 手動割り当て (locked) と 自動予測 (auto) を明確に区別する ───
+        //
+        // 重要 (= 概念の取り違え修正): この 2 つは別物。
+        //  - <b>手動</b> (= プレイヤーが Set Category で固定): 予測ではないので <b>confidence を出さない</b>。
+        //    代わりに 「Manual」 を金色で明示し、 「これは自分が決めたカテゴリ」 と一目で分かるようにする。
+        //  - <b>自動 (concrete)</b>: 従来どおり Confidence を白で表示 (= システムの予測メタ情報)。
+        //  - <b>自動 (MIXED / UNKNOWN)</b>: 補足表示なし。
+        // 色のコントラスト (金 vs 白) でも 手動/自動 を区別できるようにする (= 4 原則: コントラスト)。
+        boolean manual = cl.locked();
+        Component status;
+        int statusColor;
+        if (manual) {
+            status = OmniChestLocale.get(Keys.CATEGORY_BADGE_MANUAL, " Manual");
+            statusColor = 0xFFFFD54A; // 金色 = プレイヤーの意図 (= 予測の白と対比)
+        } else if (cat.isConcrete()) {
+            status = OmniChestLocale.get(Keys.CATEGORY_BADGE_CONFIDENCE,
+                    " Confidence: %1$d%%", cl.confidencePercent());
+            statusColor = 0xFFFFFFFF; // 白 = システム予測のメタ情報
+        } else {
+            status = Component.empty();
+            statusColor = 0xFFFFFFFF;
+        }
 
         int leftW = font.width(left);
-        int rightW = font.width(right);
-        int lockW = font.width(lockComp);
-        int totalW = leftW + rightW + lockW;
+        int statusW = font.width(status);
+        int totalW = leftW + statusW;
 
-        int padX = 3;
+        int padX = BADGE_PAD_X;
         int padY = 1;
         int h = font.lineHeight;
 
         // 背景帯
         g.fill(x - padX, y - padY, x + totalW + padX, y + h + padY, bgArgb);
 
-        // テキスト: カテゴリ名は色付き / confidence は白 / lock はオレンジ
+        // テキスト: カテゴリ名はカテゴリ色 / 状態 (Manual=金 / Confidence=白) は statusColor。
         int textColor = (0xFF << 24) | (rgb & 0x00FFFFFF);
         g.drawString(font, left, x, y, textColor, true);
-        if (rightW > 0) {
-            g.drawString(font, right, x + leftW, y, 0xFFFFFFFF, true);
-        }
-        if (lockW > 0) {
-            g.drawString(font, lockComp, x + leftW + rightW, y, 0xFFFFAA00, true);
+        if (statusW > 0) {
+            g.drawString(font, status, x + leftW, y, statusColor, true);
         }
         return totalW + padX * 2;
+    }
+
+    /**
+     * カテゴリ色の 「チップ」 (= ボタン風の塗り) を描く。
+     *
+     * <p>
+     * 設定画面 (Set Category 等) のカテゴリ選択を、 in-world バッジと<b>同じ視覚言語</b>に揃えるための
+     * 再利用ヘルパ。 バッジは半透明 (0x80) のカテゴリ色を暗い背景に重ねており、 これは実効的に
+     * 「カテゴリ色を約半分の明るさにした色」 になる。 設定画面では下地 (バニラボタン等) が一定しないため、
+     * 同じ見た目を <b>不透明な暗めカテゴリ色の塗り + カテゴリ色の枠 + 明るいカテゴリ色テキスト</b> で
+     * 再現する。 これによりプレイヤーは 「カテゴリ設定」 と 「在庫上のカテゴリ表示」 を一目で結びつけられる。
+     *
+     * @param g       現在の {@link GuiGraphics}
+     * @param x       チップ左上 x
+     * @param y       チップ左上 y
+     * @param w       チップ幅
+     * @param h       チップ高さ
+     * @param cat     表示するカテゴリ (色とテキスト色の元)
+     * @param hovered ホバー中か (= 少し明るくしてフィードバックを出す)
+     * @param focused キーボードフォーカス中か (= 白枠でアクセシビリティを担保)
+     * @param label   中央に描くラベル (null なら未描画。 通常はローカライズ済み Component)
+     */
+    public static void renderCategoryChip(GuiGraphics g, int x, int y, int w, int h,
+            StorageCategory cat, boolean hovered, boolean focused, @Nullable Component label) {
+        int rgb = cat.rgb();
+        // ホバー時は明るめ (0.55) / 通常は暗め (0.40) のカテゴリ色を不透明で敷く。
+        float baseF = hovered ? 0.55f : 0.40f;
+        int bg = 0xFF000000 | darken(rgb, baseF);
+        g.fill(x, y, x + w, y + h, bg);
+        // カテゴリ色の枠で輪郭を強調 (= コントラスト)。 フォーカス時は白枠で可視化。
+        g.renderOutline(x, y, w, h, focused ? 0xFFFFFFFF : (0xFF000000 | rgb));
+        if (label != null) {
+            Font font = Minecraft.getInstance().font;
+            int textColor = 0xFF000000 | rgb; // 明るいカテゴリ色テキスト (= バッジと同一)
+            int tx = x + (w - font.width(label)) / 2;
+            int ty = y + (h - font.lineHeight) / 2 + 1;
+            g.drawString(font, label, tx, ty, textColor, true);
+        }
+    }
+
+    /** RGB の各チャンネルを係数 {@code f} (0..1) で暗くする (= 黒に向けて補間)。 */
+    private static int darken(int rgb, float f) {
+        int r = (int) (((rgb >> 16) & 0xFF) * f);
+        int gg = (int) (((rgb >> 8) & 0xFF) * f);
+        int b = (int) ((rgb & 0xFF) * f);
+        return (r << 16) | (gg << 8) | b;
     }
 }

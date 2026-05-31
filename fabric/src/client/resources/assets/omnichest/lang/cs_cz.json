@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Blednutí podle vzdálenosti",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Postupně ztlumí paprsek se vzdáleností (nikdy zcela nezmizí).",
   "config.omnichest.search.beaconAnimation": "Animace majáku",
-  "config.omnichest.search.beaconAnimation.tooltip": "Zapne pomalou pulzující animaci jasu paprsku."
+  "config.omnichest.search.beaconAnimation.tooltip": "Zapne pomalou pulzující animaci jasu paprsku.",
+  "omnichest.category_badge.manual": " Ručně",
+  "omnichest.distribution.preview.title": "Automatická distribuce — Náhled",
+  "omnichest.distribution.preview.confirm": "Rozdělit",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Teď není co rozdělovat.",
+  "omnichest.distribution.preview.more": "…a %1$d další",
+  "omnichest.distribution.preview.more_dest": "…a %1$d dalších truhel",
+  "omnichest.distribution.preview.source": "Zdroj",
+  "omnichest.distribution.preview.destinations": "Cíle",
+  "omnichest.distribution.preview.destination": "Cíl",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = rozdělit,  ESC = zrušit"
 }

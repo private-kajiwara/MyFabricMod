@@ -134,6 +134,13 @@ public final class UILayoutMetrics {
     public static final int LIST_CONTENT_PAD_X = 4;
     /** 上下 padding。 黄色外枠と最上段/最下段の行境界が密着しないようにする。 */
     public static final int LIST_CONTENT_PAD_Y = 3;
+    /**
+     * DETAILED モード専用の上下 padding。 行高 ({@link #ROW_HEIGHT_DETAILED}) が大きいぶん、
+     * 最初/最後の行がヘッダ境界や黄色外枠に密着して窮屈に見えないよう、 1 GRID ぶんの余白を与える。
+     * (= LIST/グリッドの {@link #LIST_CONTENT_PAD_Y} に相当する役割を DETAILED 用に分離。
+     * 控えめな値に留め、 過剰な空白を作らない。)
+     */
+    public static final int LIST_CONTENT_PAD_Y_DETAILED = GRID;
 
     /** 1 行 (DETAILED モード) の高さ。 */
     public static final int ROW_HEIGHT_DETAILED = 22;

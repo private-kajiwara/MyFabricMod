@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Entfernungs-Ausblendung",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Blendet den Strahl mit der Entfernung allmählich ab (verschwindet nie ganz).",
   "config.omnichest.search.beaconAnimation": "Leuchtfeuer-Animation",
-  "config.omnichest.search.beaconAnimation.tooltip": "Aktiviert eine langsam pulsierende Helligkeitsanimation am Strahl."
+  "config.omnichest.search.beaconAnimation.tooltip": "Aktiviert eine langsam pulsierende Helligkeitsanimation am Strahl.",
+  "omnichest.category_badge.manual": " Manuell",
+  "omnichest.distribution.preview.title": "Auto-Verteilung — Vorschau",
+  "omnichest.distribution.preview.confirm": "Verteilen",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Derzeit nichts zu verteilen.",
+  "omnichest.distribution.preview.more": "…und %1$d weitere",
+  "omnichest.distribution.preview.more_dest": "…und %1$d weitere Kisten",
+  "omnichest.distribution.preview.source": "Quelle",
+  "omnichest.distribution.preview.destinations": "Ziele",
+  "omnichest.distribution.preview.destination": "Ziel",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = Verteilen,  ESC = Abbrechen"
 }

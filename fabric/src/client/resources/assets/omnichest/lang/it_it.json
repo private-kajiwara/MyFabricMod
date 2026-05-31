@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Dissolvenza con la distanza",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Attenua gradualmente il fascio con la distanza (non scompare mai del tutto).",
   "config.omnichest.search.beaconAnimation": "Animazione del faro",
-  "config.omnichest.search.beaconAnimation.tooltip": "Attiva un'animazione di luminosità pulsante lenta sul fascio."
+  "config.omnichest.search.beaconAnimation.tooltip": "Attiva un'animazione di luminosità pulsante lenta sul fascio.",
+  "omnichest.category_badge.manual": " Manuale",
+  "omnichest.distribution.preview.title": "Distribuzione automatica — Anteprima",
+  "omnichest.distribution.preview.confirm": "Distribuisci",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Niente da distribuire al momento.",
+  "omnichest.distribution.preview.more": "…e altri %1$d",
+  "omnichest.distribution.preview.more_dest": "…e altri %1$d bauli",
+  "omnichest.distribution.preview.source": "Origine",
+  "omnichest.distribution.preview.destinations": "Destinazioni",
+  "omnichest.distribution.preview.destination": "Destinazione",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Invio = distribuisci,  ESC = annulla"
 }

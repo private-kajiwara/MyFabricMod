@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "تلاشٍ حسب المسافة",
   "config.omnichest.search.beaconDistanceFade.tooltip": "يُخفت الشعاع تدريجيًا مع المسافة (لا يختفي تمامًا أبدًا).",
   "config.omnichest.search.beaconAnimation": "حركة المنارة",
-  "config.omnichest.search.beaconAnimation.tooltip": "يُفعّل حركة سطوع نابضة بطيئة على الشعاع."
+  "config.omnichest.search.beaconAnimation.tooltip": "يُفعّل حركة سطوع نابضة بطيئة على الشعاع.",
+  "omnichest.category_badge.manual": " يدوي",
+  "omnichest.distribution.preview.title": "التوزيع التلقائي — معاينة",
+  "omnichest.distribution.preview.confirm": "توزيع",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "لا شيء للتوزيع الآن.",
+  "omnichest.distribution.preview.more": "…و%1$d أخرى",
+  "omnichest.distribution.preview.more_dest": "…و%1$d صناديق أخرى",
+  "omnichest.distribution.preview.source": "المصدر",
+  "omnichest.distribution.preview.destinations": "الوجهات",
+  "omnichest.distribution.preview.destination": "الوجهة",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = توزيع,  ESC = إلغاء"
 }

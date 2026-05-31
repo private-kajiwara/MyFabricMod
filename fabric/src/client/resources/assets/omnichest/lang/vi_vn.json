@@ -431,5 +431,18 @@
   "config.omnichest.search.beaconDistanceFade": "Mờ theo khoảng cách",
   "config.omnichest.search.beaconDistanceFade.tooltip": "Làm mờ dần chùm sáng theo khoảng cách (không bao giờ biến mất hẳn).",
   "config.omnichest.search.beaconAnimation": "Hoạt ảnh đèn hiệu",
-  "config.omnichest.search.beaconAnimation.tooltip": "Bật hoạt ảnh độ sáng nhấp nháy chậm trên chùm sáng."
+  "config.omnichest.search.beaconAnimation.tooltip": "Bật hoạt ảnh độ sáng nhấp nháy chậm trên chùm sáng.",
+  "omnichest.category_badge.manual": " Thủ công",
+  "omnichest.distribution.preview.title": "Tự động phân loại — Xem trước",
+  "omnichest.distribution.preview.confirm": "Phân loại",
+  "omnichest.distribution.preview.route": "%1$s → %2$s ×%3$d",
+  "omnichest.distribution.preview.empty": "Hiện không có gì để phân loại.",
+  "omnichest.distribution.preview.more": "…và %1$d nữa",
+  "omnichest.distribution.preview.more_dest": "…và %1$d rương nữa",
+  "omnichest.distribution.preview.source": "Nguồn",
+  "omnichest.distribution.preview.destinations": "Đích đến",
+  "omnichest.distribution.preview.destination": "Đích đến",
+  "omnichest.distribution.preview.count": "×%1$d",
+  "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
+  "omnichest.distribution.preview.hint": "Enter = phân loại,  ESC = hủy"
 }
