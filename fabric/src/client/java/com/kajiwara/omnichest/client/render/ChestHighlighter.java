@@ -884,6 +884,26 @@ public final class ChestHighlighter {
         double distSq = dx * dx + dy * dy + dz * dz;
         double distM = Math.sqrt(distSq);
 
+        // ─── 遠距離クランプ (= 「遠い (>数百m) ピンが消える」 不具合の対処) ───
+        // ピン/ラベル/アイコンはワールド空間に submit されるため、 <b>カメラの far クリップ平面</b>
+        // (≈ 描画距離 ×16m) より遠いチェストでは GPU の幾何クリッピングで丸ごと消える
+        // (= NO_DEPTH でも far 平面クリップは効くため、 depth test とは無関係に欠落する)。
+        // far 平面の内側へカメラ→チェスト方向にピンを <b>引き寄せて</b> 描画することで、 どれだけ遠くても
+        // 必ず可視にする (= 一般的な waypoint ピンの手法)。 距離ラベル (= 「▼ ◯m」) は実距離
+        // {@code distM} のまま出すのでガイドとしての意味は保たれる。 スケールもクランプ後距離で計算するため、
+        // 画面上のサイズは従来どおり一定。 クランプは far 平面より遠いときだけ効くので、 近距離 (= 既存の
+        // 見え方) には一切影響しない。
+        double maxRenderDist = pinMaxRenderDistance();
+        double renderDist = Math.min(distM, maxRenderDist);
+        double clampFactor = (distM > 1.0e-6) ? (renderDist / distM) : 1.0;
+        double rdx = dx * clampFactor;
+        double rdy = dy * clampFactor;
+        double rdz = dz * clampFactor;
+        // ピン/アイコンの実描画基準 (= クランプ後の絶対ワールド座標)。
+        double renderCx = camPos.x + rdx;
+        double renderCy = camPos.y + rdy;
+        double renderCz = camPos.z + rdz;
+
         // ─── 行レイアウト ───
         // 最上段 (rowIndex = totalRows-1) に「▼ 距離」
         // その下にエントリを上から entries[0], entries[1], ..., entries[N-1] と並べる
@@ -913,7 +933,9 @@ public final class ChestHighlighter {
 
         // ─── pose 変換 (バニラ NameTagFeatureRenderer.Storage.add と等価) ───
         // 基準距離より遠ければワールドスケールを距離に比例させる (= 透視縮小を打ち消す)。
-        float distScaleFactor = (float) (Math.max(distM, PIN_SCALE_REF_DISTANCE)
+        // スケール基準は <b>クランプ後距離</b> ({@code renderDist}): クランプで近くに引き寄せた位置で
+        // 描いても画面上のサイズが従来 (= 実距離一定サイズ) と一致するようにするため。
+        float distScaleFactor = (float) (Math.max(renderDist, PIN_SCALE_REF_DISTANCE)
                 / PIN_SCALE_REF_DISTANCE);
         float worldScale = PIN_TEXT_SCALE * distScaleFactor;
 
@@ -927,7 +949,8 @@ public final class ChestHighlighter {
 
         matrices.pushPose();
         try {
-            matrices.translate(dx, dy, dz);
+            // クランプ後座標へ平行移動 (= far 平面の内側に収める)。
+            matrices.translate(rdx, rdy, rdz);
             matrices.mulPose(camState.orientation);
             matrices.scale(worldScale, -worldScale, worldScale);
 
@@ -974,7 +997,10 @@ public final class ChestHighlighter {
                 // 構成されており、 ガラス含む手前ブロックで隠れる。 ピン要件 「絶対に貫通」 を
                 // 満たすため、 アイコン中心のワールド座標を画面座標に投影して キュー へ積み、
                 // HUD パスで {@code GuiGraphics.renderItem} で描く (= world depth と無関係)。
-                INSTANCE.enqueueHudIcon(e.stack, cx, baseY, cz,
+                // クランプ後の中心 (renderCx/Cy/Cz) を基準に投影する。 これにより遠距離チェストでも
+                // アイコンの投影点が far 平面の内側に収まり、 HUD 投影 (= projectPointToScreen) が
+                // 退化せずに画面座標へ落ちる (= テキスト/黒帯と完全に同じ基準なので 1px もズレない)。
+                INSTANCE.enqueueHudIcon(e.stack, renderCx, renderCy, renderCz,
                         entryBlockLeftX + entryIconSize / 2.0f,
                         rowY + entryIconSize / 2.0f,
                         worldScale, entryIconSize,
@@ -1018,6 +1044,24 @@ public final class ChestHighlighter {
      *
      * @param entryCount アイテム行数 ({@code ActiveHighlight#entries.size()})
      */
+    /**
+     * ピン (ラベル + アイコン) をワールドに描くときの <b>最大描画距離</b> (m)。
+     *
+     * <p>
+     * カメラの far クリップ平面 (≈ 描画距離 ×16m) より遠い点はワールド描画で幾何クリップされて
+     * 消えるため、 ピンはこの距離までカメラ方向へ引き寄せて描く ({@link #submitPinStack})。
+     * far 平面に余裕を持たせるため描画距離の 0.8 倍を採り、 極端に小さい描画距離設定でも
+     * 1 チャンク程度は確保する。 設定が読めない場合は控えめな既定値で安全側に倒す。
+     */
+    private static double pinMaxRenderDistance() {
+        try {
+            int chunks = Minecraft.getInstance().options.getEffectiveRenderDistance();
+            return Math.max(16.0, chunks * 16.0 * 0.8);
+        } catch (Throwable ignored) {
+            return 128.0;
+        }
+    }
+
     private static double pinTopWorldY(ContainerSnapshot snap, int entryCount, Vec3 camPos) {
         BlockPos primary = snap.pos();
         BlockPos secondary = snap.secondaryPos();
