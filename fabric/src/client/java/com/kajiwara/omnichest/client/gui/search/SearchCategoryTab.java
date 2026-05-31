@@ -65,13 +65,19 @@ public final class SearchCategoryTab {
         try {
             for (TabLayoutEngine.TabSlot slot : layout.boxes) {
                 LayoutBox b = slot.box.translateY(-(int) scrollPx);
+                // 当たり領域は <b>strip の可視範囲にクランプ</b> する。 タブ列はスクロールで strip から
+                // 上下にはみ出すが、 その当たり矩形をそのまま hits に積むと、 同じ X 帯を共有する上段の
+                // コントロール行 (= 検索 / Find Selected ボタン) のクリックを、 はみ出したタブが横取りして
+                // しまう (= 「カテゴリタブで選択して検索ボタンを押すと反応しない (All タブでは効く)」 不具合の
+                // 原因)。 可視範囲外は描画もされないので、 当たり判定も持たせない (= 高さ 0 矩形は押せない)。
+                LayoutBox hit = clampHitToStrip(b, strip);
                 if (b.bottom() < strip.y() || b.y() > strip.bottom()) {
-                    hits.add(new TabHit(slot.cat, b));
+                    hits.add(new TabHit(slot.cat, hit));
                     continue;
                 }
-                boolean hovered = b.contains(mouseX, mouseY);
+                boolean hovered = hit.contains(mouseX, mouseY);
                 drawTab(g, font, slot.cat, b, hovered, slot.selected, compactAlways, rtl);
-                hits.add(new TabHit(slot.cat, b));
+                hits.add(new TabHit(slot.cat, hit));
             }
         } finally {
             g.disableScissor();
@@ -86,6 +92,21 @@ public final class SearchCategoryTab {
                                       List<SearchCategory> categories,
                                       boolean compactAlways) {
         return render(g, mouseX, mouseY, strip, current, categories, compactAlways, 0.0);
+    }
+
+    /**
+     * タブの当たり矩形を strip の上下範囲にクランプする (= 可視範囲だけを押せる領域にする)。
+     * X はタブ列が元々 strip 内に収まっているため触らず、 スクロールではみ出し得る Y だけを詰める。
+     * 完全に範囲外なら高さ 0 の矩形を返す ({@link LayoutBox#contains} は上端を含み下端を含まないので、
+     * 高さ 0 はどの座標にも当たらない = 押せない)。
+     */
+    private static LayoutBox clampHitToStrip(LayoutBox b, LayoutBox strip) {
+        int y1 = Math.max(b.y(), strip.y());
+        int y2 = Math.min(b.bottom(), strip.bottom());
+        if (y2 <= y1) {
+            return new LayoutBox(b.x(), strip.y(), b.w(), 0);
+        }
+        return new LayoutBox(b.x(), y1, b.w(), y2 - y1);
     }
 
     private static void drawTab(GuiGraphics g, Font font, SearchCategory cat,
