@@ -53,6 +53,18 @@ public final class CategoryBadgeRenderer {
      * @param key 対象コンテナの key (null = 未追跡のため非表示)
      */
     public static int renderBadge(GuiGraphics g, int x, int y, @Nullable ContainerSnapshot.Key key) {
+        return renderBadge(g, x, y, key, true);
+    }
+
+    /**
+     * {@link #renderBadge(GuiGraphics, int, int, ContainerSnapshot.Key)} の拡張版。
+     *
+     * @param showStatus 予測メタ (= Confidence% / Manual) を出すか (= Main Menu Visibility の
+     *                   「予測表示」 トグル)。 false でもカテゴリ名 ({@code [○○倉庫]}) 自体は出す。
+     *                   分類ロジックには一切影響しない (= 表示のみ)。
+     */
+    public static int renderBadge(GuiGraphics g, int x, int y, @Nullable ContainerSnapshot.Key key,
+            boolean showStatus) {
         if (!ClassifyConfig.get().showCategoryBadge)
             return 0;
         if (key == null)
@@ -85,7 +97,11 @@ public final class CategoryBadgeRenderer {
         boolean manual = cl.locked();
         Component status;
         int statusColor;
-        if (manual) {
+        if (!showStatus) {
+            // 予測表示 OFF: カテゴリ名だけ出す (= 分類は内部で続行、 メタ情報のみ非表示)。
+            status = Component.empty();
+            statusColor = 0xFFFFFFFF;
+        } else if (manual) {
             status = OmniChestLocale.get(Keys.CATEGORY_BADGE_MANUAL, " Manual");
             statusColor = 0xFFFFD54A; // 金色 = プレイヤーの意図 (= 予測の白と対比)
         } else if (cat.isConcrete()) {

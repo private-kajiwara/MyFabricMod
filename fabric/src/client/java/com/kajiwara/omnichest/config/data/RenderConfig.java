@@ -32,4 +32,44 @@ public final class RenderConfig {
      * 設定 GUI から ON に切り替える。
      */
     public boolean guiAnimation = false;
+
+    // ════════════════════════════════════════════════════════════════════
+    // Main Menu Visibility (= チェスト GUI 上に出る OmniChest 各要素の表示 ON/OFF)
+    //
+    // <b>方針 (= タスク #7/#8)</b>:
+    //   - すべて既定 <b>true</b> = 既存挙動を完全維持 (新規導入で見た目が変わらない)。
+    //   - これは <b>表示専用</b> の好み設定。 OFF にしても倉庫検索 / 分類 / 自動振り分け / 索引などの
+    //     <b>内部ロジックは一切止めない</b> (= 該当ウィジェットを生成/描画しないだけ)。
+    //   - GSON は欠落フィールドを初期化子の値で埋めるため、 旧 omnichest.json でも自動的に true。
+    //
+    // 個々のチェスト GUI 要素 (= {@code GenericContainerScreenMixin} が生成する実コンポーネント) に
+    // 1:1 対応する。 存在しない架空のコントロールは作らない。
+    // ════════════════════════════════════════════════════════════════════
+
+    /** 検索バー (= チェスト内のアイテム名ハイライト用 EditBox)。 */
+    public boolean showSearchBar = true;
+    /** 「種類」 (Type) ソートボタン。 */
+    public boolean showSortByType = true;
+    /** 「数量」 (Count) ソートボタン。 */
+    public boolean showSortByCount = true;
+    /** 「倉庫検索」 (Chest Search) ボタン。 */
+    public boolean showChestSearchButton = true;
+    /** 「カテゴリ整理」 (Category Sort) ボタン。 */
+    public boolean showCategorySortButton = true;
+    /** 「同種預入」 (Deposit Matching) ボタン。 */
+    public boolean showDepositButton = true;
+    /** 「圧縮」 (Compact) ボタン。 */
+    public boolean showCompactButton = true;
+    /** テンプレート 3 連 (保存 / 適用 / 管理) ボタン。 */
+    public boolean showTemplateButtons = true;
+    /** 「カテゴリ設定」 (Set Category) ボタン。 */
+    public boolean showSetCategoryButton = true;
+    /** 「自動振り分け」 (Category Auto Sort) ボタン。 */
+    public boolean showAutoSortButton = true;
+    /** カテゴリインジケータ (= チェスト上部の {@code [○○倉庫]} バッジ)。 */
+    public boolean showCategoryIndicator = true;
+    /** 予測表示 (= バッジ内の Confidence% / Manual 補足)。 */
+    public boolean showPredictionDisplay = true;
+    /** 操作方法ヘルプパネル (= チェスト脇の早見表)。 */
+    public boolean showControlsHelp = true;
 }

@@ -126,8 +126,34 @@ public abstract class GenericContainerScreenMixin extends Screen {
     @Unique
     private boolean cits$layoutRight = true;
 
+    /**
+     * この画面が 「検索/種類/数量 の上部行」 を持てるタイプか (= ChestMenu / ShulkerBoxMenu)。
+     *
+     * <p>
+     * 旧コードは {@code cits$searchBox == null} を 「上部行が無い画面」 のセンチネルに流用していたが、
+     * Main Menu Visibility で <b>検索バーだけ非表示</b> にすると searchBox が null になり、 種類/数量/◀▶ の
+     * レイアウトまで巻き添えでスキップされてしまう。 「上部行を持てるか」 と 「検索バーを出すか」 は別概念
+     * なので、 前者を専用フラグに分離する。
+     */
+    @Unique
+    private boolean cits$hasSearchRow = false;
+
+    /**
+     * この画面が OmniChest の右列ボタン群を出せる対応コンテナか (= {@code containerSlotCount > 0})。
+     * 個々のボタンは Main Menu Visibility で非表示にできるため、 「対応画面か」 の判定を
+     * 特定ボタン (旧: depositButton) の null チェックに依存させず、 専用フラグで持つ。
+     */
+    @Unique
+    private boolean cits$supportedContainer = false;
+
     protected GenericContainerScreenMixin(Component title) {
         super(title);
+    }
+
+    /** Main Menu Visibility 等の Render/UI 設定への短縮アクセサ。 */
+    @Unique
+    private com.kajiwara.omnichest.config.data.RenderConfig cits$ui() {
+        return com.kajiwara.omnichest.config.ConfigManager.get().render;
     }
 
     /**
@@ -152,13 +178,19 @@ public abstract class GenericContainerScreenMixin extends Screen {
     @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", at = @At("TAIL"))
     private void cits$renderCategoryBadge(GuiGraphics g, int mouseX, int mouseY, float partialTick,
             CallbackInfo ci) {
+        // Main Menu Visibility: 「カテゴリインジケータ」 OFF ならバッジ自体を出さない (= 表示のみ。
+        // 分類キャッシュ / 予測ロジックはそのまま動き続ける)。
+        if (!cits$ui().showCategoryIndicator) {
+            return;
+        }
         int badgeY = cits$badgeY();
         // バッジの帯 (背景) の左端を上部コンテンツ列のアンカーに揃える。 帯は描画 x より
         // BADGE_PAD_X だけ外側に張り出すため、 描画 x = アンカー + BADGE_PAD_X とすることで
         // 帯の左端 (= バッジの視覚的な左端) が検索行の左端と同じ縦ラインに乗る。
+        // 「予測表示」 OFF のときは Confidence% / Manual を省き、 カテゴリ名だけを出す。
         int anchorX = this.leftPos + CITS_TOP_CONTENT_LEFT;
         CategoryBadgeRenderer.renderBadge(g, anchorX + CategoryBadgeRenderer.BADGE_PAD_X, badgeY,
-                ContainerScanner.currentActiveKey());
+                ContainerScanner.currentActiveKey(), cits$ui().showPredictionDisplay);
     }
 
     // ───────────────────────────────────────────────────────────
@@ -212,8 +244,11 @@ public abstract class GenericContainerScreenMixin extends Screen {
     @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", at = @At("TAIL"))
     private void cits$renderControlsHelp(GuiGraphics g, int mouseX, int mouseY, float partialTick,
             CallbackInfo ci) {
-        // 対応画面 (= 右列ボタン生成済み) でのみ表示。
-        if (this.cits$depositButton == null)
+        // 対応コンテナでのみ表示 (= Deposit ボタンの有無に依存させない: 個別非表示でも消えないように)。
+        if (!this.cits$supportedContainer)
+            return;
+        // Main Menu Visibility: 「操作ヘルプ」 OFF なら早見表を出さない (= 表示のみ)。
+        if (!cits$ui().showControlsHelp)
             return;
 
         // ─── 1) 表示する行を組み立て (= 実際にコードが反応するキー組合せだけ) ───
@@ -381,8 +416,13 @@ public abstract class GenericContainerScreenMixin extends Screen {
      */
     @Unique
     private int cits$badgeY() {
-        boolean hasTopSearchRow = (this.cits$searchBox != null) && !this.cits$isLargeChest;
-        return hasTopSearchRow ? this.topPos - 32 : this.topPos - 14;
+        // 上部行に「実際に見えている」 ウィジェットが 1 つでもあれば、 その上にバッジを退避させる。
+        // 検索/種類/数量 を全部非表示にした場合は上部行が空くので、 バッジを GUI 直上まで下げてよい
+        // (= 不要な空きを作らない = レイアウト適応)。
+        boolean hasTopRowWidget = !this.cits$isLargeChest && this.cits$hasSearchRow
+                && (this.cits$searchBox != null || this.cits$sortByTypeButton != null
+                        || this.cits$sortByCountButton != null);
+        return hasTopRowWidget ? this.topPos - 32 : this.topPos - 14;
     }
 
     /**
@@ -454,16 +494,12 @@ public abstract class GenericContainerScreenMixin extends Screen {
     @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", at = @At("HEAD"))
     private void cits$renderButtonPanel(GuiGraphics g, int mouseX, int mouseY, float partialTick,
             CallbackInfo ci) {
-        if (this.cits$depositButton == null) return;
+        if (!this.cits$supportedContainer) return;
 
         // ─── パネル矩形の決定 (= 実際に存在するボタンの BB を 1 つに合体させる) ───
-        // 「null チェック付きで union」 することで、 テンプレ系/Distribution が OFF のときに
-        // パネルがそこまで伸びない (= 余白だらけのパネルにならない)。
-        int x = this.cits$depositButton.getX() - CITS_PANEL_MARGIN;
-        int y = this.cits$depositButton.getY() - CITS_PANEL_MARGIN;
-        int right = this.cits$depositButton.getX() + this.cits$depositButton.getWidth();
-        int bottom = this.cits$depositButton.getY() + this.cits$depositButton.getHeight();
-
+        // 「null チェック付きで union」 することで、 個々のボタンを Main Menu Visibility で隠しても
+        // パネルが見えているボタンだけにぴったり収まる (= 余白だらけ / はみ出しを作らない)。
+        // 先頭ボタン (Deposit) を隠してもよいよう、 アンカーを特定ボタンに固定せず union から求める。
         AbstractWidget[] inGroup = new AbstractWidget[] {
                 this.cits$depositButton,
                 this.cits$compactButton,
@@ -475,11 +511,22 @@ public abstract class GenericContainerScreenMixin extends Screen {
                 this.cits$setCategoryButton,
                 this.cits$autoDistributeButton,
         };
-        for (AbstractWidget w : inGroup) {
-            if (w == null) continue;
-            right = Math.max(right, w.getX() + w.getWidth());
-            bottom = Math.max(bottom, w.getY() + w.getHeight());
+        int x = Integer.MAX_VALUE;
+        int y = Integer.MAX_VALUE;
+        int right = Integer.MIN_VALUE;
+        int bottom = Integer.MIN_VALUE;
+        for (AbstractWidget wdg : inGroup) {
+            if (wdg == null) continue;
+            x = Math.min(x, wdg.getX());
+            y = Math.min(y, wdg.getY());
+            right = Math.max(right, wdg.getX() + wdg.getWidth());
+            bottom = Math.max(bottom, wdg.getY() + wdg.getHeight());
         }
+        if (right == Integer.MIN_VALUE) {
+            return; // 右列ボタンが 1 つも表示されていない → 背景パネルも描かない。
+        }
+        x -= CITS_PANEL_MARGIN;
+        y -= CITS_PANEL_MARGIN;
         int w = right - x + CITS_PANEL_MARGIN;
         int h = bottom - y + CITS_PANEL_MARGIN;
 
@@ -535,6 +582,11 @@ public abstract class GenericContainerScreenMixin extends Screen {
         AbstractContainerMenu anyMenu = ((AbstractContainerScreen<?>) (Object) this).getMenu();
         int containerSlotCount = DepositMatchingHelper.detectContainerSlotCount(anyMenu);
         if (containerSlotCount > 0) {
+            this.cits$supportedContainer = true;
+            // Main Menu Visibility: 各ボタンは対応する表示トグルが ON のときだけ生成する。
+            // 生成しない = ウィジェットとして存在しない (= 描画もクリックもされない) だけで、
+            // 預入 / 圧縮 / 整理 / 振り分け の各ロジック自体は他経路 (キーバインド等) から従来通り使える。
+            if (cits$ui().showDepositButton) {
             this.cits$depositButton = Button.builder(
                     OmniChestLocale.get(Keys.BUTTON_DEPOSIT, "Deposit Matching"),
                     btn -> DepositMatchingHelper.depositMatching(
@@ -545,12 +597,14 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     "Move items from your inventory into this chest, "
                             + "but only items already present in the chest.");
             this.addRenderableWidget(this.cits$depositButton);
+            }
 
             // ───────────────────────────────────────────────────────────
             // 「Compact」ボタン。 Deposit と同じ条件 (= 対応 GUI) でのみ生成する。
             // 通常クリック  : チェスト内のみ圧縮
             // Shift+クリック: プレイヤーインベントリ側も併せて圧縮
             // ───────────────────────────────────────────────────────────
+            if (cits$ui().showCompactButton) {
             this.cits$compactButton = Button.builder(
                     OmniChestLocale.get(Keys.BUTTON_COMPACT, "Compact"),
                     btn -> {
@@ -571,13 +625,15 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     "Merge partial stacks of the same item together.\n"
                             + "Shift + Click: also compacts your inventory.");
             this.addRenderableWidget(this.cits$compactButton);
+            }
 
             // ───────────────────────────────────────────────────────────
             // 「カテゴリ整理 (Category Sort)」 ボタン。
             // Compact の直下、 倉庫検索の上に、 Tooltip 付き標準ボタンとして生成する。
             // クリックで {@link CategorySortEngine#sort} を発火し、 tick 分散で安全に整列する。
             // ───────────────────────────────────────────────────────────
-            if (CategorySortEngine.detectContainerSlotCount(anyMenu) > 0) {
+            if (cits$ui().showCategorySortButton
+                    && CategorySortEngine.detectContainerSlotCount(anyMenu) > 0) {
                 this.cits$categorySortButton = SortButtonWidget.create(
                         anyMenu, containerSlotCount,
                         0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT);
@@ -596,6 +652,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
             //      ({@link AbstractContainerScreen#onClose} を経由しないため)。
             //   2) その上で SearchScreen を開く (parent は null = 戻り先はゲーム画面)。
             // ───────────────────────────────────────────────────────────
+            if (cits$ui().showChestSearchButton) {
             this.cits$searchNetworkButton = Button.builder(
                     OmniChestLocale.get(Keys.BUTTON_SEARCH_NETWORK, "Chest Search"),
                     btn -> {
@@ -618,12 +675,13 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     "Search every chest you have opened on this server. "
                             + "Find any item and see where it is stored.");
             this.addRenderableWidget(this.cits$searchNetworkButton);
+            }
 
             // ───────────────────────────────────────────────────────────
             // Chest Template System のボタン 3 連
             // (ユーザー設定で非表示にできる: TemplateConfig.showButtons)
             // ───────────────────────────────────────────────────────────
-            if (TemplateConfig.get().showButtons) {
+            if (TemplateConfig.get().showButtons && cits$ui().showTemplateButtons) {
                 Screen selfScreen = (Screen) (Object) this;
 
                 this.cits$saveTemplateButton = Button.builder(
@@ -670,6 +728,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
                     && ConfigManager.get().distribution.showButtons) {
                 Screen distSelf = (Screen) (Object) this;
 
+                if (cits$ui().showSetCategoryButton) {
                 this.cits$setCategoryButton = Button.builder(
                         OmniChestLocale.get("omnichest.button.set_category", "Set Category"),
                         btn -> StorageDistributionManager.openSetCategoryForCurrent(distSelf))
@@ -679,7 +738,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
                         "omnichest.button.set_category.tooltip",
                         "Mark this chest as the destination for a category of items.");
                 this.addRenderableWidget(this.cits$setCategoryButton);
+                }
 
+                if (cits$ui().showAutoSortButton) {
                 this.cits$autoDistributeButton = Button.builder(
                         OmniChestLocale.get("omnichest.button.auto_distribute", "Auto Distribute"),
                         btn -> StorageDistributionManager.openDistributePreview(distSelf))
@@ -690,6 +751,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
                         "Send items from this chest and your inventory to "
                                 + "each registered category chest automatically.");
                 this.addRenderableWidget(this.cits$autoDistributeButton);
+                }
             }
         }
 
@@ -716,7 +778,12 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
         // ラージチェスト判定は ChestMenu のときだけ (= シュルカーは固定で false = 小型扱い)。
         this.cits$isLargeChest = (anyMenu instanceof ChestMenu chestMenu) && chestMenu.getRowCount() == 6;
+        // この画面は上部行を持てる (= 検索バーだけ非表示でも 種類/数量/◀▶ のレイアウトは行う)。
+        this.cits$hasSearchRow = true;
 
+        // Main Menu Visibility: 検索バーの表示トグルが ON のときだけ生成する。 非表示でも検索索引
+        // (ContainerScanner / SearchIndex) は従来通り動く (= チェスト内ハイライト UI を出さないだけ)。
+        if (cits$ui().showSearchBar) {
         this.cits$searchBox = new EditBox(this.font, 0, 0, 100, 14,
                 OmniChestLocale.get(Keys.EDITBOX_SEARCH_LABEL, "Search"));
         this.cits$searchBox.setMaxLength(50);
@@ -726,6 +793,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
         cits$applyTooltip(this.cits$searchBox, Keys.EDITBOX_SEARCH_TOOLTIP,
                 "Highlight items in this chest by name.");
         this.addRenderableWidget(this.cits$searchBox);
+        }
 
         // 「種類」 ショートカット: 新しい {@link CategorySortEngine} (タグベース 16 カテゴリ) を起動。
         // 旧 ContainerSorter.sortByCategory (= 7 種ハードコード) は ContainerSorter 側に互換用として残るが、
@@ -733,6 +801,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
         // anyMenu / searchRowSlotCount は lambda 内で参照されるため effectively final。
         final AbstractContainerMenu sortMenu = anyMenu;
         final int sortSlotCount = searchRowSlotCount;
+        if (cits$ui().showSortByType) {
         this.cits$sortByTypeButton = Button.builder(
                 OmniChestLocale.get(Keys.BUTTON_SORT_BY_TYPE, "Type"),
                 btn -> CategorySortEngine.sort(Minecraft.getInstance(), sortMenu, sortSlotCount))
@@ -741,7 +810,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
         cits$applyTooltip(this.cits$sortByTypeButton, Keys.BUTTON_SORT_BY_TYPE_TOOLTIP,
                 "Sort this chest by item type (building, wood, ore, food, ...).");
         this.addRenderableWidget(this.cits$sortByTypeButton);
+        }
 
+        if (cits$ui().showSortByCount) {
         this.cits$sortByCountButton = Button.builder(
                 OmniChestLocale.get(Keys.BUTTON_SORT_BY_COUNT, "Count"),
                 btn -> ContainerSorter.sortByCount(Minecraft.getInstance(), sortMenu, sortSlotCount))
@@ -750,6 +821,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
         cits$applyTooltip(this.cits$sortByCountButton, Keys.BUTTON_SORT_BY_COUNT_TOOLTIP,
                 "Sort this chest by item count, largest stacks first.");
         this.addRenderableWidget(this.cits$sortByCountButton);
+        }
 
         // ◀▶ レイアウト切替ボタンは「小型チェスト」「ラージチェスト」両方で生成する。
         // ラージチェストでは側面パネル全体の左右切替、
@@ -807,9 +879,10 @@ public abstract class GenericContainerScreenMixin extends Screen {
         // ShulkerBoxScreen 等のときは GUI 直上 (topPos - 18) に置く。
         cits$applyDepositButtonLayout();
 
-        // 検索/ソート系は ContainerScreen のみで生成されるため、
-        // それ以外 (= cits$searchBox が null) では以降の処理は不要。
-        if (this.cits$searchBox == null)
+        // 上部行 (検索/ソート/◀▶) を持てる画面でなければ以降は不要。
+        // 注意: 検索バーだけ非表示にしても上部行自体は存在し得るので、 searchBox の null ではなく
+        // 専用フラグで判定する (= 検索バー非表示でも 種類/数量/◀▶ は正しく配置する)。
+        if (!this.cits$hasSearchRow)
             return;
 
         if (!this.cits$isLargeChest) {
@@ -822,19 +895,27 @@ public abstract class GenericContainerScreenMixin extends Screen {
             int y = this.topPos - 18;
             int anchorX = this.leftPos + CITS_TOP_CONTENT_LEFT;
 
-            this.cits$searchBox.setX(anchorX);
-            this.cits$searchBox.setY(y);
-            this.cits$searchBox.setWidth(CITS_SEARCH_BOX_WIDTH);
-
-            int typeX = anchorX + CITS_SEARCH_BOX_WIDTH + CITS_TOP_ROW_GAP;
-            this.cits$sortByTypeButton.setX(typeX);
-            this.cits$sortByTypeButton.setY(y);
-            this.cits$sortByTypeButton.setWidth(CITS_TOP_SORT_BUTTON_WIDTH);
-
-            int countX = typeX + CITS_TOP_SORT_BUTTON_WIDTH + CITS_TOP_ROW_GAP;
-            this.cits$sortByCountButton.setX(countX);
-            this.cits$sortByCountButton.setY(y);
-            this.cits$sortByCountButton.setWidth(CITS_TOP_SORT_BUTTON_WIDTH);
+            // 上部行は「見えている要素だけ」 を左→右へ詰める (= 非表示要素の隙間を残さない = #9 reflow)。
+            // 各要素は前要素の右端 + GAP に置き、 アンカー基準の整列を保つ。
+            int cursor = anchorX;
+            if (this.cits$searchBox != null) {
+                this.cits$searchBox.setX(cursor);
+                this.cits$searchBox.setY(y);
+                this.cits$searchBox.setWidth(CITS_SEARCH_BOX_WIDTH);
+                cursor += CITS_SEARCH_BOX_WIDTH + CITS_TOP_ROW_GAP;
+            }
+            if (this.cits$sortByTypeButton != null) {
+                this.cits$sortByTypeButton.setX(cursor);
+                this.cits$sortByTypeButton.setY(y);
+                this.cits$sortByTypeButton.setWidth(CITS_TOP_SORT_BUTTON_WIDTH);
+                cursor += CITS_TOP_SORT_BUTTON_WIDTH + CITS_TOP_ROW_GAP;
+            }
+            if (this.cits$sortByCountButton != null) {
+                this.cits$sortByCountButton.setX(cursor);
+                this.cits$sortByCountButton.setY(y);
+                this.cits$sortByCountButton.setWidth(CITS_TOP_SORT_BUTTON_WIDTH);
+                cursor += CITS_TOP_SORT_BUTTON_WIDTH + CITS_TOP_ROW_GAP;
+            }
 
             // ◀▶ レイアウト切替ボタンは、 GUI の右隣 (または ◀ が押されていれば左隣) の、
             // 検索行と同じ高さ (= topPos - 18) に並べる。
@@ -872,17 +953,28 @@ public abstract class GenericContainerScreenMixin extends Screen {
         this.cits$layoutRightButton.setY(y);
         this.cits$layoutRightButton.setWidth(triangleWidth);
 
-        this.cits$searchBox.setX(sideX);
-        this.cits$searchBox.setY(y + 18);
-        this.cits$searchBox.setWidth(panelWidth);
-
-        this.cits$sortByTypeButton.setX(sideX);
-        this.cits$sortByTypeButton.setY(y + 36);
-        this.cits$sortByTypeButton.setWidth(panelWidth);
-
-        this.cits$sortByCountButton.setX(sideX);
-        this.cits$sortByCountButton.setY(y + 54);
-        this.cits$sortByCountButton.setWidth(panelWidth);
+        // 検索 / 種類 / 数量 を ◀▶ 行 (slot 0) の下に「見えているものだけ」 縦に詰める。
+        // 非表示ぶんは詰まり、 続くボタン列 (cits$applyDepositButtonLayout) の開始 y も
+        // cits$largeTopSlots() を介して連動して繰り上がる (= reflow, 隙間なし)。
+        int slot = 1;
+        if (this.cits$searchBox != null) {
+            this.cits$searchBox.setX(sideX);
+            this.cits$searchBox.setY(y + slot * 18);
+            this.cits$searchBox.setWidth(panelWidth);
+            slot++;
+        }
+        if (this.cits$sortByTypeButton != null) {
+            this.cits$sortByTypeButton.setX(sideX);
+            this.cits$sortByTypeButton.setY(y + slot * 18);
+            this.cits$sortByTypeButton.setWidth(panelWidth);
+            slot++;
+        }
+        if (this.cits$sortByCountButton != null) {
+            this.cits$sortByCountButton.setX(sideX);
+            this.cits$sortByCountButton.setY(y + slot * 18);
+            this.cits$sortByCountButton.setWidth(panelWidth);
+            slot++;
+        }
     }
 
     /**
@@ -900,7 +992,10 @@ public abstract class GenericContainerScreenMixin extends Screen {
      */
     @Unique
     private void cits$applyDepositButtonLayout() {
-        if (this.cits$depositButton == null)
+        // 対応コンテナでのみ配置する。 個々のボタンは Main Menu Visibility で非表示にでき、
+        // その場合 null になるので、 旧来の「depositButton == null で return」 ではなく
+        // 専用フラグで判定する (= deposit だけ隠しても他ボタンが消えないように)。
+        if (!this.cits$supportedContainer)
             return;
 
         int margin = 4;
@@ -909,16 +1004,16 @@ public abstract class GenericContainerScreenMixin extends Screen {
         int width;
 
         if (this.cits$isLargeChest) {
-            // ラージチェスト: 側面パネルの 数量 ボタン (y+54) の更に下 = y+72。
-            // 幅は panelWidth (= 数量 と同じ 80) に合わせる。
+            // ラージチェスト: 側面パネルの可視ウィジェット (◀▶ + 検索/種類/数量) の<b>直下</b>から開始。
+            // 上の要素を隠すと cits$largeTopSlots() が減り、 ボタン列が繰り上がる (= reflow)。
             int panelWidth = 80;
             int sideX = this.cits$layoutRight
                     ? this.leftPos + this.imageWidth + margin
                     : this.leftPos - panelWidth - margin;
             x = sideX;
-            y = this.topPos + 72;
+            y = this.topPos + cits$largeTopSlots() * 18;
             width = panelWidth;
-        } else if (this.cits$searchBox != null) {
+        } else if (this.cits$hasSearchRow) {
             // 小型チェスト (ChestMenu かつ非ラージ): ◀▶ で左右切替できる右列。
             // y は GUI のタイトル帯と同じ高さから開始 (上に ◀▶ が居る)。
             width = CITS_DEPOSIT_WIDTH;
@@ -933,61 +1028,49 @@ public abstract class GenericContainerScreenMixin extends Screen {
             width = CITS_DEPOSIT_WIDTH;
         }
 
-        this.cits$depositButton.setX(x);
-        this.cits$depositButton.setY(y);
-        this.cits$depositButton.setWidth(width);
+        // 右列ボタンを「見えているものだけ」 上から 18px 刻みで詰める (= 非表示の隙間を残さない = #9)。
+        // 縦並び順: Deposit → Compact → カテゴリ整理 → 倉庫検索 → Save/Apply/Manage → Set Category → 自動振り分け。
+        cits$packColumn(x, y, width,
+                this.cits$depositButton, this.cits$compactButton, this.cits$categorySortButton,
+                this.cits$searchNetworkButton, this.cits$saveTemplateButton,
+                this.cits$applyTemplateButton, this.cits$manageTemplateButton,
+                this.cits$setCategoryButton, this.cits$autoDistributeButton);
+    }
 
-        // Compact ボタンは Deposit ボタンの真下に「同じサイズ・同じ X」で配置する。
-        // 行間は他のウィジェット (検索/種類/数量) と同じ 18px とする。
-        if (this.cits$compactButton != null) {
-            this.cits$compactButton.setX(x);
-            this.cits$compactButton.setY(y + 18);
-            this.cits$compactButton.setWidth(width);
+    /**
+     * 縦並びボタン列のレイアウタ。 与えられたボタンのうち <b>非 null のものだけ</b> を、
+     * {@code startY} から 18px 刻みで上から詰める (= 非表示要素の隙間を残さない)。
+     */
+    @Unique
+    private void cits$packColumn(int x, int startY, int width, Button... buttons) {
+        int slot = 0;
+        for (Button b : buttons) {
+            if (b == null) {
+                continue;
+            }
+            b.setX(x);
+            b.setY(startY + slot * 18);
+            b.setWidth(width);
+            slot++;
         }
+    }
 
-        // カテゴリ整理 ボタンを Compact の直下に配置 (= 倉庫検索より上)。
-        // 縦並び順: Deposit (+0) → Compact (+18) → カテゴリ整理 (+36) → 倉庫検索 (+54) → Save/Apply/Manage
-        if (this.cits$categorySortButton != null) {
-            this.cits$categorySortButton.setX(x);
-            this.cits$categorySortButton.setY(y + 36);
-            this.cits$categorySortButton.setWidth(width);
+    /**
+     * ラージチェスト側面パネルの「ボタン列より上」 に積まれる可視スロット数。
+     * ◀▶ 行 (常時) + 表示中の 検索 / 種類 / 数量。 ボタン列の開始 y を reflow させるのに使う。
+     */
+    @Unique
+    private int cits$largeTopSlots() {
+        int slots = 1; // ◀▶ 行は常に存在する
+        if (this.cits$searchBox != null) {
+            slots++;
         }
-
-        // 倉庫検索ボタンは カテゴリ整理 ボタンの真下に「同じサイズ・同じ X」で配置する。
-        if (this.cits$searchNetworkButton != null) {
-            this.cits$searchNetworkButton.setX(x);
-            this.cits$searchNetworkButton.setY(y + 54);
-            this.cits$searchNetworkButton.setWidth(width);
+        if (this.cits$sortByTypeButton != null) {
+            slots++;
         }
-
-        // Chest Template System 3 連: 倉庫検索の更に下に縦並び。
-        if (this.cits$saveTemplateButton != null) {
-            this.cits$saveTemplateButton.setX(x);
-            this.cits$saveTemplateButton.setY(y + 72);
-            this.cits$saveTemplateButton.setWidth(width);
+        if (this.cits$sortByCountButton != null) {
+            slots++;
         }
-        if (this.cits$applyTemplateButton != null) {
-            this.cits$applyTemplateButton.setX(x);
-            this.cits$applyTemplateButton.setY(y + 90);
-            this.cits$applyTemplateButton.setWidth(width);
-        }
-        if (this.cits$manageTemplateButton != null) {
-            this.cits$manageTemplateButton.setX(x);
-            this.cits$manageTemplateButton.setY(y + 108);
-            this.cits$manageTemplateButton.setWidth(width);
-        }
-
-        // Storage Auto Distribution の 2 ボタンは、 縦並びの最後尾に配置する。
-        // テンプレ 3 連が非表示でも独立して位置決めできるよう、 個別に null チェックする。
-        if (this.cits$setCategoryButton != null) {
-            this.cits$setCategoryButton.setX(x);
-            this.cits$setCategoryButton.setY(y + 126);
-            this.cits$setCategoryButton.setWidth(width);
-        }
-        if (this.cits$autoDistributeButton != null) {
-            this.cits$autoDistributeButton.setX(x);
-            this.cits$autoDistributeButton.setY(y + 144);
-            this.cits$autoDistributeButton.setWidth(width);
-        }
+        return slots;
     }
 }

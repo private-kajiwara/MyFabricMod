@@ -93,7 +93,7 @@ public final class DistributePreviewScreen extends Screen {
     private int arrowCx;
 
     public DistributePreviewScreen(@Nullable Screen parent, DistributionPreview preview) {
-        super(OmniChestLocale.get("omnichest.distribution.preview.title", "Auto Distribute — Preview"));
+        super(OmniChestLocale.get("omnichest.distribution.preview.title", "Category Auto Sort"));
         this.parent = parent;
         this.preview = preview;
     }
