@@ -170,7 +170,7 @@
   "config.omnichest.language.rtl_mode.auto": "自動",
   "config.omnichest.language.rtl_mode.force_on": "常に RTL",
   "config.omnichest.language.rtl_mode.force_off": "常に LTR",
-  "config.omnichest.language.unicode_font_safety": "Unicode フォント安全",
+  "config.omnichest.language.unicode_font_safety": "Unicode フォント保護",
   "config.omnichest.language.unicode_font_safety.tooltip": "非 ASCII テキストを安全に切り詰めて、 ウィジェット枠からあふれないようにします。",
   "config.omnichest.language.restart_hint": "変更は即座に反映されます。 一部のタイトルは画面を開き直すと反映されます。",
   "config.omnichest.group.basics": "基本",
