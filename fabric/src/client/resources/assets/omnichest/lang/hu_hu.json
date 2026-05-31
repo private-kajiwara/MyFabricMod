@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Cél",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = elosztás,  ESC = mégse"
+  "omnichest.distribution.preview.hint": "Enter = elosztás,  ESC = mégse",
+  "omnichest.distribution.preview.hint_empty": "ESC = vissza",
+  "omnichest.distribution.preview.required_label": "Készíts tárolót ehhez:",
+  "omnichest.distribution.set_category.existing": "Regisztrált kategóriák",
+  "omnichest.distribution.existing.title": "Regisztrált kategóriák",
+  "omnichest.distribution.existing.subtitle": "Kategóriánkénti regisztrált tárolók",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Még nincs regisztrált tároló.",
+  "omnichest.distribution.existing.hint": "ESC = vissza",
+  "omnichest.button.back": "Vissza"
 }

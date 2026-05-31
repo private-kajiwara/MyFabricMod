@@ -314,6 +314,9 @@ public final class StorageDistributionManager {
 
         List<ItemStack> sourceItems = new ArrayList<>();
         java.util.LinkedHashMap<StorageKey, GroupBuilder> groups = new java.util.LinkedHashMap<>();
+        // 「行き先となる倉庫が無い」 ために動かせなかった具体カテゴリ (= 何が足りないかの可視化用)。
+        // 副作用なし: distribute() の判定には一切関与せず、 プレビュー表示専用の読み取り情報。
+        java.util.LinkedHashSet<StorageCategory> required = new java.util.LinkedHashSet<>();
 
         if (cfg.enableAutoDistribution && mc.player != null && ctx != null) {
             AbstractContainerMenu menu = ctx.menu();
@@ -346,6 +349,8 @@ public final class StorageDistributionManager {
                         StorageAssignment target = StoragePriorityResolver.resolve(cat, mode, dim, playerPos);
                         if (target != null) {
                             addToGroup(groups, target.key(), target.name(), target.type(), cat, stack);
+                        } else if (cat.isConcrete()) {
+                            required.add(cat); // 行き先倉庫が未登録のカテゴリ。
                         }
                     }
                 }
@@ -362,6 +367,9 @@ public final class StorageDistributionManager {
                     }
                     StorageAssignment target = StoragePriorityResolver.resolve(cat, mode, dim, playerPos);
                     if (target == null || (openKey != null && target.key().equals(openKey))) {
+                        if (target == null && cat.isConcrete()) {
+                            required.add(cat); // 行き先倉庫が未登録のカテゴリ。
+                        }
                         continue;
                     }
                     addToGroup(groups, target.key(), target.name(), target.type(), cat, stack);
@@ -376,7 +384,13 @@ public final class StorageDistributionManager {
                 dests.add(new DestinationGroup(b.name, b.type, b.category, b.items, b.total));
             }
         }
-        return new DistributionPreview(openLabel, sourceCat, sourceType, sourceItems, dests);
+        // 行き先のあるカテゴリは 「足りないもの」 ではないので required から除く
+        // (= 一部が遠隔倉庫へ送れる場合に矛盾した表示を避ける)。
+        for (DestinationGroup d : dests) {
+            required.remove(d.category());
+        }
+        return new DistributionPreview(openLabel, sourceCat, sourceType, sourceItems, dests,
+                new ArrayList<>(required));
     }
 
     /** {@link #computePreview} 用: 行き先 (StorageKey) ごとにアイテムを型単位で合算する。 */
@@ -510,9 +524,12 @@ public final class StorageDistributionManager {
      * @param sourceCategory 送り元チェストの<b>割り当て</b>カテゴリ (= 無ければ null)。 ヘッダ色に使う。
      * @param sourceItems    送り元チェストの現在の中身 (= 実スロット順のコピー)
      * @param destinations   送り先チェストごとのグループ (= 受け取るアイテム群)
+     * @param requiredCategories 振り分けたいのに行き先倉庫が未登録だった具体カテゴリ
+     *                           (= empty-state で 「何の倉庫を用意すれば良いか」 を示す。 表示専用)
      */
     public record DistributionPreview(String sourceLabel, @Nullable StorageCategory sourceCategory,
-            ContainerType sourceType, List<ItemStack> sourceItems, List<DestinationGroup> destinations) {
+            ContainerType sourceType, List<ItemStack> sourceItems, List<DestinationGroup> destinations,
+            List<StorageCategory> requiredCategories) {
 
         /** 振り分け先が 1 件も無い (= 動かすものが無い) か。 */
         public boolean isEmpty() {

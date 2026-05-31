@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "ปลายทาง",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = กระจาย,  ESC = ยกเลิก"
+  "omnichest.distribution.preview.hint": "Enter = กระจาย,  ESC = ยกเลิก",
+  "omnichest.distribution.preview.hint_empty": "ESC = ย้อนกลับ",
+  "omnichest.distribution.preview.required_label": "เตรียมคลังสำหรับหมวดหมู่ต่อไปนี้:",
+  "omnichest.distribution.set_category.existing": "หมวดหมู่ที่ลงทะเบียนแล้ว",
+  "omnichest.distribution.existing.title": "หมวดหมู่ที่ลงทะเบียนแล้ว",
+  "omnichest.distribution.existing.subtitle": "จำนวนคลังที่ลงทะเบียนต่อหมวดหมู่",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "ยังไม่มีคลังที่ลงทะเบียน",
+  "omnichest.distribution.existing.hint": "ESC = ย้อนกลับ",
+  "omnichest.button.back": "ย้อนกลับ"
 }

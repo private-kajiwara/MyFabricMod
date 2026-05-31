@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "गंतव्य",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = वितरित करें,  ESC = रद्द करें"
+  "omnichest.distribution.preview.hint": "Enter = वितरित करें,  ESC = रद्द करें",
+  "omnichest.distribution.preview.hint_empty": "ESC = वापस",
+  "omnichest.distribution.preview.required_label": "इन श्रेणियों के लिए भंडार बनाएँ:",
+  "omnichest.distribution.set_category.existing": "पंजीकृत श्रेणियाँ",
+  "omnichest.distribution.existing.title": "पंजीकृत श्रेणियाँ",
+  "omnichest.distribution.existing.subtitle": "प्रत्येक श्रेणी के पंजीकृत भंडार",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "अभी तक कोई भंडार पंजीकृत नहीं।",
+  "omnichest.distribution.existing.hint": "ESC = वापस",
+  "omnichest.button.back": "वापस"
 }

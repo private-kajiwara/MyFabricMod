@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Kohde",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = jaa,  ESC = peruuta"
+  "omnichest.distribution.preview.hint": "Enter = jaa,  ESC = peruuta",
+  "omnichest.distribution.preview.hint_empty": "ESC = takaisin",
+  "omnichest.distribution.preview.required_label": "Varasto näille luokille:",
+  "omnichest.distribution.set_category.existing": "Rekisteröidyt luokat",
+  "omnichest.distribution.existing.title": "Rekisteröidyt luokat",
+  "omnichest.distribution.existing.subtitle": "Rekisteröidyt varastot luokittain",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Ei vielä rekisteröityjä varastoja.",
+  "omnichest.distribution.existing.hint": "ESC = takaisin",
+  "omnichest.button.back": "Takaisin"
 }

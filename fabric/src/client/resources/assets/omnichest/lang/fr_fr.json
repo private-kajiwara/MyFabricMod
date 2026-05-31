@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Destination",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Entrée = distribuer,  Échap = annuler"
+  "omnichest.distribution.preview.hint": "Entrée = distribuer,  Échap = annuler",
+  "omnichest.distribution.preview.hint_empty": "ESC = Retour",
+  "omnichest.distribution.preview.required_label": "Préparez un coffre pour :",
+  "omnichest.distribution.set_category.existing": "Catégories enregistrées",
+  "omnichest.distribution.existing.title": "Catégories enregistrées",
+  "omnichest.distribution.existing.subtitle": "Coffres enregistrés par catégorie",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Aucun coffre enregistré pour l'instant.",
+  "omnichest.distribution.existing.hint": "ESC = Retour",
+  "omnichest.button.back": "Retour"
 }

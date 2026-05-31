@@ -2,7 +2,6 @@ package com.kajiwara.omnichest.distribution.ui;
 
 import com.kajiwara.omnichest.classify.ClassificationCache;
 import com.kajiwara.omnichest.classify.StorageCategory;
-import com.kajiwara.omnichest.client.gui.CategoryBadgeRenderer;
 import com.kajiwara.omnichest.client.gui.search.layout.ThemeColorResolver;
 import com.kajiwara.omnichest.client.gui.search.layout.UILayoutMetrics;
 import com.kajiwara.omnichest.distribution.CategoryMapper;
@@ -19,6 +18,8 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -93,7 +94,9 @@ public final class SetCategoryScreen extends Screen {
         int gap = UILayoutMetrics.ROW_GAP + 2;
         int cx = this.width / 2;
         int left = cx - panelW / 2;
-        int y = this.height / 2 - 64;
+        // 「登録済みカテゴリ」 行を 1 つ増やすぶん、 パネル上端を引き上げて全体を縦中央に保つ
+        // (= 既存コントロールの寸法は一切変えず、 上端 y と行間だけで吸収する = #8)。
+        int y = this.height / 2 - 76;
 
         StorageAssignment existing = StorageAssignmentManager.get().get(ctx.key());
         String initialName = existing != null ? existing.name()
@@ -132,6 +135,14 @@ public final class SetCategoryScreen extends Screen {
             b.setMessage(favoriteLabel());
         }).bounds(left, y, panelW, rowH).build();
         this.addRenderableWidget(this.favoriteButton);
+        y += rowH + gap;
+
+        // 「登録済みカテゴリ」 一覧へのナビゲーション。 既存ボタンと同じフル幅 (panelW) × 同じ高さ (rowH) の
+        // 1 行を足すだけで、 他コントロールのサイズは変えない (= #8 のレイアウト制約)。
+        this.addRenderableWidget(Button.builder(
+                OmniChestLocale.get("omnichest.distribution.set_category.existing", "Existing Categories"),
+                b -> openExistingCategories())
+                .bounds(left, y, panelW, rowH).build());
         y += rowH + gap + 4;
 
         // Save / Delete / Cancel。
@@ -173,6 +184,12 @@ public final class SetCategoryScreen extends Screen {
         ClassificationCache.get().override(snapshotKey(), category, true);
 
         onClose();
+    }
+
+    /** 「登録済みカテゴリ」 一覧画面を開く (= 現在のナビゲーションパターンに従い、 戻ると本画面へ)。 */
+    private void openExistingCategories() {
+        Minecraft mc = this.minecraft != null ? this.minecraft : Minecraft.getInstance();
+        mc.setScreen(new ExistingCategoriesScreen(this));
     }
 
     private void unregister() {
@@ -233,9 +250,16 @@ public final class SetCategoryScreen extends Screen {
     // ラベル
     // ════════════════════════════════════════════════════════════════════
 
+    /**
+     * カテゴリ選択ボタンのラベル。 <b>テキスト色だけ</b> にカテゴリ色を載せる (= #7)。
+     * ボタン地・ホバー・押下はバニラのまま残し、 カテゴリの識別は文字色のみで伝える
+     * (= 地をカテゴリ色で塗らない / 枠も色付けしない)。 バニラ Button は地色を上書きできないが、
+     * Style に色を持つ Component はその色で描かれるため、 「バニラ地 + カテゴリ色文字」 になる。
+     */
     private Component categoryLabel() {
-        return OmniChestLocale.get("omnichest.distribution.set_category.category_label",
+        Component base = OmniChestLocale.get("omnichest.distribution.set_category.category_label",
                 "Category: %1$s", category.displayComponent().getString());
+        return base.copy().withStyle(Style.EMPTY.withColor(TextColor.fromRgb(category.rgb())));
     }
 
     private Component priorityLabel() {
@@ -258,25 +282,18 @@ public final class SetCategoryScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
+        // タイトル + アクセント線の Y は、 パネル上端 (init の y = height/2 - 76) と歩調を合わせて引き上げる。
+        // 「登録済みカテゴリ」 行を足してパネルを 12px 上げたぶん、 ここも上げないとチェスト名ラベルと
+        // 重なる (= 旧位置のままだと見出し/バーが名前行に被る)。
         // タイトル。
         g.drawCenteredString(this.font, this.getTitle(), this.width / 2,
-                this.height / 2 - 84, ThemeColorResolver.TEXT_PRIMARY);
+                this.height / 2 - 96, ThemeColorResolver.TEXT_PRIMARY);
 
-        // 行き先カテゴリの色を小さなアクセントで示す (= コントラスト原則)。
+        // 行き先カテゴリの色を小さなアクセントで示す (= コントラスト原則)。 ボタン地は塗らず、
+        // カテゴリ色はこの細いアクセント線とボタンの文字色だけで伝える (= #7: 地・枠は色付けしない)。
         int accent = 0xFF000000 | category.rgb();
         int cx = this.width / 2;
-        g.fill(cx - 110, this.height / 2 - 74, cx + 110, this.height / 2 - 72, accent);
-
-        // カテゴリ選択ボタンを、 in-world バッジと同じ視覚言語 (カテゴリ色) で上書き描画する。
-        // バニラボタンは入力 (クリック/フォーカス/読み上げ) のためにそのまま残し、 見た目だけ
-        // カテゴリ色チップで覆うことで、 「カテゴリ設定」 と 「在庫上のカテゴリ表示」 を一目で結びつける。
-        if (this.categoryButton != null) {
-            CategoryBadgeRenderer.renderCategoryChip(g,
-                    this.categoryButton.getX(), this.categoryButton.getY(),
-                    this.categoryButton.getWidth(), this.categoryButton.getHeight(),
-                    this.category, this.categoryButton.isHovered(), this.categoryButton.isFocused(),
-                    categoryLabel());
-        }
+        g.fill(cx - 110, this.height / 2 - 86, cx + 110, this.height / 2 - 84, accent);
 
         // 名前ラベル。
         if (this.nameBox != null) {

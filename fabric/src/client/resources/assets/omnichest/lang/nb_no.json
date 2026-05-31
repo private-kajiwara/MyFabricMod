@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Mål",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = fordel,  ESC = avbryt"
+  "omnichest.distribution.preview.hint": "Enter = fordel,  ESC = avbryt",
+  "omnichest.distribution.preview.hint_empty": "ESC = tilbake",
+  "omnichest.distribution.preview.required_label": "Sett opp et lager for:",
+  "omnichest.distribution.set_category.existing": "Registrerte kategorier",
+  "omnichest.distribution.existing.title": "Registrerte kategorier",
+  "omnichest.distribution.existing.subtitle": "Registrerte lagre per kategori",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Ingen registrerte lagre ennå.",
+  "omnichest.distribution.existing.hint": "ESC = tilbake",
+  "omnichest.button.back": "Tilbake"
 }

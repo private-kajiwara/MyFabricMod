@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Destino",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = distribuir,  ESC = cancelar"
+  "omnichest.distribution.preview.hint": "Enter = distribuir,  ESC = cancelar",
+  "omnichest.distribution.preview.hint_empty": "ESC = voltar",
+  "omnichest.distribution.preview.required_label": "Prepare um baú para:",
+  "omnichest.distribution.set_category.existing": "Categorias registradas",
+  "omnichest.distribution.existing.title": "Categorias registradas",
+  "omnichest.distribution.existing.subtitle": "Baús registrados por categoria",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Nenhum baú registrado ainda.",
+  "omnichest.distribution.existing.hint": "ESC = voltar",
+  "omnichest.button.back": "Voltar"
 }

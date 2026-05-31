@@ -118,6 +118,37 @@ public final class CategoryBadgeRenderer {
     }
 
     /**
+     * カテゴリ 「タグ」 (= {@code [カテゴリ名]} を半透明カテゴリ色帯 + カテゴリ色テキストで描く) の幅を返す。
+     * 実際に描かずレイアウト採寸だけしたい呼び出し側用 (= 折り返し計算など)。
+     */
+    public static int tagWidth(Font font, StorageCategory cat) {
+        return font.width(Component.literal("[").append(cat.displayComponent()).append("]")) + BADGE_PAD_X * 2;
+    }
+
+    /**
+     * カテゴリ 「タグ」 を (x, y) を左上として描画する (= in-world バッジの左半分と同じ視覚言語)。
+     *
+     * <p>
+     * {@code [カテゴリ名]} を、 半透明 (0x80) カテゴリ色の帯の上に、 明るいカテゴリ色テキストで描く。
+     * {@link #renderBadge} の 「カテゴリ名部分」 を <b>カテゴリ単体から</b> 描けるよう切り出した再利用版で、
+     * 振り分けプレビューの 「必要なカテゴリ」 一覧などで使う (= 反復: 在庫バッジと同じ見た目)。
+     *
+     * @return 描画した帯の総幅 (= 次のタグをここから右に置きたい呼び出し側用)。
+     */
+    public static int renderTag(GuiGraphics g, Font font, int x, int y, StorageCategory cat) {
+        int rgb = cat.rgb();
+        Component label = Component.literal("[").append(cat.displayComponent()).append("]");
+        int textW = font.width(label);
+        int padX = BADGE_PAD_X;
+        int padY = 1;
+        int h = font.lineHeight;
+        int bgArgb = (0x80 << 24) | (rgb & 0x00FFFFFF);
+        g.fill(x, y - padY, x + textW + padX * 2, y + h + padY, bgArgb);
+        g.drawString(font, label, x + padX, y, (0xFF << 24) | (rgb & 0x00FFFFFF), true);
+        return textW + padX * 2;
+    }
+
+    /**
      * カテゴリ色の 「チップ」 (= ボタン風の塗り) を描く。
      *
      * <p>

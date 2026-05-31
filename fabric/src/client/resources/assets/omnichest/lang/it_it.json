@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Destinazione",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Invio = distribuisci,  ESC = annulla"
+  "omnichest.distribution.preview.hint": "Invio = distribuisci,  ESC = annulla",
+  "omnichest.distribution.preview.hint_empty": "ESC = indietro",
+  "omnichest.distribution.preview.required_label": "Prepara un magazzino per:",
+  "omnichest.distribution.set_category.existing": "Categorie registrate",
+  "omnichest.distribution.existing.title": "Categorie registrate",
+  "omnichest.distribution.existing.subtitle": "Magazzini registrati per categoria",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Nessun magazzino ancora registrato.",
+  "omnichest.distribution.existing.hint": "ESC = indietro",
+  "omnichest.button.back": "Indietro"
 }

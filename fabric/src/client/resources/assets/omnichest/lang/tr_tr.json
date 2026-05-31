@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Hedef",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = dağıt,  ESC = iptal"
+  "omnichest.distribution.preview.hint": "Enter = dağıt,  ESC = iptal",
+  "omnichest.distribution.preview.hint_empty": "ESC = Geri",
+  "omnichest.distribution.preview.required_label": "Şu kategoriler için depo ayarlayın:",
+  "omnichest.distribution.set_category.existing": "Kayıtlı kategoriler",
+  "omnichest.distribution.existing.title": "Kayıtlı kategoriler",
+  "omnichest.distribution.existing.subtitle": "Kategoriye göre kayıtlı depolar",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Henüz kayıtlı depo yok.",
+  "omnichest.distribution.existing.hint": "ESC = Geri",
+  "omnichest.button.back": "Geri"
 }

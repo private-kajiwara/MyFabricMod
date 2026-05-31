@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Cel",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = rozdziel,  ESC = anuluj"
+  "omnichest.distribution.preview.hint": "Enter = rozdziel,  ESC = anuluj",
+  "omnichest.distribution.preview.hint_empty": "ESC = wstecz",
+  "omnichest.distribution.preview.required_label": "Przygotuj magazyn dla:",
+  "omnichest.distribution.set_category.existing": "Zarejestrowane kategorie",
+  "omnichest.distribution.existing.title": "Zarejestrowane kategorie",
+  "omnichest.distribution.existing.subtitle": "Liczba magazynów wg kategorii",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Brak zarejestrowanych magazynów.",
+  "omnichest.distribution.existing.hint": "ESC = wstecz",
+  "omnichest.button.back": "Wstecz"
 }

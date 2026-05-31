@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "الوجهة",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = توزيع,  ESC = إلغاء"
+  "omnichest.distribution.preview.hint": "Enter = توزيع,  ESC = إلغاء",
+  "omnichest.distribution.preview.hint_empty": "ESC = رجوع",
+  "omnichest.distribution.preview.required_label": "جهّز مخزنًا للفئات التالية:",
+  "omnichest.distribution.set_category.existing": "الفئات المسجّلة",
+  "omnichest.distribution.existing.title": "الفئات المسجّلة",
+  "omnichest.distribution.existing.subtitle": "عدد المخازن المسجلة لكل فئة",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "لا توجد مخازن مسجلة بعد.",
+  "omnichest.distribution.existing.hint": "ESC = رجوع",
+  "omnichest.button.back": "رجوع"
 }

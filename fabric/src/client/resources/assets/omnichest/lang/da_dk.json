@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Destination",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = fordel,  ESC = annullér"
+  "omnichest.distribution.preview.hint": "Enter = fordel,  ESC = annullér",
+  "omnichest.distribution.preview.hint_empty": "ESC = Tilbage",
+  "omnichest.distribution.preview.required_label": "Opret et lager til:",
+  "omnichest.distribution.set_category.existing": "Registrerede kategorier",
+  "omnichest.distribution.existing.title": "Registrerede kategorier",
+  "omnichest.distribution.existing.subtitle": "Registrerede lagre pr. kategori",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Ingen registrerede lagre endnu.",
+  "omnichest.distribution.existing.hint": "ESC = Tilbage",
+  "omnichest.button.back": "Tilbage"
 }

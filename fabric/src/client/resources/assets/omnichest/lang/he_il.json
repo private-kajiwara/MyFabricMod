@@ -517,5 +517,14 @@
   "omnichest.distribution.preview.destination": "יעד",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = חלק,  ESC = ביטול"
+  "omnichest.distribution.preview.hint": "Enter = חלק,  ESC = ביטול",
+  "omnichest.distribution.preview.hint_empty": "ESC = חזרה",
+  "omnichest.distribution.preview.required_label": "הכן אחסון עבור:",
+  "omnichest.distribution.set_category.existing": "קטגוריות רשומות",
+  "omnichest.distribution.existing.title": "קטגוריות רשומות",
+  "omnichest.distribution.existing.subtitle": "מספר האחסונים הרשומים לכל קטגוריה",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "אין עדיין אחסונים רשומים.",
+  "omnichest.distribution.existing.hint": "ESC = חזרה",
+  "omnichest.button.back": "חזרה"
 }

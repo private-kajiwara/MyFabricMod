@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Destinasi",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = agihkan,  ESC = batal"
+  "omnichest.distribution.preview.hint": "Enter = agihkan,  ESC = batal",
+  "omnichest.distribution.preview.hint_empty": "ESC = Kembali",
+  "omnichest.distribution.preview.required_label": "Sediakan stor untuk:",
+  "omnichest.distribution.set_category.existing": "Kategori Berdaftar",
+  "omnichest.distribution.existing.title": "Kategori Berdaftar",
+  "omnichest.distribution.existing.subtitle": "Bilangan stor berdaftar setiap kategori",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Belum ada stor didaftarkan.",
+  "omnichest.distribution.existing.hint": "ESC = Kembali",
+  "omnichest.button.back": "Kembali"
 }

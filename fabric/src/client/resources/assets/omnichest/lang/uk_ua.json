@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Призначення",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = розподілити,  ESC = скасувати"
+  "omnichest.distribution.preview.hint": "Enter = розподілити,  ESC = скасувати",
+  "omnichest.distribution.preview.hint_empty": "ESC = Назад",
+  "omnichest.distribution.preview.required_label": "Підготуйте сховище для:",
+  "omnichest.distribution.set_category.existing": "Зареєстровані категорії",
+  "omnichest.distribution.existing.title": "Зареєстровані категорії",
+  "omnichest.distribution.existing.subtitle": "Кількість сховищ за категорією",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Зареєстрованих сховищ ще немає.",
+  "omnichest.distribution.existing.hint": "ESC = Назад",
+  "omnichest.button.back": "Назад"
 }

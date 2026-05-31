@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "目的地",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = 分配,  ESC = 取消"
+  "omnichest.distribution.preview.hint": "Enter = 分配,  ESC = 取消",
+  "omnichest.distribution.preview.hint_empty": "ESC = 返回",
+  "omnichest.distribution.preview.required_label": "请准备以下类别的仓库：",
+  "omnichest.distribution.set_category.existing": "已注册类别",
+  "omnichest.distribution.existing.title": "已注册类别",
+  "omnichest.distribution.existing.subtitle": "各类别的已注册仓库数",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "暂无已注册的仓库。",
+  "omnichest.distribution.existing.hint": "ESC = 返回",
+  "omnichest.button.back": "返回"
 }

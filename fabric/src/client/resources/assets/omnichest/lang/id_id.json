@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Tujuan",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = distribusikan,  ESC = batal"
+  "omnichest.distribution.preview.hint": "Enter = distribusikan,  ESC = batal",
+  "omnichest.distribution.preview.hint_empty": "ESC = kembali",
+  "omnichest.distribution.preview.required_label": "Siapkan penyimpanan untuk:",
+  "omnichest.distribution.set_category.existing": "Kategori terdaftar",
+  "omnichest.distribution.existing.title": "Kategori terdaftar",
+  "omnichest.distribution.existing.subtitle": "Jumlah penyimpanan terdaftar per kategori",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Belum ada penyimpanan terdaftar.",
+  "omnichest.distribution.existing.hint": "ESC = kembali",
+  "omnichest.button.back": "Kembali"
 }

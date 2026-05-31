@@ -1,5 +1,7 @@
 package com.kajiwara.omnichest.distribution.ui;
 
+import com.kajiwara.omnichest.classify.StorageCategory;
+import com.kajiwara.omnichest.client.gui.CategoryBadgeRenderer;
 import com.kajiwara.omnichest.client.gui.search.layout.ThemeColorResolver;
 import com.kajiwara.omnichest.client.gui.search.layout.UILayoutMetrics;
 import com.kajiwara.omnichest.config.gui.widget.DropdownPopup;
@@ -11,6 +13,7 @@ import com.kajiwara.omnichest.distribution.StorageDistributionManager.Distributi
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -62,6 +65,9 @@ public final class DistributePreviewScreen extends Screen {
     private static final int NAME_X = ICON + 4;        // 名前テキストの左オフセット (アイコン幅 + 余白)
     private static final int NAME_ROW_H = 16;          // 名前行の高さ (= アイコンに合わせる)
     private static final int OFFSCREEN = -10000;       // popup 展開中に widget へ渡す画面外座標
+    private static final int TAG_GAP = 4;              // empty-state の必要カテゴリ タグ間の隙間
+    private static final int FOOTER_PAD_X = 6;         // フッター backdrop の左右 padding
+    private static final int FOOTER_PAD_Y = 2;         // フッター backdrop の上下 padding
 
     @Nullable
     private final Screen parent;
@@ -72,6 +78,9 @@ public final class DistributePreviewScreen extends Screen {
     /** 送り先選択ドロップダウン (開いている間のみ非 null)。 */
     @Nullable
     private OverlayPopup activePopup;
+
+    /** empty-state で表示する 「必要なカテゴリ」 を、 ダイアログ幅で折り返した行リスト。 */
+    private List<List<StorageCategory>> requiredRows = List.of();
 
     // ─── computeLayout() が確定させる座標 ───
     private int dialogX;
@@ -125,7 +134,20 @@ public final class DistributePreviewScreen extends Screen {
         int sourceBlockH = 10 + NAME_ROW_H + 2 + sourceGridHeight() + (sourceOverflow() ? lineH + 1 : 0);
         // 送り先は選択で中身が変わってもダイアログ高さが揺れないよう、 常に最大行ぶん確保する。
         int destBlockH = 10 + NAME_ROW_H + 2 + DEST_MAX_ROWS * CELL;
-        int contentH = preview.isEmpty() ? (lineH + 8) : Math.max(sourceBlockH, destBlockH);
+
+        int contentH;
+        if (preview.isEmpty()) {
+            // empty-state: 「動かせない」 見出し + (あれば) 「必要なカテゴリ」 ラベル + タグ行。
+            this.requiredRows = computeRequiredRows(PANEL_W + ARROW_W + PANEL_W);
+            int h = lineH + 2;
+            if (!requiredRows.isEmpty()) {
+                h += 6 + lineH + 4 + requiredRows.size() * (lineH + 3);
+            }
+            contentH = h + 4;
+        } else {
+            this.requiredRows = List.of();
+            contentH = Math.max(sourceBlockH, destBlockH);
+        }
 
         this.dialogW = PAD + PANEL_W + ARROW_W + PANEL_W + PAD;
         this.dialogH = HEADER_H + 4 + contentH + 8 + UILayoutMetrics.BUTTON_HEIGHT + PAD;
@@ -137,6 +159,33 @@ public final class DistributePreviewScreen extends Screen {
         this.arrowCx = dialogX + PAD + PANEL_W + ARROW_W / 2;
     }
 
+    /**
+     * 「必要なカテゴリ」 タグを、 与えられた最大幅で左から詰めて折り返す (= 1 行に収まらなければ改行)。
+     * タグの採寸は {@link CategoryBadgeRenderer#tagWidth} を使い、 描画 ({@link #renderRequiredCategories})
+     * と完全に一致させる。
+     */
+    private List<List<StorageCategory>> computeRequiredRows(int maxW) {
+        List<List<StorageCategory>> rows = new ArrayList<>();
+        List<StorageCategory> cur = new ArrayList<>();
+        int curW = 0;
+        for (StorageCategory cat : preview.requiredCategories()) {
+            int w = CategoryBadgeRenderer.tagWidth(this.font, cat);
+            int add = (cur.isEmpty() ? 0 : TAG_GAP) + w;
+            if (!cur.isEmpty() && curW + add > maxW) {
+                rows.add(cur);
+                cur = new ArrayList<>();
+                curW = 0;
+                add = w;
+            }
+            cur.add(cat);
+            curW += add;
+        }
+        if (!cur.isEmpty()) {
+            rows.add(cur);
+        }
+        return rows;
+    }
+
     @Override
     protected void init() {
         super.init();
@@ -146,8 +195,20 @@ public final class DistributePreviewScreen extends Screen {
         computeLayout();
 
         int rowH = UILayoutMetrics.BUTTON_HEIGHT;
-        int btnW = (dialogW - PAD * 2 - 6) / 2;
         int btnY = dialogY + dialogH - PAD - rowH;
+
+        if (preview.isEmpty()) {
+            // empty-state は <b>確認ワークフローではなくナビゲーション</b>。 実行できない操作 (= Distribute)
+            // は出さず、 「戻る」 だけを <b>バニラ標準ボタン</b> で 1 つ中央に置く (= Back は中断ではなく遷移)。
+            int backW = Math.min(120, dialogW - PAD * 2);
+            int backX = dialogX + (dialogW - backW) / 2;
+            this.addRenderableWidget(Button.builder(
+                    OmniChestLocale.get("omnichest.button.back", "Back"), b -> onClose())
+                    .bounds(backX, btnY, backW, rowH).build());
+            return;
+        }
+
+        int btnW = (dialogW - PAD * 2 - 6) / 2;
         int bx = dialogX + PAD;
 
         // 設定画面と同じ NavyFooterButton で Distribute / Cancel を出す (= ネイティブな OmniChest ダイアログ感)。
@@ -160,6 +221,10 @@ public final class DistributePreviewScreen extends Screen {
     }
 
     private void confirm() {
+        if (preview.isEmpty()) {
+            onClose(); // 動かすものが無い: Distribute は走らせず、 戻るだけ (= 防御的)。
+            return;
+        }
         Minecraft mc = this.minecraft != null ? this.minecraft : Minecraft.getInstance();
         // 先にチェストへ戻ってから実行する (= プレイヤーは元のチェスト画面で移動を見られる)。
         // チェストは開いたままなので active コンテキストは保たれ、 distributeFromOpen が正しく走る。
@@ -203,10 +268,7 @@ public final class DistributePreviewScreen extends Screen {
 
         // ─── 2) コンテンツ (パネル/スロット/トリガ) ───
         if (preview.isEmpty()) {
-            Component empty = OmniChestLocale.get("omnichest.distribution.preview.empty",
-                    "Nothing to distribute right now.");
-            g.drawCenteredString(this.font, empty, dialogX + dialogW / 2, contentTop + 4,
-                    ThemeColorResolver.TEXT_SECONDARY);
+            renderEmptyState(g);
         } else {
             renderSourcePanel(g);
             renderArrow(g);
@@ -219,11 +281,19 @@ public final class DistributePreviewScreen extends Screen {
         int wmy = popup ? OFFSCREEN : mouseY;
         super.render(g, wmx, wmy, partialTick);
 
-        // フッターヒント (= 他の OmniChest 画面と同じ位置/トーン)。
-        Component hint = OmniChestLocale.get("omnichest.distribution.preview.hint",
-                "Enter = distribute,  ESC = cancel");
-        g.drawCenteredString(this.font, hint, this.width / 2,
-                this.height - UILayoutMetrics.FOOTER_HINT_FROM_BOTTOM, ThemeColorResolver.TEXT_DIM);
+        // フッターヒント (= popup モードに応じて利用可能な操作だけを出す。 倉庫検索と同じ backdrop 帯で
+        // 視認性を確保 = #5/#6)。 empty-state は 「戻る」 しかできないので Back のヒントだけに絞る。
+        Component hint = preview.isEmpty()
+                ? OmniChestLocale.get("omnichest.distribution.preview.hint_empty", "ESC = back")
+                : OmniChestLocale.get("omnichest.distribution.preview.hint",
+                        "Enter = distribute,  ESC = cancel");
+        int hintW = this.font.width(hint);
+        int hintY = this.height - UILayoutMetrics.FOOTER_HINT_FROM_BOTTOM;
+        int cx = this.width / 2;
+        g.fill(cx - hintW / 2 - FOOTER_PAD_X, hintY - FOOTER_PAD_Y,
+                cx + hintW / 2 + FOOTER_PAD_X, hintY + this.font.lineHeight + FOOTER_PAD_Y,
+                ThemeColorResolver.FOOTER_BACKDROP);
+        g.drawCenteredString(this.font, hint, cx, hintY, ThemeColorResolver.TEXT_DIM);
 
         // ─── 4) ドロップダウン (= 最前面) ───
         if (this.activePopup != null) {
@@ -298,6 +368,47 @@ public final class DistributePreviewScreen extends Screen {
             g.drawString(this.font,
                     OmniChestLocale.get("omnichest.distribution.preview.more", "…and %1$d more", extra),
                     x, gridY() + DEST_MAX_ROWS * CELL + 1, ThemeColorResolver.TEXT_DIM, false);
+        }
+    }
+
+    /**
+     * empty-state の本文を描く: 「いま動かせない」 見出し + (あれば) 「次のカテゴリの倉庫を用意して」
+     * というガイドを、 在庫バッジと同じカテゴリタグ ({@link CategoryBadgeRenderer#renderTag}) で示す。
+     * これにより 「なぜ振り分けできないか」 と 「何をすれば良いか」 を一目で伝える (= #4)。
+     */
+    private void renderEmptyState(GuiGraphics g) {
+        int cx = dialogX + dialogW / 2;
+        int y = contentTop + 2;
+
+        Component empty = OmniChestLocale.get("omnichest.distribution.preview.empty",
+                "Nothing to distribute right now.");
+        g.drawCenteredString(this.font, empty, cx, y, ThemeColorResolver.TEXT_SECONDARY);
+        y += this.font.lineHeight;
+
+        if (requiredRows.isEmpty()) {
+            return;
+        }
+
+        y += 6;
+        Component label = OmniChestLocale.get("omnichest.distribution.preview.required_label",
+                "Set up a storage for:");
+        g.drawCenteredString(this.font, label, cx, y, ThemeColorResolver.TEXT_DIM);
+        y += this.font.lineHeight + 4;
+
+        for (List<StorageCategory> row : requiredRows) {
+            int rowW = 0;
+            for (int i = 0; i < row.size(); i++) {
+                rowW += CategoryBadgeRenderer.tagWidth(this.font, row.get(i));
+                if (i < row.size() - 1) {
+                    rowW += TAG_GAP;
+                }
+            }
+            int tx = cx - rowW / 2;
+            for (StorageCategory cat : row) {
+                tx += CategoryBadgeRenderer.renderTag(g, this.font, tx, y, cat);
+                tx += TAG_GAP;
+            }
+            y += this.font.lineHeight + 3;
         }
     }
 
@@ -385,7 +496,12 @@ public final class DistributePreviewScreen extends Screen {
             return true;
         }
         if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
-            confirm();
+            // empty-state では Distribute が無いので Enter も 「戻る」 に倒す (= 出している操作と一致)。
+            if (preview.isEmpty()) {
+                onClose();
+            } else {
+                confirm();
+            }
             return true;
         }
         return super.keyPressed(event);

@@ -1142,7 +1142,7 @@ public class SearchScreen extends Screen {
         int bgRight = startX + totalW + padX;
         int bgTop = y - padY;
         int bgBottom = y + this.font.lineHeight + padY;
-        g.fill(bgLeft, bgTop, bgRight, bgBottom, 0xB0000000);
+        g.fill(bgLeft, bgTop, bgRight, bgBottom, ThemeColorResolver.FOOTER_BACKDROP);
 
         int cursor = startX;
         for (int i = 0; i < hints.length; i++) {

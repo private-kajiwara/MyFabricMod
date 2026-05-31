@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Назначение",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = распределить,  ESC = отмена"
+  "omnichest.distribution.preview.hint": "Enter = распределить,  ESC = отмена",
+  "omnichest.distribution.preview.hint_empty": "ESC = назад",
+  "omnichest.distribution.preview.required_label": "Создайте хранилище для:",
+  "omnichest.distribution.set_category.existing": "Зарегистрированные категории",
+  "omnichest.distribution.existing.title": "Зарегистрированные категории",
+  "omnichest.distribution.existing.subtitle": "Число хранилищ по категориям",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Зарегистрированных хранилищ пока нет.",
+  "omnichest.distribution.existing.hint": "ESC = назад",
+  "omnichest.button.back": "Назад"
 }

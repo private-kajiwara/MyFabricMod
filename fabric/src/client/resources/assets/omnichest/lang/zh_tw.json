@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "目的地",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = 分配,  ESC = 取消"
+  "omnichest.distribution.preview.hint": "Enter = 分配,  ESC = 取消",
+  "omnichest.distribution.preview.hint_empty": "ESC = 返回",
+  "omnichest.distribution.preview.required_label": "請設定以下類別的倉庫：",
+  "omnichest.distribution.set_category.existing": "已註冊類別",
+  "omnichest.distribution.existing.title": "已註冊類別",
+  "omnichest.distribution.existing.subtitle": "各類別的已註冊倉庫數",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "尚無已註冊的倉庫。",
+  "omnichest.distribution.existing.hint": "ESC = 返回",
+  "omnichest.button.back": "返回"
 }

@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Mål",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = fördela,  ESC = avbryt"
+  "omnichest.distribution.preview.hint": "Enter = fördela,  ESC = avbryt",
+  "omnichest.distribution.preview.hint_empty": "ESC = tillbaka",
+  "omnichest.distribution.preview.required_label": "Skapa ett lager för:",
+  "omnichest.distribution.set_category.existing": "Registrerade kategorier",
+  "omnichest.distribution.existing.title": "Registrerade kategorier",
+  "omnichest.distribution.existing.subtitle": "Antal registrerade lager per kategori",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Inga registrerade lager än.",
+  "omnichest.distribution.existing.hint": "ESC = tillbaka",
+  "omnichest.button.back": "Tillbaka"
 }

@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Đích đến",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = phân loại,  ESC = hủy"
+  "omnichest.distribution.preview.hint": "Enter = phân loại,  ESC = hủy",
+  "omnichest.distribution.preview.hint_empty": "ESC = quay lại",
+  "omnichest.distribution.preview.required_label": "Hãy chuẩn bị kho cho:",
+  "omnichest.distribution.set_category.existing": "Kho đã đăng ký",
+  "omnichest.distribution.existing.title": "Kho đã đăng ký",
+  "omnichest.distribution.existing.subtitle": "Số kho đã đăng ký theo từng phân loại",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Chưa có kho nào được đăng ký.",
+  "omnichest.distribution.existing.hint": "ESC = quay lại",
+  "omnichest.button.back": "Quay lại"
 }

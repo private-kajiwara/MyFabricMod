@@ -444,5 +444,14 @@
   "omnichest.distribution.preview.destination": "Destinație",
   "omnichest.distribution.preview.count": "×%1$d",
   "omnichest.distribution.preview.dest_count": "%1$s  ×%2$d",
-  "omnichest.distribution.preview.hint": "Enter = distribuie,  ESC = anulează"
+  "omnichest.distribution.preview.hint": "Enter = distribuie,  ESC = anulează",
+  "omnichest.distribution.preview.hint_empty": "ESC = înapoi",
+  "omnichest.distribution.preview.required_label": "Pregătește un depozit pentru:",
+  "omnichest.distribution.set_category.existing": "Categorii înregistrate",
+  "omnichest.distribution.existing.title": "Categorii înregistrate",
+  "omnichest.distribution.existing.subtitle": "Depozite înregistrate pe categorie",
+  "omnichest.distribution.existing.count": "×%1$d",
+  "omnichest.distribution.existing.empty": "Niciun depozit înregistrat încă.",
+  "omnichest.distribution.existing.hint": "ESC = înapoi",
+  "omnichest.button.back": "Înapoi"
 }
