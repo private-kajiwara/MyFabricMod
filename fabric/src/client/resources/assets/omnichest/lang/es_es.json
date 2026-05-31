@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Aún no hay almacenes registrados.",
   "omnichest.distribution.existing.hint": "ESC = Volver",
-  "omnichest.button.back": "Volver"
+  "omnichest.button.back": "Volver",
+  "omnichest.button.create_new": "Crear nuevo"
 }

@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "尚無已註冊的倉庫。",
   "omnichest.distribution.existing.hint": "ESC = 返回",
-  "omnichest.button.back": "返回"
+  "omnichest.button.back": "返回",
+  "omnichest.button.create_new": "新增"
 }

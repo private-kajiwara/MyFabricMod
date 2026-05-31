@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Ingen registrerte lagre ennå.",
   "omnichest.distribution.existing.hint": "ESC = tilbake",
-  "omnichest.button.back": "Tilbake"
+  "omnichest.button.back": "Tilbake",
+  "omnichest.button.create_new": "Opprett ny"
 }

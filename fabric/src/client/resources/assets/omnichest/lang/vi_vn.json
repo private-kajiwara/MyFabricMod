@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Chưa có kho nào được đăng ký.",
   "omnichest.distribution.existing.hint": "ESC = quay lại",
-  "omnichest.button.back": "Quay lại"
+  "omnichest.button.back": "Quay lại",
+  "omnichest.button.create_new": "Tạo mới"
 }

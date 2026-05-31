@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "अभी तक कोई भंडार पंजीकृत नहीं।",
   "omnichest.distribution.existing.hint": "ESC = वापस",
-  "omnichest.button.back": "वापस"
+  "omnichest.button.back": "वापस",
+  "omnichest.button.create_new": "नया बनाएँ"
 }

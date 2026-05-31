@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Aucun coffre enregistré pour l'instant.",
   "omnichest.distribution.existing.hint": "ESC = Retour",
-  "omnichest.button.back": "Retour"
+  "omnichest.button.back": "Retour",
+  "omnichest.button.create_new": "Créer"
 }

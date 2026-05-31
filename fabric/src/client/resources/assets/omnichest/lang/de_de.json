@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Noch keine Lager registriert.",
   "omnichest.distribution.existing.hint": "ESC = Zurück",
-  "omnichest.button.back": "Zurück"
+  "omnichest.button.back": "Zurück",
+  "omnichest.button.create_new": "Neu erstellen"
 }

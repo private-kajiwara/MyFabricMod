@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Niciun depozit înregistrat încă.",
   "omnichest.distribution.existing.hint": "ESC = înapoi",
-  "omnichest.button.back": "Înapoi"
+  "omnichest.button.back": "Înapoi",
+  "omnichest.button.create_new": "Creează"
 }

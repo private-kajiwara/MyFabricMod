@@ -57,8 +57,8 @@ public final class AltPreviewPopupRenderer {
     private static final double FADE_BASE_MS = 120.0;
 
     // ─── フェード追跡 (= ホバー対象の同一性で再開を判定) ───
-    /** 直近に描画した対象スタック (== で比較してフェード状態を判別)。 */
-    private static ItemStack lastTarget = null;
+    /** 直近に描画した対象 (== で比較してフェード状態を判別)。 シュルカーは ItemStack、 テンプレートは ChestTemplate 等。 */
+    private static Object lastTarget = null;
     /** 現フェードの開始時刻 (ms)。 */
     private static long fadeStartMs = 0L;
 
@@ -128,18 +128,35 @@ public final class AltPreviewPopupRenderer {
     public static void render(GuiGraphics g, Font font, ItemStack containerStack,
                               int x, int y, int columns, boolean backdropDim) {
         if (containerStack == null || containerStack.isEmpty()) return;
-
-        int cols = clampColumns(columns);
         int slotCount = RecursiveContainerHelper.DEFAULT_CONTAINER_SLOTS;
         List<ItemStack> slots = RecursiveContainerHelper.readSlots(containerStack, slotCount);
         if (slots.isEmpty()) return;
+        Component title = ContainerHierarchyResolver.containerLabel(containerStack);
+        renderSlots(g, font, title, slots, slotCount, x, y, columns, backdropDim, containerStack);
+    }
 
+    /**
+     * スロット配列ベースの描画本体。 テンプレート管理プレビュー等からも再利用できるよう public。
+     * {@link #render(GuiGraphics, Font, ItemStack, int, int, int, boolean)} はこれに委譲する。
+     * パネル / セル / タイトル / セパレータ / サマリの見た目はシュルカープレビューと完全一致。
+     *
+     * @param slots     各スロットの内容 (空は {@link ItemStack#EMPTY})。 {@code slotCount} より短ければ不足分は空セル。
+     * @param slotCount グリッドに描く総スロット数 (= コンテナサイズ)。
+     * @param fadeKey   フェード継続判定に使う識別子 (== 比較)。 対象が変わると再フェード。
+     */
+    public static void renderSlots(GuiGraphics g, Font font, Component title,
+                                   List<ItemStack> slots, int slotCount,
+                                   int x, int y, int columns, boolean backdropDim,
+                                   Object fadeKey) {
+        if (slots == null || title == null) return;
+
+        int cols = clampColumns(columns);
         int rows = Math.max(1, (slotCount + cols - 1) / cols);
         int w = panelWidth(cols);
         int h = panelHeight(cols, slotCount);
 
         // ─── (1) フェード値 ───
-        float fadeAlpha = updateFadeAlpha(containerStack);
+        float fadeAlpha = updateFadeAlpha(fadeKey);
 
         // ─── (2) オプション dim バックドロップ ───
         if (backdropDim) {
@@ -158,8 +175,7 @@ public final class AltPreviewPopupRenderer {
         int contentRight = x + w - pad;
         int contentW = contentRight - contentLeft;
 
-        // ─── (5) タイトル (= コンテナ表示名: カスタム名 / 染色名 / 翻訳名 を自動解決) ───
-        Component title = ContainerHierarchyResolver.containerLabel(containerStack);
+        // ─── (5) タイトル ───
         int titleY = y + pad - 1;
         int titleX = rtl ? (contentRight - font.width(title)) : contentLeft;
         int titleColor = UnifiedPanelRenderer.scaleAlpha(PopupThemeResolver.TEXT_PRIMARY, fadeAlpha);
@@ -178,8 +194,8 @@ public final class AltPreviewPopupRenderer {
         // アイテム総数 (= 全スロットのスタック count の合計)。 サマリで「スロット利用率」 と
         // 並べて表示するため、 グリッド描画と同じループでまとめて積算する (= 二重走査回避)。
         int totalItems = 0;
-        for (int i = 0; i < slotCount && i < slots.size(); i++) {
-            ItemStack s = slots.get(i);
+        for (int i = 0; i < slotCount; i++) {
+            ItemStack s = i < slots.size() ? slots.get(i) : ItemStack.EMPTY;
             int col = i % cols;
             int row = i / cols;
             int displayCol = rtl ? (cols - 1 - col) : col;
@@ -234,7 +250,7 @@ public final class AltPreviewPopupRenderer {
      * ホバー対象が変わった瞬間に 0 から再スタート、 同一対象なら経過時間に従って 1 へ近づく。
      * {@code render.guiAnimation == false} の場合は常に 1 (= フェードなし)。
      */
-    private static float updateFadeAlpha(ItemStack target) {
+    private static float updateFadeAlpha(Object target) {
         boolean animEnabled;
         double speed;
         try {

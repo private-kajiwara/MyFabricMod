@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Nenhum baú registrado ainda.",
   "omnichest.distribution.existing.hint": "ESC = voltar",
-  "omnichest.button.back": "Voltar"
+  "omnichest.button.back": "Voltar",
+  "omnichest.button.create_new": "Criar novo"
 }

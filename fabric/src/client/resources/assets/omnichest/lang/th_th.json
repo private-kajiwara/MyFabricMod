@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "ยังไม่มีคลังที่ลงทะเบียน",
   "omnichest.distribution.existing.hint": "ESC = ย้อนกลับ",
-  "omnichest.button.back": "ย้อนกลับ"
+  "omnichest.button.back": "ย้อนกลับ",
+  "omnichest.button.create_new": "สร้างใหม่"
 }

@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Még nincs regisztrált tároló.",
   "omnichest.distribution.existing.hint": "ESC = vissza",
-  "omnichest.button.back": "Vissza"
+  "omnichest.button.back": "Vissza",
+  "omnichest.button.create_new": "Új létrehozása"
 }

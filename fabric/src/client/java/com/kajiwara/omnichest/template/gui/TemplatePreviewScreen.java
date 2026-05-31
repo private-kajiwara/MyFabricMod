@@ -78,21 +78,19 @@ public class TemplatePreviewScreen extends Screen {
         int cx = this.width / 2;
         int bottomY = this.height - 36;
 
+        // 新規作成: このチェストから新しいテンプレートを作る画面 (= TemplateSaveScreen) へ。
         this.addRenderableWidget(Button.builder(
-                OmniChestLocale.get(Keys.BUTTON_APPLY, "Apply"),
-                b -> doApply())
+                OmniChestLocale.get(Keys.BUTTON_CREATE_NEW, "Create New"),
+                b -> Minecraft.getInstance().setScreen(
+                        new TemplateSaveScreen(this.parent, this.menu, this.containerSlotCount)))
                 .bounds(cx - 120, bottomY, 115, 20).build());
 
+        // 戻る: テンプレート一覧 (= テンプレートメニュー) へ。
         this.addRenderableWidget(Button.builder(
-                OmniChestLocale.get(Keys.BUTTON_CANCEL, "Cancel"),
-                b -> this.onClose())
+                OmniChestLocale.get(Keys.BUTTON_BACK, "Back"),
+                b -> Minecraft.getInstance().setScreen(
+                        new TemplateManagerScreen(this.parent, this.menu, this.containerSlotCount)))
                 .bounds(cx + 5, bottomY, 115, 20).build());
-    }
-
-    private void doApply() {
-        TemplateApplyEngine.applyPlan(Minecraft.getInstance(), this.menu, this.plan);
-        // 元のチェスト GUI に戻す = ユーザーは整理進行を実画面で見られる。
-        Minecraft.getInstance().setScreen(this.parent);
     }
 
     @Override

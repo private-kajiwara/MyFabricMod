@@ -280,7 +280,7 @@
   "omnichest.template.kind.help.category": "同じカテゴリのアイテムなら代替できます。 (素材倉庫向け)",
   "omnichest.template.kind.help.hybrid": "希望は固定しつつ、 無ければ同カテゴリで代用します。",
   "omnichest.template.manager.summary": "登録 %1$d 件 / 表示 %2$d 件",
-  "omnichest.template.manager.hint": "行クリック=適用 (要チェスト連動) / 複製/削除/↑↓ は行の右側 / ESC で閉じる",
+  "omnichest.template.manager.hint": "行クリック=適用 (要チェスト連動) / alt = テンプレート詳細 / ESC で閉じる",
   "omnichest.template.manager.slot_rule_count": "%1$d スロット / %2$d ルール",
   "omnichest.template.row.action.apply": "適用",
   "omnichest.template.row.action.duplicate": "複製",
@@ -476,6 +476,7 @@
   "omnichest.distribution.existing.empty": "登録済みの倉庫はまだありません。",
   "omnichest.distribution.existing.hint": "ESC = 戻る",
   "omnichest.button.back": "戻る",
+  "omnichest.button.create_new": "新規作成",
 
   "config.omnichest.category.distribution": "倉庫振り分け",
   "config.omnichest.distribution.enableAutoDistribution": "自動振り分けを有効化",

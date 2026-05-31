@@ -422,7 +422,7 @@ public class SearchScreen extends Screen {
         SearchConfig cfg = ConfigManager.get().search;
 
         // ─── ヘッダ (= タイトル + 統計を 1 行で並べる) ─────────────────────────────
-        // <b>レイアウト</b>: 中央にタイトル、 右端 (LTR) / 左端 (RTL) に統計テキスト。
+        // <b>レイアウト</b>: 最左端 (LTR) / 最右端 (RTL) にタイトル、 反対端に統計テキスト (= テンプレート管理画面と統一)。
         // 旧実装はタイトル中央 / 統計左寄せで配置していたが、 新レイアウト (= mockup 準拠) では
         // タイトル「倉庫検索 (見出し)」 と 統計「ヒット/選択/総スタック数」 が
         // <b>同一の水平線上</b> で「タイトル中央〜やや左 / 統計右」 と分かれている。
@@ -432,16 +432,23 @@ public class SearchScreen extends Screen {
         // 「画面の主役は何か」 を一目で伝える (= 4 原則の Contrast)。 bold は <em>描画時に
         // 適用</em> するため、 翻訳ファイル側で {@code §l} 等のフォーマットコードを書く必要がない
         // (= 全言語に自動で乗る = 翻訳者の作業 0)。
+        boolean rtl = LocalizationBridge.isRtl();
+        // ─── タイトル (= LTR では最左端、 RTL では最右端 ── テンプレート管理画面と同じ寄せ方) ──
         Component boldTitle = this.getTitle().copy().withStyle(net.minecraft.ChatFormatting.BOLD);
-        g.drawCenteredString(font, boldTitle, this.width / 2, UILayoutMetrics.SCREEN_INSET_TOP,
-                ThemeColorResolver.TEXT_PRIMARY);
+        if (rtl) {
+            g.drawString(font, boldTitle,
+                    this.width - UILayoutMetrics.SCREEN_INSET_X - font.width(boldTitle),
+                    UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_PRIMARY, true);
+        } else {
+            g.drawString(font, boldTitle, UILayoutMetrics.SCREEN_INSET_X,
+                    UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_PRIMARY, true);
+        }
 
         // ─── サマリ (= LTR では右、 RTL では左 ── mockup 準拠) ──
         int total = ChestNetworkManager.get().size();
         Component summary = OmniChestLocale.get(Keys.SEARCH_SUMMARY,
                 "Registered: %1$d  /  Hits: %2$d  /  Selected: %3$d",
                 total, this.results.size(), this.selectedRows.size());
-        boolean rtl = LocalizationBridge.isRtl();
         if (rtl) {
             // RTL: 統計を画面左に貼り付け (= タイトルの「外側」 が 統計、 という対称性を保つ)。
             g.drawString(font, summary, UILayoutMetrics.SCREEN_INSET_X,

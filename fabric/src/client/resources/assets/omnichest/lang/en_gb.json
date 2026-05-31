@@ -500,5 +500,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "No storages registered yet.",
   "omnichest.distribution.existing.hint": "ESC = back",
-  "omnichest.button.back": "Back"
+  "omnichest.button.back": "Back",
+  "omnichest.button.create_new": "Create New"
 }

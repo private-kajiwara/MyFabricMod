@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Henüz kayıtlı depo yok.",
   "omnichest.distribution.existing.hint": "ESC = Geri",
-  "omnichest.button.back": "Geri"
+  "omnichest.button.back": "Geri",
+  "omnichest.button.create_new": "Yeni oluştur"
 }

@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "لا توجد مخازن مسجلة بعد.",
   "omnichest.distribution.existing.hint": "ESC = رجوع",
-  "omnichest.button.back": "رجوع"
+  "omnichest.button.back": "رجوع",
+  "omnichest.button.create_new": "إنشاء جديد"
 }

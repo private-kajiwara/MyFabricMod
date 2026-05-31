@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "아직 등록된 보관함이 없습니다.",
   "omnichest.distribution.existing.hint": "ESC = 뒤로",
-  "omnichest.button.back": "뒤로"
+  "omnichest.button.back": "뒤로",
+  "omnichest.button.create_new": "새로 만들기"
 }

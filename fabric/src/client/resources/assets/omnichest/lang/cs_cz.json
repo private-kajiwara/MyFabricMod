@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Zatím žádná registrovaná úložiště.",
   "omnichest.distribution.existing.hint": "ESC = Zpět",
-  "omnichest.button.back": "Zpět"
+  "omnichest.button.back": "Zpět",
+  "omnichest.button.create_new": "Vytvořit nový"
 }

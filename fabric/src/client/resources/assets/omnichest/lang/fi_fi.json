@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Ei vielä rekisteröityjä varastoja.",
   "omnichest.distribution.existing.hint": "ESC = takaisin",
-  "omnichest.button.back": "Takaisin"
+  "omnichest.button.back": "Takaisin",
+  "omnichest.button.create_new": "Luo uusi"
 }

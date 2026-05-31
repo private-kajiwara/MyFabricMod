@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Brak zarejestrowanych magazynów.",
   "omnichest.distribution.existing.hint": "ESC = wstecz",
-  "omnichest.button.back": "Wstecz"
+  "omnichest.button.back": "Wstecz",
+  "omnichest.button.create_new": "Utwórz nowy"
 }

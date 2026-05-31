@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Зарегистрированных хранилищ пока нет.",
   "omnichest.distribution.existing.hint": "ESC = назад",
-  "omnichest.button.back": "Назад"
+  "omnichest.button.back": "Назад",
+  "omnichest.button.create_new": "Создать"
 }

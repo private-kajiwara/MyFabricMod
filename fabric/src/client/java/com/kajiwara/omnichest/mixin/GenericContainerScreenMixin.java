@@ -696,12 +696,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
                 this.cits$applyTemplateButton = Button.builder(
                         OmniChestLocale.get(Keys.BUTTON_APPLY_TEMPLATE, "Apply Template"),
-                        btn -> {
-                            // Apply は Manager 画面経由で「どのテンプレートを使うか」を選んでもらう。
-                            // (1 ボタンに「直近を再適用」を割り当てるのは別 issue。)
-                            Minecraft.getInstance().setScreen(
-                                    new TemplateManagerScreen(selfScreen, anyMenu, containerSlotCount));
-                        })
+                        btn -> Minecraft.getInstance().setScreen(
+                                new TemplateSaveScreen(selfScreen, anyMenu, containerSlotCount)))
                         .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
                         .build();
                 cits$applyTooltip(this.cits$applyTemplateButton, Keys.BUTTON_APPLY_TEMPLATE_TOOLTIP,

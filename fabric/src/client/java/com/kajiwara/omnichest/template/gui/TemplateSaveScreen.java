@@ -139,6 +139,10 @@ public class TemplateSaveScreen extends Screen {
 
     @Override
     public void onClose() {
+        // キャンセル / ESC は「呼び出し元」 (= parent) にそのまま戻す。 入口ごとに戻り先が変わる:
+        //   - メインメニュー (チェスト GUI) の [配置を保存] / [テンプレ適用] から開いた場合 → チェストに戻る。
+        //   - テンプレート管理画面から開いた場合 → 管理画面に戻る。
+        // これにより、 ユーザが直前にいた文脈を壊さずキャンセルできる。
         Minecraft.getInstance().setScreen(this.parent);
     }
 }

@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Зареєстрованих сховищ ще немає.",
   "omnichest.distribution.existing.hint": "ESC = Назад",
-  "omnichest.button.back": "Назад"
+  "omnichest.button.back": "Назад",
+  "omnichest.button.create_new": "Створити"
 }

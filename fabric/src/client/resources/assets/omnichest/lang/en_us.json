@@ -324,7 +324,7 @@
   "omnichest.template.kind.help.hybrid": "Prefers the original item, falls back to same-category substitutes.",
 
   "omnichest.template.manager.summary": "Saved: %1$d  /  Shown: %2$d",
-  "omnichest.template.manager.hint": "Click row = Apply (requires a chest) / Buttons on the right / ESC = close",
+  "omnichest.template.manager.hint": "Click row = Apply (requires a chest) / Alt = Template details / ESC = close",
   "omnichest.template.manager.slot_rule_count": "%1$d slots / %2$d rules",
 
   "omnichest.template.row.action.apply": "Apply",
@@ -524,6 +524,7 @@
   "omnichest.distribution.existing.empty": "No storages registered yet.",
   "omnichest.distribution.existing.hint": "ESC = back",
   "omnichest.button.back": "Back",
+  "omnichest.button.create_new": "Create New",
 
   "config.omnichest.category.distribution": "Storage Distribution",
   "config.omnichest.distribution.enableAutoDistribution": "Enable Auto Distribution",

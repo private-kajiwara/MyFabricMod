@@ -63,6 +63,8 @@ public final class Keys {
     public static final String BUTTON_APPLY = "omnichest.button.apply";
     public static final String BUTTON_CLOSE = "omnichest.button.close";
     public static final String BUTTON_OK = "omnichest.button.ok";
+    public static final String BUTTON_BACK = "omnichest.button.back";
+    public static final String BUTTON_CREATE_NEW = "omnichest.button.create_new";
 
     public static final String BUTTON_DEPOSIT = "omnichest.button.deposit";
     public static final String BUTTON_COMPACT = "omnichest.button.compact";

@@ -557,5 +557,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "אין עדיין אחסונים רשומים.",
   "omnichest.distribution.existing.hint": "ESC = חזרה",
-  "omnichest.button.back": "חזרה"
+  "omnichest.button.back": "חזרה",
+  "omnichest.button.create_new": "צור חדש"
 }

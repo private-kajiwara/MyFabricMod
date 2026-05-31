@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Nog geen opslag geregistreerd.",
   "omnichest.distribution.existing.hint": "ESC = terug",
-  "omnichest.button.back": "Terug"
+  "omnichest.button.back": "Terug",
+  "omnichest.button.create_new": "Nieuw maken"
 }

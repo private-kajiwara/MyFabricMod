@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Belum ada stor didaftarkan.",
   "omnichest.distribution.existing.hint": "ESC = Kembali",
-  "omnichest.button.back": "Kembali"
+  "omnichest.button.back": "Kembali",
+  "omnichest.button.create_new": "Cipta baharu"
 }

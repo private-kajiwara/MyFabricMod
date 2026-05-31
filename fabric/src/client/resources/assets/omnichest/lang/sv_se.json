@@ -484,5 +484,6 @@
   "omnichest.distribution.existing.count": "×%1$d",
   "omnichest.distribution.existing.empty": "Inga registrerade lager än.",
   "omnichest.distribution.existing.hint": "ESC = tillbaka",
-  "omnichest.button.back": "Tillbaka"
+  "omnichest.button.back": "Tillbaka",
+  "omnichest.button.create_new": "Skapa ny"
 }
