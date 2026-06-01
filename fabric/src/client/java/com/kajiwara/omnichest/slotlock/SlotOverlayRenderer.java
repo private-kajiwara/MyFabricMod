@@ -126,6 +126,13 @@ public final class SlotOverlayRenderer {
         // pulseFactor は 0.6..1.0 の範囲を取る。
         float pulseFactor = cfg.pulseAnimation ? computePulseFactor() : 1.0f;
 
+        // ─── リサイズ (F11 / GUI スケール / 解像度変更) 安全性について ───
+        // 本メソッドは vanilla {@code renderSlot} の <b>TAIL</b> で呼ばれ、 描画には Slot が保持する
+        // GUI ローカル座標 slot.x / slot.y をそのまま使う。 これらは vanilla 自身が直前に同じ値で
+        // アイテムを描いた「生きた」 座標であり、 リサイズ時は AbstractContainerScreen.init() が
+        // leftPos/topPos と全 Slot 座標を再計算してから次フレームの renderSlot が走るため、
+        // overlay は常に vanilla と同一座標に重なる (= stale 化しない / 追加のキャッシュや
+        // 画面サイズ参照は不要)。
         int x = slot.x;
         int y = slot.y;
 

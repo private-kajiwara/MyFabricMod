@@ -220,6 +220,24 @@ public final class DistributePreviewScreen extends Screen {
                 b -> onClose()));
     }
 
+    /**
+     * 画面リサイズ (F11 / GUI スケール / 解像度変更) ハンドラ。
+     *
+     * <p>
+     * {@code super.resize()} が {@link #init()} → {@link #computeLayout()} を呼び直してダイアログ座標を
+     * 生きた画面サイズで再計算するため、 ダイアログ本体は自動で再センタリングされる。 一方
+     * 送り先選択ドロップダウン ({@code activePopup}) は <b>右パネルの名前行</b> という移動するアンカーに
+     * 紐づくため、 リサイズ後は anchor が動いて追従できない。 {@code survivesResize()} が false なら
+     * 破棄して、 古いアンカー座標での描画・誤クリックを防ぐ ({@link OverlayPopup} の契約)。
+     */
+    @Override
+    public void resize(int w, int h) {
+        super.resize(w, h);
+        if (this.activePopup != null && !this.activePopup.survivesResize()) {
+            this.activePopup = null;
+        }
+    }
+
     private void confirm() {
         if (preview.isEmpty()) {
             onClose(); // 動かすものが無い: Distribute は走らせず、 戻るだけ (= 防御的)。

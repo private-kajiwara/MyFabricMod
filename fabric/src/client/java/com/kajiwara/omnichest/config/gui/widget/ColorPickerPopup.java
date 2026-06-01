@@ -100,10 +100,20 @@ public final class ColorPickerPopup implements OverlayPopup {
 
     // ─── 状態 ──────────────────────────────────────────────────────
 
-    /** スクリーン中央に置くポップアップの左上 X 座標。 */
-    private final int popupX;
-    /** スクリーン中央に置くポップアップの左上 Y 座標。 */
-    private final int popupY;
+    /**
+     * スクリーン中央に置くポップアップの左上 X 座標。
+     * <p>
+     * <b>final にしない</b>: F11 / GUI スケール変更 / 解像度変更でも常に画面中央に居続けるよう、
+     * {@link #reflow()} が描画・入力の各フレーム冒頭で生きた画面サイズから再計算する。
+     * 旧実装は構築時の {@code screenW/screenH} で 1 度だけ確定していたため、 popup 表示中に
+     * リサイズすると古い画面サイズ基準の座標のまま描画され、 中央からずれて見切れていた。
+     */
+    private int popupX;
+    /** スクリーン中央に置くポップアップの左上 Y 座標。 {@link #popupX} と同じ理由で非 final。 */
+    private int popupY;
+    /** Window が取得できない極端なケースで使う、 構築時点の画面サイズ (fallback)。 */
+    private final int ctorScreenW;
+    private final int ctorScreenH;
     /** OK 押下時に新しい RGB を渡す callback。 */
     private final IntConsumer onConfirm;
 
@@ -118,9 +128,10 @@ public final class ColorPickerPopup implements OverlayPopup {
     private boolean closed = false;
 
     public ColorPickerPopup(int screenW, int screenH, int initialRgb, IntConsumer onConfirm) {
-        this.popupX = (screenW - POPUP_W) / 2;
-        this.popupY = (screenH - POPUP_H) / 2;
+        this.ctorScreenW = screenW;
+        this.ctorScreenH = screenH;
         this.onConfirm = onConfirm;
+        reflow(); // popupX/popupY を生きた画面サイズで初期化 (= 構築直後から正しい中央座標)。
 
         float[] hsv = rgbToHsv(initialRgb);
         this.hue = hsv[0];
@@ -128,9 +139,39 @@ public final class ColorPickerPopup implements OverlayPopup {
         this.val = hsv[2];
     }
 
+    /**
+     * 現在のスケール後画面サイズから中央寄せ座標 ({@link #popupX} / {@link #popupY}) を再計算する。
+     * <p>
+     * 描画 ({@link #render}) と全入力ハンドラの冒頭で呼ぶことで、 popup 表示中に F11 / GUI スケール /
+     * 解像度を変えても「描画位置」 と「クリック判定」 が常に同じ生きた画面サイズを基準にし、 ズレない。
+     * Window が取れない極端なケースのみ構築時点の寸法へ fallback する。
+     */
+    private void reflow() {
+        int w = this.ctorScreenW;
+        int h = this.ctorScreenH;
+        try {
+            var window = Minecraft.getInstance().getWindow();
+            w = window.getGuiScaledWidth();
+            h = window.getGuiScaledHeight();
+        } catch (Throwable ignored) {
+            // fallback: 構築時点の寸法。
+        }
+        this.popupX = (w - POPUP_W) / 2;
+        this.popupY = (h - POPUP_H) / 2;
+    }
+
     /** OK / Cancel / 外側クリック後に呼ばれ、 Screen 側で参照を破棄させるためのフラグ。 */
     public boolean isClosed() {
         return this.closed;
+    }
+
+    /**
+     * 中央寄せ popup なので、 リサイズ後も {@link #reflow()} が毎フレーム再センタリングする。
+     * よってリサイズで閉じる必要はなく、 表示状態を維持する。
+     */
+    @Override
+    public boolean survivesResize() {
+        return true;
     }
 
     /** マウス座標がポップアップ内か。 ポップアップ外クリックを「Cancel と同等」に扱うために使う。 */
@@ -144,6 +185,7 @@ public final class ColorPickerPopup implements OverlayPopup {
     // ════════════════════════════════════════════════════════════════════
 
     public void render(GuiGraphics g, int mouseX, int mouseY) {
+        reflow(); // 描画前に生きた画面サイズで再センタリング (= F11 / スケール変更追従)。
         // ─── 背面 dimmer (= ポップアップ以外を暗く) ───
         g.fill(0, 0, g.guiWidth(), g.guiHeight(), 0x80000000);
 
@@ -279,6 +321,7 @@ public final class ColorPickerPopup implements OverlayPopup {
     // ════════════════════════════════════════════════════════════════════
 
     public boolean mouseClicked(double mx, double my, int button) {
+        reflow(); // 入力判定前に再センタリング → 描画と同じ座標系でヒットテスト。
         if (button != 0) return false;
         if (!isInside(mx, my)) {
             // ポップアップ外クリック: Cancel と同等。
@@ -319,6 +362,7 @@ public final class ColorPickerPopup implements OverlayPopup {
     }
 
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
+        reflow(); // ドラッグ中にリサイズされても SV/Hue の相対座標計算を生きた中央基準に保つ。
         if (button != 0) return false;
         if (this.drag == Drag.SV) {
             updateSv(mx, my);

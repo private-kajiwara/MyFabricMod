@@ -299,6 +299,32 @@ public class SearchScreen extends Screen {
         init();
     }
 
+    /**
+     * 画面リサイズ (F11 全画面トグル / GUI スケール変更 / 解像度変更) ハンドラ。
+     *
+     * <p>
+     * {@code super.resize()} が {@link #init()} を呼び直し、 {@link SearchScreenLayout#compute} が
+     * 生きた {@code this.width/height} から全 widget 座標 (検索ボックス / ソート / リスト / タブ列) を
+     * 再計算するため、 Screen 本体のレイアウトは自動で追従する。
+     *
+     * <p>
+     * ただし widget ツリー外で保持している <b>一時オーバーレイ状態</b> は init() では触られないため、
+     * ここで明示的に破棄する。 いずれも開いた時点の<b>絶対座標</b>に紐づくため、 リサイズ後は意味を失う:
+     * <ul>
+     *   <li>{@link #displayDropdown}: 「Display Mode ▼」 ボタン直下に出る anchor 追従型。 ボタンが
+     *       リサイズで動くため、 残すと古い位置に取り残される → null 化して閉じる。</li>
+     *   <li>{@link #stickyPreviewStack} / anchor: ALT+ホイールクリックで pin した中身プレビュー。
+     *       anchor はクリック時の絶対マウス座標なので、 リサイズ後は元の意味を失う → 解除する
+     *       (画面端クランプで見切れはしないが、 pin 位置の意味が崩れるため畳むのが自然)。</li>
+     * </ul>
+     */
+    @Override
+    public void resize(int w, int h) {
+        this.displayDropdown = null;
+        this.stickyPreviewStack = ItemStack.EMPTY;
+        super.resize(w, h);
+    }
+
     private void highlightSelectedAndClose() {
         for (SelectedRow sr : this.selectedRows.values()) {
             if (sr.containerPath() != null && !sr.containerPath().isEmpty()) {
@@ -360,6 +386,14 @@ public class SearchScreen extends Screen {
      * (= 4 原則 「コントラスト・近接」 の観点で、 行ハイライトと枠を視覚的に分離する)。
      */
     private static final int LIST_BOTTOM_BREATHING_ROOM = 6;
+
+    /**
+     * フッターヒントを 1 行に収めるための最小縮小率。
+     * <p>
+     * 1 行の合計幅が画面幅を超える狭い論理キャンバスでは、 折り返さずにこの下限までテキストを
+     * 縮小して 1 行を維持する (= ユーザ要件「下部の説明は 1 行」)。
+     */
+    private static final float FOOTER_MIN_SCALE = 0.5f;
 
     /**
      * 「実際にコンテンツを描画して見せられる」 垂直方向の有効ビューポート高さ。
@@ -449,14 +483,23 @@ public class SearchScreen extends Screen {
         Component summary = OmniChestLocale.get(Keys.SEARCH_SUMMARY,
                 "Registered: %1$d  /  Hits: %2$d  /  Selected: %3$d",
                 total, this.results.size(), this.selectedRows.size());
-        if (rtl) {
-            // RTL: 統計を画面左に貼り付け (= タイトルの「外側」 が 統計、 という対称性を保つ)。
-            g.drawString(font, summary, UILayoutMetrics.SCREEN_INSET_X,
-                    UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
-        } else {
-            int sw = font.width(summary);
-            g.drawString(font, summary, this.width - UILayoutMetrics.SCREEN_INSET_X - sw,
-                    UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
+        // ─── 狭い幅での「タイトルと統計が被る」 対策 ───
+        // タイトル (左/右端) と統計 (反対端) が 1 行で両端寄せされるため、 GUI Scale Auto の全画面化で
+        // 論理幅が縮むと中央で衝突して文字が重なっていた。 両者 + inset + 最小間隔が画面幅に収まる
+        // ときだけ統計を描画する (= 通常幅は従来どおり両方表示 = 見た目不変。 収まらない極小幅では
+        // 主役のタイトルを優先し、 副次的な統計を伏せて重なりを防ぐ。 統計は検索すれば再表示される)。
+        int summaryW = font.width(summary);
+        int titleW = font.width(boldTitle);
+        boolean headerFits = titleW + summaryW + 2 * UILayoutMetrics.SCREEN_INSET_X + 6 <= this.width;
+        if (headerFits) {
+            if (rtl) {
+                // RTL: 統計を画面左に貼り付け (= タイトルの「外側」 が 統計、 という対称性を保つ)。
+                g.drawString(font, summary, UILayoutMetrics.SCREEN_INSET_X,
+                        UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
+            } else {
+                g.drawString(font, summary, this.width - UILayoutMetrics.SCREEN_INSET_X - summaryW,
+                        UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
+            }
         }
 
         // ─── カテゴリタブ列 (= 左側固定 / RTL は右側) ───────────────
@@ -1089,21 +1132,9 @@ public class SearchScreen extends Screen {
         ChestHighlighter.get().removeItemForSnapshot(target.snapshot().key(), target.stack());
     }
 
-    /**
-     * フッターのショートカットヒント行を描画する。
-     *
-     * <p>
-     * 3 つの「キー = 動作」 ペアを 1 行に並べる。 ペア間の <b>区切り</b> は同じ幅の gap (= グループ間
-     * spacing) で、 1 ペア内のキー / イコール / 動作 は <b>空白 1 つ</b> しか挟まない
-     * (= proximity: ペアを 1 つの認識単位として扱わせる)。
-     *
-     * <p>
-     * <b>センター配置の理由</b>: フッター幅 (= screenW) のうち、 3 ペア + 2 gap の合計幅を 1 度だけ
-     * 計算し、 そこから X = (screenW - totalW) / 2 で開始位置を決めると、 翻訳で文字数が変わっても
-     * 自動で再センタリングされる (= ハードコード x 座標に依存しない)。
-     */
-    private void cits$renderFooterHints(GuiGraphics g) {
-        Component[] hints = new Component[]{
+    /** フッターに出す固定 4 件の ALT ヒント。 */
+    private Component[] cits$footerHints() {
+        return new Component[]{
                 OmniChestLocale.get(Keys.SEARCH_HINT,
                         "ALT = Item details"),
                 OmniChestLocale.get(Keys.SEARCH_HINT_SELECT_ALL,
@@ -1113,52 +1144,82 @@ public class SearchScreen extends Screen {
                 OmniChestLocale.get(Keys.SEARCH_HINT_DESELECT_HOVERED,
                         "ALT + D = Deselect hovered"),
         };
+    }
 
-        // グループ間 spacing (= ペア外余白)。
-        // 一般的なヒント帯と同じ「ピル区切り」 のような視覚距離を出すため、
-        // font の半角スペース 4 つぶん相当を取る (= 翻訳の長短に依存しない)。
-        int gap = this.font.width("    ");
+    /** フッターヒントのグループ間 spacing (= ペア外余白)。 半角スペース 4 つぶん相当。 */
+    private int cits$footerHintGap() {
+        return this.font.width("    ");
+    }
 
-        // 全体幅 = 各ヒント文字幅 + (n-1) * gap。
-        int totalW = 0;
+    /**
+     * フッターのショートカットヒントを <b>常に 1 行</b>で描画する。
+     *
+     * <p>
+     * 4 つの「キー = 動作」 ペアを 1 行に中央寄せで並べる。 ペア間は gap (= グループ間 spacing) で
+     * 区切り、 ペア内は空白 1 つ (= proximity)。
+     *
+     * <p>
+     * <b>狭い幅 (= GUI Scale Auto の全画面化で論理幅が縮む) での扱い</b>: 1 行の合計幅が画面に
+     * 収まらない場合、 <b>折り返さずにテキスト全体を中央基準で縮小</b>して 1 行に押し込む
+     * (= ユーザ要件「下部の説明は 1 行」)。 内容は削らず、 ボタン・リストとも重ならない。
+     * 収まる通常幅では等倍で <b>従来と完全に同一</b>の描画になる。
+     */
+    private void cits$renderFooterHints(GuiGraphics g) {
+        Component[] hints = cits$footerHints();
+        int gap = cits$footerHintGap();
+        int color = ThemeColorResolver.TEXT_DIM;
+        int lineH = this.font.lineHeight;
+
+        // 1 行での総幅 (= 各ヒント幅 + (n-1) gap)。
         int[] widths = new int[hints.length];
+        int totalW = 0;
         for (int i = 0; i < hints.length; i++) {
             widths[i] = this.font.width(hints[i]);
             totalW += widths[i];
         }
         totalW += gap * (hints.length - 1);
 
-        // 中央寄せの開始 X。 1 px 単位の整数で確定 (= 浮動小数による滲み回避)。
-        int startX = (this.width - totalW) / 2;
         int y = this.layout.footerHint.y();
-        int color = ThemeColorResolver.TEXT_DIM;
-
-        // ─── 半透明黒の背景 backdrop ───
-        // フッターヒントは TEXT_DIM (= 暗めグレー) で描かれるため、 list 領域の黄色フレームや
-        // タブ表示と背景が被ると視認性が落ちる。 文字列の左右に小さい padding を入れた
-        // 「ピル状の」 半透明黒の帯を 1 本だけ敷くことで、 ヒント行をフォーカス フィルムとして
-        // 浮かせる (= 4 原則の Contrast: 「文字 vs 背景」 の輝度差を物理的に確保)。
-        //
-        // <b>採寸</b>:
-        //   - X 範囲: テキスト全体の中央寄せ box (= [startX, startX+totalW]) を padX で左右に膨らます。
-        //   - Y 範囲: テキスト行の上下 (= [y - padY, y + lineHeight + padY])。
-        //   - 色: 0xB0000000 (= alpha ≈ 69%、 黒)。 不透明にしすぎず、 下のフレームをぼんやり残す。
         int padX = 6;
         int padY = 2;
-        int bgLeft = startX - padX;
-        int bgRight = startX + totalW + padX;
-        int bgTop = y - padY;
-        int bgBottom = y + this.font.lineHeight + padY;
-        g.fill(bgLeft, bgTop, bgRight, bgBottom, ThemeColorResolver.FOOTER_BACKDROP);
+        int avail = this.width - 2 * UILayoutMetrics.SCREEN_INSET_X;
 
-        int cursor = startX;
+        if (totalW <= avail || totalW <= 0) {
+            // ─── 等倍 1 行 (= 従来と完全一致) ───
+            // 中央寄せの開始 X。 1 px 単位の整数で確定 (= 浮動小数による滲み回避)。
+            int startX = (this.width - totalW) / 2;
+            g.fill(startX - padX, y - padY, startX + totalW + padX, y + lineH + padY,
+                    ThemeColorResolver.FOOTER_BACKDROP);
+            int cursor = startX;
+            for (int i = 0; i < hints.length; i++) {
+                // footer は subtle なので shadow=false (= 既存の TEXT_DIM と同じ控えめ表現)。
+                g.drawString(this.font, hints[i], cursor, y, color, false);
+                cursor += widths[i];
+                if (i < hints.length - 1) cursor += gap;
+            }
+            return;
+        }
+
+        // ─── 縮小 1 行 (= 収まらない幅): 中央基準でスケールして 1 行に押し込む ───
+        // 下限 {@link #FOOTER_MIN_SCALE} で潰れすぎを防ぐ (= それ未満になる極端な幅では端で切れるが、
+        // 折り返して 2 段になる崩れよりは「1 行・小さめ」 を優先する = ユーザ要件)。
+        float scale = Math.max(FOOTER_MIN_SCALE, avail / (float) totalW);
+        float scaledW = totalW * scale;
+        float left = (this.width - scaledW) / 2f;
+        // backdrop は等倍座標 (= 縮小後の実寸) で描く。
+        g.fill((int) Math.floor(left) - padX, y - padY,
+                (int) Math.ceil(left + scaledW) + padX, y + lineH + padY,
+                ThemeColorResolver.FOOTER_BACKDROP);
+        g.pose().pushMatrix();
+        g.pose().translate(left, (float) y);
+        g.pose().scale(scale, scale);
+        int cursor = 0;
         for (int i = 0; i < hints.length; i++) {
-            // drawString は (font, text, x, y, color, shadow=true)。 footer は subtle なので
-            // shadow=false で「テキストだけ」 を描く (= 既存の TEXT_DIM 色と同じ控えめ表現)。
-            g.drawString(this.font, hints[i], cursor, y, color, false);
+            g.drawString(this.font, hints[i], cursor, 0, color, false);
             cursor += widths[i];
             if (i < hints.length - 1) cursor += gap;
         }
+        g.pose().popMatrix();
     }
 
     /**

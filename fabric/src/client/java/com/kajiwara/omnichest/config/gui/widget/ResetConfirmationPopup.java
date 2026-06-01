@@ -90,6 +90,15 @@ public final class ResetConfirmationPopup implements OverlayPopup {
     }
 
     /**
+     * 中央寄せ popup。 {@link #layout()} が描画・入力の各フレームで生きた画面サイズから座標を
+     * 再計算するため、 リサイズ後も自動で再センタリングされる。 よって閉じる必要はなく維持する。
+     */
+    @Override
+    public boolean survivesResize() {
+        return true;
+    }
+
+    /**
      * 現在のスケール後画面サイズからレイアウトを再計算する。
      * <p>
      * 描画 ({@link #render}) と入力判定 ({@link #mouseClicked}) の両方が <b>同じ</b> Window スケール寸法を

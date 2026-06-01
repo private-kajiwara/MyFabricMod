@@ -65,6 +65,17 @@ import java.util.List;
  */
 public final class SearchScreenLayout {
 
+    /**
+     * 単行コントロール行を維持できる検索ボックスの最小幅 (px)。
+     * <p>
+     * 余剰幅がこれ以上ある限り単行レイアウトは <b>従来と完全に同一</b> の座標を返す
+     * (= 通常幅・全画面ともバイト互換)。 これを下回る狭い論理キャンバス (= GUI Scale Auto で
+     * 全画面化したときに起こり得る) でのみ、 検索ボックスが両隣のボタンに重なるのを避けるため
+     * 段組みフォールバックへ切り替える。 値 40 は旧実装の {@code Math.max(40, …)} 切り上げ閾値と
+     * 一致させ、 「重ならない幅」 の集合を旧実装と完全に一致させている (= 既存挙動を変えない)。
+     */
+    private static final int MIN_SEARCH_BOX = 40;
+
     public final int screenW;
     public final int screenH;
     public final boolean rtl;
@@ -175,58 +186,127 @@ public final class SearchScreenLayout {
         // 縮んだ場合に検索が使えなくなるのを避けるため最低 40 px は確保する。
         // 40 を割るほど狭い環境では SearchBox が両側のボタンと <em>視覚的にオーバーラップ</em>
         // するが、 機能 (= 入力 / 選択 / ソート) は維持される (= 「行が割れる」 より良い)。
-        int searchBoxW = Math.max(40, contentW - reservedFixed - reservedGaps);
+        // ─── 単行に必要な検索ボックス幅 (= 余剰)。 重なり検出のしきい値 ───
+        // 旧実装は {@code Math.max(40, 余剰)} で、 余剰が 40 を下回る狭い論理キャンバス
+        // (= GUI Scale Auto で全画面化 → スケール係数が上がり論理幅が縮む) では検索ボックスが
+        // 40px に切り上げられ、 両隣のソート/Find ボタンに <b>重なって</b> 描画されていた
+        // (旧トレードオフ: 「行が割れるより重なりを許容」)。 ユーザ報告「要素が重なる/文字が被る」
+        // の主因。
+        //
+        // <b>対処 (狭い幅でのみフォールバック)</b>: 余剰 ≥ {@link #MIN_SEARCH_BOX} の幅では
+        // 下の単行ブランチが <b>従来と完全に同一</b> の座標を返す (= 通常幅はバイト互換・見た目不変)。
+        // 余剰がそれを下回る「重なる幅」 でのみ、 Display Mode を (なお足りなければ Sort 群も)
+        // 2 行目へ折り返して重なりを解消する。 ボタン・機能・操作は全て維持。
+        int singleRowSearchW = contentW - reservedFixed - reservedGaps;
+        int row2Y = controlRowY + btnH + rowGap;
 
         LayoutBox findSelected;
         LayoutBox searchBox;
         LayoutBox sortDistance, sortCount, sortName;
         LayoutBox displayMode;
+        int controlsBottom;
 
-        // ─── アンカーレイアウト (単行のみ) ───
-        // <b>水平方向の式</b> (LTR):
-        //   findSelected.x = contentLeft                                         (= 左アンカ)
-        //   displayMode.right = contentRight                                     (= 右アンカ)
-        //   sortName.right = displayMode.x - groupGap
-        //   sortCount.right = sortName.x - gap
-        //   sortDistance.right = sortCount.x - gap
-        //   searchBox.x = findSelected.right + groupGap
-        //   searchBox.w = sortDistance.x - groupGap - searchBox.x                ← 余剰を全て吸収
-        if (rtl) {
-            // RTL: 左右ミラー。 「Find = 画面右」「Mode = 画面左」 の対称ペアになる。
-            findSelected = new LayoutBox(contentRight - findW, controlRowY, findW, btnH);
-            displayMode = new LayoutBox(contentLeft, controlRowY, modeW, btnH);
-            int sortLeft = displayMode.right() + groupGap;
-            sortName = new LayoutBox(sortLeft, controlRowY, sort2W, btnH);
-            sortCount = new LayoutBox(sortName.right() + gap, controlRowY, sort1W, btnH);
-            sortDistance = new LayoutBox(sortCount.right() + gap, controlRowY, sort0W, btnH);
-            int sbLeft = sortDistance.right() + groupGap;
-            searchBox = new LayoutBox(sbLeft, controlRowY,
-                    searchBoxW, UILayoutMetrics.EDITBOX_HEIGHT);
+        if (singleRowSearchW >= MIN_SEARCH_BOX) {
+            // ════ 単行 (= 従来実装と完全一致。 重ならない全幅で必ずこの枝に入る) ════
+            int searchBoxW = Math.max(MIN_SEARCH_BOX, singleRowSearchW);
+            // ─── アンカーレイアウト (単行のみ) ───
+            // <b>水平方向の式</b> (LTR):
+            //   findSelected.x = contentLeft                                         (= 左アンカ)
+            //   displayMode.right = contentRight                                     (= 右アンカ)
+            //   sortName.right = displayMode.x - groupGap
+            //   sortCount.right = sortName.x - gap
+            //   sortDistance.right = sortCount.x - gap
+            //   searchBox.x = findSelected.right + groupGap
+            //   searchBox.w = sortDistance.x - groupGap - searchBox.x                ← 余剰を全て吸収
+            if (rtl) {
+                // RTL: 左右ミラー。 「Find = 画面右」「Mode = 画面左」 の対称ペアになる。
+                findSelected = new LayoutBox(contentRight - findW, controlRowY, findW, btnH);
+                displayMode = new LayoutBox(contentLeft, controlRowY, modeW, btnH);
+                int sortLeft = displayMode.right() + groupGap;
+                sortName = new LayoutBox(sortLeft, controlRowY, sort2W, btnH);
+                sortCount = new LayoutBox(sortName.right() + gap, controlRowY, sort1W, btnH);
+                sortDistance = new LayoutBox(sortCount.right() + gap, controlRowY, sort0W, btnH);
+                int sbLeft = sortDistance.right() + groupGap;
+                searchBox = new LayoutBox(sbLeft, controlRowY,
+                        searchBoxW, UILayoutMetrics.EDITBOX_HEIGHT);
+            } else {
+                // LTR: [Find] [SearchBox] [Sort 3] [Mode]
+                findSelected = new LayoutBox(contentLeft, controlRowY, findW, btnH);
+                displayMode = new LayoutBox(contentRight - modeW, controlRowY, modeW, btnH);
+                int sortRight = displayMode.x() - groupGap;
+                sortName = new LayoutBox(sortRight - sort2W, controlRowY, sort2W, btnH);
+                sortCount = new LayoutBox(sortName.x() - gap - sort1W, controlRowY, sort1W, btnH);
+                sortDistance = new LayoutBox(sortCount.x() - gap - sort0W, controlRowY, sort0W, btnH);
+                int sbLeft = findSelected.right() + groupGap;
+                searchBox = new LayoutBox(sbLeft, controlRowY,
+                        searchBoxW, UILayoutMetrics.EDITBOX_HEIGHT);
+            }
+            controlsBottom = sortName.bottom();
         } else {
-            // LTR: [Find] [SearchBox] [Sort 3] [Mode]
-            findSelected = new LayoutBox(contentLeft, controlRowY, findW, btnH);
-            displayMode = new LayoutBox(contentRight - modeW, controlRowY, modeW, btnH);
-            int sortRight = displayMode.x() - groupGap;
-            sortName = new LayoutBox(sortRight - sort2W, controlRowY, sort2W, btnH);
-            sortCount = new LayoutBox(sortName.x() - gap - sort1W, controlRowY, sort1W, btnH);
-            sortDistance = new LayoutBox(sortCount.x() - gap - sort0W, controlRowY, sort0W, btnH);
-            int sbLeft = findSelected.right() + groupGap;
-            searchBox = new LayoutBox(sbLeft, controlRowY,
-                    searchBoxW, UILayoutMetrics.EDITBOX_HEIGHT);
+            // ════ 狭い幅フォールバック (= 重なる幅でのみ発火) ════
+            // row1 から Display Mode を外せば検索ボックスが MIN_SEARCH_BOX を確保できるか判定。
+            int tier2SearchW = contentW - (findW + sortGroupW) - 2 * groupGap; // row1=[Find][Search][Sort3]
+            if (tier2SearchW >= MIN_SEARCH_BOX) {
+                // ─── Tier 2: row1 = [Find][Search][Sort3]、 row2 = [Mode] ───
+                if (rtl) {
+                    findSelected = new LayoutBox(contentRight - findW, controlRowY, findW, btnH);
+                    sortName = new LayoutBox(contentLeft, controlRowY, sort2W, btnH);
+                    sortCount = new LayoutBox(sortName.right() + gap, controlRowY, sort1W, btnH);
+                    sortDistance = new LayoutBox(sortCount.right() + gap, controlRowY, sort0W, btnH);
+                    int sbLeft = sortDistance.right() + groupGap;
+                    int sbW = (findSelected.x() - groupGap) - sbLeft;
+                    searchBox = new LayoutBox(sbLeft, controlRowY,
+                            Math.max(MIN_SEARCH_BOX, sbW), UILayoutMetrics.EDITBOX_HEIGHT);
+                    displayMode = new LayoutBox(contentLeft, row2Y, modeW, btnH);
+                } else {
+                    findSelected = new LayoutBox(contentLeft, controlRowY, findW, btnH);
+                    sortName = new LayoutBox(contentRight - sort2W, controlRowY, sort2W, btnH);
+                    sortCount = new LayoutBox(sortName.x() - gap - sort1W, controlRowY, sort1W, btnH);
+                    sortDistance = new LayoutBox(sortCount.x() - gap - sort0W, controlRowY, sort0W, btnH);
+                    int sbLeft = findSelected.right() + groupGap;
+                    int sbW = (sortDistance.x() - groupGap) - sbLeft;
+                    searchBox = new LayoutBox(sbLeft, controlRowY,
+                            Math.max(MIN_SEARCH_BOX, sbW), UILayoutMetrics.EDITBOX_HEIGHT);
+                    displayMode = new LayoutBox(contentRight - modeW, row2Y, modeW, btnH);
+                }
+            } else {
+                // ─── Tier 3: row1 = [Find][Search]、 row2 = [Sort3 … Mode] ───
+                // 極端に狭い場合の最終フォールバック。 検索ボックスは row1 全幅を吸収。
+                if (rtl) {
+                    findSelected = new LayoutBox(contentRight - findW, controlRowY, findW, btnH);
+                    int sbLeft = contentLeft;
+                    int sbW = (findSelected.x() - groupGap) - sbLeft;
+                    searchBox = new LayoutBox(sbLeft, controlRowY,
+                            Math.max(MIN_SEARCH_BOX, sbW), UILayoutMetrics.EDITBOX_HEIGHT);
+                    displayMode = new LayoutBox(contentLeft, row2Y, modeW, btnH);
+                    int sortLeft = displayMode.right() + groupGap;
+                    sortName = new LayoutBox(sortLeft, row2Y, sort2W, btnH);
+                    sortCount = new LayoutBox(sortName.right() + gap, row2Y, sort1W, btnH);
+                    sortDistance = new LayoutBox(sortCount.right() + gap, row2Y, sort0W, btnH);
+                } else {
+                    findSelected = new LayoutBox(contentLeft, controlRowY, findW, btnH);
+                    int sbLeft = findSelected.right() + groupGap;
+                    int sbW = contentRight - sbLeft;
+                    searchBox = new LayoutBox(sbLeft, controlRowY,
+                            Math.max(MIN_SEARCH_BOX, sbW), UILayoutMetrics.EDITBOX_HEIGHT);
+                    sortDistance = new LayoutBox(contentLeft, row2Y, sort0W, btnH);
+                    sortCount = new LayoutBox(sortDistance.right() + gap, row2Y, sort1W, btnH);
+                    sortName = new LayoutBox(sortCount.right() + gap, row2Y, sort2W, btnH);
+                    displayMode = new LayoutBox(contentRight - modeW, row2Y, modeW, btnH);
+                }
+            }
+            controlsBottom = row2Y + btnH; // 2 行目下端
         }
-        // 旧 wrap 用に残してあった変数 (= 旧コードの参照を残すため)。 単行レイアウトでは未使用。
-        @SuppressWarnings("unused") int _unusedRowGap = rowGap;
 
         // Clear Selection は可視 UI から外したのでダミーの (0,0,0,0) box を返す
         // (= 呼び出し側が誤って addRenderableWidget しても 0 サイズで実害なし)。
         LayoutBox clearSelection = new LayoutBox(0, 0, 0, 0);
 
-        // コントロール領域の下端 (= main content top の基準)。 単行なので Sort 行下端で確定。
-        int controlsBottom = sortName.bottom();
-
         // ─── C. Main content (tabs + list), maximized to fill height ─
         int contentZoneTop = controlsBottom + secGap;
         int footerY = screenH - UILayoutMetrics.FOOTER_HINT_FROM_BOTTOM;
+        // フッターヒントは常に 1 行 (= 収まらない幅では縮小して 1 行に収める) ため、 list 下端は
+        // 従来どおり footer の 1 行ぶん上 (secGap) で確定する。
         int bottomBoundary = footerY - secGap;
         int verticalStripH = bottomBoundary - contentZoneTop;
         if (verticalStripH < UILayoutMetrics.TAB_HEIGHT) {

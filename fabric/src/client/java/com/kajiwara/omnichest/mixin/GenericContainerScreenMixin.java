@@ -421,7 +421,12 @@ public abstract class GenericContainerScreenMixin extends Screen {
         boolean hasTopRowWidget = !this.cits$isLargeChest && this.cits$hasSearchRow
                 && (this.cits$searchBox != null || this.cits$sortByTypeButton != null
                         || this.cits$sortByCountButton != null);
-        return hasTopRowWidget ? this.topPos - 32 : this.topPos - 14;
+        int y = hasTopRowWidget ? this.topPos - 32 : this.topPos - 14;
+        // ─── 上端クリップ対策 (= GUI Scale Auto の全画面化で論理高さが縮み topPos が小さい時) ───
+        // バッジは GUI 枠の上に出すため topPos が小さいと y が画面上端 (0) より上に出て
+        // 「[未分類]」 等が見切れていた。 画面内へクランプする (= topPos が十分ある通常時は
+        // 従来と同一 y = 見た目不変。 極小キャンバスでのみ発火)。
+        return Math.max(CITS_SCREEN_EDGE_PAD, y);
     }
 
     /**
@@ -465,6 +470,41 @@ public abstract class GenericContainerScreenMixin extends Screen {
     /** パネル外周マージン (= ボタン四辺と背景四辺の隙間, px)。 */
     @Unique
     private static final int CITS_PANEL_MARGIN = 3;
+
+    /**
+     * メニューパネルを画面端へクランプする際に確保する、 画面端からの最小余白 (論理 px)。
+     *
+     * <p>
+     * <b>重複排除 (Phase 8)</b>: 旧実装は {@link #cits$applyDepositButtonLayout} と
+     * {@link #cits$applyLargeRightColumn} の双方に同じリテラル {@code 2} を直書きしており、
+     * クランプ思想が 2 か所に散っていた。 1 つの定数に集約して「画面端クランプの余白」 という
+     * 意味を 1 か所で管理する。
+     *
+     * <p>
+     * <b>GUI スケール非依存である理由</b>: {@code this.width} はすでに <em>スケール後の論理座標</em>
+     * なので、 この余白も論理 px。 GUI スケールを上げても論理 px は縮まない (= 物理 px が増えるだけ)
+     * ため、 値をスケール倍する必要はない。 パネルが論理画面に収まらない極小ケースは各クランプ側の
+     * {@code if (maxX >= minX)} ガードが既に処理する。
+     */
+    @Unique
+    private static final int CITS_SCREEN_EDGE_PAD = 2;
+
+    /** {@link UnifiedPanelRenderer} の影 (SHADOW_OFFSET) が右下へ張り出す量 (px)。 クランプ時に考慮する。 */
+    @Unique
+    private static final int CITS_PANEL_SHADOW_OVERHANG = 2;
+
+    /**
+     * チェスト GUI の <b>真上</b> に積む OmniChest 要素 (= カテゴリバッジ + 検索/種類/数量 行) が
+     * 必要とする高さ (px)。
+     *
+     * <p>
+     * 小型チェストではバッジが {@code topPos - 32} まで上がるため、 その最大値を基準に確保する。
+     * GUI Scale Auto で全画面化して論理高さが縮み {@code topPos} が小さくなると、 この上段が画面
+     * 上端に張り付いて <b>チェストから浮いて見える</b> ため、 {@link #cits$shiftDownForTopRow} が
+     * 下に余裕がある範囲でチェスト本体を下げ、 上段がチェスト直上へ収まるようにする。
+     */
+    @Unique
+    private static final int CITS_TOP_STACK_HEIGHT = 34;
 
     // ───────────────────────────────────────────────────────────
     // GUI 上部コンテンツ列 (= カテゴリ バッジ + 検索行) の共通アンカー
@@ -921,8 +961,99 @@ public abstract class GenericContainerScreenMixin extends Screen {
         return 0;
     }
 
+    /**
+     * 高 GUI スケール (= 論理高さが縮む) でチェストの真上に上段 (バッジ + 検索行) を置く縦の余地が
+     * 無いとき、 <b>下に余裕がある範囲でチェスト本体を下げて</b>上段を直上に収める。
+     *
+     * <p>
+     * {@code this.topPos} は {@code @Shadow} で書き換え可能。 これを増やすと vanilla の slot 描画 /
+     * ホバー判定 / タイトルがすべて topPos 基準で追従するため、 チェスト GUI 全体が一体で下がる
+     * (= レイアウト整合は保たれる)。 通常スケール (= 上に十分な余地がある) では {@code deficit <= 0}
+     * で<b>何もしない (= topPos 不変 = 見た目不変)</b>。 また下に余裕が無ければ下げない (= 下端の
+     * インベントリ/ホットバーを画面外へ押し出さない)。
+     *
+     * <p>
+     * <b>冪等</b>: 一度下げると {@code topPos} が {@code needed} 以上になるため、 同一 init 内で
+     * {@link #cits$applyLayout} が複数回 (◀▶ トグル等) 呼ばれても 2 回目以降は no-op。 リサイズ時は
+     * vanilla init が topPos を中央へ戻すので、 都度ここで再計算される。
+     */
+    @Unique
+    private void cits$shiftDownForTopRow() {
+        if (!this.cits$supportedContainer)
+            return;
+        int needed = CITS_TOP_STACK_HEIGHT + CITS_SCREEN_EDGE_PAD;
+        int deficit = needed - this.topPos;
+        if (deficit <= 0)
+            return; // 既に十分な余地 → 何もしない。
+        int roomBelow = this.height - (this.topPos + this.imageHeight) - CITS_SCREEN_EDGE_PAD;
+        int shift = Math.min(deficit, Math.max(0, roomBelow));
+        if (shift > 0) {
+            this.topPos += shift;
+        }
+    }
+
+    /**
+     * 右 (または左) のメインメニュー パネルがチェスト/インベントリと <b>重ならない</b>よう、
+     * 必要なら <b>チェスト本体を反対側へ寄せて</b>パネル側の横幅を確保する。
+     *
+     * <p>
+     * <b>根本原因</b>: パネルはチェスト右端 ({@code leftPos + imageWidth + GAP}) に置かれた後、
+     * 右端が画面内に収まるよう {@code maxX} へクランプされる。 vanilla チェストは画面中央寄せのため、
+     * 高 GUI スケール (= 論理幅が狭い全画面) では中央チェストの右に 146px パネル + GAP を置く余地が
+     * 無く、 クランプがパネルを <b>左へ引き込んでチェスト右スロットに重ねて</b>しまう。
+     *
+     * <p>
+     * <b>対処</b>: パネルの配置 (右端アンカー / 幅 / ボタン間隔) は <b>一切変えず</b>、 チェスト本体を
+     * {@code @Shadow} の {@code leftPos} 経由で反対側へ寄せて「パネルの左端がチェスト右端から GAP 以上
+     * 離れる」だけの横幅を空ける。 {@code leftPos} を動かすと vanilla の slot 描画 / ホバー判定も追従する
+     * ため、 チェスト GUI 全体が一体で寄り、 レイアウト整合は保たれる。
+     *
+     * <p>
+     * <b>不変条件</b>: パネルの x / 右端は <b>不変</b> (= 動くのはチェストだけ)。 余地が十分な通常幅
+     * (= windowed) では {@code deficit <= 0} で <b>何もしない (= 見た目完全一致)</b>。 反対側に寄せる
+     * 余地が無ければ寄せない (= 反対端をはみ出させない)。 冪等 (= 2 回目以降は no-op)、 リサイズ時は
+     * vanilla が leftPos を中央へ戻すので都度再計算。
+     */
+    @Unique
+    private void cits$shiftAsideForPanel() {
+        if (!this.cits$supportedContainer)
+            return;
+        // パネル側に確保したい横幅 (= GAP + パネル幅 + 背景外周 + 影 + 画面端余白)。
+        // これだけ空いていれば、 右端アンカーされたパネルの左端がチェスト右端から GAP 以上離れる。
+        int needed = CITS_MENU_PANEL_GAP + CITS_MENU_PANEL_WIDTH + CITS_PANEL_MARGIN
+                + CITS_PANEL_SHADOW_OVERHANG + CITS_SCREEN_EDGE_PAD;
+        if (this.cits$layoutRight) {
+            // パネルは右 → 右側に needed の余地が要る。 足りなければチェストを左へ寄せる。
+            int have = this.width - (this.leftPos + this.imageWidth);
+            int deficit = needed - have;
+            if (deficit <= 0)
+                return;
+            int leftRoom = this.leftPos - CITS_SCREEN_EDGE_PAD;
+            int shift = Math.min(deficit, Math.max(0, leftRoom));
+            if (shift > 0)
+                this.leftPos -= shift;
+        } else {
+            // パネルは左 → 左側に needed の余地が要る。 足りなければチェストを右へ寄せる。
+            int have = this.leftPos;
+            int deficit = needed - have;
+            if (deficit <= 0)
+                return;
+            int rightRoom = this.width - (this.leftPos + this.imageWidth) - CITS_SCREEN_EDGE_PAD;
+            int shift = Math.min(deficit, Math.max(0, rightRoom));
+            if (shift > 0)
+                this.leftPos += shift;
+        }
+    }
+
     @Unique
     private void cits$applyLayout() {
+        // 高スケールで上段がチェストから浮かないよう、 必要なら先にチェスト本体を下げる
+        // (= 通常時は no-op = 見た目不変)。 以降の配置はすべて新しい topPos を基準にする。
+        cits$shiftDownForTopRow();
+        // 同様に、 メインメニュー パネルがチェスト/インベントリに重ならないよう、 必要なら
+        // チェスト本体を横へ寄せてパネル側の横幅を確保する (= パネルは動かさず、 通常幅では no-op)。
+        cits$shiftAsideForPanel();
+
         // Deposit ボタンの配置 (GUI 右上)。
         // 既存ウィジェット (search / sort) と縦に重ならないよう、
         // ChestScreen のときだけ既存行の上 (topPos - 36) に置く。
@@ -942,7 +1073,16 @@ public abstract class GenericContainerScreenMixin extends Screen {
             // を排除する。 これによりバッジの帯・検索ボックス・種類・数量がすべて同じ縦ラインに乗り、
             // GUI スケールや翻訳長が変わってもアンカー基準で整列が保たれる。
             //   search 106 + gap 2 + type 26 + gap 2 + count 26 = 162 (= 旧来と同じ行末)
+            //
+            // ─── 短い論理キャンバスでの上端クリップ対策 (= GUI Scale Auto の全画面化) ───
+            // 上部行はチェスト GUI 枠の<b>上</b> (topPos - 18) に浮かせる。 高 GUI スケールで論理高さが
+            // 縮むと topPos が小さくなり、 topPos - 18 が画面上端 (0) より上に出て検索行が見切れていた。
+            // ラージチェスト側 ({@link #cits$applyLargeRightColumn}) と同じ思想で画面内へクランプする
+            // (= topPos >= 20 の通常時は従来と完全に同一座標 = 見た目不変。 極小キャンバスでのみ発火)。
             int y = this.topPos - 18;
+            if (y < CITS_SCREEN_EDGE_PAD) {
+                y = CITS_SCREEN_EDGE_PAD;
+            }
             int anchorX = this.leftPos + CITS_TOP_CONTENT_LEFT;
 
             // 上部行は「見えている要素だけ」 を左→右へ詰める (= 非表示要素の隙間を残さない = #9 reflow)。
@@ -1020,8 +1160,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
         int x = this.cits$layoutRight
                 ? this.leftPos + this.imageWidth + CITS_MENU_PANEL_GAP
                 : this.leftPos - width - CITS_MENU_PANEL_GAP;
-        int edgePad = 2;
-        int shadowOverhang = 2; // UnifiedPanelRenderer の影 (SHADOW_OFFSET)
+        int edgePad = CITS_SCREEN_EDGE_PAD;
+        int shadowOverhang = CITS_PANEL_SHADOW_OVERHANG; // UnifiedPanelRenderer の影 (SHADOW_OFFSET)
         int minX = edgePad + CITS_PANEL_MARGIN;
         int maxX = this.width - edgePad - shadowOverhang - CITS_PANEL_MARGIN - width;
         if (maxX >= minX) {
@@ -1138,8 +1278,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
         // CITS_PANEL_MARGIN ぶん広がり、 更に {@link UnifiedPanelRenderer} の影が 2px 張り出す
         // ため、 その視覚的な張り出しまで含めて画面内に収まるよう x をクランプする
         // (= 「切れる」 より 「チェスト枠に数 px 重なる」 を優先 = レイアウト破綻防止)。
-        int edgePad = 2;
-        int shadowOverhang = 2; // UnifiedPanelRenderer の影 (SHADOW_OFFSET)
+        int edgePad = CITS_SCREEN_EDGE_PAD;
+        int shadowOverhang = CITS_PANEL_SHADOW_OVERHANG; // UnifiedPanelRenderer の影 (SHADOW_OFFSET)
         int minX = edgePad + CITS_PANEL_MARGIN;
         int maxX = this.width - edgePad - shadowOverhang - CITS_PANEL_MARGIN - width;
         if (maxX >= minX) {

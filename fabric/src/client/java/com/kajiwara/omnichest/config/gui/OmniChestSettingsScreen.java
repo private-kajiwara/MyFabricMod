@@ -462,6 +462,28 @@ public final class OmniChestSettingsScreen extends Screen {
         applyTabVisibility();
     }
 
+    /**
+     * 画面リサイズ (F11 全画面トグル / GUI スケール変更 / 解像度変更) ハンドラ。
+     *
+     * <p>
+     * バニラの {@code super.resize()} が {@code this.width/height} を更新し {@link #init()} を呼び直して
+     * 全 widget を生きた画面サイズで再構築するため、 Screen 本体のレイアウトは自動で追従する。
+     * ただし {@code activePopup} フィールドは init() では触られないので、 ここで明示的に整理する:
+     * <ul>
+     *   <li>中央寄せ popup ({@link ColorPickerPopup} / {@link ResetConfirmationPopup} =
+     *       {@code survivesResize()==true}) は毎フレーム再センタリングされるため<b>維持</b>。</li>
+     *   <li>anchor 追従型 ({@link DropdownPopup} = デフォルト false) は anchor が動くため<b>破棄</b>し、
+     *       stale 座標で描画・誤クリックされるのを防ぐ。</li>
+     * </ul>
+     */
+    @Override
+    public void resize(int w, int h) {
+        super.resize(w, h);
+        if (this.activePopup != null && !this.activePopup.survivesResize()) {
+            dismissPopup();
+        }
+    }
+
     /** 全 row の値を Config へコミットする。 */
     private void saveAll() {
         for (TabModel tab : this.tabs) {

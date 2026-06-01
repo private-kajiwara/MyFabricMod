@@ -53,4 +53,39 @@ public interface OverlayPopup {
     default boolean mouseScrolled(double mx, double my, double amount) {
         return false;
     }
+
+    /**
+     * 画面リサイズ (F11 全画面トグル / GUI スケール変更 / 解像度変更) を <b>生き延びる</b> popup か。
+     *
+     * <p>
+     * <b>背景 (= fullscreen レイアウト破綻の根本原因)</b>: Minecraft はリサイズ時に
+     * {@code Screen.resize() → init()} を呼び、 Screen 自身のレイアウトは再計算されるが、
+     * Screen が {@code activePopup} フィールドに保持している popup インスタンスは破棄も再計算も
+     * されない。 popup が構築時の絶対座標を抱えていると、 リサイズ後に古い画面サイズ基準の座標で
+     * 描画され、 中央からずれる / 画面外へ見切れる / クリック判定が実座標とずれる。
+     *
+     * <p>
+     * <b>契約</b>:
+     * <ul>
+     *   <li><b>デフォルト = {@code false} (= リサイズで閉じる)</b>。 これが最も安全な既定動作で、
+     *       バニラが一時 UI をリサイズで畳むのと同じ挙動。 owner Screen は {@code resize()} で
+     *       「{@code survivesResize()} が false の開いている popup」 を破棄する。</li>
+     *   <li><b>{@code true} を返してよいのは</b>、 毎フレーム生きた画面サイズ
+     *       ({@code Window#getGuiScaledWidth/Height}) から座標を <b>再計算</b> する
+     *       <b>中央寄せ</b> popup のみ ({@link ColorPickerPopup} / {@link ResetConfirmationPopup})。
+     *       これらはリサイズ後も自動で再センタリングされるため閉じる必要がない。</li>
+     *   <li><b>anchor 追従型</b> ({@link DropdownPopup} のように開いたボタン直下に出る popup) は、
+     *       リサイズで anchor 自体が動くため <b>再計算では追従できない</b>。 デフォルトのまま
+     *       閉じるのが正しい。</li>
+     * </ul>
+     *
+     * <p>
+     * この契約により「新しい popup を追加したが resize 対応を忘れた」 場合でも、 デフォルトで
+     * 安全に閉じられ、 stale 座標バグが構造的に発生し得なくなる (= fail-safe)。
+     *
+     * @return リサイズ後も popup を維持するなら true、 閉じるべきなら false (デフォルト)。
+     */
+    default boolean survivesResize() {
+        return false;
+    }
 }
