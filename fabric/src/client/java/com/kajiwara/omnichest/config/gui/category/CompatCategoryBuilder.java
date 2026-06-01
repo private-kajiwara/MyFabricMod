@@ -40,11 +40,6 @@ public final class CompatCategoryBuilder {
                 ConfigLabels.tooltip("compat.safeOverlayRendering",
                         "Wrap overlay draws in a guarded matrix stack so a single failure can't break the rest of the screen."));
 
-        b.toggle(ConfigLabels.entry("compat.disableExperimentalRendering", "Disable Experimental Rendering"),
-                cfg.disableExperimentalRendering, v -> cfg.disableExperimentalRendering = v,
-                ConfigLabels.tooltip("compat.disableExperimentalRendering",
-                        "Opt out of any future experimental render paths. Has no effect today."));
-
         b.toggle(ConfigLabels.entry("compat.enableOptionalIntegrations", "Optional Mod Integrations"),
                 cfg.enableOptionalIntegrations, v -> cfg.enableOptionalIntegrations = v,
                 ConfigLabels.tooltip("compat.enableOptionalIntegrations",

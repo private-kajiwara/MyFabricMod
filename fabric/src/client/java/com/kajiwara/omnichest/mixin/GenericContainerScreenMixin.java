@@ -50,6 +50,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
     @Shadow
     protected int imageWidth;
 
+    @Shadow
+    protected int imageHeight;
+
     @Unique
     private EditBox cits$searchBox;
 
@@ -83,15 +86,11 @@ public abstract class GenericContainerScreenMixin extends Screen {
     // ───────────────────────────────────────────────────────────
     // Chest Template System のボタン群:
     //   - Save Template     : 現在のチェスト配置を新テンプレートとして保存
-    //   - Apply Template    : 直近 or 既定テンプレートを適用 (詳細は Manager)
     //   - Manage Templates  : 管理画面 (一覧/名前変更/削除/複製/並び替え)
     // 配置は「倉庫検索」の更に下に縦並びで追加する。
     // ───────────────────────────────────────────────────────────
     @Unique
     private Button cits$saveTemplateButton;
-
-    @Unique
-    private Button cits$applyTemplateButton;
 
     @Unique
     private Button cits$manageTemplateButton;
@@ -459,9 +458,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
     // 描き方: 描画は @At("HEAD") に挟む。 こうすると Screen 自身がウィジェット (= 各 Button) を
     // 描く前に 1 度だけ背景が出るため、 「ボタンより手前にパネル」 にならず、 押下も阻害しない。
     //
-    // グループ間の境目には {@link UnifiedPanelRenderer#drawSeparator} で 1px の薄い水平線を引き、
-    // 操作カテゴリ (= Inventory ops / Search / Templates / Distribution) を区切る。
-    // セパレータは「ボタン同士の間 (= y+18 きざみの中間)」 に置くため、 18 / 2 = 9px 下にオフセットする。
+    // パネルはアクションボタン群 (= 2 列グリッド + 全幅行) の union にのみ被さる。 小型 / ラージとも
+    // ◀▶ / 検索 / 種類数量 はパネル外 (= 上のヘッダ領域) に置くため union に含めない。 区切り線は
+    // 引かず、 グループ分けは「グリッド (背高セル) ↔ 全幅行」 の構造と余白 (proximity) で表現する。
     // ───────────────────────────────────────────────────────────
     /** パネル外周マージン (= ボタン四辺と背景四辺の隙間, px)。 */
     @Unique
@@ -512,6 +511,17 @@ public abstract class GenericContainerScreenMixin extends Screen {
     /** メニューパネルのコンテンツ幅 (px)。 2 列グリッド + 全幅行の共通幅。 */
     @Unique
     private static final int CITS_MENU_PANEL_WIDTH = 146;
+    /**
+     * メニューパネルと GUI 画像の間の左右間隔 (px)。
+     *
+     * <p>
+     * 既定の margin (4px) だと、 背景パネルが外周 ({@link #CITS_PANEL_MARGIN} = 3px) ぶん内側へ
+     * 張り出すため、 パネルの視覚的な左端がチェスト枠の 1px 隣まで迫り、 チェストインベントリと
+     * 被って見える。 ここを少し広げて、 背景パネルの外周 + 影を含めてもチェスト枠と数 px の
+     * 余白が残るようにする (= 「被り」 解消)。
+     */
+    @Unique
+    private static final int CITS_MENU_PANEL_GAP = 8;
     /** パネル内の要素間隔 (列 / 行 共通, px)。 */
     @Unique
     private static final int CITS_MENU_GAP = 2;
@@ -527,6 +537,35 @@ public abstract class GenericContainerScreenMixin extends Screen {
     /** 全幅行のボタン高さ (px)。 */
     @Unique
     private static final int CITS_MENU_FULL_H = 16;
+    /**
+     * ラージチェスト右カラムの検索バー高さ (px)。
+     * ナビ行 ({@link #CITS_MENU_NAV_H}) と揃え、 検索バー → ◀▶ → 種類数量 の上端ラインを統一する。
+     */
+    @Unique
+    private static final int CITS_MENU_SEARCH_H = 16;
+    /** ラージチェスト右カラムの 種類 / 数量 行 (2 列) の高さ (px)。 ナビ行と揃える。 */
+    @Unique
+    private static final int CITS_MENU_SORT_H = 16;
+    /**
+     * ラージチェスト右カラムで、 浮かせた検索バーと ◀▶ ナビ行の間に空ける縦の間隔 (px)。
+     *
+     * <p>
+     * 既定の {@link #CITS_MENU_GAP} (2px) だと、 EditBox が枠線を境界より 1px 外側へ描く都合で
+     * ◀▶ ボタンとほぼ接触して見える (= 「かぶってる」)。 これより広く取り、 視覚的に明確に離す。
+     */
+    @Unique
+    private static final int CITS_MENU_SEARCH_NAV_GAP = 10;
+    /**
+     * ラージチェストの充填レイアウトで、 行間に上乗せする余白の上限 (px)。
+     *
+     * <p>
+     * ボタン自体は自然な高さ ({@link #CITS_MENU_GRID_H} / {@link #CITS_MENU_FULL_H}) に固定し、
+     * 区間の余りは<b>行間の余白</b>へ均等に振り分ける。 この上限を小さめに取ることで行間を詰め、
+     * 配り切れなかった余りは下端へ寄せる (= ボタン群が<b>上側に詰まり</b>、 下端に余白が残る)。
+     * 値を上げると行間が広がり、 下げるとより上に詰まる。
+     */
+    @Unique
+    private static final int CITS_MENU_FILL_GAP_MAX = 2;
 
     /**
      * ボタン群の背景パネルを描画する。 描かない条件 (Deposit ボタン未生成 etc.) では即 return。
@@ -552,7 +591,6 @@ public abstract class GenericContainerScreenMixin extends Screen {
                 this.cits$categorySortButton,
                 this.cits$searchNetworkButton,
                 this.cits$saveTemplateButton,
-                this.cits$applyTemplateButton,
                 this.cits$manageTemplateButton,
                 this.cits$setCategoryButton,
                 this.cits$autoDistributeButton,
@@ -578,41 +616,10 @@ public abstract class GenericContainerScreenMixin extends Screen {
 
         UnifiedPanelRenderer.drawPanel(g, x, y, w, h, 1.0f);
 
-        // ─── 機能グループ間の薄いセパレータ (= ラージチェストの縦 1 列レイアウト専用) ───
-        // ボタンは 18 px ピッチで縦並び (= Deposit y, Compact y+18, ...)。 グループ境界:
-        //   - [Inventory ops] (Deposit / Compact / Category Sort)
-        //   - [Network search] (Chest Search)
-        //   - [Templates] (Save / Apply / Manage)
-        //   - [Distribution] (Set Category / Auto Distribute)
-        // 「グループの直前のボタン下 +CITS_DEPOSIT_HEIGHT/2」 にラインを置く (= ボタン間の中央)。
-        //
-        // 小型チェスト系 (= 再設計対象) はナビ行 → 2 列グリッド → 全幅行 という構造で、 縦の単純な
-        // ボタン順を前提にしたこのセパレータは意味を成さない (= モックアップにも区切り線は無い)。
-        // そのため小型では描かず、 グループ分けは「グリッド (背高セル) と全幅行」 の構造で表現する。
-        if (this.cits$isLargeChest) {
-            int sepLeft = x + 2;
-            int sepWidth = w - 4;
-            cits$drawSepBetween(g, this.cits$categorySortButton, this.cits$searchNetworkButton,
-                    sepLeft, sepWidth);
-            cits$drawSepBetween(g, this.cits$searchNetworkButton, this.cits$saveTemplateButton,
-                    sepLeft, sepWidth);
-            cits$drawSepBetween(g, this.cits$manageTemplateButton, this.cits$setCategoryButton,
-                    sepLeft, sepWidth);
-        }
-    }
-
-    /**
-     * 「上のボタンの下端 と 下のボタンの上端 の中央」 に 1px の水平セパレータを引く。
-     * どちらか欠けていれば何もしない (= 自動的にグループが消えたときは線も消える)。
-     */
-    @Unique
-    private void cits$drawSepBetween(GuiGraphics g, AbstractWidget above, AbstractWidget below,
-            int sepLeft, int sepWidth) {
-        if (above == null || below == null) return;
-        int aboveBottom = above.getY() + above.getHeight();
-        int belowTop = below.getY();
-        int mid = (aboveBottom + belowTop) / 2;
-        UnifiedPanelRenderer.drawSeparator(g, sepLeft, mid, sepWidth, 1.0f);
+        // セパレータ (区切り線) は描かない。 小型 / ラージとも「ナビ↔ (種類数量) ↔ 2 列グリッド ↔
+        // 全幅行」 という構造でグループ分けを表現し (= モックアップにも区切り線は無い)、 旧来の
+        // 縦 1 列前提セパレータは廃止した。 背景パネルはアクションボタン群 (= グリッド + 全幅行) の
+        // union にのみ被さる (ラージの ◀▶ / 検索 / 種類数量 は inGroup に含めないため、 パネル外)。
     }
 
     @Inject(method = "init", at = @At("TAIL"))
@@ -638,7 +645,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
             // Main Menu Visibility: 各ボタンは対応する表示トグルが ON のときだけ生成する。
             // 生成しない = ウィジェットとして存在しない (= 描画もクリックもされない) だけで、
             // 預入 / 圧縮 / 整理 / 振り分け の各ロジック自体は他経路 (キーバインド等) から従来通り使える。
-            if (cits$ui().showDepositButton) {
+            // 表示トグル (showDepositButton) に加え、 機能トグル (deposit.enable) でもゲートする。
+            // deposit.enable=false なら Smart Deposit 機能を切る = ボタンを生成しない。
+            if (cits$ui().showDepositButton && ConfigManager.get().deposit.enable) {
             this.cits$depositButton = Button.builder(
                     OmniChestLocale.get(Keys.BUTTON_DEPOSIT, "Deposit Matching"),
                     btn -> DepositMatchingHelper.depositMatching(
@@ -656,7 +665,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
             // 通常クリック  : チェスト内のみ圧縮
             // Shift+クリック: プレイヤーインベントリ側も併せて圧縮
             // ───────────────────────────────────────────────────────────
-            if (cits$ui().showCompactButton) {
+            // 表示トグル (showCompactButton) に加え、 機能トグル (compact.enable) でもゲートする。
+            if (cits$ui().showCompactButton && ConfigManager.get().compact.enable) {
             this.cits$compactButton = Button.builder(
                     OmniChestLocale.get(Keys.BUTTON_COMPACT, "Compact"),
                     btn -> {
@@ -665,7 +675,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
                         var window = mc.getWindow();
                         boolean shift = InputConstants.isKeyDown(window, InputConstants.KEY_LSHIFT)
                                 || InputConstants.isKeyDown(window, InputConstants.KEY_RSHIFT);
-                        if (shift) {
+                        // プレイヤーインベントリも圧縮するか: Shift 押下 OR 設定 compactPlayerInventory が ON。
+                        boolean alsoPlayer = shift || ConfigManager.get().compact.compactPlayerInventory;
+                        if (alsoPlayer) {
                             StackCompactor.compactContainerAndPlayer(mc, anyMenu, containerSlotCount);
                         } else {
                             StackCompactor.compactContainer(mc, anyMenu, containerSlotCount);
@@ -745,16 +757,6 @@ public abstract class GenericContainerScreenMixin extends Screen {
                 cits$applyTooltip(this.cits$saveTemplateButton, Keys.BUTTON_SAVE_TEMPLATE_TOOLTIP,
                         "Save the current arrangement of this chest as a reusable template.");
                 this.addRenderableWidget(this.cits$saveTemplateButton);
-
-                this.cits$applyTemplateButton = Button.builder(
-                        OmniChestLocale.get(Keys.BUTTON_APPLY_TEMPLATE, "Apply Template"),
-                        btn -> Minecraft.getInstance().setScreen(
-                                new TemplateSaveScreen(selfScreen, anyMenu, containerSlotCount)))
-                        .bounds(0, 0, CITS_DEPOSIT_WIDTH, CITS_DEPOSIT_HEIGHT)
-                        .build();
-                cits$applyTooltip(this.cits$applyTemplateButton, Keys.BUTTON_APPLY_TEMPLATE_TOOLTIP,
-                        "Reorganise this chest to match a saved template.");
-                this.addRenderableWidget(this.cits$applyTemplateButton);
 
                 this.cits$manageTemplateButton = Button.builder(
                         OmniChestLocale.get(Keys.BUTTON_MANAGE_TEMPLATES, "Manage Templates"),
@@ -972,47 +974,124 @@ public abstract class GenericContainerScreenMixin extends Screen {
             return;
         }
 
-        // ラージ (ダブル) チェスト: GUI 上部にウィジェットを置く余白が無いため、 検索バー +
-        // 種類 + 数量 は <b>意図的に側面パネル</b> (sideX) に縦積みする。 3 つとも同じ sideX を
-        // 共有するので相互の左端は揃っており、 上部カテゴリ バッジとは別領域として独立させる
-        // (= 小型チェストの「上部行アンカー」 とは設計上別系統)。
-        int panelWidth = 80;
-        int margin = 4;
-        int sideX = this.cits$layoutRight
-                ? this.leftPos + this.imageWidth + margin
-                : this.leftPos - panelWidth - margin;
-        int y = this.topPos;
+        // ラージ (ダブル) チェスト: モックアップ準拠の<b>右カラム</b>に、 検索バー (全幅) → ◀▶ →
+        // 種類 | 数量 (2 列) → アクションパネル (2 列グリッド + 全幅行) を 1 本に縦積みする。
+        // 検索行とアクションボタンは Y が連動するため、 1 メソッドで一括配置する
+        // (= cits$applyDepositButtonLayout のラージ分岐は何もしない)。
+        cits$applyLargeRightColumn();
+    }
 
-        int triangleWidth = (panelWidth - 4) / 2;
-        this.cits$layoutLeftButton.setX(sideX);
-        this.cits$layoutLeftButton.setY(y);
-        this.cits$layoutLeftButton.setWidth(triangleWidth);
-        this.cits$layoutRightButton.setX(sideX + triangleWidth + 4);
-        this.cits$layoutRightButton.setY(y);
-        this.cits$layoutRightButton.setWidth(triangleWidth);
+    /**
+     * ラージ (ダブル) チェストの右カラム全体をモックアップ準拠で配置する。
+     *
+     * <p>
+     * 構造 (すべて同じ左端 {@code sideX} / 同じ幅 {@code CITS_MENU_PANEL_WIDTH} に揃える):
+     * <ul>
+     * <li><b>検索バー</b>: 全幅。 ◀▶ 行の<b>上</b> (= topPos より上、 左の「分類表示」 バッジと同じ
+     *     上段) に浮かせる。 上に余白が足りない (= topPos が小さい) ときは画面上端付近に置き、
+     *     ◀▶ 以降を下へ押し下げて隙間を確保する (= かぶり防止)。</li>
+     * <li><b>◀ | ▶</b>: 2 列。 通常はチェスト GUI 上端 ({@code topPos}) に揃え、 上記の押し下げ時のみ
+     *     その下から始める。</li>
+     * <li><b>種類 | 数量</b>: 2 列 (見えているものだけ左詰め)。</li>
+     * <li><b>アクションパネル</b>: 2 列グリッド (倉庫検索 | カテゴリ整理 / 同種預入 | スタック圧縮) +
+     *     全幅行 (配置を保存 / テンプレ適用 / テンプレ管理 / 自動振り分け / カテゴリ設定)。
+     *     下端をチェスト GUI 下端 ({@code topPos + imageHeight}) に揃えるため、 行高を区間いっぱいに
+     *     分配して充填する ({@link #cits$applyMenuGridAndFullFilled})。</li>
+     * </ul>
+     *
+     * <p>
+     * 右端の見切れ防止: パネル幅 + 外周 + 影が画面内に収まるよう x をクランプする (小型と同思想)。
+     * 背景パネル ({@link #cits$renderButtonPanel}) はアクションボタン群の union にのみ被さり、
+     * 検索バー / ◀▶ / 種類数量 はパネル外に置かれる (= モックアップの暗いパネル領域と一致)。
+     * 各セクションの左端・右端・2 列分割点はすべて共通アンカーから導出するので「ライン」 が揃う。
+     */
+    @Unique
+    private void cits$applyLargeRightColumn() {
+        final int gap = CITS_MENU_GAP;
+        final int width = CITS_MENU_PANEL_WIDTH;
+        final int leftW = (width - gap) / 2;
+        final int rightW = width - gap - leftW;
 
-        // 検索 / 種類 / 数量 を ◀▶ 行 (slot 0) の下に「見えているものだけ」 縦に詰める。
-        // 非表示ぶんは詰まり、 続くボタン列 (cits$applyDepositButtonLayout) の開始 y も
-        // cits$largeTopSlots() を介して連動して繰り上がる (= reflow, 隙間なし)。
-        int slot = 1;
+        // ─── X 配置 + 画面端クランプ ───
+        // 高 GUI スケール / 小ウィンドウだと「leftPos + imageWidth + GAP」 がパネル幅を足すと
+        // 画面右外へはみ出し、 右端が見切れる。 背景パネルの外周 ({@link #CITS_PANEL_MARGIN}) +
+        // 影 (2px) まで含めて画面内に収まるよう x をクランプする (= 「見切れる」 より 「チェスト枠に
+        // 数 px 重なる」 を優先 = 小型チェストと同じ思想)。
+        int x = this.cits$layoutRight
+                ? this.leftPos + this.imageWidth + CITS_MENU_PANEL_GAP
+                : this.leftPos - width - CITS_MENU_PANEL_GAP;
+        int edgePad = 2;
+        int shadowOverhang = 2; // UnifiedPanelRenderer の影 (SHADOW_OFFSET)
+        int minX = edgePad + CITS_PANEL_MARGIN;
+        int maxX = this.width - edgePad - shadowOverhang - CITS_PANEL_MARGIN - width;
+        if (maxX >= minX) {
+            x = Math.max(minX, Math.min(x, maxX));
+        }
+        final int sideX = x;
+        final int rightX = sideX + leftW + gap;
+
+        // ─── (1) 検索バー (全幅) + ◀▶ ナビ行の開始 Y ───
+        // モックアップでは 検索バーは左の「分類表示」 バッジと同じ<b>上段</b>に居り、 チェスト GUI 枠
+        // (= 白 box) の上端には ◀▶ 行が揃う。 そこで検索バーは topPos より上 (= GUI 枠の外側) に浮かせ、
+        // ◀▶ は topPos から始める。
+        //
+        // ただし topPos より上に「検索バー高 + 隙間」 ぶんの余白が無い (= 高 GUI スケール / 小ウィンドウで
+        // topPos が小さい) とき、 検索バーを上端でクランプして固定すると ◀▶ とかぶる。 しかも GAP を
+        // 増やしても動かない (= 「隙間が反映されない」)。 その場合は検索バーを画面上端付近に置き、
+        // ◀▶ 以降を<b>その下へ押し下げて</b> CITS_MENU_SEARCH_NAV_GAP を必ず確保する (= かぶり防止)。
+        int navTop = this.topPos;
         if (this.cits$searchBox != null) {
-            this.cits$searchBox.setX(sideX);
-            this.cits$searchBox.setY(y + slot * 18);
-            this.cits$searchBox.setWidth(panelWidth);
-            slot++;
+            int searchY = this.topPos - CITS_MENU_SEARCH_NAV_GAP - CITS_MENU_SEARCH_H;
+            if (searchY < edgePad) {
+                searchY = edgePad;
+                navTop = searchY + CITS_MENU_SEARCH_H + CITS_MENU_SEARCH_NAV_GAP;
+            }
+            cits$placeCell(this.cits$searchBox, sideX, searchY, width, CITS_MENU_SEARCH_H);
         }
-        if (this.cits$sortByTypeButton != null) {
-            this.cits$sortByTypeButton.setX(sideX);
-            this.cits$sortByTypeButton.setY(y + slot * 18);
-            this.cits$sortByTypeButton.setWidth(panelWidth);
-            slot++;
+
+        int cursorY = navTop;
+        boolean hasHeader = false;
+
+        // ─── (2) ◀ | ▶ ナビ行: チェスト GUI 上端 (topPos) に揃える (= 対応コンテナでは常に存在) ───
+        if (this.cits$layoutLeftButton != null && this.cits$layoutRightButton != null) {
+            cits$placeCell(this.cits$layoutLeftButton, sideX, cursorY, leftW, CITS_MENU_NAV_H);
+            cits$placeCell(this.cits$layoutRightButton, rightX, cursorY, rightW, CITS_MENU_NAV_H);
+            cursorY += CITS_MENU_NAV_H + gap;
+            hasHeader = true;
         }
-        if (this.cits$sortByCountButton != null) {
-            this.cits$sortByCountButton.setX(sideX);
-            this.cits$sortByCountButton.setY(y + slot * 18);
-            this.cits$sortByCountButton.setWidth(panelWidth);
-            slot++;
+
+        // ─── (3) 種類 | 数量: 2 列 (見えているものだけ左→右で詰める) ───
+        Button[] sortRow = { this.cits$sortByTypeButton, this.cits$sortByCountButton };
+        int sortCol = 0;
+        boolean placedSort = false;
+        for (Button b : sortRow) {
+            if (b == null) {
+                continue;
+            }
+            if (sortCol == 0) {
+                cits$placeCell(b, sideX, cursorY, leftW, CITS_MENU_SORT_H);
+                sortCol = 1;
+            } else {
+                cits$placeCell(b, rightX, cursorY, rightW, CITS_MENU_SORT_H);
+                sortCol = 0;
+            }
+            placedSort = true;
         }
+        if (placedSort) {
+            cursorY += CITS_MENU_SORT_H + gap;
+            hasHeader = true;
+        }
+
+        // ─── ヘッダ (検索/ナビ/種類数量) とアクションパネルの間をセクション間隔へ広げる ───
+        if (hasHeader) {
+            cursorY += CITS_MENU_SECTION_GAP - gap;
+        }
+
+        // ─── (4) アクションパネル: 2 列グリッド + 全幅行 ───
+        // ボトムをチェスト GUI 下端に揃えるため、 ヘッダ下端から「GUI 下端 - 背景パネル外周」 まで
+        // を充填する (= 背景パネル下端が topPos + imageHeight に一致 = モックアップの暗いパネル下端)。
+        int actionBottom = this.topPos + this.imageHeight - CITS_PANEL_MARGIN;
+        cits$applyMenuGridAndFullFilled(sideX, cursorY, actionBottom, width);
     }
 
     /**
@@ -1037,32 +1116,22 @@ public abstract class GenericContainerScreenMixin extends Screen {
         if (!this.cits$supportedContainer)
             return;
 
-        int margin = 4;
-
         if (this.cits$isLargeChest) {
-            // ラージ (ダブル) チェスト: スコープ外。 従来の側面 1 列レイアウトを<b>そのまま維持</b>する。
-            // 側面パネルの可視ウィジェット (◀▶ + 検索/種類/数量) の直下から開始。
-            // 上の要素を隠すと cits$largeTopSlots() が減り、 ボタン列が繰り上がる (= reflow)。
-            int panelWidth = 80;
-            int sideX = this.cits$layoutRight
-                    ? this.leftPos + this.imageWidth + margin
-                    : this.leftPos - panelWidth - margin;
-            int y = this.topPos + cits$largeTopSlots() * 18;
-            // 縦並び順: Deposit → Compact → カテゴリ整理 → 倉庫検索 → Save/Apply/Manage → Set Category → 自動振り分け。
-            cits$packColumn(sideX, y, panelWidth,
-                    this.cits$depositButton, this.cits$compactButton, this.cits$categorySortButton,
-                    this.cits$searchNetworkButton, this.cits$saveTemplateButton,
-                    this.cits$applyTemplateButton, this.cits$manageTemplateButton,
-                    this.cits$setCategoryButton, this.cits$autoDistributeButton);
+            // ラージ (ダブル) チェスト: 右カラム全体 (検索バー / ◀▶ / 種類数量 / アクションパネル) を
+            // {@link #cits$applyLargeRightColumn} で一括配置する (= 検索行とアクションボタンの Y が
+            // 連動するため、 ここでは何もしない)。 cits$applyLargeRightColumn は cits$applyLayout の
+            // ラージ分岐 (この後) から呼ばれる。
             return;
         }
 
         // 小型チェスト / エンダー / シュルカー (= 非ラージの対応コンテナ): モックアップ準拠の右パネル。
         // ◀▶ で左右切替できる。 x はパネル左端 (layoutRight=false のときは GUI 左隣に反転)。
+        // 間隔は CITS_MENU_PANEL_GAP を使う (= 既定 margin より広め)。 背景パネルの外周 + 影が
+        // チェスト枠に被らないよう、 GUI 画像から数 px だけ離して配置する。
         int width = CITS_MENU_PANEL_WIDTH;
         int x = this.cits$layoutRight
-                ? this.leftPos + this.imageWidth + margin
-                : this.leftPos - width - margin;
+                ? this.leftPos + this.imageWidth + CITS_MENU_PANEL_GAP
+                : this.leftPos - width - CITS_MENU_PANEL_GAP;
 
         // 画面端クランプ: 高 GUI スケール等で GUI 右 (左) の余白がパネル幅に足りないと、
         // パネルが画面外へはみ出して右端が切れる。 背景パネルはボタン BB より外側へ
@@ -1076,7 +1145,11 @@ public abstract class GenericContainerScreenMixin extends Screen {
         if (maxX >= minX) {
             x = Math.max(minX, Math.min(x, maxX));
         }
-        cits$applyMenuPanel(x, this.topPos, width);
+        // 背景パネルは先頭ボタンより CITS_PANEL_MARGIN だけ上へ張り出す。 先頭 (ナビ行) を
+        // topPos そのものに置くと、 パネル上端が topPos - CITS_PANEL_MARGIN まで上にはみ出し、
+        // チェストインベントリのアッパーライン (= GUI 枠上端 = topPos) より上にずれて見える。
+        // 先頭を CITS_PANEL_MARGIN ぶん下げ、 パネルの視覚的な上端を topPos に揃える。
+        cits$applyMenuPanel(x, this.topPos + CITS_PANEL_MARGIN, width);
     }
 
     /**
@@ -1100,7 +1173,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
         final int rightX = x + leftW + gap;
         int cursorY = y;
 
-        // ─── (1) ナビ行: ◀ ▶ (= 既存のレイアウト左右切替トグル) ───
+        // ─── ナビ行: ◀ ▶ (= 既存のレイアウト左右切替トグル) ───
         // パネル幅を 2 分割し、 左半分に ◀、 右半分に ▶ を置く。 機能 (= cits$layoutRight トグル)
         // は不変で、 表示位置だけをパネル上端へ移す。 検索行を全部非表示にしていても ◀▶ は生成
         // されているため (= 対応コンテナでは常に存在)、 ここで配置される。
@@ -1110,7 +1183,32 @@ public abstract class GenericContainerScreenMixin extends Screen {
             cursorY += CITS_MENU_NAV_H + CITS_MENU_SECTION_GAP;
         }
 
-        // ─── (2) 2 列グリッド: 倉庫検索 | カテゴリ整理 / 同種預入 | スタック圧縮 ───
+        // ナビ行の下に、 2 列グリッド + 全幅行 (= 共通レイアウタ) を積む。
+        cits$applyMenuGridAndFull(x, cursorY, width);
+    }
+
+    /**
+     * アクションパネル (= 2 列グリッド + 全幅行) を {@code startY} から縦に積む共通レイアウタ。
+     * 小型チェスト (ナビ行の下) と ラージチェスト (検索/ナビ/種類数量 ヘッダの下) の<b>両方</b>から
+     * 呼ばれ、 同一の見た目・並び順を保証する。
+     *
+     * <p>
+     * 各ボタンは Main Menu Visibility で非表示 (= null) になり得るため、 <b>非 null のものだけ</b> を
+     * 詰めて隙間を残さない (= reflow)。 グリッドは「左→右、 上→下」 の順で可視ボタンを充填する。
+     *
+     * @param x      パネル左端の X 座標
+     * @param startY 2 列グリッド先頭行の上端 Y
+     * @param width  パネルのコンテンツ幅 (= 全幅行の幅, 2 列グリッドはこれを 2 分割)
+     */
+    @Unique
+    private void cits$applyMenuGridAndFull(int x, int startY, int width) {
+        final int gap = CITS_MENU_GAP;
+        final int leftW = (width - gap) / 2;
+        final int rightW = width - gap - leftW;
+        final int rightX = x + leftW + gap;
+        int cursorY = startY;
+
+        // ─── 2 列グリッド: 倉庫検索 | カテゴリ整理 / 同種預入 | スタック圧縮 ───
         // モックアップの並び順 (左→右、 上→下) でセルを充填する。 非表示ぶんは左詰めで繰り上がる。
         Button[] grid = {
                 this.cits$searchNetworkButton, this.cits$categorySortButton,
@@ -1141,9 +1239,9 @@ public abstract class GenericContainerScreenMixin extends Screen {
             cursorY += CITS_MENU_SECTION_GAP - gap;
         }
 
-        // ─── (3) 全幅行: 配置を保存 / テンプレ適用 / テンプレ管理 / 自動振り分け / カテゴリ設定 ───
+        // ─── 全幅行: 配置を保存 / テンプレ適用 / テンプレ管理 / 自動振り分け / カテゴリ設定 ───
         Button[] full = {
-                this.cits$saveTemplateButton, this.cits$applyTemplateButton,
+                this.cits$saveTemplateButton,
                 this.cits$manageTemplateButton, this.cits$autoDistributeButton,
                 this.cits$setCategoryButton,
         };
@@ -1156,6 +1254,113 @@ public abstract class GenericContainerScreenMixin extends Screen {
         }
     }
 
+    /**
+     * アクションパネル (= 2 列グリッド + 全幅行) を {@code top}〜{@code bottom} の区間に配置する
+     * ラージチェスト専用レイアウタ。
+     *
+     * <p>
+     * <b>方針</b>: ボタン自体は自然な高さ ({@link #CITS_MENU_GRID_H} / {@link #CITS_MENU_FULL_H}) に
+     * <b>固定</b>し、 区間に対する余りは<b>行間の余白</b>へ均等に振り分ける (= ボタンを縦に引き伸ばして
+     * 圧迫感を出すのを避け、 breathing room を作る)。 1 行間あたりの上乗せは {@link #CITS_MENU_FILL_GAP_MAX}
+     * で頭打ちにし、 それ以上の余りは下端の余白として残す (= 可視ボタンが少ないとき行間が間延びしない)。
+     * 余りが上限に達しない通常ケースでは、 余白を端数まで配り切るので最終行の下端は {@code bottom} に
+     * 揃う (= ボトムのライン揃え)。
+     *
+     * <p>
+     * 並び順・reflow (非表示ぶんを詰める) は {@link #cits$applyMenuGridAndFull} と同一。
+     *
+     * @param x      パネル左端の X 座標
+     * @param top    2 列グリッド先頭行の上端 Y
+     * @param bottom 区間の下端 Y (= 余白を配り切れれば最終行の下端がここに揃う)
+     * @param width  パネルのコンテンツ幅 (= 全幅行の幅, 2 列グリッドはこれを 2 分割)
+     */
+    @Unique
+    private void cits$applyMenuGridAndFullFilled(int x, int top, int bottom, int width) {
+        final int gap = CITS_MENU_GAP;
+        final int leftW = (width - gap) / 2;
+        final int rightW = width - gap - leftW;
+        final int rightX = x + leftW + gap;
+
+        // ─── 可視ボタンを並び順どおりに収集 ───
+        java.util.List<Button> gridCells = new java.util.ArrayList<>(4);
+        for (Button b : new Button[] { this.cits$searchNetworkButton, this.cits$categorySortButton,
+                this.cits$depositButton, this.cits$compactButton }) {
+            if (b != null) {
+                gridCells.add(b);
+            }
+        }
+        java.util.List<Button> fullRows = new java.util.ArrayList<>(5);
+        for (Button b : new Button[] { this.cits$saveTemplateButton,
+                this.cits$manageTemplateButton, this.cits$autoDistributeButton,
+                this.cits$setCategoryButton }) {
+            if (b != null) {
+                fullRows.add(b);
+            }
+        }
+
+        int nGrid = (gridCells.size() + 1) / 2; // 2 列なので行数は切り上げ
+        int nFull = fullRows.size();
+        if (nGrid == 0 && nFull == 0) {
+            return; // 可視アクションボタンが 1 つも無い → 何もしない (背景パネルも描かれない)。
+        }
+
+        final int gridH = CITS_MENU_GRID_H;
+        final int fullH = CITS_MENU_FULL_H;
+
+        // ─── 余りを行間へ振り分けるための量を確定 ───
+        // 行間の数 (= 行数 - 1)。 そのうちグリッド↔全幅の境界 1 つだけ SECTION_GAP を使う。
+        int nGaps = (nGrid + nFull) - 1;
+        boolean gridFullBoundary = (nGrid > 0 && nFull > 0);
+        int buttonsH = nGrid * gridH + nFull * fullH;
+        int baseGaps = nGaps * gap + (gridFullBoundary ? (CITS_MENU_SECTION_GAP - gap) : 0);
+        int extra = (bottom - top) - (buttonsH + baseGaps);
+        // 各行間へ配る余白の総量 (1 行間あたり CITS_MENU_FILL_GAP_MAX で頭打ち)。 残りは下端余白。
+        int bonusTotal = (extra > 0 && nGaps > 0)
+                ? Math.min(extra, nGaps * CITS_MENU_FILL_GAP_MAX)
+                : 0;
+
+        int y = top;
+        int gapIndex = 0; // 何番目の行間か (端数 +1px を先頭側へ寄せるため)
+
+        // (a) 2 列グリッド行
+        for (int row = 0; row < nGrid; row++) {
+            cits$placeCell(gridCells.get(row * 2), x, y, leftW, gridH);
+            int rightIdx = row * 2 + 1;
+            if (rightIdx < gridCells.size()) {
+                cits$placeCell(gridCells.get(rightIdx), rightX, y, rightW, gridH);
+            }
+            y += gridH;
+            boolean lastGridRow = (row == nGrid - 1);
+            if (!lastGridRow) {
+                y += gap + cits$gapBonus(bonusTotal, nGaps, gapIndex++);
+            } else if (nFull > 0) {
+                y += CITS_MENU_SECTION_GAP + cits$gapBonus(bonusTotal, nGaps, gapIndex++);
+            }
+        }
+
+        // (b) 全幅行
+        for (int row = 0; row < nFull; row++) {
+            cits$placeCell(fullRows.get(row), x, y, width, fullH);
+            y += fullH;
+            if (row < nFull - 1) {
+                y += gap + cits$gapBonus(bonusTotal, nGaps, gapIndex++);
+            }
+        }
+    }
+
+    /**
+     * {@code total} px を {@code count} 個の行間へできるだけ均等に配ったときの、
+     * {@code index} 番目 (0 始まり) の取り分を返す。 端数 (= {@code total % count}) は先頭側の
+     * 行間へ 1px ずつ寄せるので、 総和は厳密に {@code total} になる (= 配り残し / 過剰なし)。
+     */
+    @Unique
+    private static int cits$gapBonus(int total, int count, int index) {
+        if (count <= 0) {
+            return 0;
+        }
+        return total / count + (index < total % count ? 1 : 0);
+    }
+
     /** ウィジェットの位置・サイズを 1 行で設定するユーティリティ (= グリッド配置の可読性のため)。 */
     @Unique
     private static void cits$placeCell(AbstractWidget w, int x, int y, int width, int height) {
@@ -1163,42 +1368,5 @@ public abstract class GenericContainerScreenMixin extends Screen {
         w.setY(y);
         w.setWidth(width);
         w.setHeight(height);
-    }
-
-    /**
-     * 縦並びボタン列のレイアウタ。 与えられたボタンのうち <b>非 null のものだけ</b> を、
-     * {@code startY} から 18px 刻みで上から詰める (= 非表示要素の隙間を残さない)。
-     */
-    @Unique
-    private void cits$packColumn(int x, int startY, int width, Button... buttons) {
-        int slot = 0;
-        for (Button b : buttons) {
-            if (b == null) {
-                continue;
-            }
-            b.setX(x);
-            b.setY(startY + slot * 18);
-            b.setWidth(width);
-            slot++;
-        }
-    }
-
-    /**
-     * ラージチェスト側面パネルの「ボタン列より上」 に積まれる可視スロット数。
-     * ◀▶ 行 (常時) + 表示中の 検索 / 種類 / 数量。 ボタン列の開始 y を reflow させるのに使う。
-     */
-    @Unique
-    private int cits$largeTopSlots() {
-        int slots = 1; // ◀▶ 行は常に存在する
-        if (this.cits$searchBox != null) {
-            slots++;
-        }
-        if (this.cits$sortByTypeButton != null) {
-            slots++;
-        }
-        if (this.cits$sortByCountButton != null) {
-            slots++;
-        }
-        return slots;
     }
 }

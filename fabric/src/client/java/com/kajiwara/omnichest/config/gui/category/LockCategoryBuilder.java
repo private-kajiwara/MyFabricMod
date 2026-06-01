@@ -1,7 +1,6 @@
 package com.kajiwara.omnichest.config.gui.category;
 
 import com.kajiwara.omnichest.client.ClientKeyBindings;
-import com.kajiwara.omnichest.config.data.LockConfig;
 import com.kajiwara.omnichest.config.gui.ConfigLabels;
 import com.kajiwara.omnichest.config.gui.widget.TabBuilder;
 import com.kajiwara.omnichest.config.gui.widget.TabModel;
@@ -12,25 +11,16 @@ import net.minecraft.network.chat.Component;
  * 「Favorite Slot Lock」タブの組み立て役。
  *
  * <p>
- * 既存 {@link SlotLockConfig} を直接編集対象にする (= マイグレーションなし)。
- * 新規 {@link LockConfig} のフラグは ModConfig 側に保存される。
+ * 実際に動作する {@link SlotLockConfig} の設定だけを公開する。 旧 LockConfig (未配線の
+ * スキャフォールディング: enable / enableItemLockMode) のトグルは廃止した。
  */
 public final class LockCategoryBuilder {
 
     private LockCategoryBuilder() {
     }
 
-    public static TabModel build(LockConfig newCfg) {
+    public static TabModel build() {
         TabBuilder b = TabBuilder.start(ConfigLabels.category("lock", "Favorite Slot Lock"));
-
-        // ─── 新フィールド (ModConfig 側) ───
-        b.toggle(ConfigLabels.entry("lock.enable", "Enable Slot Lock"),
-                newCfg.enable, v -> newCfg.enable = v, null);
-
-        b.toggle(ConfigLabels.entry("lock.enableItemLockMode", "Enable Item Lock Mode"),
-                newCfg.enableItemLockMode, v -> newCfg.enableItemLockMode = v,
-                ConfigLabels.tooltip("lock.enableItemLockMode",
-                        "Track item by identity (e.g. follow Diamond Pickaxe across slots)."));
 
         // ─── Overlay & Visuals (SlotLockConfig へブリッジ) ───
         SlotLockConfig legacy = SlotLockConfig.get();

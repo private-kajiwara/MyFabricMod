@@ -5,7 +5,7 @@ package com.kajiwara.omnichest.config.data;
  *
  * <p>
  * 「箱に入っているのと同種のアイテムをまとめて投入する」挙動を定義する。
- * AI 分類 ({@link AIConfig}) とは独立: こちらは「マッチング判定」のみを扱う。
+ * AI 分類とは独立: こちらは「マッチング判定」のみを扱う。
  */
 public final class DepositConfig {
 

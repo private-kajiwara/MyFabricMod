@@ -77,12 +77,12 @@ public final class ConfigScreenFactory {
                         CompactCategoryBuilder.build(cfg.compact),
                         DepositCategoryBuilder.build(cfg.deposit),
                         DistributionCategoryBuilder.build(cfg.distribution),
-                        AICategoryBuilder.build(cfg.ai),
-                        TemplateCategoryBuilder.build(cfg.template))));
+                        AICategoryBuilder.build(),
+                        TemplateCategoryBuilder.build())));
         groups.add(new TabGroup(
                 OmniChestLocale.get(Keys.CONFIG_GROUP_PROTECTION_SEARCH, "Protection & Search"),
                 List.of(
-                        LockCategoryBuilder.build(cfg.lock),
+                        LockCategoryBuilder.build(),
                         SearchCategoryBuilder.build(cfg.search))));
         groups.add(new TabGroup(
                 OmniChestLocale.get(Keys.CONFIG_GROUP_APPEARANCE_INPUT, "Appearance & Input"),

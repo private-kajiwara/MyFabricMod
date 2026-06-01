@@ -28,16 +28,6 @@ public final class SortCategoryBuilder {
                 SortDirection.class, cfg.direction, v -> cfg.direction = v,
                 ConfigLabels.tooltip("sort.direction", "Ascending = A→Z. Descending = Z→A."));
 
-        b.toggle(ConfigLabels.entry("sort.useItemTags", "Use Item Tags"),
-                cfg.useItemTags, v -> cfg.useItemTags = v,
-                ConfigLabels.tooltip("sort.useItemTags",
-                        "Group items by datapack tags (e.g. minecraft:logs)."));
-
-        b.toggle(ConfigLabels.entry("sort.useCreativeTabGrouping", "Use Creative Tab Grouping"),
-                cfg.useCreativeTabGrouping, v -> cfg.useCreativeTabGrouping = v,
-                ConfigLabels.tooltip("sort.useCreativeTabGrouping",
-                        "Order categories the same way the creative inventory tabs do."));
-
         b.toggle(ConfigLabels.entry("sort.autoCompactAfterSort", "Auto Compact After Sort"),
                 cfg.autoCompactAfterSort, v -> cfg.autoCompactAfterSort = v,
                 ConfigLabels.tooltip("sort.autoCompactAfterSort",

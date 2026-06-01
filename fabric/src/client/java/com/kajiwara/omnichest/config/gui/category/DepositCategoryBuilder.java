@@ -16,18 +16,9 @@ public final class DepositCategoryBuilder {
     public static TabModel build(DepositConfig cfg) {
         TabBuilder b = TabBuilder.start(ConfigLabels.category("deposit", "Smart Deposit"));
 
+        // enable: Deposit Matching ボタン (チェスト GUI) の表示/機能ゲート (GenericContainerScreenMixin で参照)。
         b.toggle(ConfigLabels.entry("deposit.enable", "Enable Smart Deposit"),
                 cfg.enable, v -> cfg.enable = v, null);
-
-        b.toggle(ConfigLabels.entry("deposit.matchNbtComponents", "Match NBT / Data Components"),
-                cfg.matchNbtComponents, v -> cfg.matchNbtComponents = v,
-                ConfigLabels.tooltip("deposit.matchNbtComponents",
-                        "Strict mode: enchanted items only stack with identical enchantments."));
-
-        b.toggle(ConfigLabels.entry("deposit.ignoreEmptySlots", "Ignore Empty Slots"),
-                cfg.ignoreEmptySlots, v -> cfg.ignoreEmptySlots = v,
-                ConfigLabels.tooltip("deposit.ignoreEmptySlots",
-                        "Only deposit into chests already holding that item."));
 
         // ホットキーは KeyMapping 側 (= ClientKeyBindings) で管理。ここは案内のみ。
         b.text(Component.translatableWithFallback(

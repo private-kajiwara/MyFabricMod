@@ -83,14 +83,6 @@ public final class LanguageCategoryBuilder {
                         "Mirror UI horizontally for right-to-left languages. Auto follows the language; Force overrides."),
                 LanguageCategoryBuilder::rtlModeLabel);
 
-        // ─── Unicode フォント安全 ───
-        b.toggle(
-                OmniChestLocale.get(Keys.CONFIG_LANGUAGE_UNICODE_FONT_SAFETY, "Unicode Font Safety"),
-                cfg.unicodeFontSafety,
-                v -> cfg.unicodeFontSafety = v,
-                OmniChestLocale.get(Keys.CONFIG_LANGUAGE_UNICODE_FONT_SAFETY_TOOLTIP,
-                        "Prefer safe truncation for non-ASCII text so it never overflows widget boxes."));
-
         // 補足説明 (= 即時反映のしくみと再起動不要のヒント)。
         b.text(OmniChestLocale.get(Keys.CONFIG_LANGUAGE_RESTART_HINT,
                 "Most labels update immediately. A few cached titles may need re-opening the screen."));

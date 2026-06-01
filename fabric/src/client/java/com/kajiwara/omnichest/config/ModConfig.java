@@ -1,17 +1,14 @@
 package com.kajiwara.omnichest.config;
 
-import com.kajiwara.omnichest.config.data.AIConfig;
 import com.kajiwara.omnichest.config.data.CompactConfig;
 import com.kajiwara.omnichest.config.data.CompatConfig;
 import com.kajiwara.omnichest.config.data.DepositConfig;
 import com.kajiwara.omnichest.config.data.DistributionConfig;
 import com.kajiwara.omnichest.config.data.GeneralConfig;
 import com.kajiwara.omnichest.config.data.KeybindConfig;
-import com.kajiwara.omnichest.config.data.LockConfig;
 import com.kajiwara.omnichest.config.data.RenderConfig;
 import com.kajiwara.omnichest.config.data.SearchConfig;
 import com.kajiwara.omnichest.config.data.SortConfig;
-import com.kajiwara.omnichest.config.data.TemplateUiConfig;
 
 /**
  * MOD 設定のルートオブジェクト。
@@ -47,15 +44,12 @@ public final class ModConfig {
     public SortConfig sort = new SortConfig();
     public CompactConfig compact = new CompactConfig();
     public DepositConfig deposit = new DepositConfig();
-    public LockConfig lock = new LockConfig();
     public SearchConfig search = new SearchConfig();
     /**
      * Storage Auto Distribution (= チェスト間アイテム自動整理) の設定。
      * 検索系とはロジック/データを共有しない独立機能 (= 仕様要件)。
      */
     public DistributionConfig distribution = new DistributionConfig();
-    public AIConfig ai = new AIConfig();
-    public TemplateUiConfig template = new TemplateUiConfig();
     public RenderConfig render = new RenderConfig();
     public KeybindConfig keybind = new KeybindConfig();
     /**

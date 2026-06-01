@@ -22,12 +22,6 @@ public final class RenderCategoryBuilder {
                 ConfigLabels.tooltip("render.highlightColorRgb",
                         "Outline color used to highlight matched chests."));
 
-        b.toggle(ConfigLabels.entry("render.showCategoryLabels", "Show Category Labels"),
-                cfg.showCategoryLabels, v -> cfg.showCategoryLabels = v, null);
-
-        b.toggle(ConfigLabels.entry("render.enableTooltips", "Enable Tooltips"),
-                cfg.enableTooltips, v -> cfg.enableTooltips = v, null);
-
         b.toggle(ConfigLabels.entry("render.guiAnimation", "GUI Animation"),
                 cfg.guiAnimation, v -> cfg.guiAnimation = v, null);
 

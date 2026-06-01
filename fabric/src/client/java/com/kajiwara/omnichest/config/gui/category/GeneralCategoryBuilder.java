@@ -32,11 +32,6 @@ public final class GeneralCategoryBuilder {
                         "0 = no animation, 1.0 = default, 2.0 = double speed."),
                 v -> Component.literal(String.format(java.util.Locale.ROOT, "%.2fx", v)));
 
-        b.toggle(ConfigLabels.entry("general.enableSounds", "Enable Sounds"),
-                cfg.enableSounds, v -> cfg.enableSounds = v,
-                ConfigLabels.tooltip("general.enableSounds",
-                        "Play mod-specific UI sounds (sort complete, deposit, etc.)."));
-
         return b.build();
     }
 }
