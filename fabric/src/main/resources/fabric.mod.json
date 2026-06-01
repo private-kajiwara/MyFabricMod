@@ -8,11 +8,13 @@
 		"kajiwara"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/"
+		"homepage": "https://github.com/private-kajiwara/MyFabricMod",
+		"sources": "https://github.com/private-kajiwara/MyFabricMod",
+		"issues": "https://github.com/private-kajiwara/MyFabricMod/issues"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/omnichest/omni-chest-modmenu-icon.png",
-	"environment": "*",
+	"environment": "client",
 	"entrypoints": {
 		"main": [
 			"com.kajiwara.omnichest.OmniChest"

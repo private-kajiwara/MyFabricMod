@@ -9,7 +9,7 @@
 //     - sources jar 生成
 //     - LICENSE バンドル
 //     - fabric.mod.json への version 埋め込み
-//     - 出力 jar 名 (modid-mc<MC>-fabric<LOADER>-api<API>.jar)
+//     - 出力 jar 名 (<modid>-<modVersion>+<MC>-fabric.jar)
 //     - maven publish の artifactId
 //
 //   解決された Entry は project.ext.omniRegistryEntry に格納され、
@@ -114,10 +114,11 @@ tasks.named('jar') {
 // 7) 出力 jar 名を統一
 // ---------------------------------------------------------------------
 def buildJarName = { String classifier ->
-    String apiClean = entry.fabricApiVersion.contains('+')
-        ? entry.fabricApiVersion.tokenize('+')[0]
-        : entry.fabricApiVersion
-    String base = "${modId}-mc${entry.minecraftVersion}-fabric${entry.loaderVersion}-api${apiClean}"
+    // 形式: <modId>-<modVersion>+<MC>-fabric[-classifier].jar
+    //   例: omnichest-1.0.0+1.21.11-fabric.jar / omnichest-1.0.0+1.21.11-fabric-sources.jar
+    // '+' 以降はビルドメタデータ (対象 MC) という慣習 (Modrinth でも一般的)。 MC は配置ディレクトリ
+    // (build/libs/<MC>/) とファイル名の両方に入るので、 buildAll で複数 MC を吐いても衝突しない。
+    String base = "${modId}-${modVersion}+${entry.minecraftVersion}-fabric"
     return classifier ? "${base}-${classifier}.jar" : "${base}.jar"
 }
 
