@@ -3,6 +3,7 @@ package com.kajiwara.omnichest.mixin;
 import com.kajiwara.omnichest.catsort.engine.CategorySortEngine;
 import com.kajiwara.omnichest.catsort.ui.SortButtonWidget;
 import com.kajiwara.omnichest.client.gui.CategoryBadgeRenderer;
+import com.kajiwara.omnichest.client.gui.OmniChestScaledScreen;
 import com.kajiwara.omnichest.client.gui.SearchScreen;
 import com.kajiwara.omnichest.client.gui.search.preview.UnifiedPanelRenderer;
 import com.kajiwara.omnichest.config.ConfigManager;
@@ -39,7 +40,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(AbstractContainerScreen.class)
-public abstract class GenericContainerScreenMixin extends Screen {
+public abstract class GenericContainerScreenMixin extends Screen implements OmniChestScaledScreen {
 
     @Shadow
     protected int leftPos;
@@ -219,6 +220,16 @@ public abstract class GenericContainerScreenMixin extends Screen {
     /** 区切り線用の暗めのグレー (ARGB)。 */
     @Unique
     private static final int CITS_HELP_COLOR_RULE = 0x66888888;
+    /**
+     * 操作方法パネルが画面高さに収まらない (= GUI Scale Auto の全画面化で論理高さが縮む) ときに、
+     * パネル全体を一様縮小して 1 枚に収める際の最小縮小率。
+     * <p>
+     * これを下回るほど極端に縮む場合は下端でクリップを許容する (= 折り返して読めなくなる崩れより
+     * 「小さめ・1 枚」 を優先)。 {@link com.kajiwara.omnichest.client.gui.SearchScreen} のフッター
+     * ヒントと同じ思想・同じ値で揃える。
+     */
+    @Unique
+    private static final float CITS_HELP_MIN_SCALE = 0.5f;
 
     /**
      * チェスト GUI を開いている間、 マウス/キー操作の早見表を脇に小さく出す。
@@ -351,7 +362,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
         }
         int y = this.topPos;
 
-        // ─── 4) 全行をパネル幅で折り返してから描画 ───
+        // ─── 4) 全行をパネル幅で折り返し、 まず総高さを測ってから描画する ───
         // Font.split は 1 行を複数の FormattedCharSequence に分割する (= スタイル保持)。
         int wrapWidth = panelWidth - CITS_HELP_PADDING * 2;
         if (wrapWidth < 20) return; // パディング控除で 20 px 未満になるなら諦める。
@@ -359,37 +370,85 @@ public abstract class GenericContainerScreenMixin extends Screen {
         int textX = x + CITS_HELP_PADDING;
         java.util.List<net.minecraft.util.FormattedCharSequence> titleLines =
                 this.font.split(title, wrapWidth);
-        int lineY = y;
+        // 各操作行も先に折り返しておく (= 測定と描画で 2 度 split しない)。
+        java.util.List<java.util.List<net.minecraft.util.FormattedCharSequence>> bodyLines =
+                new java.util.ArrayList<>(lines.size());
+        for (Component line : lines) {
+            bodyLines.add(this.font.split(line, wrapWidth));
+        }
+
+        // 総コンテンツ高さ。 行送り規則は下の描画ループと厳密に一致させる
+        // (= タイトル各行 LINE_HEIGHT + 区切り 4px + 本文)。
+        int contentH = titleLines.size() * CITS_HELP_LINE_HEIGHT + 4;
+        for (int i = 0; i < bodyLines.size(); i++) {
+            java.util.List<net.minecraft.util.FormattedCharSequence> wrapped = bodyLines.get(i);
+            for (int w = 0; w < wrapped.size(); w++) {
+                boolean lastWrapInEntry = (w == wrapped.size() - 1);
+                boolean lastEntry = (i == bodyLines.size() - 1);
+                contentH += (lastWrapInEntry && !lastEntry)
+                        ? CITS_HELP_ENTRY_SPACING
+                        : CITS_HELP_LINE_HEIGHT;
+            }
+        }
+
+        // ─── 画面高さへのクランプ (= 全画面化で論理高さが縮んだ時の下端見切れ対策) ───
+        // 通常 (= 高さに余裕がある windowed 等) は startY=topPos / scale=1 で<b>従来と完全一致</b>。
+        // topPos 起点では下端が画面外に出る場合、 まず開始 Y を上へ詰めて画面内に収める (= 中身は不変)。
+        // それでも収まらない極小高さでは、 フッターヒントと同じ方式で全体を一様縮小して 1 枚に収める。
+        // edgePad は本メソッド冒頭で定義済み (= 配置サイド算出と同じ画面端余白を流用)。
+        int availH = this.height - 2 * edgePad;
+        int startY = y;
+        float scale = 1.0f;
+        if (contentH <= availH) {
+            if (startY + contentH > this.height - edgePad) {
+                startY = this.height - edgePad - contentH;
+            }
+            if (startY < edgePad) {
+                startY = edgePad;
+            }
+        } else {
+            startY = edgePad;
+            scale = Math.max(CITS_HELP_MIN_SCALE, availH / (float) contentH);
+        }
+
+        // 縮小時はパネル左上を原点にローカル座標で描く (= 拡縮の基準を左上に固定)。
+        boolean scaled = scale < 1.0f;
+        if (scaled) {
+            g.pose().pushMatrix();
+            g.pose().translate((float) x, (float) startY);
+            g.pose().scale(scale, scale);
+        }
+        int originX = scaled ? 0 : x;
+        int originTextX = scaled ? CITS_HELP_PADDING : textX;
+        int lineY = scaled ? 0 : startY;
+
         for (net.minecraft.util.FormattedCharSequence tl : titleLines) {
-            g.drawString(this.font, tl, textX, lineY, CITS_HELP_COLOR_TITLE, false);
+            g.drawString(this.font, tl, originTextX, lineY, CITS_HELP_COLOR_TITLE, false);
             lineY += CITS_HELP_LINE_HEIGHT;
         }
         // 区切り線。
-        g.fill(x, lineY, x + panelWidth, lineY + 1, CITS_HELP_COLOR_RULE);
+        g.fill(originX, lineY, originX + panelWidth, lineY + 1, CITS_HELP_COLOR_RULE);
         lineY += 4;
 
         // 「異なる操作 (= 別の lines[i])」 の間だけ広めの spacing を取る。
         // 折り返しで増えた continuation 行は元の行送り (LINE_HEIGHT) のまま — 1 項目内の改行が
         // 不自然に広がるのを避ける。
-        for (int i = 0; i < lines.size(); i++) {
-            Component line = lines.get(i);
-            java.util.List<net.minecraft.util.FormattedCharSequence> wrapped =
-                    this.font.split(line, wrapWidth);
+        for (int i = 0; i < bodyLines.size(); i++) {
+            java.util.List<net.minecraft.util.FormattedCharSequence> wrapped = bodyLines.get(i);
             for (int w = 0; w < wrapped.size(); w++) {
-                g.drawString(this.font, wrapped.get(w), textX, lineY,
+                g.drawString(this.font, wrapped.get(w), originTextX, lineY,
                         CITS_HELP_COLOR_BODY, false);
                 // 同じ項目内の continuation は LINE_HEIGHT、 最後の行 → 次の項目は ENTRY_SPACING。
                 boolean lastWrapInEntry = (w == wrapped.size() - 1);
-                boolean lastEntry = (i == lines.size() - 1);
-                if (lastEntry && lastWrapInEntry) {
-                    // 最終行は行送り不要 (= ループ終了)。
-                    lineY += CITS_HELP_LINE_HEIGHT;
-                } else if (lastWrapInEntry) {
-                    lineY += CITS_HELP_ENTRY_SPACING;
-                } else {
-                    lineY += CITS_HELP_LINE_HEIGHT;
-                }
+                boolean lastEntry = (i == bodyLines.size() - 1);
+                lineY += (lastWrapInEntry && !lastEntry)
+                        ? CITS_HELP_ENTRY_SPACING
+                        : CITS_HELP_LINE_HEIGHT;
             }
+        }
+
+        if (scaled) {
+            g.pose().popMatrix();
         }
     }
 
@@ -505,6 +564,23 @@ public abstract class GenericContainerScreenMixin extends Screen {
      */
     @Unique
     private static final int CITS_TOP_STACK_HEIGHT = 34;
+
+    /**
+     * ラージ (ダブル) チェストの GUI 真上に必要な高さ (px)。
+     *
+     * <p>
+     * ラージチェストは検索/種類/数量 行を<b>側面パネル</b>に持つため ({@link #cits$applyLargeRightColumn})、
+     * GUI 真上に積むのはカテゴリバッジ ({@code topPos - 14}, {@link #cits$badgeY} 参照) <b>だけ</b>。
+     * 小型チェストの {@link #CITS_TOP_STACK_HEIGHT} (= バッジ + 検索行) より小さい。
+     *
+     * <p>
+     * これを区別しないと、 高 GUI スケール (= 論理高さが縮む全画面 / 4K ウィンドウ) で
+     * {@link #cits$shiftDownForTopRow} がラージチェストを<b>不要に下へ押し下げ</b>、 下端
+     * (インベントリ / ホットバー) が窮屈になり中央から外れていた。 バッジは {@link #cits$badgeY} 側で
+     * 画面端クランプ済なので、 ここで確保する高さは「バッジがチェスト枠に被らない最小限」 で足りる。
+     */
+    @Unique
+    private static final int CITS_LARGE_TOP_STACK_HEIGHT = 14;
 
     // ───────────────────────────────────────────────────────────
     // GUI 上部コンテンツ列 (= カテゴリ バッジ + 検索行) の共通アンカー
@@ -961,6 +1037,41 @@ public abstract class GenericContainerScreenMixin extends Screen {
         return 0;
     }
 
+    // ───────────────────────────────────────────────────────────
+    // OmniChestScaledScreen: 高 GUI スケール時の「実効スケールクランプ」 のための必要論理サイズ。
+    //
+    // {@link com.kajiwara.omnichest.mixin.WindowGuiScaleMixin} がこの画面を開いている間だけ
+    // {@code Window#calculateScale} の戻り値を「ここで返す論理幅・高さが収まる最大スケール」 へ
+    // 下げる。 これにより高スケールでも UI が余裕レジームに収まり、 低スケールと同じ見た目になる。
+    // 必要サイズはチェスト種別 (ラージ / 小型) で imageWidth/imageHeight が異なるため動的算出する。
+    // ───────────────────────────────────────────────────────────
+    @Override
+    public boolean omnichest$wantsScaleClamp() {
+        return this.cits$supportedContainer;
+    }
+
+    @Override
+    public int omnichest$requiredLogicalWidth() {
+        // チェスト幅 + 左右の予約幅。 中央寄せチェストの<b>パネル側</b>に、 パネルが緊急クランプ
+        // (shiftAside) を起こさず収まる余地を確保できる幅。 panelReserve = GAP + パネル幅 +
+        // 背景外周 + 影 + 画面端余白 (= cits$shiftAsideForPanel の needed と同一思想)。
+        int panelReserve = CITS_MENU_PANEL_GAP + CITS_MENU_PANEL_WIDTH
+                + CITS_PANEL_MARGIN + CITS_PANEL_SHADOW_OVERHANG + CITS_SCREEN_EDGE_PAD;
+        return this.imageWidth + 2 * panelReserve;
+    }
+
+    @Override
+    public int omnichest$requiredLogicalHeight() {
+        // チェスト高 + 真上に積む要素の予約高 (中央寄せの上下対称ぶん)。
+        // ラージ: 検索バーが側面パネル上端に浮く余地 (= cits$applyLargeRightColumn の searchY)。
+        // 小型: バッジ + 検索/種類/数量 行 (= CITS_TOP_STACK_HEIGHT)。 いずれも緊急の上端クランプを
+        // 起こさず収まる最小高さ。
+        int topReserve = this.cits$isLargeChest
+                ? (CITS_MENU_SEARCH_NAV_GAP + CITS_MENU_SEARCH_H + CITS_SCREEN_EDGE_PAD)
+                : (CITS_TOP_STACK_HEIGHT + CITS_SCREEN_EDGE_PAD);
+        return this.imageHeight + 2 * topReserve;
+    }
+
     /**
      * 高 GUI スケール (= 論理高さが縮む) でチェストの真上に上段 (バッジ + 検索行) を置く縦の余地が
      * 無いとき、 <b>下に余裕がある範囲でチェスト本体を下げて</b>上段を直上に収める。
@@ -981,7 +1092,10 @@ public abstract class GenericContainerScreenMixin extends Screen {
     private void cits$shiftDownForTopRow() {
         if (!this.cits$supportedContainer)
             return;
-        int needed = CITS_TOP_STACK_HEIGHT + CITS_SCREEN_EDGE_PAD;
+        // ラージチェストは検索行を側面パネルに持つため、 真上に必要なのはバッジぶんだけ。
+        // 小型チェストはバッジ + 検索/種類/数量 行を真上に積むため、より広い余地が要る。
+        int topStack = this.cits$isLargeChest ? CITS_LARGE_TOP_STACK_HEIGHT : CITS_TOP_STACK_HEIGHT;
+        int needed = topStack + CITS_SCREEN_EDGE_PAD;
         int deficit = needed - this.topPos;
         if (deficit <= 0)
             return; // 既に十分な余地 → 何もしない。
