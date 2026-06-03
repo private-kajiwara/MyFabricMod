@@ -32,8 +32,16 @@ dependencies {
     // SLF4J: Minecraft 自体が提供するため compileOnly
     compileOnly 'org.slf4j:slf4j-api:2.0.13'
     compileOnly 'org.jetbrains:annotations:26.0.1'
+
+    // 純粋ロジックの単体テスト (= MC 非依存なので common 内で完結できる)。
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 java {
     withSourcesJar()
+}
+
+test {
+    useJUnitPlatform()
 }

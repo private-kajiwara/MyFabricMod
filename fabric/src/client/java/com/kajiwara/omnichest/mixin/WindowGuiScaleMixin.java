@@ -1,6 +1,7 @@
 package com.kajiwara.omnichest.mixin;
 
 import com.kajiwara.omnichest.client.gui.OmniChestScaledScreen;
+import com.kajiwara.omnichest.gui.GuiScaleFit;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -63,24 +64,10 @@ public class WindowGuiScaleMixin {
         int requiredW = scaled.omnichest$requiredLogicalWidth();
         int requiredH = scaled.omnichest$requiredLogicalHeight();
 
-        // vanilla から 1 ずつ下げ、 論理サイズ (= guiScaledWidth/Height) が必要サイズを満たす
-        // 最大スケールを探す。 vanilla 段で既に収まる (= 低スケール) なら即 break = クランプせず素通し。
-        // guiScaledWidth はバニラ setGuiScale が ceil(framebufferWidth / scale) で算出するのに合わせる。
-        int scale = vanilla;
-        while (scale > 1) {
-            int scaledW = (this.framebufferWidth + scale - 1) / scale; // = ceil(fbW / scale)
-            int scaledH = (this.framebufferHeight + scale - 1) / scale;
-            if (scaledW >= requiredW && scaledH >= requiredH) {
-                break;
-            }
-            scale--;
-        }
-
-        // forceUnicode 時はバニラ同様 even を保つ。 1 段下げても論理サイズは広がる (= 収まりは
-        // 悪化しない) ため安全。
-        if (forceUnicode && (scale & 1) == 1 && scale > 1) {
-            scale--;
-        }
+        // 収まる最大スケールを純粋関数で算出する (= 単体テスト済みの GuiScaleFit に一元化)。
+        // vanilla 段で既に収まる (= 低スケール) 場合は vanilla がそのまま返るのでクランプ不発火。
+        int scale = GuiScaleFit.clampScaleToFit(vanilla, this.framebufferWidth, this.framebufferHeight,
+                requiredW, requiredH, forceUnicode);
 
         if (scale < vanilla) {
             cir.setReturnValue(scale);
