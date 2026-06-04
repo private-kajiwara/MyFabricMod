@@ -20,6 +20,20 @@ pluginManagement {
     }
 }
 
+// ---------------------------------------------------------------------
+// Java toolchain について
+//   MC 26.1.x は Java 25 を要求する (1.21.11 は Java 21)。
+//   convention plugin が entry.javaVersion を toolchain.languageVersion に
+//   流し込むので、 ビルドマシンに JDK 21 / 25 が「検出可能な状態」で
+//   存在すれば Gradle が自動で使い分ける。
+//
+//   JDK の供給方法 (どちらでも可):
+//     (a) ローカルに JDK 25 をインストール (Gradle が標準パス /
+//         org.gradle.java.installations.paths から自動検出)
+//     (b) foojay-resolver-convergence プラグインで auto-download
+//         ※ Gradle Plugin Portal に到達できないネットワークでは (a) を使う
+// ---------------------------------------------------------------------
+
 rootProject.name = 'omnichest'
 
 include 'common'

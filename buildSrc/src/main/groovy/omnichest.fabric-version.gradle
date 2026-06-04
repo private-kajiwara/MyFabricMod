@@ -62,14 +62,22 @@ base {
 
 // ---------------------------------------------------------------------
 // 3) Java toolchain
+//   MC によって必要 Java が異なる (1.21.11 -> 21, 26.1.x -> 25)。
+//   entry.javaVersion を toolchain と release に流し込むことで、
+//   1 つの convention plugin で全バージョンを賄う。
+//   ローカルに該当 JDK が無くても settings.gradle の foojay resolver が
+//   自動取得するため、 JDK 25 を手動インストールする必要は無い。
 // ---------------------------------------------------------------------
+def javaVersionInt = (entry.javaVersion ?: '21').trim() as int
+
 java {
     withSourcesJar()
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaVersionInt)
+    }
 }
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 21
+    it.options.release = javaVersionInt
     it.options.encoding = 'UTF-8'
 }
 
@@ -90,7 +98,8 @@ tasks.named('processResources') {
         version            : modVersion,
         minecraft_version  : entry.minecraftVersion,
         loader_version     : entry.loaderVersion,
-        fabric_api_version : entry.fabricApiVersion
+        fabric_api_version : entry.fabricApiVersion,
+        java_version       : (entry.javaVersion ?: '21')
     ]
     inputs.properties(replacements)
     filesMatching('fabric.mod.json') {

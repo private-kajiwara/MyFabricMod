@@ -112,7 +112,10 @@ registry.entries.each { VersionRegistry.Entry e ->
 //   per-MC に gradlew を fork する以外の方法はない。
 // ---------------------------------------------------------------------
 def buildAllSequence = []
-registry.entries.eachWithIndex { VersionRegistry.Entry e, int idx ->
+// buildable=false (= 上流マッピング未公開で保留中) のバージョンは buildAll から除外する。
+// 個別の build<MC> エイリアスは全エントリに残してあるので、 マッピング公開後に
+// versions.json の buildable を true へ戻せば自動的に buildAll 対象へ復帰する。
+registry.buildableEntries().eachWithIndex { VersionRegistry.Entry e, int idx ->
     def execTaskName = "_execBuild${e.id}"
     tasks.register(execTaskName, Exec) {
         group = 'mod build'
@@ -151,17 +154,19 @@ if (recommended != null) {
 // ---------------------------------------------------------------------
 tasks.register('printVersions') {
     group = 'mod build'
-    description = '登録済み MC バージョンを 1 行 1 件で出力'
+    description = '登録済み MC バージョンを 1 行 1 件で出力 (保留中は [held] を付与)'
     doLast {
-        registry.entries.each { println it.minecraftVersion }
+        registry.entries.each {
+            println it.buildable ? it.minecraftVersion : "${it.minecraftVersion} [held]"
+        }
     }
 }
 
 tasks.register('printVersionsJson') {
     group = 'mod build'
-    description = 'CI matrix 用に登録 MC を JSON 配列で出力'
+    description = 'CI matrix 用に「ビルド可能な」 MC を JSON 配列で出力 (buildable=false は除外)'
     doLast {
-        println '[' + registry.entries.collect { "\"${it.minecraftVersion}\"" }.join(',') + ']'
+        println '[' + registry.buildableEntries().collect { "\"${it.minecraftVersion}\"" }.join(',') + ']'
     }
 }
 

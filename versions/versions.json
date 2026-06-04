@@ -12,13 +12,46 @@
 
   "schema": 1,
 
+  "$buildable_note": [
+    "buildable=false: registry には登録するが buildAll / CI matrix / buildRecommended の",
+    "対象から除外する。 26.1.x は 2026-06 時点で Mojang 公式マッピングも Yarn も未公開で",
+    "(intermediary も 0.0.0 スタブ)、 named シンボルを remap できずビルド不能なため。",
+    "マッピングが公開されたら buildable を true に戻し、 必要なら properties の",
+    "yarn_mappings を設定するだけで有効化できる。"
+  ],
+
   "versions": [
     {
       "minecraft": "1.21.11",
       "properties": "1.21.11.properties",
       "stable": true,
       "recommended": true,
-      "notes": "OmniChest の基準バージョン (current default)。"
+      "buildable": true,
+      "notes": "OmniChest の基準バージョン (Java 21 系・現行ビルド対象)。"
+    },
+    {
+      "minecraft": "26.1",
+      "properties": "26.1.properties",
+      "stable": true,
+      "recommended": false,
+      "buildable": false,
+      "notes": "年ベース新バージョニング初版 (Java 25)。上流マッピング未公開のため保留。"
+    },
+    {
+      "minecraft": "26.1.1",
+      "properties": "26.1.1.properties",
+      "stable": true,
+      "recommended": false,
+      "buildable": false,
+      "notes": "26.1 系パッチ (Java 25)。上流マッピング未公開のため保留。"
+    },
+    {
+      "minecraft": "26.1.2",
+      "properties": "26.1.2.properties",
+      "stable": true,
+      "recommended": false,
+      "buildable": false,
+      "notes": "26.1 系最新安定版 (Java 25)。上流マッピング未公開のため保留。"
     }
   ],
 
