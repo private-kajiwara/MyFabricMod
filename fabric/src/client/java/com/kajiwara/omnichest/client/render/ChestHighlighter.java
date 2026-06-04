@@ -239,12 +239,19 @@ public final class ChestHighlighter {
             if (opened == null) {
                 return;
             }
-            // エンダーチェストを開いたら、 全エンダーチェストのハイライトを消す。
-            // 全エンダーチェストは同一インベントリを共有するため、 どれか 1 つに到達した時点で
-            // 探索ガイドは不要になる (= 仕様)。 永続ピン設定に関わらず即クリアする。
+            // エンダーチェストを開いたら、 全エンダーチェストの「ワールド側ガイド (ピン/枠/ビーム)」を
+            // 抑止する。 全エンダーチェストは同一インベントリを共有するため、 どれか 1 つに到達した
+            // 時点でワールド探索ガイドは不要になる (= 仕様)。 永続ピン設定に関わらず即抑止する。
+            //
+            // 旧実装は active から ENDER_CHEST entry を「削除」していたが、 これだと
+            // 「エンダーチェスト → シュルカー → アイテム」の段階ハイライトに必要な
+            // スロット overlay 用 entry (waypoint = シュルカー / leaf = 中身) まで巻き添えで消え、
+            // 「開けた瞬間にハイライトが消える」不具合になっていた (= 今回の修正対象)。
+            // そこで「削除」ではなく {@link #suppressAllEnderChestWorldGuides()} で
+            // worldRenderSuppressed を立てるだけにし、 entry は保持してスロット overlay を維持する。
             ContainerSnapshot openedSnap = ChestNetworkManager.get().get(opened);
             if (openedSnap != null && openedSnap.type() == ContainerType.ENDER_CHEST) {
-                INSTANCE.clearAllEnderChestHighlights();
+                INSTANCE.suppressAllEnderChestWorldGuides();
                 return;
             }
             if (!ConfigManager.get().search.pinPersistUntilOpened) {
@@ -311,9 +318,47 @@ public final class ChestHighlighter {
         }
     }
 
-    /** 全エンダーチェストのハイライトを除去する (= どれか 1 つを開いた = ガイド不要になったとき)。 */
-    private void clearAllEnderChestHighlights() {
-        active.entrySet().removeIf(e -> e.getValue().snapshot.type() == ContainerType.ENDER_CHEST);
+    /**
+     * 全エンダーチェストの<b>ワールド側ガイド (ピン / 枠 / ビーム)</b> のみを抑止する
+     * (= どれか 1 つを開いた = ワールド探索ガイドが不要になったとき)。
+     *
+     * <p>
+     * <b>なぜ「削除」ではなく「抑止 + 保持」か</b>:
+     * 「エンダーチェスト → シュルカー → アイテム」の段階ハイライトでは、 leaf (中身) と
+     * waypoint (経由シュルカー) の両 entry が同一の {@link ContainerSnapshot.Key}
+     * (= ENDER_CHEST の snapshot) 配下に登録される ({@link NestedHighlightRenderer} 参照)。
+     * 旧実装のように {@code active} から ENDER_CHEST entry を削除すると、 開いた中で本当に必要な
+     * スロット overlay 用 entry まで巻き添えで消え、 「開けた瞬間にハイライトが消える」不具合になる。
+     * そこで entry は残し、 {@code worldRenderSuppressed} を立ててワールド描画だけを止める。
+     *
+     * <p>
+     * <b>expiresAt の clamp</b>:
+     * 永続ピン設定 ({@code pinPersistUntilOpened}) では expiresAt = {@link Long#MAX_VALUE} に
+     * なっているため、 そのまま保持すると「見えないまま永遠に残る entry」 になる。
+     * {@code now + SLOT_VIEW_REFRESH_MS} を超える場合のみ有限値へ下げる (= 永続ピンの無効化)。
+     * 下げた後は {@link #isHighlightedItem(ItemStack)} が ENDER_CHEST entry を
+     * (worldRenderSuppressed 下でも) 毎フレーム再延長するため、 開いている間は維持される。
+     * 有限値の entry には触らない (= 通常の時間ベース消失を尊重)。
+     *
+     * <p>
+     * <b>前提依存</b>: {@code expiresAt} は entry 単位ではなく {@link ActiveHighlight} 単位で
+     * 共有されている。 これにより waypoint (シュルカー) が可視で延長されている間、 同じ
+     * ActiveHighlight 内の leaf (中身) も同時に延命される (= 段階ハイライト後半が早期 expire しない)。
+     * <b>将来 expiresAt を entry 単位へ分割すると、 この「まとめ延命」が壊れる</b>ので注意。
+     */
+    private void suppressAllEnderChestWorldGuides() {
+        long fin = System.currentTimeMillis() + SLOT_VIEW_REFRESH_MS;
+        for (ActiveHighlight h : active.values()) {
+            if (h.snapshot.type() != ContainerType.ENDER_CHEST) {
+                continue;
+            }
+            // ワールド側のピン/枠/ビームを止める (= 開けたらワールドガイドは消える現行仕様)。
+            h.worldRenderSuppressed = true;
+            // 永続 (MAX_VALUE) のみ有限化。 有限 entry はそのまま (= 既存の時間ベース消失を維持)。
+            if (h.expiresAt > fin) {
+                h.expiresAt = fin;
+            }
+        }
     }
 
     /**
@@ -514,10 +559,22 @@ public final class ChestHighlighter {
             }
             if (hitThis) {
                 matched = true;
-                // 「開封済み」 or 「チェスト破壊済み」フェーズでは時計を延長しない。
-                // そうしないと slot overlay の refresh で expiresAt が永久に再延長され、
-                // ハイライトが消えなくなる。
-                if (!h.worldRenderSuppressed && !h.chestBroken && h.expiresAt < refreshTo)
+                // 「開封済み (worldRenderSuppressed)」 or 「チェスト破壊済み」フェーズでは
+                // 原則として時計を延長しない。 そうしないと slot overlay の refresh で expiresAt が
+                // 永久に再延長され、 ハイライトが消えなくなる。
+                //
+                // <b>ENDER_CHEST 例外</b>: エンダーチェストは開封時に
+                // {@link #suppressAllEnderChestWorldGuides()} で worldRenderSuppressed を立てるが、
+                // これは「ワールド側ガイドを消す」だけが目的で、 開いた中の段階ハイライト
+                // (シュルカー → 中身) は維持したい。 そこで ENDER_CHEST に限り、
+                // worldRenderSuppressed 下でも延長を許可する (= 通常チェストのネスト導線と同じ寿命)。
+                // worldRenderSuppressed はあくまで onWorldRender の<b>描画ゲート</b>であり、 ここで
+                // 延長を許可してもワールド側のピン/枠/ビームが復活することはない (= 描画と延命は別経路)。
+                // 永続ピンは suppress 時に clamp 済みなので、 この延長は「見えている間だけ now+10s に
+                // 保つ」働きにとどまり、 永遠に残ることはない。
+                boolean isEnderChest = h.snapshot.type() == ContainerType.ENDER_CHEST;
+                if ((!h.worldRenderSuppressed || isEnderChest) && !h.chestBroken
+                        && h.expiresAt < refreshTo)
                     h.expiresAt = refreshTo;
             }
         }
