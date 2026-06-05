@@ -132,8 +132,10 @@ registry.buildableEntries().eachWithIndex { VersionRegistry.Entry e, int idx ->
 
 tasks.register('buildAll') {
     group = 'mod build'
-    description = 'versions.json に登録された全 MC を別プロセスで順次ビルド'
+    description = 'versions.json に登録された全 MC を別プロセスで順次ビルドし、 成果物を dist/ に集約'
     dependsOn buildAllSequence
+    // 全 MC ビルド後に dist/ へ集約 (collectDist は buildAllSequence の後に走る)
+    dependsOn 'collectDist'
 }
 
 // ---------------------------------------------------------------------
@@ -192,6 +194,44 @@ tasks.register('collectArtifacts', Copy) {
         eachFile { it.path = it.name }
         includeEmptyDirs = false
     }
+}
+
+// ---------------------------------------------------------------------
+// collectDist — 配布用の最終 jar を root/dist/ に集約 (Sync = 毎回クリーン)
+//
+//   fabric/build/libs/<MC>/ には per-MC の最終 jar が出るが、 mod_version を
+//   上げると旧版 jar が同ディレクトリに残留する (clean を挟まない限り)。
+//   そこで「今回の mod_version の最終 jar だけ」を root/dist/ にミラーする:
+//
+//     - include パターンを <modId>-<modVersion>+*-fabric.jar に固定
+//         → sources jar (...-fabric-sources.jar) と
+//           remap 版の中間 dev jar (...-dev.jar) は自動的に除外される。
+//         → 過去 mod_version の jar も混ざらない (版が混在しない)。
+//     - Sync なので dist/ 内の余分なファイルは毎回削除され、 常に
+//       「今ビルドした成果物だけ」が予測可能な 1 か所に集まる。
+//
+//   buildAll が finalize 代わりに dependsOn しているため、
+//   ./gradlew buildAll を打てば全 MC 分の最終 jar が dist/ に揃う。
+//   単一 MC の場合は ./gradlew build<MC> collectDist で同様に集約できる。
+// ---------------------------------------------------------------------
+def modId = (project.findProperty('mod_id') ?: 'omnichest').toString()
+
+tasks.register('collectDist', Sync) {
+    group = 'mod build'
+    description = "配布用の最終 jar (現 mod_version のみ) を root/dist/ に集約"
+    into layout.projectDirectory.dir('dist')
+    from(project(':fabric').layout.buildDirectory.dir('libs')) {
+        include "**/${modId}-${version}+*-fabric.jar"
+        // <MC>/ のディレクトリ階層を平坦化して dist/ 直下に置く
+        eachFile { it.path = it.name }
+        includeEmptyDirs = false
+    }
+    // 集約は「jar が出来てから」走らなければならない。
+    //   - buildAll 経由: 各 MC を別プロセスで焼く _execBuild* の後 (buildAllSequence)。
+    //   - 単一 MC 経由 (build<MC> collectDist): 同一 invocation 内の :fabric:build の後。
+    // mustRunAfter は対象が task graph に居るときだけ効くので、 両方併記して安全。
+    mustRunAfter buildAllSequence
+    mustRunAfter ':fabric:build'
 }
 
 // ---------------------------------------------------------------------

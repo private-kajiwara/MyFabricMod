@@ -5,6 +5,9 @@ build/
 out/
 classes/
 
+# 配布用の集約成果物 (collectDist / buildAll が生成)
+dist/
+
 # eclipse
 
 *.launch

@@ -86,5 +86,8 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: omnichest-mc${{ matrix.minecraft }}
-          path: fabric/build/libs/*.jar
+          # 最終 jar は fabric/build/libs/<MC>/ 配下に出る。
+          # *-fabric.jar だけを拾えば sources(...-fabric-sources.jar) と
+          # remap 版の中間 dev jar(...-dev.jar) は自動的に除外される。
+          path: fabric/build/libs/**/*-fabric.jar
           if-no-files-found: warn
