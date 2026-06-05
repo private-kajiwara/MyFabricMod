@@ -470,7 +470,7 @@ public final class StorageDistributionManager {
     private static void postChat(Component msg) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.gui != null) {
-            mc.gui.getChat().addMessage(msg);
+            if (mc.player != null) mc.player.sendSystemMessage(msg);
         }
     }
 

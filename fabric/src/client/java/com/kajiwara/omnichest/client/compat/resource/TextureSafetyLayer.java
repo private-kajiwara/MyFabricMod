@@ -24,12 +24,12 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * 1.21 では <i>RenderSystem.setShaderTexture</i> 等の global state API はパイプライン化の過程で
  * 大幅に置き換えられたため、 「直接 setShaderTexture を呼ぶ」 描画は本来ほぼ存在しない
- * (= {@code GuiGraphics.blit} / {@code RenderType} 経由で expressed される)。
+ * (= {@code GuiGraphicsExtractor.blit} / {@code RenderType} 経由で expressed される)。
  * 本クラスは「将来 OmniChest が直接 binding が必要になった場合」 と「他 MOD が壊した state を
  * 探知して fallback する」 用途のため、 静的にいくつかのヘルパを提供する。
  *
  * <p>
- * <b>既存挙動への影響</b>: 一切無し。 既存 render code は引き続き {@code GuiGraphics} 経由なので、
+ * <b>既存挙動への影響</b>: 一切無し。 既存 render code は引き続き {@code GuiGraphicsExtractor} 経由なので、
  * このクラスを呼んでいる箇所は無い。 将来のフックポイントとしての提供 + 既存 render path から
  * 「validate のみ」 で利用できるユーティリティとして提供する。
  */

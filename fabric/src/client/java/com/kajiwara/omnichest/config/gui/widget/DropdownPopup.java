@@ -2,7 +2,7 @@ package com.kajiwara.omnichest.config.gui.widget;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -139,14 +139,14 @@ public final class DropdownPopup<E> implements OverlayPopup {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         // 半透明 dim はかけない (= 色選択みたいに大規模な popup ではないので、
         // 周りの画面を消さない方が「メニューを開いた」感が出る)。
 
         // 背景 + 縁
         g.fill(this.popupX, this.popupY, this.popupX + this.popupW,
                 this.popupY + this.popupH, COLOR_BG);
-        g.renderOutline(this.popupX - 1, this.popupY - 1,
+        g.outline(this.popupX - 1, this.popupY - 1,
                 this.popupW + 2, this.popupH + 2, COLOR_RIM);
 
         Font font = Minecraft.getInstance().font;
@@ -182,7 +182,7 @@ public final class DropdownPopup<E> implements OverlayPopup {
             int textY = itemTop + (ITEM_HEIGHT - 8) / 2;
             Component label = this.labelFn.apply(this.values.get(i));
             if (label != null) {
-                g.drawString(font, label, listLeft + PADDING_X, textY, textColor, false);
+                g.text(font, label, listLeft + PADDING_X, textY, textColor, false);
             }
         }
         g.disableScissor();
@@ -197,7 +197,7 @@ public final class DropdownPopup<E> implements OverlayPopup {
         return this.values.size() > this.visibleItems;
     }
 
-    private void renderScrollbar(GuiGraphics g) {
+    private void renderScrollbar(GuiGraphicsExtractor g) {
         int sbX = this.popupX + this.popupW - SCROLLBAR_WIDTH;
         int sbTop = this.popupY + PADDING_Y;
         int sbBottom = this.popupY + this.popupH - PADDING_Y;

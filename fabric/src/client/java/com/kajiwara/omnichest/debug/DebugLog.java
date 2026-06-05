@@ -86,10 +86,11 @@ public final class DebugLog {
             mc.execute(() -> {
                 try {
                     if (mc.player != null) {
-                        // false = アクションバーではなく通常チャット欄に出す。
-                        mc.player.displayClientMessage(line, false);
+                        // 26.1 で displayClientMessage(Component,boolean) は廃止。
+                        // 通常チャット欄に出すのは sendSystemMessage(Component)。
+                        mc.player.sendSystemMessage(line);
                     } else if (mc.gui != null) {
-                        mc.gui.getChat().addMessage(line);
+                        if (mc.player != null) mc.player.sendSystemMessage(line);
                     }
                 } catch (Throwable ignored) {
                     // チャット未初期化等は無視。

@@ -1,6 +1,6 @@
 package com.kajiwara.omnichest.client.render;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -37,7 +37,7 @@ public final class SearchMatchSlotRenderer {
     private SearchMatchSlotRenderer() {
     }
 
-    public static void renderSlot(GuiGraphics g, Slot slot) {
+    public static void renderSlot(GuiGraphicsExtractor g, Slot slot) {
         if (slot == null)
             return;
         ItemStack stack = slot.getItem();

@@ -5,7 +5,7 @@ import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import com.kajiwara.omnichest.search.nested.ContainerHierarchyResolver;
 import com.kajiwara.omnichest.search.nested.RecursiveContainerHelper;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
@@ -48,7 +48,7 @@ import java.util.Locale;
  *   <li>フェードイン: {@code render.guiAnimation} ON 時に {@code general.animationSpeed} を
  *       尊重して 120ms 基準 / 速度比率 で alpha 0→1。 既存のアニメ速度設定を破壊しない。</li>
  *   <li>RTL: タイトル / サマリの右寄せ、 グリッド列の左右反転 (= 視覚的アンカ反転)。</li>
- *   <li>Shader 安全: {@link GuiGraphics} の標準 2D 描画のみ。</li>
+ *   <li>Shader 安全: {@link GuiGraphicsExtractor} の標準 2D 描画のみ。</li>
  * </ul>
  */
 public final class AltPreviewPopupRenderer {
@@ -125,7 +125,7 @@ public final class AltPreviewPopupRenderer {
      *
      * @param backdropDim true なら背後に dim レイヤを敷く (= "Preview Background Blur" 設定)。
      */
-    public static void render(GuiGraphics g, Font font, ItemStack containerStack,
+    public static void extractRenderState(GuiGraphicsExtractor g, Font font, ItemStack containerStack,
                               int x, int y, int columns, boolean backdropDim) {
         if (containerStack == null || containerStack.isEmpty()) return;
         int slotCount = RecursiveContainerHelper.DEFAULT_CONTAINER_SLOTS;
@@ -137,14 +137,14 @@ public final class AltPreviewPopupRenderer {
 
     /**
      * スロット配列ベースの描画本体。 テンプレート管理プレビュー等からも再利用できるよう public。
-     * {@link #render(GuiGraphics, Font, ItemStack, int, int, int, boolean)} はこれに委譲する。
+     * {@link #extractRenderState(GuiGraphicsExtractor, Font, ItemStack, int, int, int, boolean)} はこれに委譲する。
      * パネル / セル / タイトル / セパレータ / サマリの見た目はシュルカープレビューと完全一致。
      *
      * @param slots     各スロットの内容 (空は {@link ItemStack#EMPTY})。 {@code slotCount} より短ければ不足分は空セル。
      * @param slotCount グリッドに描く総スロット数 (= コンテナサイズ)。
      * @param fadeKey   フェード継続判定に使う識別子 (== 比較)。 対象が変わると再フェード。
      */
-    public static void renderSlots(GuiGraphics g, Font font, Component title,
+    public static void renderSlots(GuiGraphicsExtractor g, Font font, Component title,
                                    List<ItemStack> slots, int slotCount,
                                    int x, int y, int columns, boolean backdropDim,
                                    Object fadeKey) {
@@ -179,7 +179,7 @@ public final class AltPreviewPopupRenderer {
         int titleY = y + pad - 1;
         int titleX = rtl ? (contentRight - font.width(title)) : contentLeft;
         int titleColor = UnifiedPanelRenderer.scaleAlpha(PopupThemeResolver.TEXT_PRIMARY, fadeAlpha);
-        g.drawString(font, title, titleX, titleY, titleColor, false);
+        g.text(font, title, titleX, titleY, titleColor, false);
 
         // ─── (6) タイトル下セパレータ ───
         int sep1Y = y + pad + PopupThemeResolver.TITLE_HEIGHT + PopupThemeResolver.SEPARATOR_GAP;
@@ -221,13 +221,13 @@ public final class AltPreviewPopupRenderer {
         int summaryY = sep2Y + 1 + PopupThemeResolver.SEPARATOR_GAP;
         int summaryX = rtl ? (contentRight - font.width(summary)) : contentLeft;
         int summaryColor = UnifiedPanelRenderer.scaleAlpha(PopupThemeResolver.TEXT_SECONDARY, fadeAlpha);
-        g.drawString(font, summary, summaryX, summaryY, summaryColor, false);
+        g.text(font, summary, summaryX, summaryY, summaryColor, false);
     }
 
     /**
      * 1 セル分の描画。 空セルは枠 + 内側 dim のみ。 非空セルはアイテム + decorations + 検索ハイライト。
      */
-    private static void drawSlot(GuiGraphics g, Font font, ItemStack s,
+    private static void drawSlot(GuiGraphicsExtractor g, Font font, ItemStack s,
                                  int cx, int cy, float fadeAlpha) {
         int cell = PopupThemeResolver.CELL;
         // セル枠 (= 空セルでも視認可能)
@@ -238,8 +238,8 @@ public final class AltPreviewPopupRenderer {
         if (s != null && !s.isEmpty()) {
             // アイテム本体 (= renderItem 内で エンチャ光沢 自動)。 フェード中も即フル表示
             // (= 行列スケールで GL state を弄らないことを優先 / 120ms の間だけなので視認上問題なし)。
-            g.renderItem(s, cx + 1, cy + 1);
-            g.renderItemDecorations(font, s, cx + 1, cy + 1);
+            g.item(s, cx + 1, cy + 1);
+            g.itemDecorations(font, s, cx + 1, cy + 1);
             // 検索ハイライト (= 既存 SearchMatchSlotRenderer と完全一致のスタイル)
             PreviewHighlightRenderer.drawIfHighlighted(g, s, cx, cy, fadeAlpha);
         }

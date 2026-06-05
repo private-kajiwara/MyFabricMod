@@ -4,7 +4,7 @@ import com.kajiwara.omnichest.i18n.Keys;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -124,7 +124,7 @@ public final class ResetConfirmationPopup implements OverlayPopup {
     // ════════════════════════════════════════════════════════════════════
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         PopupLayoutManager L = layout();
         Font font = Minecraft.getInstance().font;
 
@@ -133,7 +133,7 @@ public final class ResetConfirmationPopup implements OverlayPopup {
 
         // 枠 + 背景。
         g.fill(L.x, L.y, L.x + L.w, L.y + L.h, COLOR_BG);
-        g.renderOutline(L.x - 1, L.y - 1, L.w + 2, L.h + 2, COLOR_RIM);
+        g.outline(L.x - 1, L.y - 1, L.w + 2, L.h + 2, COLOR_RIM);
 
         // タイトルバー + タイトル文字 (中央寄せ)。
         // 変更なしモードでは確認文ではなく「変更された設定がありません」 を出す
@@ -144,7 +144,7 @@ public final class ResetConfirmationPopup implements OverlayPopup {
                         "No settings have been changed")
                 : OmniChestLocale.get(Keys.RESET_POPUP_TITLE, "Really reset all changes?");
         int tw = font.width(title);
-        g.drawString(font, title, L.x + (L.w - tw) / 2, L.titleCenterY - 4,
+        g.text(font, title, L.x + (L.w - tw) / 2, L.titleCenterY - 4,
                 COLOR_TITLE_TEXT, false);
 
         // タイトル下の区切り線。
@@ -152,7 +152,7 @@ public final class ResetConfirmationPopup implements OverlayPopup {
                 L.x + L.w - PopupLayoutManager.PAD, L.contentTop, COLOR_SEP);
 
         // 変更内容一覧 (スクロール可能)。
-        this.list.render(g, L.contentLeft, L.contentTop, L.contentRight, L.contentBottom,
+        this.list.extractRenderState(g, L.contentLeft, L.contentTop, L.contentRight, L.contentBottom,
                 L.isRtl(), mouseX, mouseY);
 
         // ボタンバンド上の区切り線。
@@ -163,7 +163,7 @@ public final class ResetConfirmationPopup implements OverlayPopup {
         renderButtons(g, L, font, mouseX, mouseY);
     }
 
-    private void renderButtons(GuiGraphics g, PopupLayoutManager L, Font font,
+    private void renderButtons(GuiGraphicsExtractor g, PopupLayoutManager L, Font font,
             int mouseX, int mouseY) {
         int by = L.buttonY;
         int bw = PopupLayoutManager.BUTTON_W;
@@ -176,7 +176,7 @@ public final class ResetConfirmationPopup implements OverlayPopup {
             boolean hoverBack = inRect(mouseX, mouseY, backX, by, bw, bh);
             g.fill(backX, by, backX + bw, by + bh,
                     hoverBack ? COLOR_NO_BG_HOVER : COLOR_NO_BG);
-            g.renderOutline(backX, by, bw, bh, COLOR_RIM);
+            g.outline(backX, by, bw, bh, COLOR_RIM);
             drawCentered(g, font, OmniChestLocale.get(Keys.RESET_POPUP_BACK, "Back"),
                     backX, by, bw, bh, COLOR_NO_TEXT);
             return;
@@ -190,13 +190,13 @@ public final class ResetConfirmationPopup implements OverlayPopup {
 
         // 「はい」 (赤系強調)。
         g.fill(yesX, by, yesX + bw, by + bh, hoverYes ? COLOR_YES_BG_HOVER : COLOR_YES_BG);
-        g.renderOutline(yesX, by, bw, bh, COLOR_RIM);
+        g.outline(yesX, by, bw, bh, COLOR_RIM);
         drawCentered(g, font, OmniChestLocale.get(Keys.RESET_POPUP_YES, "Yes"),
                 yesX, by, bw, bh, COLOR_YES_TEXT);
 
         // 「いいえ」 (neutral)。
         g.fill(noX, by, noX + bw, by + bh, hoverNo ? COLOR_NO_BG_HOVER : COLOR_NO_BG);
-        g.renderOutline(noX, by, bw, bh, COLOR_RIM);
+        g.outline(noX, by, bw, bh, COLOR_RIM);
         drawCentered(g, font, OmniChestLocale.get(Keys.RESET_POPUP_NO, "No"),
                 noX, by, bw, bh, COLOR_NO_TEXT);
     }
@@ -206,10 +206,10 @@ public final class ResetConfirmationPopup implements OverlayPopup {
         return L.x + (L.w - bw) / 2;
     }
 
-    private static void drawCentered(GuiGraphics g, Font font, Component text,
+    private static void drawCentered(GuiGraphicsExtractor g, Font font, Component text,
             int x, int y, int w, int h, int color) {
         int tw = font.width(text);
-        g.drawString(font, text, x + (w - tw) / 2, y + (h - 8) / 2, color, false);
+        g.text(font, text, x + (w - tw) / 2, y + (h - 8) / 2, color, false);
     }
 
     // ════════════════════════════════════════════════════════════════════

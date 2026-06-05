@@ -1,7 +1,7 @@
 package com.kajiwara.omnichest.client.gui.search;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 import org.joml.Matrix3x2fStack;
 
@@ -9,7 +9,7 @@ import org.joml.Matrix3x2fStack;
  * 「アイテムアイコンを {@code 16x16} 以外のサイズで描画する」 ためのヘルパ。
  *
  * <p>
- * 標準の {@link GuiGraphics#renderItem(ItemStack, int, int)} は常に 16x16 を生成する。
+ * 標準の {@link GuiGraphicsExtractor#renderItem(ItemStack, int, int)} は常に 16x16 を生成する。
  * Large Grid 表示モードなど 24x24 / 32x32 で描きたい時は、 1.21.x 系の <b>GUI 用座標変換</b>
  * ({@link Matrix3x2fStack}) を介して描画位置をスケールする。
  *
@@ -38,7 +38,7 @@ public final class LargeIconRenderer {
      * 任意サイズで item を描画する。
      * 内部で {@code (x, y)} を中心に scale をかけずに <b>左上を起点</b> としてスケールする。
      *
-     * @param g            GuiGraphics
+     * @param g            GuiGraphicsExtractor
      * @param stack        描画するスタック
      * @param x            描画左上 X
      * @param y            描画左上 Y
@@ -46,14 +46,14 @@ public final class LargeIconRenderer {
      * @param showCount    true: 数量バッジ等の decorations を描く / false: アイコンのみ
      * @param font         decorations 用 Font (showCount=true のときのみ参照)
      */
-    public static void render(GuiGraphics g, ItemStack stack, int x, int y, int pxSize,
+    public static void extractRenderState(GuiGraphicsExtractor g, ItemStack stack, int x, int y, int pxSize,
                               boolean showCount, Font font) {
         if (stack == null || stack.isEmpty()) return;
         if (pxSize == 16) {
             // 標準サイズはスケール不要 (= GPU 不要な行列操作を避ける)
-            g.renderItem(stack, x, y);
+            g.item(stack, x, y);
             if (showCount) {
-                g.renderItemDecorations(font, stack, x, y);
+                g.itemDecorations(font, stack, x, y);
             }
             return;
         }
@@ -66,10 +66,10 @@ public final class LargeIconRenderer {
         pose.translate(x, y);
         pose.scale(scale, scale);
         // renderItem の引数は scale 後の座標系における (0, 0) → 16x16 で描画される
-        g.renderItem(stack, 0, 0);
+        g.item(stack, 0, 0);
         if (showCount) {
             // decorations は font が小さくなりすぎないように、 同じスケールに乗せる
-            g.renderItemDecorations(font, stack, 0, 0);
+            g.itemDecorations(font, stack, 0, 0);
         }
         pose.popMatrix();
     }

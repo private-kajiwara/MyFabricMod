@@ -1,7 +1,7 @@
 package com.kajiwara.omnichest.distribution.ui;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,7 +54,7 @@ public final class InventoryPreviewRenderer {
      * @param showCount 個数バッジ (= バニラの {@code renderItemDecorations}) を出すか
      * @return 描画に使った高さ (px)。 呼び出し側が次要素の y を決めるのに使う。
      */
-    public static int renderGrid(GuiGraphics g, Font font, int x, int y, int cols, int maxRows,
+    public static int renderGrid(GuiGraphicsExtractor g, Font font, int x, int y, int cols, int maxRows,
             List<ItemStack> items, boolean showCount) {
         int cap = cols * maxRows;
         int shown = Math.min(items.size(), cap);
@@ -75,7 +75,7 @@ public final class InventoryPreviewRenderer {
      * チェスト/プレイヤーインベントリと同じ見た目 (上/左が暗い陰、 下/右が明るいハイライト、
      * 中央グレー) を {@code fill} だけで再現する。 アイテムは中央の 16x16 へ載せる。
      */
-    public static void renderSlot(GuiGraphics g, Font font, int x, int y,
+    public static void renderSlot(GuiGraphicsExtractor g, Font font, int x, int y,
             @Nullable ItemStack stack, boolean showCount) {
         g.fill(x, y, x + CELL, y + CELL, SLOT_SHADOW);                 // 上/左の陰 (土台)
         g.fill(x + 1, y + 1, x + CELL, y + CELL, SLOT_HIGHLIGHT);      // 下/右のハイライト
@@ -83,9 +83,9 @@ public final class InventoryPreviewRenderer {
         if (stack != null && !stack.isEmpty()) {
             int ix = x + 1;
             int iy = y + 1;
-            g.renderItem(stack, ix, iy);
+            g.item(stack, ix, iy);
             if (showCount) {
-                g.renderItemDecorations(font, stack, ix, iy);
+                g.itemDecorations(font, stack, ix, iy);
             }
         }
     }

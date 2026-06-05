@@ -9,7 +9,7 @@ import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,23 +47,23 @@ public final class CategoryBadgeRenderer {
      * 戻り値: 描画した矩形の幅 (= 「次のウィジェットをここから右に置きたい」呼び出し側用)。
      * 何も描かなかった場合は 0。
      *
-     * @param g   現在の {@link GuiGraphics}
+     * @param g   現在の {@link GuiGraphicsExtractor}
      * @param x   左上 x
      * @param y   左上 y
      * @param key 対象コンテナの key (null = 未追跡のため非表示)
      */
-    public static int renderBadge(GuiGraphics g, int x, int y, @Nullable ContainerSnapshot.Key key) {
+    public static int renderBadge(GuiGraphicsExtractor g, int x, int y, @Nullable ContainerSnapshot.Key key) {
         return renderBadge(g, x, y, key, true);
     }
 
     /**
-     * {@link #renderBadge(GuiGraphics, int, int, ContainerSnapshot.Key)} の拡張版。
+     * {@link #renderBadge(GuiGraphicsExtractor, int, int, ContainerSnapshot.Key)} の拡張版。
      *
      * @param showStatus 予測メタ (= Confidence% / Manual) を出すか (= Main Menu Visibility の
      *                   「予測表示」 トグル)。 false でもカテゴリ名 ({@code [○○倉庫]}) 自体は出す。
      *                   分類ロジックには一切影響しない (= 表示のみ)。
      */
-    public static int renderBadge(GuiGraphics g, int x, int y, @Nullable ContainerSnapshot.Key key,
+    public static int renderBadge(GuiGraphicsExtractor g, int x, int y, @Nullable ContainerSnapshot.Key key,
             boolean showStatus) {
         if (!ClassifyConfig.get().showCategoryBadge)
             return 0;
@@ -126,9 +126,9 @@ public final class CategoryBadgeRenderer {
 
         // テキスト: カテゴリ名はカテゴリ色 / 状態 (Manual=金 / Confidence=白) は statusColor。
         int textColor = (0xFF << 24) | (rgb & 0x00FFFFFF);
-        g.drawString(font, left, x, y, textColor, true);
+        g.text(font, left, x, y, textColor, true);
         if (statusW > 0) {
-            g.drawString(font, status, x + leftW, y, statusColor, true);
+            g.text(font, status, x + leftW, y, statusColor, true);
         }
         return totalW + padX * 2;
     }
@@ -151,7 +151,7 @@ public final class CategoryBadgeRenderer {
      *
      * @return 描画した帯の総幅 (= 次のタグをここから右に置きたい呼び出し側用)。
      */
-    public static int renderTag(GuiGraphics g, Font font, int x, int y, StorageCategory cat) {
+    public static int renderTag(GuiGraphicsExtractor g, Font font, int x, int y, StorageCategory cat) {
         int rgb = cat.rgb();
         Component label = Component.literal("[").append(cat.displayComponent()).append("]");
         int textW = font.width(label);
@@ -160,7 +160,7 @@ public final class CategoryBadgeRenderer {
         int h = font.lineHeight;
         int bgArgb = (0x80 << 24) | (rgb & 0x00FFFFFF);
         g.fill(x, y - padY, x + textW + padX * 2, y + h + padY, bgArgb);
-        g.drawString(font, label, x + padX, y, (0xFF << 24) | (rgb & 0x00FFFFFF), true);
+        g.text(font, label, x + padX, y, (0xFF << 24) | (rgb & 0x00FFFFFF), true);
         return textW + padX * 2;
     }
 
@@ -174,7 +174,7 @@ public final class CategoryBadgeRenderer {
      * 同じ見た目を <b>不透明な暗めカテゴリ色の塗り + カテゴリ色の枠 + 明るいカテゴリ色テキスト</b> で
      * 再現する。 これによりプレイヤーは 「カテゴリ設定」 と 「在庫上のカテゴリ表示」 を一目で結びつけられる。
      *
-     * @param g       現在の {@link GuiGraphics}
+     * @param g       現在の {@link GuiGraphicsExtractor}
      * @param x       チップ左上 x
      * @param y       チップ左上 y
      * @param w       チップ幅
@@ -184,7 +184,7 @@ public final class CategoryBadgeRenderer {
      * @param focused キーボードフォーカス中か (= 白枠でアクセシビリティを担保)
      * @param label   中央に描くラベル (null なら未描画。 通常はローカライズ済み Component)
      */
-    public static void renderCategoryChip(GuiGraphics g, int x, int y, int w, int h,
+    public static void renderCategoryChip(GuiGraphicsExtractor g, int x, int y, int w, int h,
             StorageCategory cat, boolean hovered, boolean focused, @Nullable Component label) {
         int rgb = cat.rgb();
         // ホバー時は明るめ (0.55) / 通常は暗め (0.40) のカテゴリ色を不透明で敷く。
@@ -192,13 +192,13 @@ public final class CategoryBadgeRenderer {
         int bg = 0xFF000000 | darken(rgb, baseF);
         g.fill(x, y, x + w, y + h, bg);
         // カテゴリ色の枠で輪郭を強調 (= コントラスト)。 フォーカス時は白枠で可視化。
-        g.renderOutline(x, y, w, h, focused ? 0xFFFFFFFF : (0xFF000000 | rgb));
+        g.outline(x, y, w, h, focused ? 0xFFFFFFFF : (0xFF000000 | rgb));
         if (label != null) {
             Font font = Minecraft.getInstance().font;
             int textColor = 0xFF000000 | rgb; // 明るいカテゴリ色テキスト (= バッジと同一)
             int tx = x + (w - font.width(label)) / 2;
             int ty = y + (h - font.lineHeight) / 2 + 1;
-            g.drawString(font, label, tx, ty, textColor, true);
+            g.text(font, label, tx, ty, textColor, true);
         }
     }
 

@@ -2,7 +2,7 @@ package com.kajiwara.omnichest.client.compat;
 
 import com.kajiwara.omnichest.OmniChest;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3x2fStack;
 
@@ -32,7 +32,7 @@ import org.joml.Matrix3x2fStack;
  * <b>禁止事項に対する適合</b>:
  * <ul>
  *   <li>{@code glDisable / glEnable} を直接呼ばない (= 標準 PoseStack/Matrix3x2fStack だけを使用)。</li>
- *   <li>shader pipeline を bypass しない (= RenderType / GuiGraphics は本ガード経由でも維持)。</li>
+ *   <li>shader pipeline を bypass しない (= RenderType / GuiGraphicsExtractor は本ガード経由でも維持)。</li>
  *   <li>global state を固定しない (= 描画前の state へ復元してから return する)。</li>
  * </ul>
  */
@@ -82,7 +82,7 @@ public final class RenderStateGuard {
      * 1.21.x の GUI は {@link Matrix3x2fStack} を使うので、 ワールド描画とは別 API。
      * 入れ替え時にどちらの API か取り違えるとコンパイルエラーになるため、 専用メソッドを用意する。
      */
-    public static void withGuiPose(@Nullable GuiGraphics g, String tag, Runnable body) {
+    public static void withGuiPose(@Nullable GuiGraphicsExtractor g, String tag, Runnable body) {
         if (g == null) {
             // GUI コンテキストが無い場面で呼ばれることはありえないが、 mixin 経由だと
             // null を渡されるケース (= 異常な inject タイミング) を想定して握る。

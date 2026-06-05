@@ -2,7 +2,7 @@ package com.kajiwara.omnichest.catsort.engine;
 
 import com.kajiwara.omnichest.slotlock.InventoryProtectionLayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
@@ -168,10 +168,10 @@ public final class SortPlanner {
             return;
         boolean targetHasItem = !current[targetSlot].isEmpty();
 
-        ops.add(new SortPlan.ClickOp(srcSlot, 0, ClickType.PICKUP));
-        ops.add(new SortPlan.ClickOp(targetSlot, 0, ClickType.PICKUP));
+        ops.add(new SortPlan.ClickOp(srcSlot, 0, ContainerInput.PICKUP));
+        ops.add(new SortPlan.ClickOp(targetSlot, 0, ContainerInput.PICKUP));
         if (targetHasItem) {
-            ops.add(new SortPlan.ClickOp(srcSlot, 0, ClickType.PICKUP));
+            ops.add(new SortPlan.ClickOp(srcSlot, 0, ContainerInput.PICKUP));
         }
 
         ItemStack a = current[srcSlot];

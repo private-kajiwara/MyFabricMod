@@ -1,6 +1,6 @@
 package com.kajiwara.omnichest.client.gui.search.preview;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -37,13 +37,13 @@ public final class PreviewHighlightRenderer {
      * このセルが検索ハイライト対象なら、 既存スタイルの tint+1px 内枠を描く。
      * 対象外なら no-op。
      *
-     * @param g         GuiGraphics
+     * @param g         GuiGraphicsExtractor
      * @param stack     セル内のアイテム
      * @param cellX     セル左上 X (= 18px セルの左上)
      * @param cellY     セル左上 Y
      * @param fadeAlpha Popup フェードイン値 [0..1]
      */
-    public static void drawIfHighlighted(GuiGraphics g, ItemStack stack,
+    public static void drawIfHighlighted(GuiGraphicsExtractor g, ItemStack stack,
                                          int cellX, int cellY, float fadeAlpha) {
         if (!SearchHighlightBridge.isHighlighted(stack)) {
             return;

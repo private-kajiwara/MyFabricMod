@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
  * (Mojang のパッケージ階層 + 一部 Yarn 由来クラス名 {@code Identifier} 等)
  * を採用しているため、 既存 src/client/java と同じ規約に揃える:
  * <ul>
- *   <li>クラス: {@code Minecraft} / {@code GuiGraphics} /
+ *   <li>クラス: {@code Minecraft} / {@code GuiGraphicsExtractor} /
  *       {@code AbstractContainerScreen} / {@code BuiltInRegistries}</li>
  *   <li>パッケージ: {@code world.item.ItemStack} /
  *       {@code client.gui.screens.inventory.*} / {@code core.registries.*}</li>

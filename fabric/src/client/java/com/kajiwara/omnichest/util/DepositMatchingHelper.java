@@ -5,7 +5,7 @@ import com.kajiwara.omnichest.slotlock.SlotLockConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.ShulkerBoxMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -115,11 +115,11 @@ public final class DepositMatchingHelper {
             // が動作。
             // 既存スタックへの統合フェーズで全数が消費されるため、
             // 後段の「空スロットへ追加」フェーズは実質発動しない。
-            mc.gameMode.handleInventoryMouseClick(
+            mc.gameMode.handleContainerInput(
                     menu.containerId,
                     slotIndex,
                     0,
-                    ClickType.QUICK_MOVE,
+                    ContainerInput.QUICK_MOVE,
                     mc.player);
         }
     }

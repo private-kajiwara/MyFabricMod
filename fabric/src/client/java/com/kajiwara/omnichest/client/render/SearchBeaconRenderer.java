@@ -2,6 +2,9 @@ package com.kajiwara.omnichest.client.render;
 
 import com.kajiwara.omnichest.mixin.RenderTypeAccessor;
 import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -142,10 +145,10 @@ public final class SearchBeaconRenderer {
                             "omnichest", "pipeline/search_beacon_beam"))
                     .withVertexShader("core/position_color")
                     .withFragmentShader("core/position_color")
-                    .withBlend(BlendFunction.TRANSLUCENT)
+                    .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
                     .withCull(false)
                     // depth test は既定 (LEQUAL) のまま = 地形に遮蔽される自然なビーコン挙動。
-                    .withDepthWrite(false)
+                    .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
                     .withVertexFormat(
                             DefaultVertexFormat.POSITION_COLOR,
                             VertexFormat.Mode.QUADS)

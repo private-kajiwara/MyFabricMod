@@ -44,8 +44,9 @@ public abstract class MinecraftGuiScaleMixin {
     @Shadow
     public abstract Window getWindow();
 
+    // 26.1: Minecraft.resizeDisplay() は resizeGui() に改名。
     @Shadow
-    public abstract void resizeDisplay();
+    public abstract void resizeGui();
 
     @Shadow
     public abstract boolean isEnforceUnicode();
@@ -69,7 +70,7 @@ public abstract class MinecraftGuiScaleMixin {
         }
         this.omnichest$adjustingScale = true;
         try {
-            this.resizeDisplay();
+            this.resizeGui();
         } finally {
             this.omnichest$adjustingScale = false;
         }

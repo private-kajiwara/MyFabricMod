@@ -4,7 +4,7 @@ import com.kajiwara.omnichest.slotlock.InventoryProtectionLayer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.ShulkerBoxMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -32,7 +32,7 @@ import java.util.List;
  * 特殊上限にも追従する。</li>
  * <li>移動はすべて
  * {@link net.minecraft.client.multiplayer.MultiPlayerGameMode#handleInventoryMouseClick}
- * + {@link ClickType#PICKUP} で行い、 ItemStack の直接書き換えは行わない。
+ * + {@link ContainerInput#PICKUP} で行い、 ItemStack の直接書き換えは行わない。
  * これによりサーバ同期はバニラの ScreenHandler に委ねられる。</li>
  * <li>整理順を維持するため、各「同種グループ」を「グループ内最先頭スロットに向かって」
  * 前方圧縮する。グループ外の (= 異なるアイテム) スロットには触れない。</li>
@@ -257,7 +257,7 @@ public final class StackCompactor {
 
     /** PICKUP クリック (左クリック) を 1 回発火する。バニラ互換のクリック操作。 */
     private static void click(Minecraft mc, AbstractContainerMenu menu, int slotIdx) {
-        mc.gameMode.handleInventoryMouseClick(
-                menu.containerId, slotIdx, 0, ClickType.PICKUP, mc.player);
+        mc.gameMode.handleContainerInput(
+                menu.containerId, slotIdx, 0, ContainerInput.PICKUP, mc.player);
     }
 }

@@ -1,14 +1,14 @@
 package com.kajiwara.omnichest.i18n;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /**
  * Widget 描画時にロケール対応 (RTL ミラー + 切り詰め + bidi 検出) を 1 行で挟むためのファサード。
  *
  * <p>
- * Screen / Widget は {@code g.drawString(font, text, x, y, color)} の代わりに
+ * Screen / Widget は {@code g.text(font, text, x, y, color)} の代わりに
  * 本クラスのメソッドを呼ぶことで、 既存座標計算ロジックを書き換えずに RTL/Unicode 対応できる。
  *
  * <p>
@@ -29,7 +29,7 @@ public final class LocalizedWidgetRenderer {
      * 「LTR 基準の (x, y) に text を描画する」 を、 RTL のとき左右ミラー化する。
      * テキスト自体の文字順 (= 描画方向) は Minecraft の Font が自動処理する。
      *
-     * @param g              {@link GuiGraphics}
+     * @param g              {@link GuiGraphicsExtractor}
      * @param font           {@link Font}
      * @param text           描画する Component
      * @param x              LTR 基準の x (left)
@@ -39,12 +39,12 @@ public final class LocalizedWidgetRenderer {
      * @param containerLeft  親コンテナの左端
      * @param containerWidth 親コンテナの幅
      */
-    public static void drawString(GuiGraphics g, Font font, Component text,
+    public static void drawString(GuiGraphicsExtractor g, Font font, Component text,
                                   int x, int y, int color, boolean shadow,
                                   int containerLeft, int containerWidth) {
         int textW = font.width(text);
         int finalX = mirrorIfRtl(x, textW, containerLeft, containerWidth);
-        g.drawString(font, text, finalX, y, color, shadow);
+        g.text(font, text, finalX, y, color, shadow);
     }
 
     /**
@@ -54,12 +54,12 @@ public final class LocalizedWidgetRenderer {
      * @param containerLeft   親コンテナの左端
      * @param containerWidth  親コンテナの幅
      */
-    public static void drawTruncated(GuiGraphics g, Font font, Component text,
+    public static void drawTruncated(GuiGraphicsExtractor g, Font font, Component text,
                                      int x, int y, int color, boolean shadow,
                                      int maxWidth, int containerLeft, int containerWidth) {
         String s = UnicodeTextHelper.truncate(font, text, maxWidth);
         int finalX = mirrorIfRtl(x, font.width(s), containerLeft, containerWidth);
-        g.drawString(font, s, finalX, y, color, shadow);
+        g.text(font, s, finalX, y, color, shadow);
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -70,7 +70,7 @@ public final class LocalizedWidgetRenderer {
      * 「LTR 基準の (x, y, w, h) で塗りつぶし」 を、 RTL のときミラー化して描画する。
      * 色やアニメは触らず、 X 座標だけを反転する。
      */
-    public static void fill(GuiGraphics g, int x, int y, int w, int h, int argb,
+    public static void fill(GuiGraphicsExtractor g, int x, int y, int w, int h, int argb,
                             int containerLeft, int containerWidth) {
         int finalX = mirrorIfRtl(x, w, containerLeft, containerWidth);
         g.fill(finalX, y, finalX + w, y + h, argb);

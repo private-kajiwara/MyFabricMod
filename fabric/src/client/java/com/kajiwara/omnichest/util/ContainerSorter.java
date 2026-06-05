@@ -5,7 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 
@@ -115,10 +115,10 @@ public final class ContainerSorter {
 
     private static void swapSlots(Minecraft mc, AbstractContainerMenu menu,
             int target, int src, boolean targetHasItem) {
-        mc.gameMode.handleInventoryMouseClick(menu.containerId, src, 0, ClickType.PICKUP, mc.player);
-        mc.gameMode.handleInventoryMouseClick(menu.containerId, target, 0, ClickType.PICKUP, mc.player);
+        mc.gameMode.handleContainerInput(menu.containerId, src, 0, ContainerInput.PICKUP, mc.player);
+        mc.gameMode.handleContainerInput(menu.containerId, target, 0, ContainerInput.PICKUP, mc.player);
         if (targetHasItem) {
-            mc.gameMode.handleInventoryMouseClick(menu.containerId, src, 0, ClickType.PICKUP, mc.player);
+            mc.gameMode.handleContainerInput(menu.containerId, src, 0, ContainerInput.PICKUP, mc.player);
         }
     }
 

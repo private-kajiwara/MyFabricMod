@@ -17,12 +17,27 @@
 //       remap する" 役割のみを持つ。
 // =====================================================================
 
+// ---------------------------------------------------------------------
+// Loom 変種を MC によって出し分ける。
+//   - 難読化版 (~1.21.x, remap=true) : net.fabricmc.fabric-loom-remap
+//       → Mojang mappings で remap し remapJar を最終成果物にする。
+//   - 非難読化版 (26.1+, remap=false) : net.fabricmc.fabric-loom
+//       → MC jar が既に公式名なので mappings 不要、 jar をそのまま配布。
+//
+//   両プラグイン ID は同一実装 (net.fabricmc:fabric-loom) が提供する。
+//   plugins{} では両方を apply false で classpath に載せ、 entry.remap を
+//   見て片方だけを apply する。 -Pmc 1 回につき 1 変種しか適用されない。
+// ---------------------------------------------------------------------
 plugins {
-    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+    id 'net.fabricmc.fabric-loom'       version "${loom_version}" apply false
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
     id 'omnichest.fabric-version'
 }
 
 def entry = project.ext.omniRegistryEntry
+def useRemap = entry.remap
+
+apply plugin: useRemap ? 'net.fabricmc.fabric-loom-remap' : 'net.fabricmc.fabric-loom'
 
 // ---------------------------------------------------------------------
 // Loom 設定
@@ -55,16 +70,35 @@ dependencies {
     implementation project(':common')
 
     minecraft "com.mojang:minecraft:${entry.minecraftVersion}"
-    mappings  loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${entry.loaderVersion}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${entry.fabricApiVersion}"
 
-    if (entry.modMenuVersion && !entry.modMenuVersion.isEmpty()) {
-        modImplementation "com.terraformersmc:modmenu:${entry.modMenuVersion}"
-    }
-    if (entry.clothConfigVersion && !entry.clothConfigVersion.isEmpty()) {
-        modImplementation("me.shedaniel.cloth:cloth-config-fabric:${entry.clothConfigVersion}") {
-            exclude(group: "net.fabricmc.fabric-api")
+    if (useRemap) {
+        // ---- 難読化版 (1.21.x): Mojang mappings + modImplementation + remap ----
+        mappings loom.officialMojangMappings()
+        modImplementation "net.fabricmc:fabric-loader:${entry.loaderVersion}"
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${entry.fabricApiVersion}"
+
+        if (entry.modMenuVersion && !entry.modMenuVersion.isEmpty()) {
+            modImplementation "com.terraformersmc:modmenu:${entry.modMenuVersion}"
+        }
+        if (entry.clothConfigVersion && !entry.clothConfigVersion.isEmpty()) {
+            modImplementation("me.shedaniel.cloth:cloth-config-fabric:${entry.clothConfigVersion}") {
+                exclude(group: "net.fabricmc.fabric-api")
+            }
+        }
+    } else {
+        // ---- 非難読化版 (26.1+): mappings 無し + 通常 implementation ----
+        //   MC jar が既に公式名なので remap 不要。 mod 依存も remap 不要のため
+        //   modImplementation ではなく implementation を使う (公式 26.1 手順)。
+        implementation "net.fabricmc:fabric-loader:${entry.loaderVersion}"
+        implementation "net.fabricmc.fabric-api:fabric-api:${entry.fabricApiVersion}"
+
+        if (entry.modMenuVersion && !entry.modMenuVersion.isEmpty()) {
+            implementation "com.terraformersmc:modmenu:${entry.modMenuVersion}"
+        }
+        if (entry.clothConfigVersion && !entry.clothConfigVersion.isEmpty()) {
+            implementation("me.shedaniel.cloth:cloth-config-fabric:${entry.clothConfigVersion}") {
+                exclude(group: "net.fabricmc.fabric-api")
+            }
         }
     }
 }

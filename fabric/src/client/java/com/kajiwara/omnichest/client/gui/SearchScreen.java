@@ -27,7 +27,7 @@ import com.kajiwara.omnichest.search.ContainerSnapshot;
 import com.kajiwara.omnichest.search.SearchIndex;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -431,7 +431,7 @@ public class SearchScreen extends Screen {
     // ════════════════════════════════════════════════════════════════════
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         // キーボードショートカット (= ALT+D 等) 用に直近マウス座標を覚えておく。
         this.lastMouseX = mouseX;
         this.lastMouseY = mouseY;
@@ -451,7 +451,7 @@ public class SearchScreen extends Screen {
             this.searchBox.setEditable(!isAltDown());
         }
 
-        super.render(g, mouseX, mouseY, partialTick);
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
         Font font = this.font;
         SearchConfig cfg = ConfigManager.get().search;
 
@@ -470,11 +470,11 @@ public class SearchScreen extends Screen {
         // ─── タイトル (= LTR では最左端、 RTL では最右端 ── テンプレート管理画面と同じ寄せ方) ──
         Component boldTitle = this.getTitle().copy().withStyle(net.minecraft.ChatFormatting.BOLD);
         if (rtl) {
-            g.drawString(font, boldTitle,
+            g.text(font, boldTitle,
                     this.width - UILayoutMetrics.SCREEN_INSET_X - font.width(boldTitle),
                     UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_PRIMARY, true);
         } else {
-            g.drawString(font, boldTitle, UILayoutMetrics.SCREEN_INSET_X,
+            g.text(font, boldTitle, UILayoutMetrics.SCREEN_INSET_X,
                     UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_PRIMARY, true);
         }
 
@@ -494,10 +494,10 @@ public class SearchScreen extends Screen {
         if (headerFits) {
             if (rtl) {
                 // RTL: 統計を画面左に貼り付け (= タイトルの「外側」 が 統計、 という対称性を保つ)。
-                g.drawString(font, summary, UILayoutMetrics.SCREEN_INSET_X,
+                g.text(font, summary, UILayoutMetrics.SCREEN_INSET_X,
                         UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
             } else {
-                g.drawString(font, summary, this.width - UILayoutMetrics.SCREEN_INSET_X - summaryW,
+                g.text(font, summary, this.width - UILayoutMetrics.SCREEN_INSET_X - summaryW,
                         UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
             }
         }
@@ -511,7 +511,7 @@ public class SearchScreen extends Screen {
                     ThemeColorResolver.CATEGORY_PANEL_BG);
             List<SearchCategory> visible = visibleCategories(cfg);
             clampTabScroll(visible, cfg.compactTabMode);
-            this.tabHits = SearchCategoryTab.render(g, mouseX, mouseY,
+            this.tabHits = SearchCategoryTab.extractRenderState(g, mouseX, mouseY,
                     strip, this.currentCategory, visible, cfg.compactTabMode, this.tabScrollPx);
 
             // タブ列のスクロールバー描画 (= 中身が strip 高さを超える時のみ)
@@ -543,7 +543,7 @@ public class SearchScreen extends Screen {
             if (this.displayDropdown.isClosed()) {
                 this.displayDropdown = null;
             } else {
-                this.displayDropdown.render(g, mouseX, mouseY);
+                this.displayDropdown.extractRenderState(g, mouseX, mouseY);
             }
         }
 
@@ -609,7 +609,7 @@ public class SearchScreen extends Screen {
      *   <li>タブと list は <b>分離</b>。 連結のための塗りつぶしは行わない</li>
      * </ul>
      */
-    private static void drawYellowConnectingFrame(GuiGraphics g, LayoutBox strip, LayoutBox list,
+    private static void drawYellowConnectingFrame(GuiGraphicsExtractor g, LayoutBox strip, LayoutBox list,
                                                   LayoutBox selectedBox, boolean rtl) {
         int frame = ThemeColorResolver.TAB_ACTIVE_LINE; // 黄色 (= 0xFFFFD700)
         int lt = UILayoutMetrics.LIST_FRAME_THICKNESS;
@@ -650,7 +650,7 @@ public class SearchScreen extends Screen {
     }
 
     /** タブ列のスクロールバー描画 (= strip の <b>外側</b> に独立配置)。 */
-    private void renderTabScrollbar(GuiGraphics g, LayoutBox strip,
+    private void renderTabScrollbar(GuiGraphicsExtractor g, LayoutBox strip,
                                     List<SearchCategory> visible, boolean compactAlways) {
         int contentH = SearchCategoryTab.computeContentHeight(this.font, strip,
                 visible, this.currentCategory, compactAlways);
@@ -691,7 +691,7 @@ public class SearchScreen extends Screen {
         return all;
     }
 
-    private void renderList(GuiGraphics g, int mouseX, int mouseY, SearchConfig cfg) {
+    private void renderList(GuiGraphicsExtractor g, int mouseX, int mouseY, SearchConfig cfg) {
         LayoutBox list = this.layout.list;
         int left = list.x();
         int top = list.y();
@@ -707,7 +707,7 @@ public class SearchScreen extends Screen {
             if (this.currentCategory == SearchCategory.FAVORITES && this.results.isEmpty()) {
                 Component msg = LocalizationBridge.favoritesEmpty();
                 int tw = this.font.width(msg);
-                g.drawString(this.font, msg, list.centerX() - tw / 2,
+                g.text(this.font, msg, list.centerX() - tw / 2,
                         list.centerY() - this.font.lineHeight / 2, ThemeColorResolver.TEXT_SECONDARY, false);
             } else {
                 FavoritesManager fav = FavoritesManager.get();
@@ -725,7 +725,7 @@ public class SearchScreen extends Screen {
         renderScrollbar(g, top, bottom);
     }
 
-    private void renderScrollbar(GuiGraphics g, int top, int bottom) {
+    private void renderScrollbar(GuiGraphicsExtractor g, int top, int bottom) {
         int contentH = contentHeight();
         int viewH = bottom - top;
         if (contentH <= viewH) return;
@@ -1164,7 +1164,7 @@ public class SearchScreen extends Screen {
      * (= ユーザ要件「下部の説明は 1 行」)。 内容は削らず、 ボタン・リストとも重ならない。
      * 収まる通常幅では等倍で <b>従来と完全に同一</b>の描画になる。
      */
-    private void cits$renderFooterHints(GuiGraphics g) {
+    private void cits$renderFooterHints(GuiGraphicsExtractor g) {
         Component[] hints = cits$footerHints();
         int gap = cits$footerHintGap();
         int color = ThemeColorResolver.TEXT_DIM;
@@ -1193,7 +1193,7 @@ public class SearchScreen extends Screen {
             int cursor = startX;
             for (int i = 0; i < hints.length; i++) {
                 // footer は subtle なので shadow=false (= 既存の TEXT_DIM と同じ控えめ表現)。
-                g.drawString(this.font, hints[i], cursor, y, color, false);
+                g.text(this.font, hints[i], cursor, y, color, false);
                 cursor += widths[i];
                 if (i < hints.length - 1) cursor += gap;
             }
@@ -1215,7 +1215,7 @@ public class SearchScreen extends Screen {
         g.pose().scale(scale, scale);
         int cursor = 0;
         for (int i = 0; i < hints.length; i++) {
-            g.drawString(this.font, hints[i], cursor, 0, color, false);
+            g.text(this.font, hints[i], cursor, 0, color, false);
             cursor += widths[i];
             if (i < hints.length - 1) cursor += gap;
         }
@@ -1231,7 +1231,7 @@ public class SearchScreen extends Screen {
      * 列数 / dim backdrop は ALT ホバー版と同じ設定 ({@code search.previewGridColumns} /
      * {@code search.previewBackgroundBlur}) を流用する (= ユーザの好みを再宣言不要)。
      */
-    private void renderStickyPreview(GuiGraphics g, SearchConfig cfg) {
+    private void renderStickyPreview(GuiGraphicsExtractor g, SearchConfig cfg) {
         if (this.stickyPreviewStack.isEmpty()) return;
         if (!RecursiveContainerHelper.isContainerItem(this.stickyPreviewStack)) {
             // 中身を持たないアイテムが何らかの理由で残ったケースの安全弁。
@@ -1245,7 +1245,7 @@ public class SearchScreen extends Screen {
         int[] xy = AdaptiveTooltipPositioner.place(
                 this.stickyPreviewAnchorX, this.stickyPreviewAnchorY,
                 w, h, this.width, this.height);
-        AltPreviewPopupRenderer.render(g, this.font, this.stickyPreviewStack,
+        AltPreviewPopupRenderer.extractRenderState(g, this.font, this.stickyPreviewStack,
                 xy[0], xy[1], columns, cfg.previewBackgroundBlur);
     }
 

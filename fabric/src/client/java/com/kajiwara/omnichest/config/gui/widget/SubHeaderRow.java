@@ -2,7 +2,7 @@ package com.kajiwara.omnichest.config.gui.widget;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -39,7 +39,7 @@ public final class SubHeaderRow extends RowEntry {
     }
 
     @Override
-    public void render(GuiGraphics g, int contentLeft, int rowY, int width,
+    public void extractRenderState(GuiGraphicsExtractor g, int contentLeft, int rowY, int width,
             int mouseX, int mouseY, float partialTick) {
         Font font = Minecraft.getInstance().font;
         int textWidth = font.width(this.label);
@@ -51,14 +51,14 @@ public final class SubHeaderRow extends RowEntry {
             int titleX = contentLeft + width - 4 - textWidth;
             g.fill(contentLeft + width - 2, lineY, contentLeft + width, lineY + 1, 0xFFFFD700);
             g.fill(contentLeft + 4, lineY, titleX - 4, lineY + 1, 0xFF555555);
-            g.drawString(font, this.label, titleX, titleY, 0xFFFFD700, false);
+            g.text(font, this.label, titleX, titleY, 0xFFFFD700, false);
         } else {
             // LTR: 左に短いゲージ線、 右に伸びる横線、 タイトルは左寄せ。
             int titleX = contentLeft + 4;
             g.fill(contentLeft, lineY, contentLeft + 2, lineY + 1, 0xFFFFD700);
             g.fill(titleX + textWidth + 4, lineY,
                     contentLeft + width - 4, lineY + 1, 0xFF555555);
-            g.drawString(font, this.label, titleX, titleY, 0xFFFFD700, false);
+            g.text(font, this.label, titleX, titleY, 0xFFFFD700, false);
         }
     }
 }

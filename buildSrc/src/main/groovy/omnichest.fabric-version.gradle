@@ -149,26 +149,40 @@ def buildJarName = { String classifier ->
 def perMcLibsDir = layout.buildDirectory.dir("libs/${entry.minecraftVersion}")
 
 afterEvaluate {
-    // 中間 jar は default 位置 + classifier=dev
-    tasks.named('jar').configure {
-        archiveClassifier.set('dev')
-    }
-    if (tasks.findByName('sourcesJar')) {
-        tasks.named('sourcesJar').configure {
-            archiveClassifier.set('dev-sources')
+    if (entry.remap) {
+        // ---- 難読化版: remapJar が最終成果物。 jar は中間 (classifier=dev) ----
+        tasks.named('jar').configure {
+            archiveClassifier.set('dev')
         }
-    }
-    // 最終 (remap 済み) jar は per-MC ディレクトリ + 最終ファイル名
-    if (tasks.findByName('remapJar')) {
-        tasks.named('remapJar').configure {
+        if (tasks.findByName('sourcesJar')) {
+            tasks.named('sourcesJar').configure {
+                archiveClassifier.set('dev-sources')
+            }
+        }
+        if (tasks.findByName('remapJar')) {
+            tasks.named('remapJar').configure {
+                destinationDirectory.set(perMcLibsDir)
+                archiveFileName.set(buildJarName(null))
+            }
+        }
+        if (tasks.findByName('remapSourcesJar')) {
+            tasks.named('remapSourcesJar').configure {
+                destinationDirectory.set(perMcLibsDir)
+                archiveFileName.set(buildJarName('sources'))
+            }
+        }
+    } else {
+        // ---- 非難読化版: remap 工程が無いので jar 自身が最終成果物 ----
+        //   jar / sourcesJar を直接 per-MC ディレクトリ + 最終ファイル名で出す。
+        tasks.named('jar').configure {
             destinationDirectory.set(perMcLibsDir)
             archiveFileName.set(buildJarName(null))
         }
-    }
-    if (tasks.findByName('remapSourcesJar')) {
-        tasks.named('remapSourcesJar').configure {
-            destinationDirectory.set(perMcLibsDir)
-            archiveFileName.set(buildJarName('sources'))
+        if (tasks.findByName('sourcesJar')) {
+            tasks.named('sourcesJar').configure {
+                destinationDirectory.set(perMcLibsDir)
+                archiveFileName.set(buildJarName('sources'))
+            }
         }
     }
 }

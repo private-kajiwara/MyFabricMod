@@ -6,7 +6,7 @@ import com.kajiwara.omnichest.template.config.TemplateConfig;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -38,7 +38,7 @@ import java.util.Deque;
 public final class MoveQueue {
 
     /** 1 件のクリック発火指示。 */
-    public record ClickOp(int containerId, int slotIndex, int button, ClickType type) {
+    public record ClickOp(int containerId, int slotIndex, int button, ContainerInput type) {
     }
 
     private static MoveQueue instance;

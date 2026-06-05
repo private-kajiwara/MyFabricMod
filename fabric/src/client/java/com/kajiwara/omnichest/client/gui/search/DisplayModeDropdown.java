@@ -4,7 +4,7 @@ import com.kajiwara.omnichest.client.gui.search.layout.UILayoutMetrics;
 import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -89,10 +89,10 @@ public final class DisplayModeDropdown {
         return this.closed;
     }
 
-    public void render(GuiGraphics g, int mouseX, int mouseY) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         Font font = Minecraft.getInstance().font;
         g.fill(this.x, this.y, this.x + this.width, this.y + this.height, COLOR_BG);
-        g.renderOutline(this.x - 1, this.y - 1, this.width + 2, this.height + 2, COLOR_RIM);
+        g.outline(this.x - 1, this.y - 1, this.width + 2, this.height + 2, COLOR_RIM);
 
         int row = this.y + UILayoutMetrics.DROPDOWN_PAD_Y;
         boolean rtl = RTLLayoutManager.get().isRtl();
@@ -111,7 +111,7 @@ public final class DisplayModeDropdown {
                     ? this.x + this.width - UILayoutMetrics.DROPDOWN_PAD_X - font.width(label)
                     : this.x + UILayoutMetrics.DROPDOWN_PAD_X;
             int textY = row + (UILayoutMetrics.DROPDOWN_ITEM_HEIGHT - 8) / 2;
-            g.drawString(font, label, textX, textY, textColor, false);
+            g.text(font, label, textX, textY, textColor, false);
             row = rowBottom;
         }
     }

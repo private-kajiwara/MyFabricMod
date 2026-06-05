@@ -12,51 +12,44 @@
 
   "schema": 1,
 
-  "$buildable_note": [
-    "buildable=false: registry には登録するが buildAll / CI matrix / buildRecommended の",
-    "対象から除外する。 26.1.x は 2026-06 時点で Mojang 公式マッピングも Yarn も未公開で",
-    "(intermediary も 0.0.0 スタブ)、 named シンボルを remap できずビルド不能なため。",
-    "マッピングが公開されたら buildable を true に戻し、 必要なら properties の",
-    "yarn_mappings を設定するだけで有効化できる。"
+  "$era_note": [
+    "このブランチ(main)は MC 26.1+ (非難読化版) 専用。 ソースは 26.1 の公式名を使う。",
+    "1.21.11 (難読化版・remap) は別ブランチ 'legacy-1.21.11' に凍結保存している:",
+    "  名前体系がソースレベルで異なる (GuiGraphics↔GuiGraphicsExtractor 等) ため、",
+    "  単一ソースツリーでは両世代を同時にコンパイルできない。",
+    "remap フラグは <MC>.properties 側で管理 (26.1+ は remap=false)。",
+    "buildable=false は将来の保留バージョン用フック (現在は全エントリ buildable=true)。"
   ],
 
   "versions": [
-    {
-      "minecraft": "1.21.11",
-      "properties": "1.21.11.properties",
-      "stable": true,
-      "recommended": true,
-      "buildable": true,
-      "notes": "OmniChest の基準バージョン (Java 21 系・現行ビルド対象)。"
-    },
     {
       "minecraft": "26.1",
       "properties": "26.1.properties",
       "stable": true,
       "recommended": false,
-      "buildable": false,
-      "notes": "年ベース新バージョニング初版 (Java 25)。上流マッピング未公開のため保留。"
+      "buildable": true,
+      "notes": "年ベース新バージョニング初版・非難読化版 (Java 25・非remap Loom)。"
     },
     {
       "minecraft": "26.1.1",
       "properties": "26.1.1.properties",
       "stable": true,
       "recommended": false,
-      "buildable": false,
-      "notes": "26.1 系パッチ (Java 25)。上流マッピング未公開のため保留。"
+      "buildable": true,
+      "notes": "26.1 系パッチ・非難読化版 (Java 25)。"
     },
     {
       "minecraft": "26.1.2",
       "properties": "26.1.2.properties",
       "stable": true,
-      "recommended": false,
-      "buildable": false,
-      "notes": "26.1 系最新安定版 (Java 25)。上流マッピング未公開のため保留。"
+      "recommended": true,
+      "buildable": true,
+      "notes": "26.1 系最新安定版・非難読化版 (Java 25)。推奨ビルド。"
     }
   ],
 
   "policy": {
-    "default": "1.21.11",
+    "default": "26.1.2",
     "build_only_validated": true,
     "warn_on_deprecated_loader": true,
     "warn_on_unsupported_version": true

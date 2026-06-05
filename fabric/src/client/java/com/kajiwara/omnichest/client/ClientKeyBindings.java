@@ -11,7 +11,7 @@ import com.kajiwara.omnichest.slotlock.SlotIndexMapper;
 import com.kajiwara.omnichest.slotlock.SlotLockManager;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -59,7 +59,7 @@ public final class ClientKeyBindings {
 
     /**
      * 独自カテゴリを 1.21.11+ の新 API ({@link KeyMapping.Category#register}) で登録する。
-     * String 版は package-private に変わったため、 ResourceLocation 版を経由する。
+     * String 版は package-private に変わったため、 Identifier 版を経由する。
      * 同名カテゴリが既に存在する場合は同じインスタンスが返る。
      */
     private static final KeyMapping.Category CATEGORY =
@@ -93,28 +93,28 @@ public final class ClientKeyBindings {
      * ClientModInitializer から 1 回だけ呼ぶこと。
      */
     public static void register() {
-        openSearch = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        openSearch = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 OPEN_SEARCH_KEY,
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_G,
                 CATEGORY));
 
         // 倉庫振り分けメニュー。デフォルト「J」 (= 検索 G の隣)。
-        openDistribution = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        openDistribution = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 OPEN_DISTRIBUTION_KEY,
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_J,
                 CATEGORY));
 
         // 自動投入プランの一括表示。デフォルト「H」 (= "Home for items")。
-        smartDeposit = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        smartDeposit = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 SMART_DEPOSIT_KEY,
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_H,
                 CATEGORY));
 
         // Slot Lock 切替キー (= 未バインドで登録: ユーザーが好みのキーを割当可能)。
-        toggleSlotLock = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        toggleSlotLock = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 TOGGLE_SLOT_LOCK_KEY,
                 InputConstants.Type.KEYSYM,
                 InputConstants.UNKNOWN.getValue(),
@@ -122,7 +122,7 @@ public final class ClientKeyBindings {
 
         // Slot Lock 全解除キー (= 未バインド)。
         // 2 回連続押下 (1.5 秒以内) で全ロックを消去する double-tap 仕様。
-        clearAllSlotLocks = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        clearAllSlotLocks = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 CLEAR_ALL_LOCKS_KEY,
                 InputConstants.Type.KEYSYM,
                 InputConstants.UNKNOWN.getValue(),
@@ -176,7 +176,7 @@ public final class ClientKeyBindings {
                                 Component msg = OmniChestLocale.get(
                                         Keys.SLOT_LOCK_CHAT_TOGGLED,
                                         "[Slot Lock] toggled slot %1$d", playerSlot);
-                                mc.gui.getChat().addMessage(msg);
+                                if (mc.player != null) mc.player.sendSystemMessage(msg);
                             }
                         }
                     }
@@ -219,7 +219,7 @@ public final class ClientKeyBindings {
                 int total = totalPlayer + totalSession;
                 if (total == 0) {
                     if (mc.gui != null) {
-                        mc.gui.getChat().addMessage(OmniChestLocale.get(
+                        if (mc.player != null) mc.player.sendSystemMessage(OmniChestLocale.get(
                                 Keys.SLOT_LOCK_CHAT_NOTHING_TO_CLEAR,
                                 "§7[Slot Lock] §oNo locks to clear."));
                     }
@@ -231,7 +231,7 @@ public final class ClientKeyBindings {
                     SlotLockManager.get().clearAll();
                     MenuSlotLockSession.get().clearAll();
                     if (mc.gui != null) {
-                        mc.gui.getChat().addMessage(OmniChestLocale.get(
+                        if (mc.player != null) mc.player.sendSystemMessage(OmniChestLocale.get(
                                 Keys.SLOT_LOCK_CHAT_CLEARED,
                                 "§a[Slot Lock] §rCleared %1$d persistent + %2$d session locks.",
                                 totalPlayer, totalSession));
@@ -241,7 +241,7 @@ public final class ClientKeyBindings {
                     // 1 回目の押下 → 警告のみ。
                     lastClearAllPressMs = now;
                     if (mc.gui != null) {
-                        mc.gui.getChat().addMessage(OmniChestLocale.get(
+                        if (mc.player != null) mc.player.sendSystemMessage(OmniChestLocale.get(
                                 Keys.SLOT_LOCK_CHAT_CONFIRM_CLEAR,
                                 "§e[Slot Lock] §rPress again within 1.5s to clear %1$d locks.",
                                 total));

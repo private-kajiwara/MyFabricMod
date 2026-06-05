@@ -15,7 +15,7 @@ import com.kajiwara.omnichest.template.data.SlotRule;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -268,8 +268,8 @@ public class TemplateManagerScreen extends Screen {
     // ════════════════════════════════════════════════════════════════════
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        super.render(g, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
         renderHeader(g);
         renderListFrame(g);
         renderList(g, mouseX, mouseY, partialTick);
@@ -286,7 +286,7 @@ public class TemplateManagerScreen extends Screen {
         }
     }
 
-    private void renderHeader(GuiGraphics g) {
+    private void renderHeader(GuiGraphicsExtractor g) {
         Font font = this.font;
         int left = contentLeft();
         int right = contentRight();
@@ -298,24 +298,24 @@ public class TemplateManagerScreen extends Screen {
                 TemplateManager.list().size(), this.visible.size());
         int sumW = font.width(summary);
         if (this.rtl) {
-            g.drawString(font, title, right - font.width(title), y, ThemeColorResolver.TEXT_PRIMARY, true);
-            g.drawString(font, summary, left, y, ThemeColorResolver.TEXT_SECONDARY, false);
+            g.text(font, title, right - font.width(title), y, ThemeColorResolver.TEXT_PRIMARY, true);
+            g.text(font, summary, left, y, ThemeColorResolver.TEXT_SECONDARY, false);
         } else {
-            g.drawString(font, title, left, y, ThemeColorResolver.TEXT_PRIMARY, true);
-            g.drawString(font, summary, right - sumW, y, ThemeColorResolver.TEXT_SECONDARY, false);
+            g.text(font, title, left, y, ThemeColorResolver.TEXT_PRIMARY, true);
+            g.text(font, summary, right - sumW, y, ThemeColorResolver.TEXT_SECONDARY, false);
         }
     }
 
-    private void renderListFrame(GuiGraphics g) {
+    private void renderListFrame(GuiGraphicsExtractor g) {
         int x0 = contentLeft();
         int y0 = listTop();
         int x1 = contentRight();
         int y1 = listBottom();
         g.fill(x0, y0, x1, y1, ThemeColorResolver.LIST_BG);
-        g.renderOutline(x0, y0, x1 - x0, y1 - y0, ThemeColorResolver.TAB_ACTIVE_LINE);
+        g.outline(x0, y0, x1 - x0, y1 - y0, ThemeColorResolver.TAB_ACTIVE_LINE);
     }
 
-    private void renderList(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    private void renderList(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         int top = listTop();
         int bottom = listBottom();
         int left = contentLeft();
@@ -339,7 +339,7 @@ public class TemplateManagerScreen extends Screen {
         }
     }
 
-    private void renderRow(GuiGraphics g, ChestTemplate t, int y, int mouseX, int mouseY, float partialTick) {
+    private void renderRow(GuiGraphicsExtractor g, ChestTemplate t, int y, int mouseX, int mouseY, float partialTick) {
         Font font = this.font;
         int left = contentLeft();
         int right = contentRight();
@@ -372,12 +372,12 @@ public class TemplateManagerScreen extends Screen {
         int textRight;
         if (this.rtl) {
             int iconX = rowContentRight() - 16;
-            g.renderItem(icon, iconX, iconY);
+            g.item(icon, iconX, iconY);
             textRight = iconX - UILayoutMetrics.BUTTON_GAP;
             textLeft = btnInnerEdge;
         } else {
             int iconX = rowContentLeft();
-            g.renderItem(icon, iconX, iconY);
+            g.item(icon, iconX, iconY);
             textLeft = iconX + 16 + UILayoutMetrics.BUTTON_GAP;
             textRight = btnInnerEdge;
         }
@@ -399,29 +399,29 @@ public class TemplateManagerScreen extends Screen {
         int line2Y = y + 3 + font.lineHeight;
         if (this.rtl) {
             int nameW = font.width(name);
-            g.drawString(font, name, textRight - nameW, line1Y, ThemeColorResolver.TEXT_PRIMARY, false);
-            g.drawString(font, kindBadge, textRight - nameW - UILayoutMetrics.BUTTON_GAP - badgeW,
+            g.text(font, name, textRight - nameW, line1Y, ThemeColorResolver.TEXT_PRIMARY, false);
+            g.text(font, kindBadge, textRight - nameW - UILayoutMetrics.BUTTON_GAP - badgeW,
                     line1Y, ThemeColorResolver.TEXT_SECONDARY, false);
-            g.drawString(font, count, textRight - font.width(count), line2Y,
+            g.text(font, count, textRight - font.width(count), line2Y,
                     ThemeColorResolver.TEXT_SECONDARY, false);
         } else {
-            g.drawString(font, name, textLeft, line1Y, ThemeColorResolver.TEXT_PRIMARY, false);
-            g.drawString(font, kindBadge, textLeft + font.width(name) + UILayoutMetrics.BUTTON_GAP,
+            g.text(font, name, textLeft, line1Y, ThemeColorResolver.TEXT_PRIMARY, false);
+            g.text(font, kindBadge, textLeft + font.width(name) + UILayoutMetrics.BUTTON_GAP,
                     line1Y, ThemeColorResolver.TEXT_SECONDARY, false);
-            g.drawString(font, count, textLeft, line2Y, ThemeColorResolver.TEXT_SECONDARY, false);
+            g.text(font, count, textLeft, line2Y, ThemeColorResolver.TEXT_SECONDARY, false);
         }
     }
 
     /** 行アクションをバニラ標準ボタンの見た目で描く (ホバー / 押下スプライト込み)。 高さは builder 固定。 */
-    private void drawVanillaRowButton(GuiGraphics g, BtnRect b, int mouseX, int mouseY, float partialTick) {
+    private void drawVanillaRowButton(GuiGraphicsExtractor g, BtnRect b, int mouseX, int mouseY, float partialTick) {
         this.rowBtnRenderer.setMessage(b.action.label());
         this.rowBtnRenderer.setX(b.x0);
         this.rowBtnRenderer.setY(b.y0);
         this.rowBtnRenderer.setWidth(b.x1 - b.x0);
-        this.rowBtnRenderer.render(g, mouseX, mouseY, partialTick);
+        this.rowBtnRenderer.extractRenderState(g, mouseX, mouseY, partialTick);
     }
 
-    private void renderScrollbar(GuiGraphics g) {
+    private void renderScrollbar(GuiGraphicsExtractor g) {
         int contentH = contentHeight();
         int viewH = listHeight();
         if (contentH <= viewH)
@@ -441,7 +441,7 @@ public class TemplateManagerScreen extends Screen {
                 ThemeColorResolver.SCROLLBAR_THUMB);
     }
 
-    private void renderFooterHint(GuiGraphics g) {
+    private void renderFooterHint(GuiGraphicsExtractor g) {
         Font font = this.font;
         Component hint = OmniChestLocale.get(Keys.TEMPLATE_MANAGER_HINT,
                 "Click row = Apply / Alt = Template details / ESC = close");
@@ -451,7 +451,7 @@ public class TemplateManagerScreen extends Screen {
         // ピル状 backdrop (= 倉庫検索と同じトーン)。
         int pad = 6;
         g.fill(cx - pad, y - 3, cx + w + pad, y + font.lineHeight - 1 + 2, ThemeColorResolver.FOOTER_BACKDROP);
-        g.drawString(font, hint, cx, y, ThemeColorResolver.TEXT_DIM, false);
+        g.text(font, hint, cx, y, ThemeColorResolver.TEXT_DIM, false);
     }
 
     /** ALT が押されているか (= 倉庫検索の同名ヘルパと同じ {@link InputConstants} 経由判定)。 */
@@ -487,7 +487,7 @@ public class TemplateManagerScreen extends Screen {
      * アイテム + 個数を描く。 ルールが 0 件 (= 中身が空) でも、 空グリッドをパネルとして必ず表示する。
      * 配置 / クランプ規則は倉庫検索の ALT プレビューと統一する。
      */
-    private void renderTemplatePreview(GuiGraphics g, ChestTemplate t, int mouseX, int mouseY) {
+    private void renderTemplatePreview(GuiGraphicsExtractor g, ChestTemplate t, int mouseX, int mouseY) {
         // 倉庫検索の ALT プレビュー (シュルカー) と <b>同じ描画パス</b> を使う:
         // AltPreviewPopupRenderer.renderSlots に「テンプレートのスロット内容」 を渡すだけ。
         // 列数 / 背景 dim はユーザの倉庫検索設定 (previewGridColumns / previewBackgroundBlur) を流用。

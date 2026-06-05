@@ -3,7 +3,7 @@ package com.kajiwara.omnichest.catsort.move;
 import com.kajiwara.omnichest.OmniChest;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -15,7 +15,7 @@ import net.minecraft.world.item.ItemStack;
  * <ol>
  *   <li>{@link #isValidSlot(AbstractContainerMenu, int)}
  *       — スロット index が menu の範囲内かを判定 (= 範囲外クリックでのクラッシュ防止)。</li>
- *   <li>{@link #click(Minecraft, AbstractContainerMenu, int, int, ClickType)}
+ *   <li>{@link #click(Minecraft, AbstractContainerMenu, int, int, ContainerInput)}
  *       — {@code handleInventoryMouseClick} を try/catch で囲み、 例外時は warn ログのみ。</li>
  *   <li>{@link #cursorStack(AbstractContainerMenu)} / {@link #isCursorEmpty(AbstractContainerMenu)}
  *       — null-safe な cursor stack 取得。</li>
@@ -28,8 +28,8 @@ import net.minecraft.world.item.ItemStack;
  * <p>
  * <b>方針</b>:
  * <ul>
- *   <li>{@link ClickType#THROW} は <b>絶対に発行しない</b> (= drop 化を構造的に排除)。</li>
- *   <li>{@link ClickType#QUICK_MOVE} の連打もここでは行わない (= 仕様禁止項目)。</li>
+ *   <li>{@link ContainerInput#THROW} は <b>絶対に発行しない</b> (= drop 化を構造的に排除)。</li>
+ *   <li>{@link ContainerInput#QUICK_MOVE} の連打もここでは行わない (= 仕様禁止項目)。</li>
  *   <li>inventory の直接書換は行わない。 必ず {@code handleInventoryMouseClick} 経由のみ。</li>
  * </ul>
  *
@@ -71,18 +71,18 @@ public final class InventoryActionExecutor {
      * @return 成功すれば true。 引数不正 / 例外時は false (= 呼び出し側はキュー停止を選べる)。
      */
     public static boolean click(Minecraft mc, AbstractContainerMenu menu,
-            int slotIndex, int button, ClickType type) {
+            int slotIndex, int button, ContainerInput type) {
         if (mc == null || mc.player == null || mc.gameMode == null) return false;
         if (!isValidSlot(menu, slotIndex)) return false;
         // THROW 系は構造的に発行禁止 (= 仕様により drop を排除)。
-        if (type == ClickType.THROW) {
+        if (type == ContainerInput.THROW) {
             OmniChest.LOGGER.warn(
-                    "[omnichest] InventoryActionExecutor: ClickType.THROW は禁止 (slot={})",
+                    "[omnichest] InventoryActionExecutor: ContainerInput.THROW は禁止 (slot={})",
                     slotIndex);
             return false;
         }
         try {
-            mc.gameMode.handleInventoryMouseClick(
+            mc.gameMode.handleContainerInput(
                     menu.containerId, slotIndex, button, type, mc.player);
             return true;
         } catch (Exception ex) {
@@ -127,7 +127,7 @@ public final class InventoryActionExecutor {
 
         // 1) preferredSlot を最優先で試す。
         if (canDepositInto(menu, preferredSlot)) {
-            if (click(mc, menu, preferredSlot, 0, ClickType.PICKUP)) {
+            if (click(mc, menu, preferredSlot, 0, ContainerInput.PICKUP)) {
                 if (isCursorEmpty(menu)) return true;
             }
         }
@@ -141,7 +141,7 @@ public final class InventoryActionExecutor {
             if (i == preferredSlot) continue;
             if (!canDepositInto(menu, i)) continue;
             probed++;
-            if (click(mc, menu, i, 0, ClickType.PICKUP)) {
+            if (click(mc, menu, i, 0, ContainerInput.PICKUP)) {
                 if (isCursorEmpty(menu)) return true;
             }
         }
@@ -152,7 +152,7 @@ public final class InventoryActionExecutor {
                 if (i == preferredSlot) continue;
                 if (!canDepositInto(menu, i)) continue;
                 probed++;
-                if (click(mc, menu, i, 0, ClickType.PICKUP)) {
+                if (click(mc, menu, i, 0, ContainerInput.PICKUP)) {
                     if (isCursorEmpty(menu)) return true;
                 }
             }

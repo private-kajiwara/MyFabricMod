@@ -3,7 +3,7 @@ package com.kajiwara.omnichest.client.gui.search;
 import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -19,7 +19,7 @@ import net.minecraft.network.chat.Component;
  *   <li>scissor で <em>幅</em> を物理的にクリップするため、 はみ出し描画は起こらない (= text clipping safe)。</li>
  *   <li>Font の {@link Font#width(net.minecraft.network.chat.FormattedText)} を使うため、
  *       Unicode / 合字 / 全角文字でも正しい幅計算 (= unicode safe)。</li>
- *   <li>shader / Iris 下でも GuiGraphics#enableScissor が機能する (= shader safe)。</li>
+ *   <li>shader / Iris 下でも GuiGraphicsExtractor#enableScissor が機能する (= shader safe)。</li>
  *   <li>RTL では文字方向は Font 側に任せ、 スクロール方向だけ反転 (= RTL safe)。</li>
  *   <li>アニメ速度は固定 (= 既存アニメスピード設定とは独立。 検索 UI 用のローカル速度のみ)。</li>
  * </ul>
@@ -48,7 +48,7 @@ public final class MarqueeTextRenderer {
     /**
      * テキストを 1 行で描画する。 active のときだけマーキー、 そうでなければ末尾省略。
      *
-     * @param g       GuiGraphics
+     * @param g       GuiGraphicsExtractor
      * @param font    Font
      * @param text    描画する Component (= 翻訳済み)
      * @param x       左端 X
@@ -57,14 +57,14 @@ public final class MarqueeTextRenderer {
      * @param active  hover または selected の状態か (= スクロールを動かす条件)
      * @param color   ARGB (= 既存テーマ色をそのまま渡す)
      */
-    public static void draw(GuiGraphics g, Font font, Component text,
+    public static void draw(GuiGraphicsExtractor g, Font font, Component text,
                             int x, int y, int width, boolean active, int color) {
         if (text == null || width <= 0) return;
         int textW = font.width(text);
 
         if (textW <= width) {
             // 普通に収まる: そのまま描画
-            g.drawString(font, text, x, y, color, false);
+            g.text(font, text, x, y, color, false);
             return;
         }
 
@@ -100,17 +100,17 @@ public final class MarqueeTextRenderer {
         try {
             // 同じ文字列を 2 連で描画 (= 1 連目が抜けた位置に 2 連目が見える)
             int drawX = x - (int) Math.round(offset);
-            g.drawString(font, text, drawX, y, color, false);
-            g.drawString(font, text, drawX + scrollRange, y, color, false);
+            g.text(font, text, drawX, y, color, false);
+            g.text(font, text, drawX + scrollRange, y, color, false);
             // RTL の負方向ループ用
-            if (rtl) g.drawString(font, text, drawX - scrollRange, y, color, false);
+            if (rtl) g.text(font, text, drawX - scrollRange, y, color, false);
         } finally {
             g.disableScissor();
         }
     }
 
     /** 省略 (= 「Some Long Item Na…」) で描画する fallback。 */
-    private static void drawEllipsized(GuiGraphics g, Font font, Component text,
+    private static void drawEllipsized(GuiGraphicsExtractor g, Font font, Component text,
                                        int x, int y, int width, int color) {
         String s = text.getString();
         if (s.isEmpty()) return;
@@ -131,11 +131,11 @@ public final class MarqueeTextRenderer {
             else hi = mid - 1;
         }
         String shown = s.substring(0, Math.max(1, lo)) + ellipsis;
-        g.drawString(font, shown, x, y, color, false);
+        g.text(font, shown, x, y, color, false);
     }
 
     /** Font を呼び出し側で持っていない時に使う糖衣。 */
-    public static void draw(GuiGraphics g, Component text, int x, int y, int width,
+    public static void draw(GuiGraphicsExtractor g, Component text, int x, int y, int width,
                             boolean active, int color) {
         draw(g, Minecraft.getInstance().font, text, x, y, width, active, color);
     }

@@ -1,6 +1,6 @@
 package com.kajiwara.omnichest.catsort.engine;
 
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 
 import java.util.List;
 
@@ -36,6 +36,6 @@ public record SortPlan(int containerId, List<ClickOp> ops) {
      * ({@link SortPlanner} 内で実装)。
      * これにより MoveQueue は「単純に 1 件ずつ流す」 だけで完結する。
      */
-    public record ClickOp(int slotIndex, int button, ClickType type) {
+    public record ClickOp(int slotIndex, int button, ContainerInput type) {
     }
 }

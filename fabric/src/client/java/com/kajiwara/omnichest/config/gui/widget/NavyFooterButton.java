@@ -3,7 +3,7 @@ package com.kajiwara.omnichest.config.gui.widget;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
@@ -45,7 +45,7 @@ public final class NavyFooterButton extends Button {
     }
 
     @Override
-    protected void renderContents(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    protected void extractContents(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         int x = this.getX();
         int y = this.getY();
         int w = this.getWidth();
@@ -63,7 +63,7 @@ public final class NavyFooterButton extends Button {
         g.fill(x, y, x + w, y + h, bg);
 
         // 縁取りは <b>常に</b> 黄金 1 重。 hover でも線種は変えない (= 「ホバー枠が増える」 旧挙動は廃止)。
-        g.renderOutline(x, y, w, h, COLOR_GOLD);
+        g.outline(x, y, w, h, COLOR_GOLD);
 
         // ラベル描画。 影は通常時のみ (= ホバー時の黄金背景上で影を出すと汚くなるのでカット)。
         // 太字: 「Reset / Save / Cancel」 は重要操作なので BOLD スタイルで強調する。
@@ -73,6 +73,6 @@ public final class NavyFooterButton extends Button {
         int tw = font.width(msg);
         int textX = x + (w - tw) / 2;
         int textY = y + (h - 8) / 2;
-        g.drawString(font, msg, textX, textY, textColor, !hover);
+        g.text(font, msg, textX, textY, textColor, !hover);
     }
 }

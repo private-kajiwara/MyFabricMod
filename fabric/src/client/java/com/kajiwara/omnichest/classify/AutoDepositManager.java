@@ -96,7 +96,7 @@ public final class AutoDepositManager {
 
         List<SmartRoutingManager.RoutingPlan> plans = plan(player);
         if (plans.isEmpty()) {
-            mc.gui.getChat().addMessage(OmniChestLocale.get(
+            if (mc.player != null) mc.player.sendSystemMessage(OmniChestLocale.get(
                     Keys.SMART_STORAGE_PLAN_EMPTY,
                     "[Smart Storage] Deposit plan: no items / feature off"));
             return;
@@ -110,7 +110,7 @@ public final class AutoDepositManager {
             agg.computeIfAbsent(k, kk -> new Aggregate(p.stack.copy(), p.destination, 0)).count += p.stack.getCount();
         }
 
-        mc.gui.getChat().addMessage(OmniChestLocale.get(
+        if (mc.player != null) mc.player.sendSystemMessage(OmniChestLocale.get(
                 Keys.SMART_STORAGE_PLAN_HEADER, "[Smart Storage] Deposit plan:"));
         String noDest = OmniChestLocale.getString(
                 Keys.SMART_STORAGE_NO_DESTINATION, "§7no destination");
@@ -135,7 +135,7 @@ public final class AutoDepositManager {
                         name, a.count, catName,
                         dst.pos().getX(), dst.pos().getY(), dst.pos().getZ());
             }
-            mc.gui.getChat().addMessage(line);
+            if (mc.player != null) mc.player.sendSystemMessage(line);
             // level 参照を保持 (将来 dimension 表記を足す余地)
             if (level == null)
                 break;

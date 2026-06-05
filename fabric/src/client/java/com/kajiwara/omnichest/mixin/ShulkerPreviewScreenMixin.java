@@ -2,7 +2,7 @@ package com.kajiwara.omnichest.mixin;
 
 import com.kajiwara.omnichest.client.compat.SafeRenderDispatcher;
 import com.kajiwara.omnichest.client.gui.search.preview.AltPreviewTooltip;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -33,8 +33,8 @@ public abstract class ShulkerPreviewScreenMixin extends Screen {
         super(title);
     }
 
-    @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", at = @At("TAIL"))
-    private void omnichest$altShulkerPreview(GuiGraphics g, int mouseX, int mouseY, float partialTick,
+    @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V", at = @At("TAIL"))
+    private void omnichest$altShulkerPreview(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick,
             CallbackInfo ci) {
         SafeRenderDispatcher.safeRun("alt-shulker-preview", () -> {
             Slot hovered = ((AbstractContainerScreenAccessor) (Object) this).cits$getHoveredSlot();

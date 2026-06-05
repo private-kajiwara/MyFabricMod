@@ -15,7 +15,7 @@ import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Renderable;
@@ -220,7 +220,7 @@ public final class OmniChestSettingsScreen extends Screen {
      * row の widget が content 領域からはみ出した時に、 contentBottom 以下を
      * mask の塗りで覆って 「文字と同じ位置で widget も切る」 ようにするため、
      * その mask の <b>上に</b> フッタボタンを再描画する必要がある。
-     * super.render() で 1 回描かれた上に mask で覆われる → ここから再度
+     * super.extractRenderState() で 1 回描かれた上に mask で覆われる → ここから再度
      * {@code render()} を呼び直す、 という二段描画。
      */
     @Nullable
@@ -525,8 +525,8 @@ public final class OmniChestSettingsScreen extends Screen {
     // ════════════════════════════════════════════════════════════════════
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // ★ 重要: super.render() より <b>前</b> に widget の位置 + 可視範囲を確定させる。
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        // ★ 重要: super.extractRenderState() より <b>前</b> に widget の位置 + 可視範囲を確定させる。
         //
         // 旧実装はレイアウトを {@link #renderContent} 内 (= super.render の後) で行っていたため、
         // タブを切り替えた直後の最初の 1 フレームだけ、新しいタブの widget が
@@ -548,7 +548,7 @@ public final class OmniChestSettingsScreen extends Screen {
         // GameRenderer の呼び出しと合わせて blur が 2 回起動して
         // 「Can only blur once per frame」で確実にクラッシュする。 ここでは <b>呼ばない</b>。
         //
-        // 同様に {@code super.render(...)} (= Screen.render) は 1.21.5+ では
+        // 同様に {@code super.extractRenderState(...)} (= Screen.render) は 1.21.5+ では
         // renderables の iterate しかしないので、 自前で iterate するか super を呼ぶかは
         // どちらでも良い。 本実装は widget の描画範囲を scissor で contentTop に制限したいので、
         // 自前 iterate を選択している。
@@ -579,7 +579,7 @@ public final class OmniChestSettingsScreen extends Screen {
 
         g.enableScissor(0, contentTop, this.width, this.height);
         for (Renderable renderable : this.myRenderables) {
-            renderable.render(g, wMouseX, wMouseY, partialTick);
+            renderable.extractRenderState(g, wMouseX, wMouseY, partialTick);
         }
         g.disableScissor();
 
@@ -606,9 +606,9 @@ public final class OmniChestSettingsScreen extends Screen {
 
         // ─── footer ボタンを mask の上から再描画 (= マスクで覆われたぶんを復元) ───
         // フッタボタンも同様に、 ポップアップ展開中は hover を無効化する (= ツールチップ抑制)。
-        if (this.footerResetBtn != null) this.footerResetBtn.render(g, wMouseX, wMouseY, partialTick);
-        if (this.footerSaveBtn != null) this.footerSaveBtn.render(g, wMouseX, wMouseY, partialTick);
-        if (this.footerCancelBtn != null) this.footerCancelBtn.render(g, wMouseX, wMouseY, partialTick);
+        if (this.footerResetBtn != null) this.footerResetBtn.extractRenderState(g, wMouseX, wMouseY, partialTick);
+        if (this.footerSaveBtn != null) this.footerSaveBtn.extractRenderState(g, wMouseX, wMouseY, partialTick);
+        if (this.footerCancelBtn != null) this.footerCancelBtn.extractRenderState(g, wMouseX, wMouseY, partialTick);
 
         // ─── ポップアップは最後に上から被せ描画する ───
         // closed フラグが立っていたら参照を切る (= popup 自身が cancel/commit で閉じる)。
@@ -616,7 +616,7 @@ public final class OmniChestSettingsScreen extends Screen {
             if (this.activePopup.isClosed()) {
                 dismissPopup();
             } else {
-                this.activePopup.render(g, mouseX, mouseY);
+                this.activePopup.extractRenderState(g, mouseX, mouseY);
             }
         }
     }
@@ -628,7 +628,7 @@ public final class OmniChestSettingsScreen extends Screen {
      * 構成: 鉄帯 (rim) で囲まれた木目板の中央に「OmniChest Settings」を黄金色で描く。
      * 左右に「□」鋲、 中央上部に「▼」南京錠アクセントを置いて、 一目で「チェストの蓋」と分かる外観にする。
      */
-    private void renderChestHeader(GuiGraphics g) {
+    private void renderChestHeader(GuiGraphicsExtractor g) {
         Font font = this.font;
         // 太字 + 拡大表示するので、 バナー サイズ計算は スケール後 の幅 / 高さ で行う。
         Component boldTitle = this.title.copy().withStyle(ChatFormatting.BOLD);
@@ -681,7 +681,7 @@ public final class OmniChestSettingsScreen extends Screen {
         g.pose().pushMatrix();
         g.pose().translate(cx, cy);
         g.pose().scale(HEADER_TITLE_SCALE, HEADER_TITLE_SCALE);
-        g.drawString(font, boldTitle, -rawTitleW / 2, -4 /* font height 8 / 2 */,
+        g.text(font, boldTitle, -rawTitleW / 2, -4 /* font height 8 / 2 */,
                 COLOR_CHEST_LOCK, true);
         g.pose().popMatrix();
 
@@ -689,12 +689,12 @@ public final class OmniChestSettingsScreen extends Screen {
         g.fill(0, HEADER_HEIGHT - 1, this.width, HEADER_HEIGHT, COLOR_SEP);
     }
 
-    private void drawRivet(GuiGraphics g, int x, int y) {
+    private void drawRivet(GuiGraphicsExtractor g, int x, int y) {
         g.fill(x, y, x + 2, y + 2, 0xFF1A1009);
     }
 
     /** サイドバー全体 (背景 + クリップ済みタブ + 2 種スクロールバー) を描画する。 */
-    private void renderSidebar(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderSidebar(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         int top = sidebarTop();
         int bottom = sidebarBottom();
         int left = sidebarLeft();
@@ -759,7 +759,7 @@ public final class OmniChestSettingsScreen extends Screen {
      * Minecraft の bold スタイルは Latin / CJK 両方でフォント側が太字グリフ
      * (= 1px シフト重ね描き) を出してくれるため、 多言語で同じく太く見える。
      */
-    private void renderGroupHeader(GuiGraphics g, Font font, HeaderEntry h,
+    private void renderGroupHeader(GuiGraphicsExtractor g, Font font, HeaderEntry h,
             int entryTop, int entryH, int xBase,
             int viewportLeft, int viewportRight, boolean rtl) {
         // 「上の隙間」は描画しない (= 透明にして区切りとして機能させる)。
@@ -771,7 +771,7 @@ public final class OmniChestSettingsScreen extends Screen {
         int textX = rtl
                 ? xBase - TAB_LABEL_PAD_LEFT - font.width(boldTitle)
                 : xBase + TAB_LABEL_PAD_LEFT;
-        g.drawString(font, boldTitle, textX, textY, COLOR_GROUP_HEADER_TEXT, false);
+        g.text(font, boldTitle, textX, textY, COLOR_GROUP_HEADER_TEXT, false);
         // ヘッダ下に薄い水平ライン (= タブとの区切りを視覚化)。
         // RTL のときは余白側が逆になるよう左右の引き量を入れ替える。
         int lineY = textAreaTop + textAreaH - 1;
@@ -781,7 +781,7 @@ public final class OmniChestSettingsScreen extends Screen {
     }
 
     /** タブ 1 件を描画する (= 旧 renderSidebar の 1 イテレーション分を関数化)。 */
-    private void renderTabEntry(GuiGraphics g, Font font, TabEntry t,
+    private void renderTabEntry(GuiGraphicsExtractor g, Font font, TabEntry t,
             int entryTop, int entryH, int xBase,
             int viewportLeft, int viewportRight, int viewportTop, int viewportBottom,
             int mouseX, int mouseY, boolean rtl) {
@@ -810,10 +810,10 @@ public final class OmniChestSettingsScreen extends Screen {
         int textX = rtl
                 ? xBase - TAB_LABEL_PAD_LEFT - font.width(title)
                 : xBase + TAB_LABEL_PAD_LEFT;
-        g.drawString(font, title, textX, textY, textColor, false);
+        g.text(font, title, textX, textY, textColor, false);
     }
 
-    private void renderSidebarVScrollbar(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderSidebarVScrollbar(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         int x = sidebarVScrollbarLeft();
         int y = sidebarTop();
         int h = sidebarTabViewportH();
@@ -830,7 +830,7 @@ public final class OmniChestSettingsScreen extends Screen {
         g.fill(x, thumbY, x + SB_V_W, thumbY + thumbH, color);
     }
 
-    private void renderSidebarHScrollbar(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderSidebarHScrollbar(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         int x = sidebarTabViewportLeft();
         int y = sidebarBottom() - SB_H_H;
         int w = sidebarTabViewportW();
@@ -862,7 +862,7 @@ public final class OmniChestSettingsScreen extends Screen {
 
     /**
      * 現在アクティブなタブの row を配置 + ビューポート可視判定する。
-     * {@link #render} の冒頭 (= {@code super.render()} の前) で呼ぶ前提。
+     * {@link #render} の冒頭 (= {@code super.extractRenderState()} の前) で呼ぶ前提。
      *
      * <p>
      * 「位置決定」と「描画」を分離することで、 widget が
@@ -906,7 +906,7 @@ public final class OmniChestSettingsScreen extends Screen {
     }
 
     /** コンテンツ領域 (= タブ中身) のラベル / スクロールバー描画。 widget 本体は super.render が描く。 */
-    private void renderContent(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    private void renderContent(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         if (this.tabs.isEmpty()) return;
         TabModel tab = this.tabs.get(this.activeTab);
 
@@ -933,7 +933,7 @@ public final class OmniChestSettingsScreen extends Screen {
                 contentRight + CONTENT_PAD_X, contentBottom);
         for (RowEntry row : tab.rows()) {
             if (row.getY() + row.getHeight() > contentTop && row.getY() < contentBottom) {
-                row.render(g, contentLeft, row.getY(), contentWidth,
+                row.extractRenderState(g, contentLeft, row.getY(), contentWidth,
                         mouseX, mouseY, partialTick);
             }
         }

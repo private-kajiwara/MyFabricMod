@@ -1,6 +1,6 @@
 package com.kajiwara.omnichest.config.gui.widget;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
@@ -88,10 +88,10 @@ public final class ColorRow extends RowEntry {
     }
 
     @Override
-    public void render(GuiGraphics g, int contentLeft, int rowY, int width,
+    public void extractRenderState(GuiGraphicsExtractor g, int contentLeft, int rowY, int width,
             int mouseX, int mouseY, float partialTick) {
         // ラベルは super (RowEntry) の既定描画を使う。
-        super.render(g, contentLeft, rowY, width, mouseX, mouseY, partialTick);
+        super.extractRenderState(g, contentLeft, rowY, width, mouseX, mouseY, partialTick);
 
         // swatch はボタンの「ラベル側」(LTR=ボタンの左、 RTL=ボタンの右) に置く。
         // ボタンが row 内で左右反転してもラベルに寄り添うように追従する。
@@ -103,7 +103,7 @@ public final class ColorRow extends RowEntry {
         int swatchY = rowY + (getHeight() - SWATCH_SIZE) / 2;
         int argb = 0xFF000000 | (this.value & 0xFFFFFF);
         g.fill(swatchX, swatchY, swatchX + SWATCH_SIZE, swatchY + SWATCH_SIZE, argb);
-        g.renderOutline(swatchX - 1, swatchY - 1, SWATCH_SIZE + 2, SWATCH_SIZE + 2, 0xAA000000);
+        g.outline(swatchX - 1, swatchY - 1, SWATCH_SIZE + 2, SWATCH_SIZE + 2, 0xAA000000);
     }
 
     /** ボタンに焼くテキスト: "#FFAA00" 形式。 16 進大文字で読みやすく。 */

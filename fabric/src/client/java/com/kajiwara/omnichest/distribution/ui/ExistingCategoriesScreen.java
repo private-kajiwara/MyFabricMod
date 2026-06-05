@@ -7,7 +7,7 @@ import com.kajiwara.omnichest.client.gui.search.layout.UILayoutMetrics;
 import com.kajiwara.omnichest.distribution.StorageAssignmentManager;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -82,15 +82,15 @@ public final class ExistingCategoriesScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        super.render(g, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
 
         // タイトル + サブタイトル。
-        g.drawCenteredString(this.font, this.getTitle(), this.width / 2,
+        g.centeredText(this.font, this.getTitle(), this.width / 2,
                 this.gridTop - 34, ThemeColorResolver.TEXT_PRIMARY);
         Component subtitle = OmniChestLocale.get("omnichest.distribution.existing.subtitle",
                 "Storages registered per category");
-        g.drawCenteredString(this.font, subtitle, this.width / 2,
+        g.centeredText(this.font, subtitle, this.width / 2,
                 this.gridTop - 20, ThemeColorResolver.TEXT_SECONDARY);
 
         int total = StorageAssignmentManager.get().size();
@@ -98,7 +98,7 @@ public final class ExistingCategoriesScreen extends Screen {
             // 登録が 1 件も無い: 何も設定されていないことを 1 行で伝える (= 余計な空グリッドを出さない)。
             Component empty = OmniChestLocale.get("omnichest.distribution.existing.empty",
                     "No storages registered yet.");
-            g.drawCenteredString(this.font, empty, this.width / 2,
+            g.centeredText(this.font, empty, this.width / 2,
                     this.height / 2 - this.font.lineHeight / 2, ThemeColorResolver.TEXT_DIM);
         } else {
             renderGrid(g);
@@ -111,10 +111,10 @@ public final class ExistingCategoriesScreen extends Screen {
         int cx = this.width / 2;
         g.fill(cx - hintW / 2 - 6, hintY - 2, cx + hintW / 2 + 6,
                 hintY + this.font.lineHeight + 2, ThemeColorResolver.FOOTER_BACKDROP);
-        g.drawCenteredString(this.font, hint, cx, hintY, ThemeColorResolver.TEXT_DIM);
+        g.centeredText(this.font, hint, cx, hintY, ThemeColorResolver.TEXT_DIM);
     }
 
-    private void renderGrid(GuiGraphics g) {
+    private void renderGrid(GuiGraphicsExtractor g) {
         int colW = colW();
         for (int i = 0; i < categories.size(); i++) {
             StorageCategory cat = categories.get(i);
@@ -131,7 +131,7 @@ public final class ExistingCategoriesScreen extends Screen {
             int count = StorageAssignmentManager.get().byCategory(cat).size();
             Component countC = OmniChestLocale.get("omnichest.distribution.existing.count", "×%1$d", count);
             int countColor = count > 0 ? ThemeColorResolver.TEXT_SECONDARY : ThemeColorResolver.TEXT_DIM;
-            g.drawString(this.font, countC, x + CHIP_W + COUNT_GAP,
+            g.text(this.font, countC, x + CHIP_W + COUNT_GAP,
                     y + (CHIP_H - this.font.lineHeight) / 2 + 1, countColor, false);
         }
     }

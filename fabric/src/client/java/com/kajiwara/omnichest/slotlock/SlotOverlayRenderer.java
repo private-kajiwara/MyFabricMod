@@ -4,7 +4,7 @@ import com.kajiwara.omnichest.i18n.Keys;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -62,10 +62,10 @@ public final class SlotOverlayRenderer {
      * <p>
      * 呼び出し側 (Mixin) は AbstractContainerScreen の座標 (leftPos, topPos) に対する
      * オフセットを得るために slot.x / slot.y をそのまま使う。
-     * これらは GUI 内ローカル座標なので、 GuiGraphics.pose を leftPos/topPos 分 translate
+     * これらは GUI 内ローカル座標なので、 GuiGraphicsExtractor.pose を leftPos/topPos 分 translate
      * した状態で描く必要がある (= Mixin 側でやる)。
      */
-    public static void renderAllSlots(GuiGraphics g, AbstractContainerMenu menu) {
+    public static void renderAllSlots(GuiGraphicsExtractor g, AbstractContainerMenu menu) {
         SlotLockConfig cfg = SlotLockConfig.get();
         if (!cfg.showOverlay)
             return;
@@ -96,7 +96,7 @@ public final class SlotOverlayRenderer {
      * <li><b>Marker</b> — 右上に黒丸背景 + 色文字 (L or ★)</li>
      * </ol>
      */
-    public static void renderSlot(GuiGraphics g, Slot slot) {
+    public static void renderSlot(GuiGraphicsExtractor g, Slot slot) {
         if (slot == null)
             return;
         if (!InventoryProtectionLayer.isProtectedSlot(slot))
@@ -164,7 +164,7 @@ public final class SlotOverlayRenderer {
         // 黒い背景 (タイトル下地として 1px 余白を持たせる)。
         g.fill(badgeX - 1, badgeY, badgeX + textW + 1, badgeY + textH + 1, MARKER_BG_COLOR);
         // 文字 (= 色付き shadow 付き)。
-        g.drawString(font, marker, badgeX, badgeY, markerColor, true);
+        g.text(font, marker, badgeX, badgeY, markerColor, true);
     }
 
     /**
@@ -190,9 +190,9 @@ public final class SlotOverlayRenderer {
 
     /**
      * 1 マスの「枠だけ」 (= fill 4 辺) を描くユーティリティ。
-     * {@link GuiGraphics#renderOutline} は存在するが座標規約が違うのでここでは自前実装。
+     * {@link GuiGraphicsExtractor#renderOutline} は存在するが座標規約が違うのでここでは自前実装。
      */
-    private static void drawHollowRect(GuiGraphics g, int x1, int y1, int x2, int y2, int argb) {
+    private static void drawHollowRect(GuiGraphicsExtractor g, int x1, int y1, int x2, int y2, int argb) {
         g.fill(x1, y1, x2, y1 + 1, argb);          // top
         g.fill(x1, y2 - 1, x2, y2, argb);          // bottom
         g.fill(x1, y1 + 1, x1 + 1, y2 - 1, argb);  // left

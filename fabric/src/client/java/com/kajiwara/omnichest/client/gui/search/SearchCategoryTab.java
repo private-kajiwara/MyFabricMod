@@ -7,7 +7,7 @@ import com.kajiwara.omnichest.client.gui.search.layout.UILayoutMetrics;
 import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
@@ -47,7 +47,7 @@ public final class SearchCategoryTab {
      * @param strip       タブ列の配置領域 (= width = computeStripWidth の結果)
      * @param scrollPx    縦スクロール量 (px)。 0 = 一番上
      */
-    public static List<TabHit> render(GuiGraphics g, int mouseX, int mouseY,
+    public static List<TabHit> extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY,
                                       LayoutBox strip,
                                       SearchCategory current,
                                       List<SearchCategory> categories,
@@ -86,12 +86,12 @@ public final class SearchCategoryTab {
     }
 
     /** 旧 API (= scrollPx 0 と等価) 互換用。 */
-    public static List<TabHit> render(GuiGraphics g, int mouseX, int mouseY,
+    public static List<TabHit> extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY,
                                       LayoutBox strip,
                                       SearchCategory current,
                                       List<SearchCategory> categories,
                                       boolean compactAlways) {
-        return render(g, mouseX, mouseY, strip, current, categories, compactAlways, 0.0);
+        return extractRenderState(g, mouseX, mouseY, strip, current, categories, compactAlways, 0.0);
     }
 
     /**
@@ -109,7 +109,7 @@ public final class SearchCategoryTab {
         return new LayoutBox(b.x(), y1, b.w(), y2 - y1);
     }
 
-    private static void drawTab(GuiGraphics g, Font font, SearchCategory cat,
+    private static void drawTab(GuiGraphicsExtractor g, Font font, SearchCategory cat,
                                 LayoutBox box, boolean hovered, boolean selected,
                                 boolean compactAlways, boolean rtl) {
         int x = box.x();
@@ -139,14 +139,14 @@ public final class SearchCategoryTab {
 
         if (compactAlways) {
             int iconX = x + (w - 16) / 2;
-            g.renderItem(icon, iconX, iconY);
+            g.item(icon, iconX, iconY);
             return;
         }
 
         int iconX = rtl
                 ? (x + w - TAB_INNER_PAD_X - 16)
                 : (x + TAB_INNER_PAD_X);
-        g.renderItem(icon, iconX, iconY);
+        g.item(icon, iconX, iconY);
         Component label = cat.displayName();
         int labelAvail = w - 16 - TAB_INNER_PAD_X * 2 - ICON_TEXT_GAP;
         String text = label.getString();
@@ -163,7 +163,7 @@ public final class SearchCategoryTab {
         int textColor = selected
                 ? ThemeColorResolver.TEXT_HIGHLIGHT // 選択中: 強調
                 : ThemeColorResolver.TEXT_PRIMARY;   // 非選択: 通常
-        g.drawString(font, text, textX, textY, textColor, false);
+        g.text(font, text, textX, textY, textColor, false);
     }
 
     /** クリック判定。 */

@@ -12,7 +12,7 @@ import com.kajiwara.omnichest.distribution.StorageKey;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -280,13 +280,13 @@ public final class SetCategoryScreen extends Screen {
     // ════════════════════════════════════════════════════════════════════
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        super.render(g, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
         // タイトル + アクセント線の Y は、 パネル上端 (init の y = height/2 - 76) と歩調を合わせて引き上げる。
         // 「登録済みカテゴリ」 行を足してパネルを 12px 上げたぶん、 ここも上げないとチェスト名ラベルと
         // 重なる (= 旧位置のままだと見出し/バーが名前行に被る)。
         // タイトル。
-        g.drawCenteredString(this.font, this.getTitle(), this.width / 2,
+        g.centeredText(this.font, this.getTitle(), this.width / 2,
                 this.height / 2 - 96, ThemeColorResolver.TEXT_PRIMARY);
 
         // 行き先カテゴリの色を小さなアクセントで示す (= コントラスト原則)。 ボタン地は塗らず、
@@ -297,7 +297,7 @@ public final class SetCategoryScreen extends Screen {
 
         // 名前ラベル。
         if (this.nameBox != null) {
-            g.drawString(this.font,
+            g.text(this.font,
                     OmniChestLocale.get("omnichest.distribution.set_category.name", "Chest Name"),
                     this.nameBox.getX(), this.nameBox.getY() - 11,
                     ThemeColorResolver.TEXT_SECONDARY, false);
@@ -306,7 +306,7 @@ public final class SetCategoryScreen extends Screen {
         // フッターヒント。
         Component hint = OmniChestLocale.get("omnichest.distribution.set_category.hint",
                 "Click a chest, choose a category, then Save.  ESC = cancel");
-        g.drawCenteredString(this.font, hint, this.width / 2,
+        g.centeredText(this.font, hint, this.width / 2,
                 this.height - UILayoutMetrics.FOOTER_HINT_FROM_BOTTOM, ThemeColorResolver.TEXT_DIM);
     }
 

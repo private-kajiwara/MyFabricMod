@@ -6,7 +6,7 @@ import com.kajiwara.omnichest.template.TemplateManager;
 import com.kajiwara.omnichest.template.data.ChestTemplate;
 import com.kajiwara.omnichest.template.data.TemplateKind;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -117,10 +117,10 @@ public class TemplateSaveScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         // 半透明オーバーレイ + パネル。
-        super.render(g, mouseX, mouseY, partialTick);
-        g.drawCenteredString(this.font, this.getTitle(), this.width / 2, this.height / 2 - 60, 0xFFFFFFFF);
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
+        g.centeredText(this.font, this.getTitle(), this.width / 2, this.height / 2 - 60, 0xFFFFFFFF);
 
         // 種別の補足説明 (現在の選択ヒント)。
         String helpKey = switch (this.kind) {
@@ -133,7 +133,7 @@ public class TemplateSaveScreen extends Screen {
             case CATEGORY -> "Items in the same category can substitute each other. (Best for material chests)";
             case HYBRID -> "Prefers the original item, falls back to same-category substitutes.";
         };
-        g.drawCenteredString(this.font, OmniChestLocale.get(helpKey, helpFallback),
+        g.centeredText(this.font, OmniChestLocale.get(helpKey, helpFallback),
                 this.width / 2, this.height / 2 + 55, 0xFFAAAAAA);
     }
 

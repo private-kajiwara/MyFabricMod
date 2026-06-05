@@ -5,7 +5,7 @@ import com.kajiwara.omnichest.client.gui.search.layout.UILayoutMetrics;
 import com.kajiwara.omnichest.search.SearchIndex;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -105,7 +105,7 @@ public final class StorageSearchListRenderer {
      * 結果を描画する。 scissor は呼び出し側でかける想定。
      */
     public static void render(ItemDisplayMode mode,
-                              GuiGraphics g,
+                              GuiGraphicsExtractor g,
                               List<SearchIndex.SearchResult> results,
                               int listLeft, int listTop, int listRight, int listBottom,
                               double scrollPx,

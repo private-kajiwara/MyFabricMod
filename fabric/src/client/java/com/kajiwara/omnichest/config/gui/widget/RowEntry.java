@@ -3,7 +3,7 @@ package com.kajiwara.omnichest.config.gui.widget;
 import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.network.chat.Component;
 
@@ -78,7 +78,7 @@ public abstract class RowEntry {
     }
 
     /** row 自体の追加描画 (= ラベルなど widget 以外)。 */
-    public void render(GuiGraphics g, int contentLeft, int rowY, int width, int mouseX, int mouseY,
+    public void extractRenderState(GuiGraphicsExtractor g, int contentLeft, int rowY, int width, int mouseX, int mouseY,
             float partialTick) {
         // ラベルの寄せ方向は RTL/LTR に合わせる。 widget 本体の位置は layout() 側で同じく反転される。
         int textColor = 0xFFFFFFFF;
@@ -87,7 +87,7 @@ public abstract class RowEntry {
         int labelX = RTLLayoutManager.get().isRtl()
                 ? contentLeft + width - 4 - font.width(this.label)
                 : contentLeft + 4;
-        g.drawString(font, this.label, labelX, labelY, textColor, false);
+        g.text(font, this.label, labelX, labelY, textColor, false);
     }
 
     /**

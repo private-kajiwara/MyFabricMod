@@ -4,7 +4,7 @@ import com.kajiwara.omnichest.i18n.Keys;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -184,19 +184,19 @@ public final class ColorPickerPopup implements OverlayPopup {
     // 描画
     // ════════════════════════════════════════════════════════════════════
 
-    public void render(GuiGraphics g, int mouseX, int mouseY) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         reflow(); // 描画前に生きた画面サイズで再センタリング (= F11 / スケール変更追従)。
         // ─── 背面 dimmer (= ポップアップ以外を暗く) ───
         g.fill(0, 0, g.guiWidth(), g.guiHeight(), 0x80000000);
 
         // ─── ポップアップ背景 + 縁 ───
         g.fill(popupX, popupY, popupX + POPUP_W, popupY + POPUP_H, COLOR_BG);
-        g.renderOutline(popupX - 1, popupY - 1, POPUP_W + 2, POPUP_H + 2, COLOR_RIM);
+        g.outline(popupX - 1, popupY - 1, POPUP_W + 2, POPUP_H + 2, COLOR_RIM);
 
         // ─── ヘッダ帯 ───
         g.fill(popupX, popupY, popupX + POPUP_W, popupY + HEADER_H, COLOR_HEADER_BG);
         Font font = Minecraft.getInstance().font;
-        g.drawString(font, OmniChestLocale.get(Keys.COLOR_PICKER_TITLE, "Color Picker"),
+        g.text(font, OmniChestLocale.get(Keys.COLOR_PICKER_TITLE, "Color Picker"),
                 popupX + PAD, popupY + (HEADER_H - 8) / 2, COLOR_TEXT, false);
 
         // ─── SV グリッド ───
@@ -216,7 +216,7 @@ public final class ColorPickerPopup implements OverlayPopup {
      * SV グリッドを「列ごとの縦グラデーション」で描く。
      * 各列の上端は HSV(hue, sat=x/W, val=1)、 下端は黒 (val=0)。
      */
-    private void renderSvGrid(GuiGraphics g) {
+    private void renderSvGrid(GuiGraphicsExtractor g) {
         int gx = popupX + SV_X;
         int gy = popupY + SV_Y;
         for (int x = 0; x < SV_W; x++) {
@@ -225,20 +225,20 @@ public final class ColorPickerPopup implements OverlayPopup {
             int bottom = 0xFF000000;
             g.fillGradient(gx + x, gy, gx + x + 1, gy + SV_H, top, bottom);
         }
-        g.renderOutline(gx - 1, gy - 1, SV_W + 2, SV_H + 2, COLOR_RIM);
+        g.outline(gx - 1, gy - 1, SV_W + 2, SV_H + 2, COLOR_RIM);
 
         // 現在地マーカ (= 中空の小丸)。 値が見えやすいよう白枠 + 黒影で 2 重に描く。
         int markerX = gx + Math.round(this.sat * (SV_W - 1));
         int markerY = gy + Math.round((1.0f - this.val) * (SV_H - 1));
-        g.renderOutline(markerX - 4, markerY - 4, 9, 9, COLOR_PICKER_RING_SHADOW);
-        g.renderOutline(markerX - 3, markerY - 3, 7, 7, COLOR_PICKER_RING);
+        g.outline(markerX - 4, markerY - 4, 9, 9, COLOR_PICKER_RING_SHADOW);
+        g.outline(markerX - 3, markerY - 3, 7, 7, COLOR_PICKER_RING);
     }
 
     /**
      * Hue バーを 6 セグメントの縦グラデーションで描く。
      * Red → Yellow → Green → Cyan → Blue → Magenta → Red の 6 区間。
      */
-    private void renderHueBar(GuiGraphics g) {
+    private void renderHueBar(GuiGraphicsExtractor g) {
         int bx = popupX + HUE_X;
         int by = popupY + HUE_Y;
         int segH = HUE_H / 6;
@@ -255,7 +255,7 @@ public final class ColorPickerPopup implements OverlayPopup {
             g.fillGradient(bx, by + i * segH, bx + HUE_W,
                     by + (i + 1) * segH, segColors[i], segColors[i + 1]);
         }
-        g.renderOutline(bx - 1, by - 1, HUE_W + 2, HUE_H + 2, COLOR_RIM);
+        g.outline(bx - 1, by - 1, HUE_W + 2, HUE_H + 2, COLOR_RIM);
 
         // 現在 hue のマーカ (= 左右に張り出す ▶◀ 三角の代わりに白横ライン + 黒影)。
         int markerY = by + Math.round(this.hue / 360f * (HUE_H - 1));
@@ -263,7 +263,7 @@ public final class ColorPickerPopup implements OverlayPopup {
         g.fill(bx - 1, markerY, bx + HUE_W + 1, markerY + 1, COLOR_PICKER_RING);
     }
 
-    private void renderInfoRow(GuiGraphics g) {
+    private void renderInfoRow(GuiGraphicsExtractor g) {
         Font font = Minecraft.getInstance().font;
         int rgb = currentRgb();
         int r = (rgb >> 16) & 0xFF;
@@ -274,21 +274,21 @@ public final class ColorPickerPopup implements OverlayPopup {
 
         Component rgbComp = OmniChestLocale.get(
                 Keys.COLOR_PICKER_RGB_LINE, "R %1$3d  G %2$3d  B %3$3d", r, gg, b);
-        g.drawString(font, rgbComp, x, y, COLOR_TEXT_MUTED, false);
+        g.text(font, rgbComp, x, y, COLOR_TEXT_MUTED, false);
 
         Component hexComp = OmniChestLocale.get(
                 Keys.COLOR_PICKER_HEX_LINE, "Hex  #%1$06X", rgb & 0xFFFFFF);
-        g.drawString(font, hexComp, x, y + 10, COLOR_TEXT, false);
+        g.text(font, hexComp, x, y + 10, COLOR_TEXT, false);
 
         // プレビュー swatch (= 大きめの現在色サンプル)。 ヘックス文字の右に置く。
         int sw = 24, sh = 12;
         int sx = popupX + POPUP_W - PAD - sw;
         int sy = y + 4;
         g.fill(sx, sy, sx + sw, sy + sh, 0xFF000000 | (rgb & 0xFFFFFF));
-        g.renderOutline(sx - 1, sy - 1, sw + 2, sh + 2, COLOR_RIM);
+        g.outline(sx - 1, sy - 1, sw + 2, sh + 2, COLOR_RIM);
     }
 
-    private void renderButtons(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderButtons(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         Font font = Minecraft.getInstance().font;
         // Cancel (左) / OK (右)
         int cancelX = popupX + PAD;
@@ -298,10 +298,10 @@ public final class ColorPickerPopup implements OverlayPopup {
         boolean hoverOk = inRect(mouseX, mouseY, okX, by, BTN_W, BTN_H);
         g.fill(cancelX, by, cancelX + BTN_W, by + BTN_H,
                 hoverCancel ? COLOR_BTN_BG_HOVER : COLOR_BTN_BG);
-        g.renderOutline(cancelX, by, BTN_W, BTN_H, COLOR_RIM);
+        g.outline(cancelX, by, BTN_W, BTN_H, COLOR_RIM);
         g.fill(okX, by, okX + BTN_W, by + BTN_H,
                 hoverOk ? COLOR_BTN_BG_OK_HOVER : COLOR_BTN_BG_OK);
-        g.renderOutline(okX, by, BTN_W, BTN_H, COLOR_RIM);
+        g.outline(okX, by, BTN_W, BTN_H, COLOR_RIM);
         drawCenteredComponent(g, font,
                 OmniChestLocale.get(Keys.COLOR_PICKER_CANCEL, "Cancel"),
                 cancelX, by, BTN_W, BTN_H, COLOR_TEXT);
@@ -310,10 +310,10 @@ public final class ColorPickerPopup implements OverlayPopup {
                 okX, by, BTN_W, BTN_H, COLOR_BTN_OK_TEXT);
     }
 
-    private static void drawCenteredComponent(GuiGraphics g, Font font, Component text,
+    private static void drawCenteredComponent(GuiGraphicsExtractor g, Font font, Component text,
             int x, int y, int w, int h, int color) {
         int tw = font.width(text);
-        g.drawString(font, text, x + (w - tw) / 2, y + (h - 8) / 2, color, false);
+        g.text(font, text, x + (w - tw) / 2, y + (h - 8) / 2, color, false);
     }
 
     // ════════════════════════════════════════════════════════════════════

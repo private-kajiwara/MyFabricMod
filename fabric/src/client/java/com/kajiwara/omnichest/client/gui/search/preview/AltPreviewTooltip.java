@@ -5,7 +5,7 @@ import com.kajiwara.omnichest.config.data.SearchConfig;
 import com.kajiwara.omnichest.search.nested.RecursiveContainerHelper;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -39,7 +39,7 @@ public final class AltPreviewTooltip {
     /**
      * 条件を満たせばプレビューを描画する。 満たさなければ何もしない (= no-op)。
      */
-    public static void tryRender(GuiGraphics g, int mouseX, int mouseY, ItemStack hovered,
+    public static void tryRender(GuiGraphicsExtractor g, int mouseX, int mouseY, ItemStack hovered,
                                  int screenW, int screenH) {
         if (hovered == null || hovered.isEmpty()) {
             return;
@@ -60,7 +60,7 @@ public final class AltPreviewTooltip {
         int h = AltPreviewPopupRenderer.panelHeight(columns, slotCount);
 
         int[] xy = AdaptiveTooltipPositioner.place(mouseX, mouseY, w, h, screenW, screenH);
-        AltPreviewPopupRenderer.render(g, Minecraft.getInstance().font, hovered,
+        AltPreviewPopupRenderer.extractRenderState(g, Minecraft.getInstance().font, hovered,
                 xy[0], xy[1], columns, cfg.previewBackgroundBlur);
     }
 

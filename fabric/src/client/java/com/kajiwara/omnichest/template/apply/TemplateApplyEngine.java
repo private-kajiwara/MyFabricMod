@@ -4,7 +4,7 @@ import com.kajiwara.omnichest.template.config.TemplateConfig;
 import com.kajiwara.omnichest.template.data.ChestTemplate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,14 +72,14 @@ public final class TemplateApplyEngine {
             //   - 異種スロットを PICKUP: cursor と target を入れ替える
             //
             // 1: source を持ち上げる (source は空になる、 cursor に元 source)
-            ops.add(new MoveQueue.ClickOp(menu.containerId, move.fromSlot(), 0, ClickType.PICKUP));
+            ops.add(new MoveQueue.ClickOp(menu.containerId, move.fromSlot(), 0, ContainerInput.PICKUP));
             // 2: target に置く / 入れ替える
-            ops.add(new MoveQueue.ClickOp(menu.containerId, move.toSlot(), 0, ClickType.PICKUP));
+            ops.add(new MoveQueue.ClickOp(menu.containerId, move.toSlot(), 0, ContainerInput.PICKUP));
             if (move.swap()) {
                 // 3: 入れ替え発生時 — cursor に残った旧 target を source (= 今は空) に戻す。
                 //    swap=false なら cursor は空のはずなのでこの 3 クリック目は不要 (= 投げると target を
                 //    また持ち上げてしまうので絶対に投げない)。
-                ops.add(new MoveQueue.ClickOp(menu.containerId, move.fromSlot(), 0, ClickType.PICKUP));
+                ops.add(new MoveQueue.ClickOp(menu.containerId, move.fromSlot(), 0, ContainerInput.PICKUP));
             }
         }
         MoveQueue.get().enqueueAll(menu.containerId, ops);

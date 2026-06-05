@@ -8,7 +8,7 @@ import com.kajiwara.omnichest.template.apply.TemplateApplyEngine;
 import com.kajiwara.omnichest.template.config.TemplateConfig;
 import com.kajiwara.omnichest.template.data.ChestTemplate;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -94,12 +94,12 @@ public class TemplatePreviewScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        super.render(g, mouseX, mouseY, partialTick);
-        g.drawCenteredString(this.font, this.getTitle(), this.width / 2, 20, 0xFFFFFFFF);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
+        g.centeredText(this.font, this.getTitle(), this.width / 2, 20, 0xFFFFFFFF);
 
         if (this.plan == null) {
-            g.drawCenteredString(this.font,
+            g.centeredText(this.font,
                     OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_COMPUTING, "Computing..."),
                     this.width / 2, this.height / 2, 0xFFAAAAAA);
             return;
@@ -111,27 +111,27 @@ public class TemplatePreviewScreen extends Screen {
         int shortages = this.plan.shortages().size();
         int stranded = this.plan.stranded().size();
 
-        g.drawCenteredString(this.font,
+        g.centeredText(this.font,
                 OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_MOVES,
                         "Moves to execute: %1$d (total %2$d items)", moves, totalItems),
                 this.width / 2, yLine, 0xFFFFFFFF);
         yLine += 14;
         if (shortages > 0) {
-            g.drawCenteredString(this.font,
+            g.centeredText(this.font,
                     OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_SHORTAGES,
                             "Short items: %1$d kinds (some slots cannot be filled)", shortages),
                     this.width / 2, yLine, 0xFFFFAA55);
             yLine += 14;
         }
         if (stranded > 0) {
-            g.drawCenteredString(this.font,
+            g.centeredText(this.font,
                     OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_STRANDED,
                             "Stranded slots: %1$d (no place to put these items)", stranded),
                     this.width / 2, yLine, 0xFFFF7777);
             yLine += 14;
         }
         if (moves == 0 && shortages == 0 && stranded == 0) {
-            g.drawCenteredString(this.font,
+            g.centeredText(this.font,
                     OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_NOTHING_TO_DO,
                             "Already matches the template."),
                     this.width / 2, yLine, 0xFF88FF88);
@@ -148,17 +148,17 @@ public class TemplatePreviewScreen extends Screen {
                 break;
             int rowY = detailY + shown * 18;
             // アイコン
-            g.renderItem(m.icon(), this.width / 2 - 130, rowY);
+            g.item(m.icon(), this.width / 2 - 130, rowY);
             // テキスト (= 翻訳キー駆動)
             String text = OmniChestLocale.getString(Keys.TEMPLATE_PREVIEW_MOVE_ROW,
                     "  slot %1$d  →  slot %2$d   ×%3$d %4$s",
                     m.fromSlot(), m.toSlot(), m.count(), m.swap() ? swapTag : "");
-            g.drawString(this.font, Component.literal(text),
+            g.text(this.font, Component.literal(text),
                     this.width / 2 - 108, rowY + 4, 0xFFFFFFFF, false);
             shown++;
         }
         if (this.plan.moves().size() > maxRows) {
-            g.drawCenteredString(this.font,
+            g.centeredText(this.font,
                     OmniChestLocale.get(Keys.TEMPLATE_PREVIEW_MORE_ITEMS,
                             "...and %1$d more", this.plan.moves().size() - maxRows),
                     this.width / 2, detailY + maxRows * 18 + 4, 0xFFAAAAAA);

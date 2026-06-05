@@ -9,27 +9,29 @@ import com.kajiwara.omnichest.search.ContainerScanner;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
 import com.kajiwara.omnichest.search.ContainerType;
 import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.platform.CompareOp;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.client.renderer.state.CameraRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -185,13 +187,13 @@ public final class ChestHighlighter {
 
     /**
      * HUD パスで描画するピンアイコン 1 件の DTO。
-     * 世界パスで「画面座標」 まで投影しておき、 HUD パスでは {@link GuiGraphics#renderItem} に
+     * 世界パスで「画面座標」 まで投影しておき、 HUD パスでは {@link GuiGraphicsExtractor#renderItem} に
      * 渡すだけ (= HUD pass で world transform を持ち越さない)。
      *
      * <p>
      * <b>座標精度</b>: 移動 / ターン中の 1-px ジッタを抑えるため、 screen X/Y は浮動小数で保持する。
      * 整数化は HUD pass 内の {@code pose.translate} に float をそのまま渡して
-     * GuiGraphics に sub-pixel オフセットを任せる (= 整数 snap によるカクツキ排除)。
+     * GuiGraphicsExtractor に sub-pixel オフセットを任せる (= 整数 snap によるカクツキ排除)。
      */
     private record PendingHudIcon(ItemStack stack, float screenX, float screenY, float sizePx) {
     }
@@ -210,14 +212,18 @@ public final class ChestHighlighter {
         // 互換層 ({@link SafeRenderDispatcher}) を挟み、 他 MOD の shader/state 不整合が原因で
         // {@link #onWorldRender} が例外を投げてもゲーム本体をクラッシュさせないようにする。
         // 正常系では try/catch 1 段ぶんしか overhead を足さないので既存の描画挙動は変わらない。
-        WorldRenderEvents.BEFORE_ENTITIES.register(ctx ->
+        // 26.1: WorldRenderEvents.BEFORE_ENTITIES は廃止。 LevelRenderEvents の
+        // AFTER_SOLID_FEATURES (不透明地形/エンティティ描画後) で同等のタイミングを得る。
+        LevelRenderEvents.AFTER_SOLID_FEATURES.register(ctx ->
                 SafeRenderDispatcher.safeRun("chest-highlight-world", () -> INSTANCE.onWorldRender(ctx)));
 
         // ─── ピンアイコンを HUD パスで貫通描画 ───
         // 世界パスで投影した画面座標 (= pendingHudIcons) を、 ここで 2D アイテム描画する。
         // HUD は world depth と無関係なので、 ブロック越しでも必ず最前面に出る。
-        HudRenderCallback.EVENT.register((g, deltaTracker) ->
-                SafeRenderDispatcher.safeRun("chest-highlight-hud-icons",
+        // 26.1: HudRenderCallback は廃止。 HudElementRegistry に HudElement を addLast する。
+        HudElementRegistry.addLast(
+                net.minecraft.resources.Identifier.fromNamespaceAndPath("omnichest", "chest_highlight_icons"),
+                (g, deltaTracker) -> SafeRenderDispatcher.safeRun("chest-highlight-hud-icons",
                         () -> INSTANCE.onHudRender(g)));
 
         // ────────────────────────────────────────────────────────────
@@ -624,7 +630,7 @@ public final class ChestHighlighter {
     // ワールド描画
     // ════════════════════════════════════════════════════════════════════
 
-    private void onWorldRender(WorldRenderContext ctx) {
+    private void onWorldRender(LevelRenderContext ctx) {
         // 新フレームの開始: HUD パス用キューを空にする (= 前フレームの取り残しを残さない)。
         pendingHudIcons.clear();
 
@@ -647,7 +653,7 @@ public final class ChestHighlighter {
             // 設定が読めない時は従来どおり描画する (= 安全側 / 既定 ON 相当)。
         }
 
-        CameraRenderState camState = ctx.worldState().cameraRenderState;
+        CameraRenderState camState = ctx.levelState().cameraRenderState;
         if (camState == null || camState.pos == null)
             return;
         Vec3 camPos = camState.pos;
@@ -660,8 +666,8 @@ public final class ChestHighlighter {
             return;
         ResourceKey<Level> currentDim = level.dimension();
 
-        PoseStack matrices = ctx.matrices();
-        SubmitNodeCollector queue = ctx.commandQueue();
+        PoseStack matrices = ctx.poseStack();
+        SubmitNodeCollector queue = ctx.submitNodeCollector();
         RenderType xray = xrayLines();
 
         // 1 フレームに 1 回だけ Config を引いて使い回す (= ループ内で 重ねて get しない)。
@@ -1053,7 +1059,7 @@ public final class ChestHighlighter {
                 // 世界パスの {@link ItemStackRenderState#submit} は DEPTH_TEST 必須レイヤで
                 // 構成されており、 ガラス含む手前ブロックで隠れる。 ピン要件 「絶対に貫通」 を
                 // 満たすため、 アイコン中心のワールド座標を画面座標に投影して キュー へ積み、
-                // HUD パスで {@code GuiGraphics.renderItem} で描く (= world depth と無関係)。
+                // HUD パスで {@code GuiGraphicsExtractor.renderItem} で描く (= world depth と無関係)。
                 // クランプ後の中心 (renderCx/Cy/Cz) を基準に投影する。 これにより遠距離チェストでも
                 // アイコンの投影点が far 平面の内側に収まり、 HUD 投影 (= projectPointToScreen) が
                 // 退化せずに画面座標へ落ちる (= テキスト/黒帯と完全に同じ基準なので 1px もズレない)。
@@ -1062,7 +1068,7 @@ public final class ChestHighlighter {
                         rowY + entryIconSize / 2.0f,
                         worldScale, entryIconSize,
                         camPos, camState.orientation);
-                // 既存の itemModelResolver は HUD パスのアイテム描画が GuiGraphics 経由で
+                // 既存の itemModelResolver は HUD パスのアイテム描画が GuiGraphicsExtractor 経由で
                 // 自前解決するため不要だが、 引数互換のため変数だけ参照しておく (= 未使用警告抑止)。
                 @SuppressWarnings("unused") ItemModelResolver _ignored = itemModelResolver;
 
@@ -1157,7 +1163,7 @@ public final class ChestHighlighter {
 
     /**
      * HUD パス用アイコンキューに 1 件積む。 世界パスで「アイコン中心のワールド座標」 を計算し、
-     * 即座に画面座標へ投影しておく (= HUD パスでは GuiGraphics に渡すだけにする)。
+     * 即座に画面座標へ投影しておく (= HUD パスでは GuiGraphicsExtractor に渡すだけにする)。
      *
      * @param chestX, chestY, chestZ   ピンが立っているチェスト中心のワールド座標
      * @param pinLocalX, pinLocalY     ピン内ローカル座標 (= フォント px 単位)
@@ -1204,9 +1210,9 @@ public final class ChestHighlighter {
 
     /**
      * HUD パス: キューに溜まったピンアイコンを 2D 描画する。
-     * GuiGraphics の通常描画なので世界 depth とは無関係 = 必ず最前面に出る (= 貫通保証)。
+     * GuiGraphicsExtractor の通常描画なので世界 depth とは無関係 = 必ず最前面に出る (= 貫通保証)。
      */
-    private void onHudRender(GuiGraphics g) {
+    private void onHudRender(GuiGraphicsExtractor g) {
         if (pendingHudIcons.isEmpty()) return;
         // スナップショットを取って描画 (= HUD 中に世界パスが再 enqueue する場合の保険)。
         // 描画後は clear せず、 次フレームの onWorldRender が冒頭で clear する。
@@ -1225,7 +1231,7 @@ public final class ChestHighlighter {
                 if (Math.abs(scale - 1.0f) > 1.0e-4f) {
                     pose.scale(scale, scale);
                 }
-                g.renderItem(icon.stack, 0, 0);
+                g.item(icon.stack, 0, 0);
             } finally {
                 pose.popMatrix();
             }
@@ -1233,7 +1239,7 @@ public final class ChestHighlighter {
     }
 
     /**
-     * ワールド座標 → GUI スケール後のスクリーン座標 (= GuiGraphics 用 px、 sub-pixel float) に投影する。
+     * ワールド座標 → GUI スケール後のスクリーン座標 (= GuiGraphicsExtractor 用 px、 sub-pixel float) に投影する。
      * カメラ背後など投影不能なら null。
      *
      * <p>
@@ -1327,7 +1333,7 @@ public final class ChestHighlighter {
      *
      * <p>
      * 呼び出し時点で matrices は「ピン billboard + worldScale (= font ピクセル単位, Y 下向き)」まで
-     * 適用済み。 ここではバニラ {@code GuiGraphics.renderItem} と同じ追加変換を行う:
+     * 適用済み。 ここではバニラ {@code GuiGraphicsExtractor.renderItem} と同じ追加変換を行う:
      * <ol>
      *   <li>アイコンの中心へ translate (アイテム ジオメトリは中心原点)。</li>
      *   <li>Y 軸を反転 + iconSize に scale (アイテム ジオメトリ 1 単位幅 → iconSize 幅)。</li>
@@ -1337,7 +1343,7 @@ public final class ChestHighlighter {
      * Z 方向には微小に手前 (+Z) へ寄せて、 同じ pose 内でテキスト背景と Z-fight するのを避ける。
      *
      * <p>
-     * <b>解決メソッド</b>: バニラ {@code GuiGraphics.renderItem} と同じ
+     * <b>解決メソッド</b>: バニラ {@code GuiGraphicsExtractor.renderItem} と同じ
      * {@code ItemModelResolver.updateForTopItem(state, stack, ItemDisplayContext.GUI, level, player, 0)}
      * を呼ぶ (= インベントリ と同じ 平面アイコン に揃える)。
      *
@@ -1431,10 +1437,9 @@ public final class ChestHighlighter {
                             "omnichest", "pipeline/xray_lines"))
                     .withVertexShader("core/rendertype_lines")
                     .withFragmentShader("core/rendertype_lines")
-                    .withBlend(BlendFunction.TRANSLUCENT)
+                    .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
                     .withCull(false)
-                    .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-                    .withDepthWrite(false)
+                    .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
                     .withVertexFormat(
                             DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH,
                             VertexFormat.Mode.LINES)

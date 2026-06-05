@@ -12,7 +12,7 @@ import com.kajiwara.omnichest.distribution.StorageDistributionManager.Destinatio
 import com.kajiwara.omnichest.distribution.StorageDistributionManager.DistributionPreview;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -271,15 +271,15 @@ public final class DistributePreviewScreen extends Screen {
     // ════════════════════════════════════════════════════════════════════
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         boolean popup = popupOpen();
 
         // ─── 1) 背景パネル (検索/設定と同じ紺) + 金色フレーム ───
         g.fill(dialogX, dialogY, dialogX + dialogW, dialogY + dialogH, ThemeColorResolver.LIST_BG);
-        g.renderOutline(dialogX, dialogY, dialogW, dialogH, ThemeColorResolver.TAB_ACTIVE_LINE);
+        g.outline(dialogX, dialogY, dialogW, dialogH, ThemeColorResolver.TAB_ACTIVE_LINE);
 
         // ヘッダ帯 + タイトル + 区切り線。
-        g.drawCenteredString(this.font, this.getTitle(), dialogX + dialogW / 2, dialogY + 7,
+        g.centeredText(this.font, this.getTitle(), dialogX + dialogW / 2, dialogY + 7,
                 ThemeColorResolver.TEXT_HIGHLIGHT);
         g.fill(dialogX + 1, dialogY + HEADER_H - 1, dialogX + dialogW - 1, dialogY + HEADER_H,
                 ThemeColorResolver.SEPARATOR);
@@ -297,7 +297,7 @@ public final class DistributePreviewScreen extends Screen {
         // popup 展開中は背後ボタンに hover/tooltip を出さないよう画面外座標を渡す (入力も後段でゲート)。
         int wmx = popup ? OFFSCREEN : mouseX;
         int wmy = popup ? OFFSCREEN : mouseY;
-        super.render(g, wmx, wmy, partialTick);
+        super.extractRenderState(g, wmx, wmy, partialTick);
 
         // フッターヒント (= popup モードに応じて利用可能な操作だけを出す。 倉庫検索と同じ backdrop 帯で
         // 視認性を確保 = #5/#6)。 empty-state は 「戻る」 しかできないので Back のヒントだけに絞る。
@@ -311,51 +311,51 @@ public final class DistributePreviewScreen extends Screen {
         g.fill(cx - hintW / 2 - FOOTER_PAD_X, hintY - FOOTER_PAD_Y,
                 cx + hintW / 2 + FOOTER_PAD_X, hintY + this.font.lineHeight + FOOTER_PAD_Y,
                 ThemeColorResolver.FOOTER_BACKDROP);
-        g.drawCenteredString(this.font, hint, cx, hintY, ThemeColorResolver.TEXT_DIM);
+        g.centeredText(this.font, hint, cx, hintY, ThemeColorResolver.TEXT_DIM);
 
         // ─── 4) ドロップダウン (= 最前面) ───
         if (this.activePopup != null) {
             if (this.activePopup.isClosed()) {
                 this.activePopup = null;
             } else {
-                this.activePopup.render(g, mouseX, mouseY);
+                this.activePopup.extractRenderState(g, mouseX, mouseY);
             }
         }
     }
 
-    private void renderSourcePanel(GuiGraphics g) {
+    private void renderSourcePanel(GuiGraphicsExtractor g) {
         int x = leftX;
-        g.drawString(this.font, OmniChestLocale.get("omnichest.distribution.preview.source", "Source"),
+        g.text(this.font, OmniChestLocale.get("omnichest.distribution.preview.source", "Source"),
                 x, contentTop, ThemeColorResolver.TEXT_DIM, false);
 
         // アイコン + 名前 (割り当てカテゴリがあればその色)。
-        g.renderItem(ContainerTypeIconHelper.iconStack(preview.sourceType()), x, nameRowY());
+        g.item(ContainerTypeIconHelper.iconStack(preview.sourceType()), x, nameRowY());
         int nameColor = preview.sourceCategory() != null
                 ? (0xFF000000 | preview.sourceCategory().rgb())
                 : ThemeColorResolver.TEXT_PRIMARY;
-        g.drawString(this.font, trim(preview.sourceLabel(), PANEL_W - NAME_X),
+        g.text(this.font, trim(preview.sourceLabel(), PANEL_W - NAME_X),
                 x + NAME_X, nameRowY() + (NAME_ROW_H - 8) / 2, nameColor, true);
 
         InventoryPreviewRenderer.renderGrid(g, this.font, x, gridY(), COLS, SOURCE_MAX_ROWS,
                 preview.sourceItems(), true);
         if (sourceOverflow()) {
             int extra = InventoryPreviewRenderer.overflow(preview.sourceItems().size(), COLS, SOURCE_MAX_ROWS);
-            g.drawString(this.font,
+            g.text(this.font,
                     OmniChestLocale.get("omnichest.distribution.preview.more", "…and %1$d more", extra),
                     x, gridY() + sourceGridHeight() + 1, ThemeColorResolver.TEXT_DIM, false);
         }
     }
 
-    private void renderDestinationPanel(GuiGraphics g, int mouseX, int mouseY, boolean popup) {
+    private void renderDestinationPanel(GuiGraphicsExtractor g, int mouseX, int mouseY, boolean popup) {
         int x = rightX;
         DestinationGroup d = preview.destinations().get(selectedDest);
         int catColor = 0xFF000000 | d.category().rgb();
 
-        g.drawString(this.font, OmniChestLocale.get("omnichest.distribution.preview.destination", "Destination"),
+        g.text(this.font, OmniChestLocale.get("omnichest.distribution.preview.destination", "Destination"),
                 x, contentTop, ThemeColorResolver.TEXT_DIM, false);
         // 受け取る総個数を同じ行の右端に控えめに出す (= 別行を増やさずレイアウトを安定させる)。
         Component count = OmniChestLocale.get("omnichest.distribution.preview.count", "×%1$d", d.totalCount());
-        g.drawString(this.font, count, x + PANEL_W - this.font.width(count), contentTop,
+        g.text(this.font, count, x + PANEL_W - this.font.width(count), contentTop,
                 ThemeColorResolver.TEXT_SECONDARY, false);
 
         int rowY = nameRowY();
@@ -365,16 +365,16 @@ public final class DistributePreviewScreen extends Screen {
                     && mouseY >= rowY && mouseY < rowY + NAME_ROW_H;
             g.fill(x, rowY, x + PANEL_W, rowY + NAME_ROW_H,
                     hover ? ThemeColorResolver.TAB_HOVER_BG : ThemeColorResolver.TAB_NORMAL_BG);
-            g.renderOutline(x, rowY, PANEL_W, NAME_ROW_H, ThemeColorResolver.TAB_BORDER);
-            g.renderItem(ContainerTypeIconHelper.iconStack(d.type()), x + 1, rowY);
-            g.drawString(this.font, trim(d.name(), PANEL_W - NAME_X - 8),
+            g.outline(x, rowY, PANEL_W, NAME_ROW_H, ThemeColorResolver.TAB_BORDER);
+            g.item(ContainerTypeIconHelper.iconStack(d.type()), x + 1, rowY);
+            g.text(this.font, trim(d.name(), PANEL_W - NAME_X - 8),
                     x + NAME_X, rowY + (NAME_ROW_H - 8) / 2, catColor, true);
-            g.drawString(this.font, Component.literal("▼"), x + PANEL_W - 9,
+            g.text(this.font, Component.literal("▼"), x + PANEL_W - 9,
                     rowY + (NAME_ROW_H - 8) / 2, ThemeColorResolver.TEXT_DIM, false);
         } else {
             // 単一の送り先: ドロップダウンは出さず、 アイコン + 名前のみ。
-            g.renderItem(ContainerTypeIconHelper.iconStack(d.type()), x, rowY);
-            g.drawString(this.font, trim(d.name(), PANEL_W - NAME_X),
+            g.item(ContainerTypeIconHelper.iconStack(d.type()), x, rowY);
+            g.text(this.font, trim(d.name(), PANEL_W - NAME_X),
                     x + NAME_X, rowY + (NAME_ROW_H - 8) / 2, catColor, true);
         }
 
@@ -383,7 +383,7 @@ public final class DistributePreviewScreen extends Screen {
                 d.items(), false);
         int extra = InventoryPreviewRenderer.overflow(d.items().size(), COLS, DEST_MAX_ROWS);
         if (extra > 0) {
-            g.drawString(this.font,
+            g.text(this.font,
                     OmniChestLocale.get("omnichest.distribution.preview.more", "…and %1$d more", extra),
                     x, gridY() + DEST_MAX_ROWS * CELL + 1, ThemeColorResolver.TEXT_DIM, false);
         }
@@ -394,13 +394,13 @@ public final class DistributePreviewScreen extends Screen {
      * というガイドを、 在庫バッジと同じカテゴリタグ ({@link CategoryBadgeRenderer#renderTag}) で示す。
      * これにより 「なぜ振り分けできないか」 と 「何をすれば良いか」 を一目で伝える (= #4)。
      */
-    private void renderEmptyState(GuiGraphics g) {
+    private void renderEmptyState(GuiGraphicsExtractor g) {
         int cx = dialogX + dialogW / 2;
         int y = contentTop + 2;
 
         Component empty = OmniChestLocale.get("omnichest.distribution.preview.empty",
                 "Nothing to distribute right now.");
-        g.drawCenteredString(this.font, empty, cx, y, ThemeColorResolver.TEXT_SECONDARY);
+        g.centeredText(this.font, empty, cx, y, ThemeColorResolver.TEXT_SECONDARY);
         y += this.font.lineHeight;
 
         if (requiredRows.isEmpty()) {
@@ -410,7 +410,7 @@ public final class DistributePreviewScreen extends Screen {
         y += 6;
         Component label = OmniChestLocale.get("omnichest.distribution.preview.required_label",
                 "Set up a storage for:");
-        g.drawCenteredString(this.font, label, cx, y, ThemeColorResolver.TEXT_DIM);
+        g.centeredText(this.font, label, cx, y, ThemeColorResolver.TEXT_DIM);
         y += this.font.lineHeight + 4;
 
         for (List<StorageCategory> row : requiredRows) {
@@ -430,9 +430,9 @@ public final class DistributePreviewScreen extends Screen {
         }
     }
 
-    private void renderArrow(GuiGraphics g) {
+    private void renderArrow(GuiGraphicsExtractor g) {
         int arrowY = gridY() + Math.max(0, (sourceGridHeight() - this.font.lineHeight) / 2);
-        g.drawCenteredString(this.font, Component.literal("→"), arrowCx, arrowY,
+        g.centeredText(this.font, Component.literal("→"), arrowCx, arrowY,
                 ThemeColorResolver.TAB_ACTIVE_LINE);
     }
 

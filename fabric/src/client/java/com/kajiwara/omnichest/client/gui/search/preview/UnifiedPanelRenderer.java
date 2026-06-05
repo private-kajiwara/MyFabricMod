@@ -1,6 +1,6 @@
 package com.kajiwara.omnichest.client.gui.search.preview;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * MOD 統一テーマの「パネル」 「セパレータ」 「フェード対応 fill」 を提供する低レベルヘルパ。
@@ -11,7 +11,7 @@ import net.minecraft.client.gui.GuiGraphics;
  * (= デザイン 4 原則の「コントラスト・整列」 を最小色数で実現)。
  *
  * <p>
- * <b>Shader 安全</b>: {@link GuiGraphics#fill} のみを使用 (= POSITION_COLOR の基本 quad)。
+ * <b>Shader 安全</b>: {@link GuiGraphicsExtractor#fill} のみを使用 (= POSITION_COLOR の基本 quad)。
  * 生 GL 操作も外部 RenderType の構築もしないため Iris/Sodium 環境でも崩れない。
  */
 public final class UnifiedPanelRenderer {
@@ -27,7 +27,7 @@ public final class UnifiedPanelRenderer {
      *
      * @param fadeAlpha フェード倍率 (= [0..1])。 1 で素のテーマ色そのまま。
      */
-    public static void drawPanel(GuiGraphics g, int x, int y, int w, int h, float fadeAlpha) {
+    public static void drawPanel(GuiGraphicsExtractor g, int x, int y, int w, int h, float fadeAlpha) {
         // 軽いシャドウ (= 右下 2px の L 字)。 「奥行は出すが、 既存テーマからは浮かない」 程度。
         int shadow = scaleAlpha(PopupThemeResolver.SHADOW, fadeAlpha);
         g.fill(x + SHADOW_OFFSET, y + h, x + w + SHADOW_OFFSET, y + h + SHADOW_OFFSET, shadow);
@@ -45,12 +45,12 @@ public final class UnifiedPanelRenderer {
     }
 
     /** セクション間の 1px 水平セパレータ。 */
-    public static void drawSeparator(GuiGraphics g, int x, int y, int w, float fadeAlpha) {
+    public static void drawSeparator(GuiGraphicsExtractor g, int x, int y, int w, float fadeAlpha) {
         g.fill(x, y, x + w, y + 1, scaleAlpha(PopupThemeResolver.SEPARATOR, fadeAlpha));
     }
 
     /** 任意矩形を「alpha 倍率付き」 で塗る (= バックドロップ dim 等)。 */
-    public static void fillAlpha(GuiGraphics g, int x1, int y1, int x2, int y2,
+    public static void fillAlpha(GuiGraphicsExtractor g, int x1, int y1, int x2, int y2,
                                  int argb, float fadeAlpha) {
         g.fill(x1, y1, x2, y2, scaleAlpha(argb, fadeAlpha));
     }

@@ -2,7 +2,7 @@ package com.kajiwara.omnichest.fabric.compat;
 
 import com.kajiwara.omnichest.compat.VersionSpecificHooks;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>Mojang naming に揃える:
  * <ul>
  *   <li>{@code MinecraftClient} → {@link Minecraft}</li>
- *   <li>{@code DrawContext} → {@link GuiGraphics}</li>
+ *   <li>{@code DrawContext} → {@link GuiGraphicsExtractor}</li>
  *   <li>{@code PositionedSoundInstance.master(...)} → {@link SimpleSoundInstance#forUI}</li>
  *   <li>{@code Registries.SOUND_EVENT} → {@link BuiltInRegistries#SOUND_EVENT}</li>
  *   <li>{@code net.minecraft.sound.SoundEvent} → {@code net.minecraft.sounds.SoundEvent}</li>
@@ -26,7 +26,7 @@ public final class DefaultVersionSpecificHooks implements VersionSpecificHooks {
 
     @Override
     public void drawSlotHighlight(Object drawContext, int slotX, int slotY, int argbColor) {
-        GuiGraphics g = (GuiGraphics) drawContext;
+        GuiGraphicsExtractor g = (GuiGraphicsExtractor) drawContext;
         g.fill(slotX, slotY, slotX + 16, slotY + 16, argbColor);
     }
 

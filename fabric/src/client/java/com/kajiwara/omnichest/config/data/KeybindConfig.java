@@ -5,7 +5,7 @@ package com.kajiwara.omnichest.config.data;
  *
  * <p>
  * 実際のキー登録は {@link com.kajiwara.omnichest.client.ClientKeyBindings} で
- * {@code KeyBindingHelper.registerKeyBinding(KeyMapping)} 経由で行われ、
+ * {@code KeyMappingHelper.registerKeyMapping(KeyMapping)} 経由で行われ、
  * Vanilla の {@code options.txt} に保存される。
  *
  * <p>

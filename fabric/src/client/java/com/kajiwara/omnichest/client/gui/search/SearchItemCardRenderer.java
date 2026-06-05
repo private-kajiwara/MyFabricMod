@@ -9,7 +9,7 @@ import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import com.kajiwara.omnichest.search.SearchIndex;
 import com.kajiwara.omnichest.search.nested.ContainerHierarchyResolver;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -57,7 +57,7 @@ public final class SearchItemCardRenderer {
     /**
      * 1 件描画。 hit test は呼び出し側で済んでいる想定。
      */
-    public static void render(ItemDisplayMode mode, GuiGraphics g, Font font,
+    public static void render(ItemDisplayMode mode, GuiGraphicsExtractor g, Font font,
                               SearchIndex.SearchResult result,
                               int x, int y, int w, int h,
                               boolean hovering, boolean selected, boolean favorite,
@@ -77,7 +77,7 @@ public final class SearchItemCardRenderer {
     // DETAILED モード (= 新レイアウト「アイテム / カテゴリ / 名前」)
     // ════════════════════════════════════════════════════════════════════
 
-    private static void renderDetailed(GuiGraphics g, Font font,
+    private static void renderDetailed(GuiGraphicsExtractor g, Font font,
                                        SearchIndex.SearchResult result,
                                        int x, int y, int w, int h,
                                        boolean hovering, boolean selected, boolean favorite,
@@ -99,10 +99,10 @@ public final class SearchItemCardRenderer {
         int catIconY = y + (h - CAT_ICON_PX) / 2;
 
         // (1) アイテムアイコン + スタック数バッジ
-        LargeIconRenderer.render(g, stack, itemIconX, itemIconY, STD_ICON_PX, false, font);
+        LargeIconRenderer.extractRenderState(g, stack, itemIconX, itemIconY, STD_ICON_PX, false, font);
         ItemStack labelStack = stack.copy();
         labelStack.setCount(Math.min(result.count(), 99));
-        g.renderItemDecorations(font, labelStack, itemIconX, itemIconY);
+        g.itemDecorations(font, labelStack, itemIconX, itemIconY);
         if (favorite && highlightConfig) drawFavoriteGlow(g, itemIconX, itemIconY);
 
         // (2) 距離テキスト幅を先に計算 (= 右端配置の起点に使う)
@@ -127,7 +127,7 @@ public final class SearchItemCardRenderer {
             int distLeftLTR = x + w - pad - distW;
             catIconX = distLeftLTR - catGap - CAT_ICON_PX;
         }
-        LargeIconRenderer.render(g, catIcon, catIconX, catIconY, CAT_ICON_PX, false, font);
+        LargeIconRenderer.extractRenderState(g, catIcon, catIconX, catIconY, CAT_ICON_PX, false, font);
 
         // (4) 名前 (= マーキー対応)。 アイテムアイコンとカテゴリアイコンの間の領域を使う。
         int nameLeft, nameRight;
@@ -148,7 +148,7 @@ public final class SearchItemCardRenderer {
         if (distText != null) {
             int dx = rtl ? (x + pad) : (x + w - pad - distW);
             int dy = nameY;
-            g.drawString(font, distText, dx, dy, ThemeColorResolver.TEXT_SECONDARY, false);
+            g.text(font, distText, dx, dy, ThemeColorResolver.TEXT_SECONDARY, false);
         }
 
         // (5) 補助情報 (= サブテキスト: 種別 + 座標) — 文字 1 行ぶん下に出す
@@ -182,7 +182,7 @@ public final class SearchItemCardRenderer {
                     subText = subText + "…";
                     if (rtl) sx = nameLeft + nameW - font.width(subText);
                 }
-                g.drawString(font, subText, sx, subY, ThemeColorResolver.TEXT_SECONDARY, false);
+                g.text(font, subText, sx, subY, ThemeColorResolver.TEXT_SECONDARY, false);
             }
         }
     }
@@ -217,7 +217,7 @@ public final class SearchItemCardRenderer {
     // LIST モード (= 1 行 アイコン + 名前)
     // ════════════════════════════════════════════════════════════════════
 
-    private static void renderList(GuiGraphics g, Font font,
+    private static void renderList(GuiGraphicsExtractor g, Font font,
                                    SearchIndex.SearchResult result,
                                    int x, int y, int w, int h,
                                    boolean hovering, boolean selected, boolean favorite,
@@ -230,11 +230,11 @@ public final class SearchItemCardRenderer {
 
         int iconX = rtl ? (x + w - 4 - STD_ICON_PX) : (x + 4);
         int iconY = y + (h - STD_ICON_PX) / 2;
-        LargeIconRenderer.render(g, stack, iconX, iconY, STD_ICON_PX, false, font);
+        LargeIconRenderer.extractRenderState(g, stack, iconX, iconY, STD_ICON_PX, false, font);
         if (favorite && highlightConfig) drawFavoriteGlow(g, iconX, iconY);
         ItemStack labelStack = stack.copy();
         labelStack.setCount(Math.min(result.count(), 99));
-        g.renderItemDecorations(font, labelStack, iconX, iconY);
+        g.itemDecorations(font, labelStack, iconX, iconY);
 
         Component name = buildNameComponent(stack, result.count());
         int textY = y + (h - font.lineHeight) / 2;
@@ -253,7 +253,7 @@ public final class SearchItemCardRenderer {
     // LARGE GRID モード (= 大アイコン + 短い名前)
     // ════════════════════════════════════════════════════════════════════
 
-    private static void renderLargeGrid(GuiGraphics g, Font font,
+    private static void renderLargeGrid(GuiGraphicsExtractor g, Font font,
                                         SearchIndex.SearchResult result,
                                         int x, int y, int w, int h,
                                         boolean hovering, boolean selected, boolean favorite,
@@ -266,14 +266,14 @@ public final class SearchItemCardRenderer {
         int iconPx = Math.min(LARGE_ICON_PX, Math.min(w - 4, h - 10));
         int iconX = x + (w - iconPx) / 2;
         int iconY = y + 2;
-        LargeIconRenderer.render(g, stack, iconX, iconY, iconPx, false, font);
+        LargeIconRenderer.extractRenderState(g, stack, iconX, iconY, iconPx, false, font);
         if (favorite && highlightConfig) drawFavoriteGlow(g, iconX, iconY);
         // 数量バッジは 16px 規準で描画 (= 大アイコンの右下に綺麗に乗る)
-        // GuiGraphics#renderItemDecorations は 16px ベース → 大アイコンに合わせるため別途位置調整
+        // GuiGraphicsExtractor#renderItemDecorations は 16px ベース → 大アイコンに合わせるため別途位置調整
         if (result.count() > 1) {
             String countText = String.valueOf(Math.min(result.count(), 999));
             int cw = font.width(countText);
-            g.drawString(font, countText,
+            g.text(font, countText,
                     iconX + iconPx - cw - 1,
                     iconY + iconPx - font.lineHeight,
                     ThemeColorResolver.TEXT_PRIMARY, true);
@@ -290,7 +290,7 @@ public final class SearchItemCardRenderer {
     // COMPACT GRID モード (= 16x16 アイコン高密度 + 数量バッジ)
     // ════════════════════════════════════════════════════════════════════
 
-    private static void renderCompactGrid(GuiGraphics g, Font font,
+    private static void renderCompactGrid(GuiGraphicsExtractor g, Font font,
                                           SearchIndex.SearchResult result,
                                           int x, int y, int w, int h,
                                           boolean hovering, boolean selected, boolean favorite,
@@ -300,18 +300,18 @@ public final class SearchItemCardRenderer {
 
         int iconX = x + (w - STD_ICON_PX) / 2;
         int iconY = y + (h - STD_ICON_PX) / 2;
-        LargeIconRenderer.render(g, stack, iconX, iconY, STD_ICON_PX, false, font);
+        LargeIconRenderer.extractRenderState(g, stack, iconX, iconY, STD_ICON_PX, false, font);
         if (favorite && highlightConfig) drawFavoriteGlow(g, iconX, iconY);
         ItemStack labelStack = stack.copy();
         labelStack.setCount(Math.min(result.count(), 99));
-        g.renderItemDecorations(font, labelStack, iconX, iconY);
+        g.itemDecorations(font, labelStack, iconX, iconY);
     }
 
     // ════════════════════════════════════════════════════════════════════
     // ICON ONLY モード (= 数量バッジ無し / カテゴリラベル無し / アイコンのみ)
     // ════════════════════════════════════════════════════════════════════
 
-    private static void renderIconOnly(GuiGraphics g, Font font,
+    private static void renderIconOnly(GuiGraphicsExtractor g, Font font,
                                        SearchIndex.SearchResult result,
                                        int x, int y, int w, int h,
                                        boolean hovering, boolean selected, boolean favorite,
@@ -322,7 +322,7 @@ public final class SearchItemCardRenderer {
         int iconX = x + (w - STD_ICON_PX) / 2;
         int iconY = y + (h - STD_ICON_PX) / 2;
         // <b>renderItemDecorations は呼ばない</b> (= stack count / durability / extra labels を非表示)
-        LargeIconRenderer.render(g, stack, iconX, iconY, STD_ICON_PX, false, font);
+        LargeIconRenderer.extractRenderState(g, stack, iconX, iconY, STD_ICON_PX, false, font);
         if (favorite && highlightConfig) drawFavoriteGlow(g, iconX, iconY);
     }
 
@@ -330,7 +330,7 @@ public final class SearchItemCardRenderer {
     // 共通: 選択/ホバーの背景描画
     // ════════════════════════════════════════════════════════════════════
 
-    private static void drawSelectionAndHover(GuiGraphics g, int x, int y, int w, int h,
+    private static void drawSelectionAndHover(GuiGraphicsExtractor g, int x, int y, int w, int h,
                                               boolean hovering, boolean selected) {
         // 選択時は <b>薄い黄色の塗りつぶしのみ</b> (= 枠線・アクセントバーは外側の list 枠で表現)。
         if (selected) {
@@ -342,7 +342,7 @@ public final class SearchItemCardRenderer {
     }
 
     /** お気に入り行のアイコン左上に小さな ★ 発光ドット (Shader 環境でも単純な fill のみで安全)。 */
-    private static void drawFavoriteGlow(GuiGraphics g, int iconX, int iconY) {
+    private static void drawFavoriteGlow(GuiGraphicsExtractor g, int iconX, int iconY) {
         int dx = iconX - 1;
         int dy = iconY - 1;
         g.fill(dx, dy + 1, dx + 3, dy + 2, ThemeColorResolver.FAVORITE_GLOW);

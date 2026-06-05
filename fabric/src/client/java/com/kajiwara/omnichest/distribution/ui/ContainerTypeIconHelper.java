@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>
  * Auto Sort プレビュー等で 「コンテナ種別」 を、 カスタム画像や絵文字ではなく
- * <b>実際の Minecraft アイテム</b> ({@code GuiGraphics.renderItem}) で示すために使う。
+ * <b>実際の Minecraft アイテム</b> ({@code GuiGraphicsExtractor.renderItem}) で示すために使う。
  * 例: チェスト → チェスト、 シュルカー → シュルカーボックス、 エンダーチェスト → エンダーチェスト。
  * 未対応/不明な種別はチェストアイコンにフォールバックする。
  */

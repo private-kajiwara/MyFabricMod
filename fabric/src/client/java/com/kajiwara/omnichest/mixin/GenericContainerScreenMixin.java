@@ -20,7 +20,7 @@ import com.kajiwara.omnichest.util.DepositMatchingHelper;
 import com.kajiwara.omnichest.util.StackCompactor;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -175,8 +175,8 @@ public abstract class GenericContainerScreenMixin extends Screen implements Omni
      *
      * 設定でオフにできる ({@link com.kajiwara.omnichest.classify.ClassifyConfig#showCategoryBadge})。
      */
-    @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", at = @At("TAIL"))
-    private void cits$renderCategoryBadge(GuiGraphics g, int mouseX, int mouseY, float partialTick,
+    @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V", at = @At("TAIL"))
+    private void cits$renderCategoryBadge(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick,
             CallbackInfo ci) {
         // Main Menu Visibility: 「カテゴリインジケータ」 OFF ならバッジ自体を出さない (= 表示のみ。
         // 分類キャッシュ / 予測ロジックはそのまま動き続ける)。
@@ -251,8 +251,8 @@ public abstract class GenericContainerScreenMixin extends Screen implements Omni
      * <p>
      * 表示条件: 右列ボタンが生成された (= deposit ボタンが存在する) 画面のみ。
      */
-    @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", at = @At("TAIL"))
-    private void cits$renderControlsHelp(GuiGraphics g, int mouseX, int mouseY, float partialTick,
+    @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V", at = @At("TAIL"))
+    private void cits$renderControlsHelp(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick,
             CallbackInfo ci) {
         // 対応コンテナでのみ表示 (= Deposit ボタンの有無に依存させない: 個別非表示でも消えないように)。
         if (!this.cits$supportedContainer)
@@ -423,7 +423,7 @@ public abstract class GenericContainerScreenMixin extends Screen implements Omni
         int lineY = scaled ? 0 : startY;
 
         for (net.minecraft.util.FormattedCharSequence tl : titleLines) {
-            g.drawString(this.font, tl, originTextX, lineY, CITS_HELP_COLOR_TITLE, false);
+            g.text(this.font, tl, originTextX, lineY, CITS_HELP_COLOR_TITLE, false);
             lineY += CITS_HELP_LINE_HEIGHT;
         }
         // 区切り線。
@@ -436,7 +436,7 @@ public abstract class GenericContainerScreenMixin extends Screen implements Omni
         for (int i = 0; i < bodyLines.size(); i++) {
             java.util.List<net.minecraft.util.FormattedCharSequence> wrapped = bodyLines.get(i);
             for (int w = 0; w < wrapped.size(); w++) {
-                g.drawString(this.font, wrapped.get(w), originTextX, lineY,
+                g.text(this.font, wrapped.get(w), originTextX, lineY,
                         CITS_HELP_COLOR_BODY, false);
                 // 同じ項目内の continuation は LINE_HEIGHT、 最後の行 → 次の項目は ENTRY_SPACING。
                 boolean lastWrapInEntry = (w == wrapped.size() - 1);
@@ -686,8 +686,8 @@ public abstract class GenericContainerScreenMixin extends Screen implements Omni
     /**
      * ボタン群の背景パネルを描画する。 描かない条件 (Deposit ボタン未生成 etc.) では即 return。
      */
-    @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", at = @At("HEAD"))
-    private void cits$renderButtonPanel(GuiGraphics g, int mouseX, int mouseY, float partialTick,
+    @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V", at = @At("HEAD"))
+    private void cits$renderButtonPanel(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick,
             CallbackInfo ci) {
         if (!this.cits$supportedContainer) return;
 

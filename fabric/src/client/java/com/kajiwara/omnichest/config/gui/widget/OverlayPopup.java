@@ -1,6 +1,6 @@
 package com.kajiwara.omnichest.config.gui.widget;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * Config 画面に上から被せる popup の共通インタフェース。
@@ -20,7 +20,7 @@ public interface OverlayPopup {
     boolean isClosed();
 
     /** popup を画面に描く。 通常 Screen の最後 (= ボタン群より後) で呼ばれる。 */
-    void render(GuiGraphics g, int mouseX, int mouseY);
+    void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY);
 
     /**
      * popup へのクリック。 popup が開いている間は Screen の通常クリック処理より前に呼ばれる。

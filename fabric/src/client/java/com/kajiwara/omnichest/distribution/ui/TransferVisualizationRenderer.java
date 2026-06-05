@@ -4,7 +4,7 @@ import com.kajiwara.omnichest.classify.StorageCategory;
 import com.kajiwara.omnichest.client.gui.search.LargeIconRenderer;
 import com.kajiwara.omnichest.client.gui.search.layout.ThemeColorResolver;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 
 import java.time.Instant;
@@ -51,7 +51,7 @@ public final class TransferVisualizationRenderer {
      * @param animSpeed   アニメ速度係数 (= 0 で停止)
      * @param rtl         RTL レイアウトか (= 左右と矢印向きを反転)
      */
-    public static void renderRow(GuiGraphics g, Font font, int x, int y, int w, int h,
+    public static void renderRow(GuiGraphicsExtractor g, Font font, int x, int y, int w, int h,
             ItemStack stack, int count, String fromLabel, String toLabel,
             StorageCategory category, long timeMillis, boolean success,
             boolean animate, double animSpeed, boolean rtl) {
@@ -70,10 +70,10 @@ public final class TransferVisualizationRenderer {
         // ─── アイテムアイコン + 数量バッジ ───
         int iconX = rtl ? (contentRight - ICON_PX) : contentLeft;
         int iconY = y + (h - ICON_PX) / 2;
-        LargeIconRenderer.render(g, stack, iconX, iconY, ICON_PX, false, font);
+        LargeIconRenderer.extractRenderState(g, stack, iconX, iconY, ICON_PX, false, font);
         ItemStack badge = stack.copy();
         badge.setCount(Math.max(1, Math.min(count, 99)));
-        g.renderItemDecorations(font, badge, iconX, iconY);
+        g.itemDecorations(font, badge, iconX, iconY);
 
         // ─── 行を 3 ゾーンに分ける: [名前+数量] [矢印] [カテゴリ色ドット + 行き先] ───
         int innerLeft = rtl ? contentLeft : (iconX + ICON_PX + 4);
@@ -89,18 +89,18 @@ public final class TransferVisualizationRenderer {
 
         if (!rtl) {
             int nameX = innerLeft;
-            g.drawString(font, trim(font, nameText, nameW), nameX, textY,
+            g.text(font, trim(font, nameText, nameW), nameX, textY,
                     ThemeColorResolver.TEXT_PRIMARY, false);
             int arrowX1 = nameX + nameW + 2;
             int arrowX2 = arrowX1 + arrowW - 2;
             drawArrow(g, arrowX1, arrowX2, y + h / 2, catColor, false, animate, animSpeed);
             int dotX = arrowX2 + 4;
             g.fill(dotX, y + h / 2 - 2, dotX + 4, y + h / 2 + 2, catColor);
-            g.drawString(font, trim(font, destText, destW), dotX + 7, textY,
+            g.text(font, trim(font, destText, destW), dotX + 7, textY,
                     success ? ThemeColorResolver.TEXT_PRIMARY : 0xFFFF6B6B, false);
         } else {
             int nameX = innerRight - Math.min(nameW, font.width(trim(font, nameText, nameW)));
-            g.drawString(font, trim(font, nameText, nameW), nameX, textY,
+            g.text(font, trim(font, nameText, nameW), nameX, textY,
                     ThemeColorResolver.TEXT_PRIMARY, false);
             int arrowX2 = nameX - 4;
             int arrowX1 = arrowX2 - arrowW + 2;
@@ -108,14 +108,14 @@ public final class TransferVisualizationRenderer {
             int dotX = arrowX1 - 8;
             g.fill(dotX, y + h / 2 - 2, dotX + 4, y + h / 2 + 2, catColor);
             String dt = trim(font, destText, destW);
-            g.drawString(font, dt, dotX - 4 - font.width(dt), textY,
+            g.text(font, dt, dotX - 4 - font.width(dt), textY,
                     success ? ThemeColorResolver.TEXT_PRIMARY : 0xFFFF6B6B, false);
         }
 
         // ─── 時刻描画 ───
         if (timeText != null) {
             int tx = rtl ? (x + PAD) : (x + w - PAD - timeW);
-            g.drawString(font, timeText, tx, textY, ThemeColorResolver.TEXT_DIM, false);
+            g.text(font, timeText, tx, textY, ThemeColorResolver.TEXT_DIM, false);
         }
 
         // ─── 失敗マーカー ───
@@ -124,7 +124,7 @@ public final class TransferVisualizationRenderer {
             int mw = font.width(mark);
             int mx = rtl ? (x + w - PAD - ICON_PX - mw - 2) : (x + PAD + ICON_PX + 2);
             // アイコンの上に小さく重ねる代わりに、 行頭付近に控えめに置く。
-            g.drawString(font, mark, mx, y + 1, 0xFFFF5555, false);
+            g.text(font, mark, mx, y + 1, 0xFFFF5555, false);
         }
     }
 
@@ -133,7 +133,7 @@ public final class TransferVisualizationRenderer {
      *
      * @param leftward 矢じりを左向きにするか (= RTL)
      */
-    private static void drawArrow(GuiGraphics g, int x1, int x2, int cy, int color,
+    private static void drawArrow(GuiGraphicsExtractor g, int x1, int x2, int cy, int color,
             boolean leftward, boolean animate, double animSpeed) {
         if (x2 <= x1) {
             return;

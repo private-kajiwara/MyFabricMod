@@ -4,7 +4,7 @@ import com.kajiwara.omnichest.i18n.Keys;
 import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
@@ -128,7 +128,7 @@ public final class ScrollableSettingsList {
      *
      * @param rtl RTL レイアウトか (= テキストを右寄せ / スクロールバーを左へ)
      */
-    public void render(GuiGraphics g, int left, int top, int right, int bottom,
+    public void extractRenderState(GuiGraphicsExtractor g, int left, int top, int right, int bottom,
             boolean rtl, int mouseX, int mouseY) {
         this.vpLeft = left;
         this.vpTop = top;
@@ -145,7 +145,7 @@ public final class ScrollableSettingsList {
             Component msg = OmniChestLocale.get(
                     Keys.RESET_POPUP_NO_CHANGES, "All settings are at default values.");
             int tw = font.width(msg);
-            g.drawString(font, msg, (left + right) / 2 - tw / 2,
+            g.text(font, msg, (left + right) / 2 - tw / 2,
                     top + viewportH / 2 - 4, COLOR_EMPTY, false);
             return;
         }
@@ -175,19 +175,19 @@ public final class ScrollableSettingsList {
         }
     }
 
-    private void drawHeader(GuiGraphics g, Font font, HeaderLine h,
+    private void drawHeader(GuiGraphicsExtractor g, Font font, HeaderLine h,
             int left, int right, int y) {
         int textY = y + (h.first() ? 0 : CAT_TOP_GAP) + 2;
         Component label = h.label();
         if (this.rtl) {
             int tw = font.width(label);
-            g.drawString(font, label, right - tw, textY, COLOR_CATEGORY, false);
+            g.text(font, label, right - tw, textY, COLOR_CATEGORY, false);
         } else {
-            g.drawString(font, label, left, textY, COLOR_CATEGORY, false);
+            g.text(font, label, left, textY, COLOR_CATEGORY, false);
         }
     }
 
-    private void drawSetting(GuiGraphics g, Font font, SettingLine s,
+    private void drawSetting(GuiGraphicsExtractor g, Font font, SettingLine s,
             int left, int right, int y) {
         // 1 行目: 設定名 (読み開始側 + INDENT_NAME)。
         drawAligned(g, font, s.name(), left + INDENT_NAME, right, y + 1, COLOR_SETTING);
@@ -208,29 +208,29 @@ public final class ScrollableSettingsList {
         if (this.rtl) {
             // RTL: 右端から「現在値 → 既定値」 を右詰めで。 視覚順は LTR と同じ並びで読みやすさを優先。
             int startX = right - INDENT_VALUE - totalW;
-            g.drawString(font, cur, startX, valueY, COLOR_VALUE, false);
-            g.drawString(font, ar, startX + curW, valueY, COLOR_ARROW, false);
-            g.drawString(font, def, startX + curW + arW, valueY, COLOR_DEFAULT, false);
+            g.text(font, cur, startX, valueY, COLOR_VALUE, false);
+            g.text(font, ar, startX + curW, valueY, COLOR_ARROW, false);
+            g.text(font, def, startX + curW + arW, valueY, COLOR_DEFAULT, false);
         } else {
             int startX = left + INDENT_VALUE;
-            g.drawString(font, cur, startX, valueY, COLOR_VALUE, false);
-            g.drawString(font, ar, startX + curW, valueY, COLOR_ARROW, false);
-            g.drawString(font, def, startX + curW + arW, valueY, COLOR_DEFAULT, false);
+            g.text(font, cur, startX, valueY, COLOR_VALUE, false);
+            g.text(font, ar, startX + curW, valueY, COLOR_ARROW, false);
+            g.text(font, def, startX + curW + arW, valueY, COLOR_DEFAULT, false);
         }
     }
 
     /** LTR は左寄せ、 RTL は右寄せでテキストを描く。 */
-    private void drawAligned(GuiGraphics g, Font font, Component text,
+    private void drawAligned(GuiGraphicsExtractor g, Font font, Component text,
             int left, int right, int y, int color) {
         if (this.rtl) {
             int tw = font.width(text);
-            g.drawString(font, text, right - tw, y, color, false);
+            g.text(font, text, right - tw, y, color, false);
         } else {
-            g.drawString(font, text, left, y, color, false);
+            g.text(font, text, left, y, color, false);
         }
     }
 
-    private void drawScrollbar(GuiGraphics g, int left, int top, int right, int bottom,
+    private void drawScrollbar(GuiGraphicsExtractor g, int left, int top, int right, int bottom,
             int viewportH, int total, int mouseX, int mouseY) {
         int sbX = this.rtl ? left : right - SB_W;
         g.fill(sbX, top, sbX + SB_W, bottom, COLOR_SB_TRACK);

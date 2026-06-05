@@ -2,7 +2,7 @@ package com.kajiwara.omnichest.config.gui.widget;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
@@ -74,7 +74,7 @@ public final class TextDescriptionRow extends RowEntry {
     }
 
     @Override
-    public void render(GuiGraphics g, int contentLeft, int rowY, int width,
+    public void extractRenderState(GuiGraphicsExtractor g, int contentLeft, int rowY, int width,
             int mouseX, int mouseY, float partialTick) {
         Font font = Minecraft.getInstance().font;
         boolean rtl = com.kajiwara.omnichest.i18n.RTLLayoutManager.get().isRtl();
@@ -83,7 +83,7 @@ public final class TextDescriptionRow extends RowEntry {
             int fallbackX = rtl
                     ? contentLeft + width - RIGHT_PADDING - font.width(this.label)
                     : contentLeft + LEFT_PADDING;
-            g.drawString(font, this.label, fallbackX,
+            g.text(font, this.label, fallbackX,
                     rowY + (getHeight() - 8) / 2, 0xFFAAAAAA, false);
             return;
         }
@@ -92,7 +92,7 @@ public final class TextDescriptionRow extends RowEntry {
             int lineX = rtl
                     ? contentLeft + width - RIGHT_PADDING - font.width(line)
                     : contentLeft + LEFT_PADDING;
-            g.drawString(font, line, lineX, lineY, 0xFFAAAAAA, false);
+            g.text(font, line, lineX, lineY, 0xFFAAAAAA, false);
             lineY += LINE_HEIGHT;
         }
     }

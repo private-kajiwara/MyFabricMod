@@ -3,7 +3,7 @@ package com.kajiwara.omnichest.distribution;
 import com.kajiwara.omnichest.OmniChest;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -16,7 +16,7 @@ import net.minecraft.world.item.ItemStack;
  * <ul>
  *   <li>inventory の直接書換は <b>一切行わない</b>。 必ず
  *       {@code mc.gameMode.handleInventoryMouseClick} (= バニラクリック互換) 経由のみ。</li>
- *   <li>主たる移動は {@link ClickType#QUICK_MOVE} (= shift-click) で行う。 これは
+ *   <li>主たる移動は {@link ContainerInput#QUICK_MOVE} (= shift-click) で行う。 これは
  *       バニラの {@code quickMoveStack} に委譲されるため:
  *       <ul>
  *         <li>容量を超えた分は source に残る (= overflow / 紛失なし)</li>
@@ -24,7 +24,7 @@ import net.minecraft.world.item.ItemStack;
  *         <li>地面へ落とさない (= drop なし)</li>
  *       </ul>
  *       という 4 つの安全要件 (drop / dupe / cursor 残留 / overflow) を構造的に満たす。</li>
- *   <li>{@link ClickType#THROW} は絶対に発行しない。</li>
+ *   <li>{@link ContainerInput#THROW} は絶対に発行しない。</li>
  *   <li>各操作前に slot index の範囲、 対象スタックの一致を検証する (= Move Validation)。</li>
  * </ul>
  *
@@ -89,8 +89,8 @@ public final class SafeMoveExecutor {
             return false;
         }
         try {
-            mc.gameMode.handleInventoryMouseClick(
-                    menu.containerId, slotIndex, 0, ClickType.QUICK_MOVE, mc.player);
+            mc.gameMode.handleContainerInput(
+                    menu.containerId, slotIndex, 0, ContainerInput.QUICK_MOVE, mc.player);
             return true;
         } catch (Exception ex) {
             OmniChest.LOGGER.warn("[omnichest][distribution] quickMove 失敗 (slot={}): {}",
@@ -139,8 +139,8 @@ public final class SafeMoveExecutor {
             return false;
         }
         try {
-            mc.gameMode.handleInventoryMouseClick(
-                    menu.containerId, slotIndex, 0, ClickType.PICKUP, mc.player);
+            mc.gameMode.handleContainerInput(
+                    menu.containerId, slotIndex, 0, ContainerInput.PICKUP, mc.player);
             return true;
         } catch (Exception ex) {
             OmniChest.LOGGER.warn("[omnichest][distribution] pickup 失敗 (slot={}): {}",

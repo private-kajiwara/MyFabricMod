@@ -17,7 +17,7 @@ import com.kajiwara.omnichest.i18n.OmniChestLocale;
 import com.kajiwara.omnichest.i18n.RTLLayoutManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -210,12 +210,12 @@ public final class DistributionScreen extends Screen {
     // ════════════════════════════════════════════════════════════════════
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        super.render(g, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
         Font font = this.font;
 
         // タイトル。
-        g.drawCenteredString(font, this.getTitle(), this.width / 2,
+        g.centeredText(font, this.getTitle(), this.width / 2,
                 UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_PRIMARY);
 
         // サマリ (登録数 / 予約数 / キュー数)。
@@ -227,10 +227,10 @@ public final class DistributionScreen extends Screen {
         boolean rtl = RTLLayoutManager.get().isRtl();
         if (rtl) {
             int sw = font.width(summary);
-            g.drawString(font, summary, this.width - UILayoutMetrics.SCREEN_INSET_X - sw,
+            g.text(font, summary, this.width - UILayoutMetrics.SCREEN_INSET_X - sw,
                     UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
         } else {
-            g.drawString(font, summary, UILayoutMetrics.SCREEN_INSET_X,
+            g.text(font, summary, UILayoutMetrics.SCREEN_INSET_X,
                     UILayoutMetrics.SCREEN_INSET_TOP, ThemeColorResolver.TEXT_SECONDARY, false);
         }
 
@@ -255,11 +255,11 @@ public final class DistributionScreen extends Screen {
         // フッターヒント。
         Component hint = OmniChestLocale.get("omnichest.distribution.hint",
                 "Open a chest → [Set Category] to register  /  [Auto Distribute] to sort  /  ESC = close");
-        g.drawCenteredString(font, hint, this.width / 2,
+        g.centeredText(font, hint, this.width / 2,
                 this.height - UILayoutMetrics.FOOTER_HINT_FROM_BOTTOM, ThemeColorResolver.TEXT_DIM);
     }
 
-    private void renderTabs(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderTabs(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         // パネル背景。
         g.fill(tabX, tabTop, tabX + tabW, tabBottom, ThemeColorResolver.CATEGORY_PANEL_BG);
         g.enableScissor(tabX, tabTop, tabX + tabW, tabBottom);
@@ -282,7 +282,7 @@ public final class DistributionScreen extends Screen {
                 // アイコン中央。
                 int iconX = tabX + (tabW - 16) / 2;
                 int iconY = y + (cell - 16) / 2;
-                LargeIconRenderer.render(g, new ItemStack(tab.icon()), iconX, iconY, 16, false, this.font);
+                LargeIconRenderer.extractRenderState(g, new ItemStack(tab.icon()), iconX, iconY, 16, false, this.font);
                 y += cell + gap;
             }
         } finally {
@@ -303,7 +303,7 @@ public final class DistributionScreen extends Screen {
         }
     }
 
-    private void renderList(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderList(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         g.fill(listX, listTop, listRight, listBottom, ThemeColorResolver.LIST_BG);
         g.enableScissor(listX + 1, listTop + 1, listRight - 1, listBottom - 1);
         try {
@@ -321,7 +321,7 @@ public final class DistributionScreen extends Screen {
     }
 
     // ─── STORAGE ───
-    private void renderStorageList(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderStorageList(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         List<StorageAssignment> list = filteredAssignments();
         if (list.isEmpty()) {
             drawEmpty(g, OmniChestLocale.get("omnichest.distribution.empty.storage",
@@ -343,7 +343,7 @@ public final class DistributionScreen extends Screen {
         }
     }
 
-    private void renderStorageRow(GuiGraphics g, StorageAssignment a, int x, int y, int w, int h,
+    private void renderStorageRow(GuiGraphicsExtractor g, StorageAssignment a, int x, int y, int w, int h,
             boolean hover, @Nullable ResourceKey<Level> dim, @Nullable Vec3 playerPos, boolean rtl) {
         if (hover) {
             g.fill(x, y, x + w, y + h, ThemeColorResolver.ROW_HOVER_OVERLAY);
@@ -357,7 +357,7 @@ public final class DistributionScreen extends Screen {
         // カテゴリ代表アイコン。
         int iconX = rtl ? (x + w - pad - 3 - 4 - 16) : (x + pad + 3 + 4);
         int iconY = y + (h - 16) / 2;
-        LargeIconRenderer.render(g, new ItemStack(categoryIcon(a.category())), iconX, iconY, 16, false, this.font);
+        LargeIconRenderer.extractRenderState(g, new ItemStack(categoryIcon(a.category())), iconX, iconY, 16, false, this.font);
 
         int textLeft = rtl ? (x + pad) : (iconX + 16 + 4);
         int line1Y = y + 3;
@@ -366,7 +366,7 @@ public final class DistributionScreen extends Screen {
         // 名前 (+ ★)。
         String name = a.name();
         Component nameC = a.favorite() ? Component.literal("★ " + name) : Component.literal(name);
-        g.drawString(this.font, nameC, textLeft, line1Y, ThemeColorResolver.TEXT_PRIMARY, false);
+        g.text(this.font, nameC, textLeft, line1Y, ThemeColorResolver.TEXT_PRIMARY, false);
 
         // 2 行目: カテゴリ • P{priority} • used/total • distance。
         StringBuilder sub = new StringBuilder();
@@ -383,14 +383,14 @@ public final class DistributionScreen extends Screen {
             double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
             sub.append("  •  ").append(String.format(Locale.ROOT, "%.0fm", dist));
         }
-        g.drawString(this.font, sub.toString(), textLeft, line2Y, ThemeColorResolver.TEXT_SECONDARY, false);
+        g.text(this.font, sub.toString(), textLeft, line2Y, ThemeColorResolver.TEXT_SECONDARY, false);
 
         // 行区切り線 (= 反復原則)。
         g.fill(x + 2, y + h - 1, x + w - 2, y + h, ThemeColorResolver.ROW_SEPARATOR);
     }
 
     // ─── PENDING ───
-    private void renderPendingList(GuiGraphics g) {
+    private void renderPendingList(GuiGraphicsExtractor g) {
         List<PendingTransfer> list = VirtualTransferRegistry.get().all();
         if (list.isEmpty()) {
             drawEmpty(g, OmniChestLocale.get("omnichest.distribution.empty.pending",
@@ -413,7 +413,7 @@ public final class DistributionScreen extends Screen {
     }
 
     // ─── QUEUE ───
-    private void renderQueueList(GuiGraphics g) {
+    private void renderQueueList(GuiGraphicsExtractor g) {
         List<DistributionQueue.MoveOp> ops = DistributionQueue.get().snapshot();
         if (ops.isEmpty()) {
             drawEmpty(g, OmniChestLocale.get("omnichest.distribution.empty.queue",
@@ -439,7 +439,7 @@ public final class DistributionScreen extends Screen {
     }
 
     // ─── HISTORY / FAILED ───
-    private void renderHistoryList(GuiGraphics g, boolean successOnly) {
+    private void renderHistoryList(GuiGraphicsExtractor g, boolean successOnly) {
         List<TransferRecord> list = successOnly
                 ? TransferHistoryManager.get().successes()
                 : TransferHistoryManager.get().failures();
@@ -462,14 +462,14 @@ public final class DistributionScreen extends Screen {
         }
     }
 
-    private void drawEmpty(GuiGraphics g, Component msg) {
+    private void drawEmpty(GuiGraphicsExtractor g, Component msg) {
         int tw = this.font.width(msg);
-        g.drawString(this.font, msg, (listX + listRight) / 2 - tw / 2,
+        g.text(this.font, msg, (listX + listRight) / 2 - tw / 2,
                 (listTop + listBottom) / 2 - this.font.lineHeight / 2,
                 ThemeColorResolver.TEXT_SECONDARY, false);
     }
 
-    private void drawListFrame(GuiGraphics g) {
+    private void drawListFrame(GuiGraphicsExtractor g) {
         int frame = ThemeColorResolver.TAB_ACTIVE_LINE;
         int lt = UILayoutMetrics.LIST_FRAME_THICKNESS;
         g.fill(listX, listTop, listRight, listTop + lt, frame);
@@ -478,7 +478,7 @@ public final class DistributionScreen extends Screen {
         g.fill(listRight - lt, listTop, listRight, listBottom, frame);
     }
 
-    private void renderScrollbar(GuiGraphics g) {
+    private void renderScrollbar(GuiGraphicsExtractor g) {
         int viewH = listBottom - listTop;
         int contentH = contentHeight();
         if (contentH <= viewH) {

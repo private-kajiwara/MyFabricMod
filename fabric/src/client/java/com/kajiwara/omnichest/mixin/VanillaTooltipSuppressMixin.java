@@ -1,7 +1,7 @@
 package com.kajiwara.omnichest.mixin;
 
 import com.kajiwara.omnichest.client.gui.search.preview.TooltipVisibilityController;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -38,9 +38,9 @@ public abstract class VanillaTooltipSuppressMixin extends Screen {
         super(title);
     }
 
-    @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/GuiGraphics;II)V",
+    @Inject(method = "extractTooltip(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V",
             at = @At("HEAD"), cancellable = true)
-    private void omnichest$suppressTooltipForAltPreview(GuiGraphics g, int mouseX, int mouseY,
+    private void omnichest$suppressTooltipForAltPreview(GuiGraphicsExtractor g, int mouseX, int mouseY,
             CallbackInfo ci) {
         Slot hovered = ((AbstractContainerScreenAccessor) (Object) this).cits$getHoveredSlot();
         if (hovered == null) {

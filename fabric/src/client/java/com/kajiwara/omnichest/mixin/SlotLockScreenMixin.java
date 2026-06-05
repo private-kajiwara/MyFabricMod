@@ -10,7 +10,7 @@ import com.kajiwara.omnichest.slotlock.SlotLockManager;
 import com.kajiwara.omnichest.slotlock.SlotOverlayRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
@@ -88,15 +88,15 @@ public abstract class SlotLockScreenMixin extends Screen {
      * 1 スロット描画の末尾で overlay を描く。
      *
      * <p>
-     * renderSlot の呼び出し中は GuiGraphics の matrix が既に
+     * renderSlot の呼び出し中は GuiGraphicsExtractor の matrix が既に
      * {@code (leftPos, topPos)} まで translate されているので、
      * {@link Slot#x}, {@link Slot#y} (= GUI 内ローカル座標) で fill すれば実画面座標に乗る。
      */
-    @Inject(method = "renderSlot",
+    @Inject(method = "extractSlot",
             at = @At("TAIL"))
-    private void cits_slotLock$overlay(GuiGraphics g, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
+    private void cits_slotLock$overlay(GuiGraphicsExtractor g, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
         // Renderer 側で「overlay 無効」「ロックでも保護でもない」を全部チェックするので、ここは委譲だけ。
-        // 1.21.11 では renderSlot の signature が (GuiGraphics, Slot, int mouseX, int mouseY) に
+        // 1.21.11 では renderSlot の signature が (GuiGraphicsExtractor, Slot, int mouseX, int mouseY) に
         // 拡張されている。 mouseX/Y は使わないが、引数列を完全一致させないと
         // Mixin が InvalidInjectionException を投げる。
         SlotOverlayRenderer.renderSlot(g, slot);
@@ -117,10 +117,10 @@ public abstract class SlotLockScreenMixin extends Screen {
      * </ul>
      * という最小実装。これを丸ごと差し替え (= cancel) して、自分で「tooltip + 追加行」を描く。
      */
-    @Inject(method = "renderTooltip",
+    @Inject(method = "extractTooltip",
             at = @At("HEAD"),
             cancellable = true)
-    private void cits_slotLock$tooltip(GuiGraphics g, int x, int y, CallbackInfo ci) {
+    private void cits_slotLock$tooltip(GuiGraphicsExtractor g, int x, int y, CallbackInfo ci) {
         if (!SlotLockConfig.get().showTooltipLine)
             return;
         Slot hovered = this.hoveredSlot;
@@ -179,7 +179,7 @@ public abstract class SlotLockScreenMixin extends Screen {
      * ロック切替を発火する。
      *
      * <p>
-     * <b>過去の失敗</b>: 当初は {@code slotClicked(Slot,int,int,ClickType)} HEAD に inject
+     * <b>過去の失敗</b>: 当初は {@code slotClicked(Slot,int,int,ContainerInput)} HEAD に inject
      * したが、 1.21.11 では vanilla {@code mouseClicked} 内で先に
      * {@code quickCraftSlots} の初期化や {@code isSplittingStack} のフラグ操作が走っており、
      * slotClicked HEAD で cancel しても drag 関連の副作用 (= 1 アイテムずつ配布される
