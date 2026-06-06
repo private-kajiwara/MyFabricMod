@@ -4,6 +4,7 @@ import com.kajiwara.omnichest.slotlock.InventoryProtectionLayer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.BlockItem;
@@ -123,7 +124,10 @@ public final class ContainerSorter {
     }
 
     private static int category(ItemStack stack) {
-        String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath();
+        Identifier key = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (key == null)
+            return 5;
+        String id = key.getPath();
 
         if (id.endsWith("_sword") || id.equals("bow") || id.equals("crossbow")
                 || id.equals("trident") || id.equals("mace")) {
