@@ -20,7 +20,9 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Storage Auto Distribution の中枢オーケストレータ。
@@ -223,10 +225,16 @@ public final class StorageDistributionManager {
 
         List<DistributionQueue.MoveOp> ops = new ArrayList<>();
         int appliedTransfers = 0;
+        // 同一行き先に同種アイテムの予約が複数件ある場合 (= addRaw による永続化ロード等) でも、
+        // 1 つの在庫スロットを複数 pending へ二重計上しないよう、 消費済みスロットを追跡する。
+        Set<Integer> consumedSlots = new HashSet<>();
 
         for (PendingTransfer p : list) {
             int found = 0;
             for (int i = slotCount; i < menu.slots.size(); i++) {
+                if (consumedSlots.contains(i)) {
+                    continue;
+                }
                 ItemStack stack = menu.slots.get(i).getItem();
                 if (stack.isEmpty() || !p.matches(stack)) {
                     continue;
@@ -235,6 +243,7 @@ public final class StorageDistributionManager {
                     continue;
                 }
                 ops.add(new DistributionQueue.MoveOp(menu.containerId, i, stack.copy()));
+                consumedSlots.add(i);
                 found += stack.getCount();
             }
             if (found > 0) {
