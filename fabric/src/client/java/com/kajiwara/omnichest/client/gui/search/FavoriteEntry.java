@@ -101,6 +101,11 @@ public final class FavoriteEntry {
      */
     public static FavoriteEntry fromStack(ItemStack stack, @Nullable RegistryAccess registries) {
         Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (id == null) {
+            // 未登録 / 破損アイテムで getKey が null の場合の保険。 itemId は identityKey / toJson で
+            // 参照されるため非 null を保証する (= 既定 ID へ退避。 toStackUnsafe は未知 ID を EMPTY に落とす)。
+            id = Identifier.tryParse("minecraft:air");
+        }
         int hash = stack.getComponents().hashCode(); // 同 components → 同 hash
         String name = stack.has(DataComponents.CUSTOM_NAME)
                 ? stack.getHoverName().getString()

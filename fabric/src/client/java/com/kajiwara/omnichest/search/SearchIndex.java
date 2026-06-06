@@ -387,6 +387,8 @@ public final class SearchIndex {
             if (stack.isEmpty())
                 continue;
             Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+            if (id == null)
+                continue;
             out.merge(id, stack.getCount(), Integer::sum);
         }
         return out;

@@ -63,6 +63,12 @@ public final class TemplateApplyEngine {
         if (mc == null || mc.player == null || menu == null || plan == null || plan.isEmpty())
             return;
 
+        // 二重適用防止: 既に適用クリックを消化中なら今回はスキップ (= 整理側 CategorySortEngine と同じ排他)。
+        // 走行中キューへ別 plan を積むと activeContainerId が再アンカーされず、別チェストへの誤クリックや
+        // cursor 流出の原因になるため、 MoveQueue が空になるまで新規 Apply を受け付けない。
+        if (MoveQueue.get().isBusy())
+            return;
+
         List<MoveQueue.ClickOp> ops = new ArrayList<>(plan.moves().size() * 3);
         for (MovePlan.Move move : plan.moves()) {
             // 「source → target」を PICKUP の連打で表現する。

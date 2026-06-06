@@ -13,6 +13,6 @@ public class OmniChest implements ModInitializer {
     public void onInitialize() {
         // アイテムやブロックの登録など、サーバーとクライアントの両方で必要な処理をここに書きます
         // 今回のModは主にクライアント側(GUI)の処理が中心になるため、ここはシンプルになります
-        LOGGER.info("OmniChest (1.21.1) が初期化されました！");
+        LOGGER.info("OmniChest (1.0.2) が初期化されました！");
     }
 }

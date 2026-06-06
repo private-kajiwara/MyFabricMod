@@ -82,11 +82,14 @@ cd C:\MyFabricMod
 # 特定バージョンをビルド (build<MC_id> 形式; id は '.' → '_')
 .\gradlew build1_21_11
 
-# 登録されている全 MC バージョンを順次ビルド
+# 登録されている全 MC バージョンを順次ビルドし、 成果物を root/dist/ に集約
 .\gradlew buildAll
 
-# 各 fabric/build/libs/*.jar をルート build/libs/ に集約
-.\gradlew collectArtifacts
+# 配布用の最終 jar (現 mod_version のみ) を root/dist/ に集約
+#   buildAll が自動で呼ぶので通常は単独実行不要。
+#   単一 MC の成果物だけ集約したいときは build<MC> と併せて打つ:
+#     .\gradlew build26_1_2 collectDist
+.\gradlew collectDist
 
 # IDE 起動 (推奨バージョン)
 .\gradlew :fabric:runClient
@@ -222,15 +225,56 @@ fabric_api_version=0.142.0+1.21.11
 
 ---
 
+## Mod 本体バージョンを上げる
+
+Mod 本体バージョン (`1.0.2 → 1.0.3` 等) は **MC バージョンとは独立した軸**で、
+1 つの Mod バージョンが複数 MC 向けにビルドされる。 バージョンは
+ルート `gradle.properties` の `mod_version` **1 か所**で一元管理しており
+([single source of truth](gradle.properties))、 ここを変えれば
+
+- 全 jar 名 (`omnichest-<modver>+<mcver>-fabric.jar`)
+- jar 内の `fabric.mod.json` の `version` (processResources の `expand` で同期)
+- 同梱の `omnichest-version-profile.properties`
+- maven publish の version
+
+がすべて自動で追従する。 手で複数ファイルを直す必要はない。
+
+### 恒久的に上げる (リリース時)
+`gradle.properties` の `mod_version` を編集してコミットする:
+```properties
+mod_version=1.0.3
+```
+
+### 一時的に上書きしてビルドする (試し焼き / CI)
+ファイルを編集せず、 コマンドラインで `-Pmod_version` を渡せば上書きできる
+(`-P` が `gradle.properties` の値より優先される):
+```powershell
+.\gradlew buildAll -Pmod_version=1.0.3
+```
+
+### 成果物の出力場所と命名
+| 種類 | 場所 | 例 |
+| --- | --- | --- |
+| per-MC の最終 jar | `fabric/build/libs/<MC>/` | `omnichest-1.0.3+26.1.2-fabric.jar` |
+| 集約 (配布用) | `dist/` (root 直下) | `omnichest-1.0.3+26.1.2-fabric.jar` |
+
+- ファイル名に **Mod バージョンと MC バージョンの両方**が入るため、
+  同じ Mod バージョンの複数 MC 版も、 異なる Mod バージョンも衝突せず共存する。
+- `buildAll` は全 MC ビルド後に `collectDist` を呼び、 **現 `mod_version` の最終 jar だけ**を
+  `dist/` にミラーする (`Sync` なので毎回クリーン)。 旧バージョンや sources/dev jar は
+  混ざらないので、 `dist/` を見れば「今ビルドした成果物」が予測可能な 1 か所に揃う。
+
+---
+
 ## Release 方法
 
 1. `./gradlew validateVersions` が通ることを確認
-2. `./gradlew buildAll` が通ることを確認
-3. `mod_version` をルート `gradle.properties` で更新 → コミット
-4. semver タグを push
+2. `gradle.properties` の `mod_version` を更新 (上記「Mod 本体バージョンを上げる」参照) → コミット
+3. `./gradlew buildAll` が通り、 `dist/` に全 MC 分の jar が揃うことを確認
+4. semver タグを push (`mod_version` と一致させる)
    ```powershell
-   git tag v1.0.1
-   git push origin v1.0.1
+   git tag v1.0.3
+   git push origin v1.0.3
    ```
 5. `.github/workflows/release.yml` が:
    - matrix で全 MC バージョンを並列ビルド

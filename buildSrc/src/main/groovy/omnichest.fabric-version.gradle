@@ -28,7 +28,16 @@ plugins {
 // 1) Registry を読み、 -Pmc または policy.default で対象 Entry を解決
 // ---------------------------------------------------------------------
 def registry = VersionRegistry.load(rootProject.file('versions'))
-def mcParam = providers.gradleProperty('mc').orNull
+// -Pmc=<MC> の解決:
+//   1) 通常の project property (ユーザーが明示的に -Pmc=… を渡した場合)。
+//   2) settings.gradle が build<MC> タスク名から注入した値。
+//      settings 側は startParameter.projectProperties に mc を put しているが、
+//      Gradle 9 ではこの注入が subproject の providers.gradleProperty('mc') /
+//      findProperty('mc') には伝播しない (root project にしか乗らない) ため、
+//      ここで startParameter.projectProperties を直接読んで拾い直す。
+//      これを怠ると :fabric が常に policy.default (26.1.2) を掴んでしまい、
+//      build26_1 / build26_1_1 まで 26.1.2 を焼く取り違えが起きる。
+def mcParam = providers.gradleProperty('mc').orNull ?: gradle.startParameter.projectProperties['mc']
 def targetMcVersion = mcParam ?: registry.policy.defaultVersion
 if (targetMcVersion == null) {
     throw new GradleException(

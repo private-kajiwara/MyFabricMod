@@ -117,14 +117,22 @@ def buildAllSequence = []
 // versions.json の buildable を true へ戻せば自動的に buildAll 対象へ復帰する。
 registry.buildableEntries().eachWithIndex { VersionRegistry.Entry e, int idx ->
     def execTaskName = "_execBuild${e.id}"
+    // 「直前の exec タスク」をこのイテレーションの時点で確定させる。
+    //   tasks.register(...) の構成クロージャは遅延評価される。 もし
+    //   `mustRunAfter buildAllSequence.last()` をクロージャ内で書くと、
+    //   評価時点では list に全 exec タスクが追加され尽くしているため
+    //   .last() は常に最後のタスク (= 自分自身を含む) を指してしまい、
+    //   _execBuild26_1_2 が自分自身に mustRunAfter する循環依存になる。
+    //   ここで local 変数に固定 (eager capture) して循環を断つ。
+    def prevExecTask = idx > 0 ? buildAllSequence.last() : null
     tasks.register(execTaskName, Exec) {
         group = 'mod build'
         description = "[internal] gradlew build${e.id} を別プロセスで起動"
         workingDir = rootProject.projectDir
         commandLine wrapperCmd + ["build${e.id}"]
         // 直前の exec が終わってから走らせる (Gradle 並列実行を避ける)
-        if (idx > 0) {
-            mustRunAfter buildAllSequence.last()
+        if (prevExecTask != null) {
+            mustRunAfter prevExecTask
         }
     }
     buildAllSequence << ":${execTaskName}"
@@ -132,8 +140,10 @@ registry.buildableEntries().eachWithIndex { VersionRegistry.Entry e, int idx ->
 
 tasks.register('buildAll') {
     group = 'mod build'
-    description = 'versions.json に登録された全 MC を別プロセスで順次ビルド'
+    description = 'versions.json に登録された全 MC を別プロセスで順次ビルドし、 成果物を dist/ に集約'
     dependsOn buildAllSequence
+    // 全 MC ビルド後に dist/ へ集約 (collectDist は buildAllSequence の後に走る)
+    dependsOn 'collectDist'
 }
 
 // ---------------------------------------------------------------------
@@ -192,6 +202,52 @@ tasks.register('collectArtifacts', Copy) {
         eachFile { it.path = it.name }
         includeEmptyDirs = false
     }
+}
+
+// ---------------------------------------------------------------------
+// collectDist — 配布用の最終 jar を dist/<mod_version>/ に集約 (Copy = 過去版を残す)
+//
+//   fabric/build/libs/<MC>/ には per-MC の最終 jar が出るが、 mod_version を
+//   上げると旧版 jar が同ディレクトリに残留する (clean を挟まない限り)。
+//   そこで「今回の mod_version の最終 jar だけ」を dist/<mod_version>/ にミラーする:
+//
+//     - include パターンを <modId>-<modVersion>+*-fabric.jar に固定
+//         → sources jar (...-fabric-sources.jar) と
+//           remap 版の中間 dev jar (...-dev.jar) は自動的に除外される。
+//         → 今回の版フォルダには現 mod_version の jar しか入らない (版が混在しない)。
+//     - 出力先は版別フォルダ dist/<mod_version>/。 Copy なので出力先を clean せず、
+//       別版は dist/1.0.0/ dist/1.0.2/ … と別フォルダで蓄積し、 過去版はディスク上に残る。
+//       同一版の再ビルドは同名 jar を上書き。
+//     - dist/ 全体は .gitignore で無視済みのため、 版が貯まっても Git には載らない。
+//
+//   buildAll が finalize 代わりに dependsOn しているため、
+//   ./gradlew buildAll を打てば全 MC 分の最終 jar が dist/<mod_version>/ に揃う。
+//   単一 MC の場合は ./gradlew build<MC> collectDist で同様に集約できる。
+// ---------------------------------------------------------------------
+def modId = (project.findProperty('mod_id') ?: 'omnichest').toString()
+
+tasks.register('collectDist', Copy) {
+    group = 'mod build'
+    description = "配布用の最終 jar (現 mod_version) を dist/<mod_version>/ に集約 (過去版は残す)"
+    // 版別フォルダ dist/<mod_version>/ に出力する。
+    //   Copy (≠ Sync) なので出力先を clean しない:
+    //     - 別 mod_version をビルドすると別フォルダ (dist/1.0.0/, dist/1.0.2/, …) が
+    //       追加され、 過去版フォルダはディスク上に残る。
+    //     - 同一版を再ビルドすると同名 jar は上書き (= 最新成果物で更新)。
+    //   dist/ 全体は .gitignore で無視済みなので、 版が貯まっても Git には載らない。
+    into layout.projectDirectory.dir("dist/${version}")
+    from(project(':fabric').layout.buildDirectory.dir('libs')) {
+        include "**/${modId}-${version}+*-fabric.jar"
+        // <MC>/ のディレクトリ階層を平坦化して dist/<mod_version>/ 直下に置く
+        eachFile { it.path = it.name }
+        includeEmptyDirs = false
+    }
+    // 集約は「jar が出来てから」走らなければならない。
+    //   - buildAll 経由: 各 MC を別プロセスで焼く _execBuild* の後 (buildAllSequence)。
+    //   - 単一 MC 経由 (build<MC> collectDist): 同一 invocation 内の :fabric:build の後。
+    // mustRunAfter は対象が task graph に居るときだけ効くので、 両方併記して安全。
+    mustRunAfter buildAllSequence
+    mustRunAfter ':fabric:build'
 }
 
 // ---------------------------------------------------------------------

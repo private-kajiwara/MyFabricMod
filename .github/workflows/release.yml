@@ -62,7 +62,9 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: jars-${{ matrix.minecraft }}
-          path: fabric/build/libs/*.jar
+          # 最終 jar は fabric/build/libs/<MC>/ 配下。 *-fabric.jar だけを拾い、
+          # sources(...-fabric-sources.jar) と中間 dev jar(...-dev.jar) は除外する。
+          path: fabric/build/libs/**/*-fabric.jar
 
   release:
     needs: build
