@@ -169,6 +169,7 @@ public final class ConfigManager {
         }
         if (c.render == null) c.render = d.render;
         if (c.keybind == null) c.keybind = d.keybind;
+        if (c.compat == null) c.compat = d.compat;
     }
 
     /**
