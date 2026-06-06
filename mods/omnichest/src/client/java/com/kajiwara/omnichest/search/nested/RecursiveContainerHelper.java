@@ -52,8 +52,12 @@ public final class RecursiveContainerHelper {
             return false;
         }
         // 26.1: nonEmptyStream() は廃止。 allItemsCopyStream() は空スロットも含むため
-        // !isEmpty() で絞り、 1 つでも非空要素があれば中身ありと判定する。
+        // !isEmpty() で絞り、 1 つでも非空要素があれば中身ありと判定する (1.21.11 は nonEmptyStream)。
+        //? if >=26.1 {
         return contents.allItemsCopyStream().anyMatch(s -> s != null && !s.isEmpty());
+        //?} else {
+        /*return contents.nonEmptyStream().findAny().isPresent();*/
+        //?}
     }
 
     /**
@@ -79,8 +83,12 @@ public final class RecursiveContainerHelper {
         }
         List<ItemStack> out = new ArrayList<>();
         // 26.1: nonEmptyItemsCopy() は廃止。 allItemsCopyStream() (防御的コピー済み) を
-        // 非空のみに絞って収集する。
+        // 非空のみに絞って収集する (1.21.11 は nonEmptyItemsCopy)。
+        //? if >=26.1 {
         for (ItemStack child : contents.allItemsCopyStream().toList()) {
+        //?} else {
+        /*for (ItemStack child : contents.nonEmptyItemsCopy()) {*/
+        //?}
             if (child != null && !child.isEmpty()) {
                 out.add(child);
             }

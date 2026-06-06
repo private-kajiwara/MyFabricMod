@@ -1,37 +1,69 @@
 # OmniChest — Multi-Version Fabric Mod
 
 Minecraft Fabric MOD「OmniChest」のリポジトリ。
-**1 つのリポジトリから、 実在する複数の Minecraft / Fabric Loader / Fabric API バージョン向けの jar を自動ビルド**できる構成。
+**1 つのソースツリーから、 世代を跨ぐ複数の Minecraft バージョン向けの jar を自動ビルド**できる構成
+（[Stonecutter](https://stonecutter.kikugie.dev/) ハイブリッド）。
 
 > **未公開バージョン (例: 1.22 / 1.23) は管理対象外。**
-> Mojang manifest と Fabric Meta API で実在性が確認できたバージョンのみを `versions/versions.json` に登録する。
+> Mojang manifest と Fabric Meta API で実在性が確認できたバージョンのみを `mc-meta/versions.json` に登録する。
 
 ---
 
-## Build command
+## 対応バージョン
 
-```txt
-cd C:\MyFabricMod
-./gradlew :fabric:runClient
+正本は [`mc-meta/versions.json`](mc-meta/versions.json)。 各版は Stonecutter の「ノード」として
+1 つのソースから前方生成される。
+
+| MC | 世代 | Java | Loom | mappings | 備考 |
+|---|---|---|---|---|---|
+| `1.21.11` | 旧世代 (難読化) | 21 | remap | Mojang (Mojmap) | `legacy-1.21.11` の挙動を単一ソースから再現 |
+| `26.1` / `26.1.1` / `26.1.2` | 新世代 (非難読化) | 25 | 非remap | なし | `26.1.2` が推奨。 ソースの基準名はこの世代の公式名 |
+
+> **26.1 系の intermediary / Yarn は設計上「恒久的に提供されない」のが正常**（非難読化のため）。
+> 「マッピング公開待ち」「ビルド不能」と誤結論しないこと。
+
+---
+
+## ビルドと起動
+
+OmniChest は **自己完結した Stonecutter included build**（`mods/omnichest/` 配下に独自の
+`gradlew` / `settings.gradle.kts` / `stonecutter.gradle.kts` を持つ）。 版ごとのタスクは
+**`mods/omnichest/` の中で**実行する。
+
+> **JDK 要件**: `26.1.x` は Java 25 で動き、 loom-back-compat の都合で **Gradle デーモン自身が
+> JDK 25** で起動している必要がある。 そのため 26.1.x を触る際は `JAVA_HOME` を JDK 25 に
+> 向けて `gradlew` を起動する（JDK 25 デーモンは toolchain=21 経由で 1.21.11 ノードも問題なくビルドできる）。
+
+### 単一版を直接ビルド / 起動（`cd mods/omnichest`）
+
+```powershell
+# 例: Windows PowerShell。 26.1.x は JAVA_HOME=JDK25 を先に設定
+$env:JAVA_HOME = "C:\Users\<you>\.jdks\jdk-25.0.3+9"
+cd mods\omnichest
+
+.\gradlew.bat :26.1.2:build        # その版をビルド (jar -> versions/26.1.2/build/libs/)
+.\gradlew.bat :1.21.11:build       # 1.21.11 は remapJar まで生成
+.\gradlew.bat :26.1.2:runClient    # クライアント起動
+.\gradlew.bat :1.21.11:runClient   # 別世代のクライアント起動
 ```
 
-## jar File build command
-推奨バージョン1つだけビルド (versions.json の recommended に従う)
-```txt
-.\gradlew buildRecommended
+タスク名は **版ノード**（`:<MC>:build` / `:<MC>:runClient`）。 旧構成の `:fabric:runClient` /
+`-Pmc=` は Stonecutter 化により**使えない**（`mods/omnichest` は included build で
+`:mods:omnichest:fabric` サブプロジェクトを持たない）。
+
+### リポジトリルートからの集約ビルド
+
+ルートの集約タスクは included build 経由で各版ノードを駆動する（こちらは従来どおりルートで実行）:
+
+```powershell
+.\gradlew buildRecommended    # 推奨版 (26.1.2) をビルド
+.\gradlew build26_1_2         # 特定 MC (id の '.' は '_')
+.\gradlew build1_21_11        # 1.21.11 もルートから可
+.\gradlew buildAll            # 全 MC をビルドし dist/<modid>/<modver>/ へ集約
 ```
-特定の MC バージョンをビルド (id の '.' は '_' に置換)
-```txt
-.\gradlew build1_21_11
-```
-登録されている全 MC バージョンをまとめてビルド
-```txt
-.\gradlew buildAll
-```
-各 fabric/build/libs/*.jar をルート build/libs/ に集約
-```txt
-.\gradlew collectArtifacts
-```
+
+> 集約タスクが 26.1.x を含む場合（`buildAll` / `build26_1_x` / `buildRecommended`）も
+> `JAVA_HOME` を JDK 25 にして起動すること。
 
 ---
 
@@ -53,19 +85,39 @@ cd C:\MyFabricMod
 - ランタイム挙動は [`VersionProfile.active()`](common/src/main/java/com/kajiwara/omnichest/compat/VersionProfile.java)
   で profile を読んで分岐 (ハードコードの `if` 文を書かない)。
 
-### 3. ビルドは "1 つの汎用 Fabric subproject" を `-Pmc` で切替
-- `:fabric` が唯一のビルドモジュール。
-- ルートの `build1_21_11` は内部的に `GradleBuild` で `-Pmc=1.21.11` を渡して
-  `:fabric:build` を sub-build として fork する。
-- → Loom の per-build state が他バージョンと混ざらない。
+### 3. ビルドは Stonecutter ハイブリッド（単一ソース多版）
+- ソースの**基準名は 26.1（非難読化）の公式名**。 各版ノードは `stonecutter` が
+  `versions/<MC>/build/generated/stonecutter/` へ前方生成し、 `src/` は破壊しない。
+- 世代差（Mojmap 1.21.11 ↔ 非難読化 26.1）は [`stonecutter.gradle.kts`](stonecutter.gradle.kts) の
+  **global replacements**（`current.parsed < "26.1"` でガード）と、 構造差は `//?` 条件コメントで吸収する。
+  例: `GuiGraphicsExtractor`↔`GuiGraphics` / `extractSlot`↔`renderSlot` /
+  `extractRenderState`↔`render` / `resizeGui`↔`resizeDisplay` など。
+- `loom-back-compat` が MC に応じて Loom 変種を自動選択する（1.21.x=remap / 26.1=非remap）。
+- これにより **MANIFEST 以外バイト一致**で 26.1.x の成果物パリティを保ったまま 1.21.11 を同居できる
+  （`legacy-1.21.11` の Mojmap ビルドを ground truth に検証済み）。
+
+#### ⚠ 置換規則を足すときの落とし穴（双方向性）
+Stonecutter の string 置換は **双方向**に効く。 `direction=true`（1.21.11）は `from→to`、
+`direction=false`（26.1.x）は `to→from` を base に適用する。 よって **`to`（1.21.11 名）が
+26.1 base に文字列として存在する規則は、 26.1.x ビルドの逆変換で base を破壊する**
+（例: `render` ⊂ `renderer`、 `renderSlot` ⊂ 既存コード等）。
+
+- 危険な規則（`to` が 26.1 base に部分文字列として現れる）は **`regex` 版**で書き、 逆変換側を
+  「ソースに絶対現れないセンチネル」にして**一方向（前方のみ）に無害化**する。
+- 安全な規則（`to` が 26.1 base に存在しない）だけ `string` 版でよい。
+- **新しい置換を足したら必ず 26.1 パリティを再検証する**（26.1.2 を base から前方生成し、
+  `legacy-1.21.11` ビルドと .class バイトコード命令を突き合わせる）。
+- 確定済み設計（Stonecutter ハイブリッド / 1.21.11 も Mojmap / `versions.json` 正本 / 一方向置換）は
+  蒸し返さない。
 
 ---
 
 ## 出力 jar 命名
 
 ```
-<modid>-mc<MC>-fabric<LOADER>-api<API>.jar
-例:  omnichest-mc1.21.11-fabric0.19.2-api0.141.3.jar
+<modid>-<modver>+<MC>.jar              （版ノード生成: versions/<MC>/build/libs/）
+<modid>-<modver>+<MC>-fabric.jar       （集約後: build/libs/<modver>/ と dist/<modid>/<modver>/）
+例:  omnichest-1.0.3+26.1.2-fabric.jar
 ```
 
 ---
@@ -91,11 +143,10 @@ cd C:\MyFabricMod
 #     .\gradlew build26_1_2 collectDist
 .\gradlew collectDist
 
-# IDE 起動 (推奨バージョン)
-.\gradlew :fabric:runClient
-
-# 別バージョンで IDE 起動
-.\gradlew :fabric:runClient -Pmc=1.21.10
+# IDE 起動 (版ノードタスク。 mods/omnichest の中で実行。 26.1.x は JAVA_HOME=JDK25)
+#   cd mods\omnichest
+#   .\gradlew.bat :26.1.2:runClient     # 推奨版
+#   .\gradlew.bat :1.21.11:runClient    # 別世代
 ```
 
 ### オフラインで validate をスキップ
@@ -115,6 +166,16 @@ cd C:\MyFabricMod
 ## 新しい Minecraft バージョンを追加する手順
 
 例: `1.21.12` が Mojang / Fabric にリリースされたとき。
+
+> **Stonecutter 構成での実際の編集先**（以下のステップは旧 `versions/` 単独管理時の説明。
+> 現構成では版メタデータの正本が移動している）:
+> 1. [`mc-meta/versions.json`](mc-meta/versions.json) に MC エントリを追記（正本）
+> 2. [`mc-meta/<MC>.properties`](mc-meta/) に loader/api/java/remap 等を作成
+> 3. [`stonecutter.properties.toml`](stonecutter.properties.toml) に `deps.*` / `mod.*` ノードを追加
+> 4. [`settings.gradle.kts`](settings.gradle.kts) の `versions(...)` にノードを追加
+> 5. `current.parsed < "26.1"` の置換規則・`//?` が新版にも妥当か確認（上記「置換の落とし穴」参照）
+>
+> `versions/<MC>/` ディレクトリは Stonecutter が生成するため手で作らない。
 
 ### Step 1 — 実在性を事前確認
 
@@ -255,8 +316,9 @@ mod_version=1.0.3
 ### 成果物の出力場所と命名
 | 種類 | 場所 | 例 |
 | --- | --- | --- |
-| per-MC の最終 jar | `fabric/build/libs/<MC>/` | `omnichest-1.0.3+26.1.2-fabric.jar` |
-| 集約 (配布用) | `dist/` (root 直下) | `omnichest-1.0.3+26.1.2-fabric.jar` |
+| 版ノード生成 jar | `versions/<MC>/build/libs/` | `omnichest-1.0.3+26.1.2.jar` |
+| Mod 単位の集約 | `build/libs/<modver>/` | `omnichest-1.0.3+26.1.2-fabric.jar` |
+| 配布用 (root 集約) | `dist/<modid>/<modver>/` | `omnichest-1.0.3+26.1.2-fabric.jar` |
 
 - ファイル名に **Mod バージョンと MC バージョンの両方**が入るため、
   同じ Mod バージョンの複数 MC 版も、 異なる Mod バージョンも衝突せず共存する。

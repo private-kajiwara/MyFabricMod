@@ -67,18 +67,28 @@ if (modsDir.isDirectory()) {
             gpf.withInputStream { modProps.load(it) }
         }
 
-        // common / fabric サブプロジェクトを include
-        ['common', 'fabric'].each { String sub ->
-            def subDir = new File(modDir, sub)
-            if (new File(subDir, 'build.gradle').exists()) {
-                def includePath = "mods:${modId}:${sub}"
-                include includePath
-                modPropsByProjectPath[":${includePath}"] = modProps
+        // Mod の種別を判定:
+        //   - Stonecutter Mod : mods/<id>/settings.gradle.kts を持つ自己完結ビルド。
+        //                       includeBuild で取り込む (多版は Stonecutter が担う)。
+        //                       バージョンメタは mc-meta/ (Stonecutter が versions/ を生成するため退避)。
+        //   - 旧来 Mod        : :mods:<id>:{common,fabric} のマルチプロジェクト。
+        def isStonecutter = new File(modDir, 'settings.gradle.kts').exists()
+
+        if (isStonecutter) {
+            includeBuild "mods/${modId}"
+        } else {
+            ['common', 'fabric'].each { String sub ->
+                def subDir = new File(modDir, sub)
+                if (new File(subDir, 'build.gradle').exists()) {
+                    def includePath = "mods:${modId}:${sub}"
+                    include includePath
+                    modPropsByProjectPath[":${includePath}"] = modProps
+                }
             }
         }
 
         // この Mod の versions.json から登録 MC を収集 (build<MC> 検証用)
-        def versionsJson = new File(modDir, 'versions/versions.json')
+        def versionsJson = new File(modDir, isStonecutter ? 'mc-meta/versions.json' : 'versions/versions.json')
         if (versionsJson.exists()) {
             def json = new groovy.json.JsonSlurper().parse(versionsJson)
             (json.versions ?: []).each { registeredMCs << (it.minecraft as String) }

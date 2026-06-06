@@ -18,13 +18,19 @@ gradle wrapper) が Mod 固有名をハードコードせずに各 Mod をビル
 ├── LICENSE                                       ... 共有の既定ライセンス (Mod 毎に上書き可)
 ├── dist/                                         ... 配布成果物 dist/<modid>/<modversion>/
 └── mods/
-    └── <modid>/             ... 1 つの Mod (例: omnichest)
+    └── <modid>/             ... 1 つの Mod (旧来のマルチプロジェクト構成の例)
         ├── gradle.properties        ... mod_id / mod_version / maven_group
         ├── versions/                ... versions.json + <MC>.properties (この Mod の対象 MC)
         ├── common/                  ... MC 非依存の共有ロジック (:mods:<modid>:common)
         ├── fabric/                  ... Fabric ターゲットの汎用ビルダ (:mods:<modid>:fabric)
         └── README.md                ... その Mod の詳細ドキュメント
 ```
+
+> **Stonecutter Mod の場合**（例: `omnichest`）はレイアウトが異なる: `mods/<modid>/` 自体が
+> 独自の `settings.gradle.kts` / `stonecutter.gradle.kts` / `gradlew` を持つ **included build** で、
+> ソースは `src/{client,main}/`、 版メタは `mc-meta/` + `stonecutter.properties.toml`、 版ノードは
+> `versions/<MC>/`（Stonecutter 生成）。 ビルド/起動は `mods/<modid>/` 内の版ノードタスク
+> `:<MC>:build` / `:<MC>:runClient` を使う（詳細は [mods/omnichest/README.md](mods/omnichest/README.md)）。
 
 現在収録している Mod:
 
@@ -38,10 +44,12 @@ gradle wrapper) が Mod 固有名をハードコードせずに各 Mod をビル
 
 すべてリポジトリのルートで実行します（Windows は `.\gradlew.bat`、macOS/Linux は `./gradlew`）。
 
-> 注意（このブランチの対象 MC）: 現在のブランチは **MC 26.1.x 専用**です。
-> 使えるのは `build26_1` / `build26_1_1` / `build26_1_2`。
-> MC 1.21.11（難読化版）は `legacy-1.21.11` ブランチに切り替えてください。
+> 注意（このブランチの対象 MC）: `omnichest` は **Stonecutter ハイブリッド**で、
+> **`1.21.11`（旧世代・Mojmap）と `26.1` / `26.1.1` / `26.1.2`（新世代・非難読化）を単一ソースから**
+> ビルドします（`build1_21_11` / `build26_1` / `build26_1_1` / `build26_1_2`）。
+> **26.1.x は Gradle デーモンが JDK 25 で起動している必要があります**（`JAVA_HOME` を JDK 25 に）。
 > 登録済みの MC は `.\gradlew.bat printVersions` で確認できます。
+> 旧 `legacy-1.21.11` ブランチは難読化版 Mojmap ビルドの ground truth として保持されています。
 
 ### クイックスタート（そのままコピペで jar を生成）
 
@@ -64,10 +72,12 @@ macOS / Linux:
 ./gradlew buildAll              # 全 MC をビルドして dist/ に集約
 ```
 
-生成された jar の場所（`mod_version` は `mods/omnichest/gradle.properties` の値）:
+生成された jar の場所（`mod_version` は `mods/omnichest/gradle.properties` の値。 omnichest は
+Stonecutter included build なので版ノード配下に出力される）:
 
 ```
-mods/omnichest/fabric/build/libs/26.1.2/omnichest-<mod_version>+26.1.2-fabric.jar
+mods/omnichest/versions/26.1.2/build/libs/omnichest-<mod_version>+26.1.2.jar   # 版ノード生成
+mods/omnichest/build/libs/<mod_version>/omnichest-<mod_version>+26.1.2-fabric.jar  # 集約後
 ```
 
 `buildAll`（または `collectDist`）実行後は配布用にも集約されます:
@@ -103,15 +113,23 @@ dist/omnichest/<mod_version>/
 ./gradlew <modid>CollectDist       # その Mod の配布 jar を dist/<modid>/<modversion>/ へ
 ./gradlew <modid>BuildRecommended
 
-# 単一 MC を直接指定してビルド:
-./gradlew :mods:<modid>:fabric:build -Pmc=<MC>
-# クライアント起動:
-./gradlew :mods:<modid>:fabric:runClient -Pmc=<MC>
+# 単一 MC を直接ビルド / 起動:
+#
+#   ・旧来 Mod (mods/<id>/fabric を持つ通常マルチプロジェクト):
+#       ./gradlew :mods:<modid>:fabric:build -Pmc=<MC>
+#       ./gradlew :mods:<modid>:fabric:runClient -Pmc=<MC>
+#
+#   ・Stonecutter Mod (mods/<id>/settings.gradle.kts を持つ included build。 例: omnichest):
+#       上記 :mods:<id>:fabric:* は存在しない。 版ノードタスクを Mod ディレクトリ内で実行する:
+#       cd mods/<modid>
+#       ./gradlew :<MC>:build       # 例 :26.1.2:build
+#       ./gradlew :<MC>:runClient   # 例 :26.1.2:runClient  (26.1.x は JAVA_HOME=JDK25)
 ```
 
 成果物の出力先:
-- per-MC の最終 jar: `mods/<modid>/fabric/build/libs/<MC>/<modid>-<modversion>+<MC>-fabric.jar`
-- 配布用集約: `dist/<modid>/<modversion>/`
+- 旧来 Mod の per-MC jar: `mods/<modid>/fabric/build/libs/<MC>/<modid>-<modversion>+<MC>-fabric.jar`
+- Stonecutter Mod の版ノード jar: `mods/<modid>/versions/<MC>/build/libs/<modid>-<modversion>+<MC>.jar`
+- 配布用集約 (共通): `dist/<modid>/<modversion>/`
 
 ---
 
