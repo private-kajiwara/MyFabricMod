@@ -197,32 +197,40 @@ tasks.register('collectArtifacts', Copy) {
 }
 
 // ---------------------------------------------------------------------
-// collectDist — 配布用の最終 jar を root/dist/ に集約 (Sync = 毎回クリーン)
+// collectDist — 配布用の最終 jar を dist/<mod_version>/ に集約 (Copy = 過去版を残す)
 //
 //   fabric/build/libs/<MC>/ には per-MC の最終 jar が出るが、 mod_version を
 //   上げると旧版 jar が同ディレクトリに残留する (clean を挟まない限り)。
-//   そこで「今回の mod_version の最終 jar だけ」を root/dist/ にミラーする:
+//   そこで「今回の mod_version の最終 jar だけ」を dist/<mod_version>/ にミラーする:
 //
 //     - include パターンを <modId>-<modVersion>+*-fabric.jar に固定
 //         → sources jar (...-fabric-sources.jar) と
 //           remap 版の中間 dev jar (...-dev.jar) は自動的に除外される。
-//         → 過去 mod_version の jar も混ざらない (版が混在しない)。
-//     - Sync なので dist/ 内の余分なファイルは毎回削除され、 常に
-//       「今ビルドした成果物だけ」が予測可能な 1 か所に集まる。
+//         → 今回の版フォルダには現 mod_version の jar しか入らない (版が混在しない)。
+//     - 出力先は版別フォルダ dist/<mod_version>/。 Copy なので出力先を clean せず、
+//       別版は dist/1.0.0/ dist/1.0.2/ … と別フォルダで蓄積し、 過去版はディスク上に残る。
+//       同一版の再ビルドは同名 jar を上書き。
+//     - dist/ 全体は .gitignore で無視済みのため、 版が貯まっても Git には載らない。
 //
 //   buildAll が finalize 代わりに dependsOn しているため、
-//   ./gradlew buildAll を打てば全 MC 分の最終 jar が dist/ に揃う。
+//   ./gradlew buildAll を打てば全 MC 分の最終 jar が dist/<mod_version>/ に揃う。
 //   単一 MC の場合は ./gradlew build<MC> collectDist で同様に集約できる。
 // ---------------------------------------------------------------------
 def modId = (project.findProperty('mod_id') ?: 'omnichest').toString()
 
-tasks.register('collectDist', Sync) {
+tasks.register('collectDist', Copy) {
     group = 'mod build'
-    description = "配布用の最終 jar (現 mod_version のみ) を root/dist/ に集約"
-    into layout.projectDirectory.dir('dist')
+    description = "配布用の最終 jar (現 mod_version) を dist/<mod_version>/ に集約 (過去版は残す)"
+    // 版別フォルダ dist/<mod_version>/ に出力する。
+    //   Copy (≠ Sync) なので出力先を clean しない:
+    //     - 別 mod_version をビルドすると別フォルダ (dist/1.0.0/, dist/1.0.2/, …) が
+    //       追加され、 過去版フォルダはディスク上に残る。
+    //     - 同一版を再ビルドすると同名 jar は上書き (= 最新成果物で更新)。
+    //   dist/ 全体は .gitignore で無視済みなので、 版が貯まっても Git には載らない。
+    into layout.projectDirectory.dir("dist/${version}")
     from(project(':fabric').layout.buildDirectory.dir('libs')) {
         include "**/${modId}-${version}+*-fabric.jar"
-        // <MC>/ のディレクトリ階層を平坦化して dist/ 直下に置く
+        // <MC>/ のディレクトリ階層を平坦化して dist/<mod_version>/ 直下に置く
         eachFile { it.path = it.name }
         includeEmptyDirs = false
     }
