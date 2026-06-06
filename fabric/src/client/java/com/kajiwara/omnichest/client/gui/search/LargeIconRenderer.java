@@ -62,15 +62,19 @@ public final class LargeIconRenderer {
         float scale = pxSize / 16.0f;
         Matrix3x2fStack pose = g.pose();
         pose.pushMatrix();
-        // (x, y) を起点に scale 倍。 translate → scale の順番で「(x, y) が左上に固定される」。
-        pose.translate(x, y);
-        pose.scale(scale, scale);
-        // renderItem の引数は scale 後の座標系における (0, 0) → 16x16 で描画される
-        g.item(stack, 0, 0);
-        if (showCount) {
-            // decorations は font が小さくなりすぎないように、 同じスケールに乗せる
-            g.itemDecorations(font, stack, 0, 0);
+        try {
+            // (x, y) を起点に scale 倍。 translate → scale の順番で「(x, y) が左上に固定される」。
+            pose.translate(x, y);
+            pose.scale(scale, scale);
+            // renderItem の引数は scale 後の座標系における (0, 0) → 16x16 で描画される
+            g.item(stack, 0, 0);
+            if (showCount) {
+                // decorations は font が小さくなりすぎないように、 同じスケールに乗せる
+                g.itemDecorations(font, stack, 0, 0);
+            }
+        } finally {
+            // 描画中に例外が出ても 2D 行列を必ず復元する (= matrix リーク防止)。
+            pose.popMatrix();
         }
-        pose.popMatrix();
     }
 }
