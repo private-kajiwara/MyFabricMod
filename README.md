@@ -36,7 +36,47 @@ gradle wrapper) が Mod 固有名をハードコードせずに各 Mod をビル
 
 ## ビルド方法
 
-すべてルートで `./gradlew`（Windows は `gradlew.bat`）を実行します。
+すべてリポジトリのルートで実行します（Windows は `gradlew.bat`、macOS/Linux は `./gradlew`）。
+
+### クイックスタート（そのままコピペで jar を生成）
+
+Windows (PowerShell / コマンドプロンプト) — リポジトリルート `MyFabricMod` で:
+
+```bat
+:: 推奨版 (MC 26.1.2) をビルド
+gradlew.bat buildRecommended
+
+:: 特定の MC をビルド
+gradlew.bat build26_1_2
+
+:: 全 MC をビルドして dist/ に集約
+gradlew.bat buildAll
+```
+
+macOS / Linux:
+
+```bash
+./gradlew buildRecommended      # 推奨版 (MC 26.1.2)
+./gradlew build26_1_2           # 特定の MC
+./gradlew buildAll              # 全 MC をビルドして dist/ に集約
+```
+
+生成された jar の場所（`mod_version` は `mods/omnichest/gradle.properties` の値）:
+
+```
+mods/omnichest/fabric/build/libs/26.1.2/omnichest-<mod_version>+26.1.2-fabric.jar
+```
+
+`buildAll`（または `collectDist`）実行後は配布用にも集約されます:
+
+```
+dist/omnichest/<mod_version>/
+```
+
+> メモ: ビルド可能な MC は `gradlew.bat printVersions` で確認できます（`build<MC>` の
+> `<MC>` はドットをアンダースコアにした形 — 例 `26.1.2` → `build26_1_2`）。
+> PowerShell で `-Pmc=26.1.2` のように直接渡す場合は、ドットでトークン分割されないよう
+> `'-Pmc=26.1.2'` と引用符で囲ってください。
 
 ### ルート集約タスク（全 Mod 横断 / Mod が 1 つなら単一 Mod 構成と同じ挙動）
 

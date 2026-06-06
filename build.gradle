@@ -53,11 +53,15 @@ gradle.projectsEvaluated {
 
 // ---------------------------------------------------------------------
 // プラットフォーム別の gradle wrapper コマンド
+//   exec で別プロセス起動する際、 cmd の current-dir 解決に頼らず
+//   wrapper を「絶対パス」で指す (Gradle Exec から `cmd /c gradlew.bat` を
+//   起動すると workingDir 配下の gradlew.bat を見つけられず
+//   "'gradlew.bat' is not recognized" で落ちるため)。
 // ---------------------------------------------------------------------
 def isWindows = OperatingSystem.current().isWindows()
 def wrapperCmd = isWindows
-    ? ['cmd', '/c', 'gradlew.bat']
-    : ['./gradlew']
+    ? ['cmd', '/c', new File(rootProject.projectDir, 'gradlew.bat').absolutePath]
+    : [new File(rootProject.projectDir, 'gradlew').absolutePath]
 
 // ---------------------------------------------------------------------
 // Mod 探索: mods/<dir>/ のうち versions/versions.json を持つものを Mod とみなす。
