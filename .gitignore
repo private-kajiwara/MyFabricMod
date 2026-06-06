@@ -5,6 +5,13 @@ build/
 out/
 classes/
 
+# buildSrc の convention-plugin ソースは「build」という名のパッケージ
+# (com.fabricmod.build) に置かれており、 上の広域 `build/` ルール (Gradle の
+# 出力ディレクトリ用) に巻き込まれて *ソース* まで無視されてしまう。
+# ここで明示的に再追跡対象に戻す (これが無いと buildSrc のソースが Git に載らない)。
+!buildSrc/src/main/groovy/com/fabricmod/build/
+!buildSrc/src/main/groovy/com/fabricmod/build/**
+
 # 配布用の集約成果物 (collectDist / buildAll が生成)
 dist/
 
