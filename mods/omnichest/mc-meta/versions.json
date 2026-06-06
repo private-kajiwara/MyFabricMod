@@ -13,15 +13,24 @@
   "schema": 1,
 
   "$era_note": [
-    "このブランチ(main)は MC 26.1+ (非難読化版) 専用。 ソースは 26.1 の公式名を使う。",
-    "1.21.11 (難読化版・remap) は別ブランチ 'legacy-1.21.11' に凍結保存している:",
-    "  名前体系がソースレベルで異なる (GuiGraphics↔GuiGraphicsExtractor 等) ため、",
-    "  単一ソースツリーでは両世代を同時にコンパイルできない。",
-    "remap フラグは <MC>.properties 側で管理 (26.1+ は remap=false)。",
+    "Stonecutter (単一ソース多版) 導入により、 26.1+ (非難読化) と 1.21.11 (Mojmap) を",
+    "同一ソースツリーからビルドする。 ソースの基準名は 26.1 公式名。 世代差は",
+    "stonecutter.gradle.kts の global replacements (current.parsed < '26.1' でガード) と",
+    "//? 条件コメントで吸収する (GuiGraphicsExtractor↔GuiGraphics 等)。 これにより",
+    "MANIFEST 以外バイト一致で 26.1.x の成果物パリティを保ったまま 1.21.11 を追加できる。",
+    "loom-back-compat が MC に応じて Loom 変種を自動選択する (1.21.x=remap / 26.1=非remap)。",
     "buildable=false は将来の保留バージョン用フック (現在は全エントリ buildable=true)。"
   ],
 
   "versions": [
+    {
+      "minecraft": "1.21.11",
+      "properties": "1.21.11.properties",
+      "stable": true,
+      "recommended": false,
+      "buildable": true,
+      "notes": "旧世代 (難読化版・Mojmap・remap Loom・Java 21)。 Stonecutter で 26.1 と同一ソースからビルド。"
+    },
     {
       "minecraft": "26.1",
       "properties": "26.1.properties",

@@ -9,9 +9,13 @@ import com.kajiwara.omnichest.search.ContainerScanner;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
 import com.kajiwara.omnichest.search.ContainerType;
 import com.mojang.blaze3d.pipeline.BlendFunction;
+//? if >=26.1 {
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.platform.CompareOp;
+//?} else {
+/*import com.mojang.blaze3d.platform.DepthTestFunction;*/
+//?}
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
@@ -19,9 +23,15 @@ import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
+//? if >=26.1 {
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+//?} else {
+/*import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;*/
+//?}
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -214,17 +224,28 @@ public final class ChestHighlighter {
         // 正常系では try/catch 1 段ぶんしか overhead を足さないので既存の描画挙動は変わらない。
         // 26.1: WorldRenderEvents.BEFORE_ENTITIES は廃止。 LevelRenderEvents の
         // AFTER_SOLID_FEATURES (不透明地形/エンティティ描画後) で同等のタイミングを得る。
+        //? if >=26.1 {
         LevelRenderEvents.AFTER_SOLID_FEATURES.register(ctx ->
                 SafeRenderDispatcher.safeRun("chest-highlight-world", () -> INSTANCE.onWorldRender(ctx)));
+        //?} else {
+        /*WorldRenderEvents.BEFORE_ENTITIES.register(ctx ->
+                SafeRenderDispatcher.safeRun("chest-highlight-world", () -> INSTANCE.onWorldRender(ctx)));*/
+        //?}
 
         // ─── ピンアイコンを HUD パスで貫通描画 ───
         // 世界パスで投影した画面座標 (= pendingHudIcons) を、 ここで 2D アイテム描画する。
         // HUD は world depth と無関係なので、 ブロック越しでも必ず最前面に出る。
         // 26.1: HudRenderCallback は廃止。 HudElementRegistry に HudElement を addLast する。
+        //? if >=26.1 {
         HudElementRegistry.addLast(
                 net.minecraft.resources.Identifier.fromNamespaceAndPath("omnichest", "chest_highlight_icons"),
                 (g, deltaTracker) -> SafeRenderDispatcher.safeRun("chest-highlight-hud-icons",
                         () -> INSTANCE.onHudRender(g)));
+        //?} else {
+        /*HudRenderCallback.EVENT.register((g, deltaTracker) ->
+                SafeRenderDispatcher.safeRun("chest-highlight-hud-icons",
+                        () -> INSTANCE.onHudRender(g)));*/
+        //?}
 
         // ────────────────────────────────────────────────────────────
         // 「ピン永続表示 (= チェストを開くまで残す)」設定用のフック。

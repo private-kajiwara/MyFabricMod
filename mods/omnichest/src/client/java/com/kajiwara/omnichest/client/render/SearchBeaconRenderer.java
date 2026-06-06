@@ -2,9 +2,11 @@ package com.kajiwara.omnichest.client.render;
 
 import com.kajiwara.omnichest.mixin.RenderTypeAccessor;
 import com.mojang.blaze3d.pipeline.BlendFunction;
+//? if >=26.1 {
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.platform.CompareOp;
+//?}
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;

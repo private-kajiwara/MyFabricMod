@@ -86,9 +86,11 @@ public final class DebugLog {
             mc.execute(() -> {
                 try {
                     if (mc.player != null) {
-                        // 26.1 で displayClientMessage(Component,boolean) は廃止。
-                        // 通常チャット欄に出すのは sendSystemMessage(Component)。
+                        //? if >=26.1 {
                         mc.player.sendSystemMessage(line);
+                        //?} else {
+                        /*mc.player.displayClientMessage(line, false);*/
+                        //?}
                     } else if (mc.gui != null) {
                         if (mc.player != null) mc.player.sendSystemMessage(line);
                     }
