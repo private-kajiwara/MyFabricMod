@@ -1,9 +1,10 @@
 # =====================================================================
 # .github/workflows/build.yml
 # ---------------------------------------------------------------------
-#   push / PR で、 versions/versions.json に登録された "実在する MC
+#   push / PR で、 mods/*/versions/versions.json に登録された "実在する MC
 #   バージョン" だけを対象に matrix build を回す。
-#   バージョンはハードコードせず、 versions.json から動的生成する。
+#   バージョンはハードコードせず、 ./gradlew printVersionsJson から動的生成する
+#   (全 Mod の buildable な MC の和集合 = Mod 非依存)。
 # =====================================================================
 
 name: build
@@ -27,16 +28,19 @@ jobs:
       versions: ${{ steps.read.outputs.versions }}
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - run: chmod +x ./gradlew
 
-      - name: build matrix from versions.json
+      - name: build matrix from all mods' versions.json
         id: read
         shell: bash
         run: |
-          if [ ! -f versions/versions.json ]; then
-            echo "ERROR: versions/versions.json が見つかりません"
-            exit 1
-          fi
-          MATRIX=$(jq -c '[.versions[].minecraft]' versions/versions.json)
+          # 全 Mod (mods/*/versions/versions.json) の buildable な MC を
+          # 和集合・重複排除した JSON 配列を Gradle から得る (Mod 非依存)。
+          MATRIX=$(./gradlew -q printVersionsJson)
           echo "matrix => $MATRIX"
           echo "versions=$MATRIX" >> "$GITHUB_OUTPUT"
 
@@ -85,9 +89,9 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: omnichest-mc${{ matrix.minecraft }}
-          # 最終 jar は fabric/build/libs/<MC>/ 配下に出る。
+          name: mods-mc${{ matrix.minecraft }}
+          # 最終 jar は mods/<modid>/fabric/build/libs/<MC>/ 配下に出る。
           # *-fabric.jar だけを拾えば sources(...-fabric-sources.jar) と
           # remap 版の中間 dev jar(...-dev.jar) は自動的に除外される。
-          path: fabric/build/libs/**/*-fabric.jar
+          path: mods/*/fabric/build/libs/**/*-fabric.jar
           if-no-files-found: warn
