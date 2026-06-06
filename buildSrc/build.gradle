@@ -7,7 +7,7 @@
 //   ここでは Groovy DSL で convention plugin を書く。 Loom 自体は
 //   各サブプロジェクトの build.gradle で apply するが、共通の
 //   後処理 (jar 名の組み立て、ライセンスの埋め込みなど) を
-//   `omnichest.fabric-version` plugin に集約している。
+//   `fabricmod.fabric-version` plugin に集約している (Mod 非依存)。
 // =====================================================================
 
 plugins {

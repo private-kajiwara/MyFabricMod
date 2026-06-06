@@ -1,13 +1,27 @@
 // =====================================================================
-// settings.gradle (root)
+// settings.gradle (root / Mod 非依存の共有基盤)
 // ---------------------------------------------------------------------
-//   サブプロジェクト構成:
-//     :common  — Minecraft 非依存の共有ロジック / 抽象 interface
-//     :fabric  — Fabric ターゲットの "汎用ビルダ"。
-//                -Pmc=<MC> で対象 MC を切り替える単一モジュール。
+//   汎用 Fabric Mod ワークスペース。
 //
-//   "versions/" には ".properties" と "versions.json" だけが置かれる。
-//   Minecraft バージョンごとの Gradle サブプロジェクトは作らない。
+//   各 Mod は mods/<modid>/ 配下に「自己完結」した形で置かれる:
+//     mods/<modid>/
+//       ├── gradle.properties        ... mod_id / mod_version / maven_group
+//       ├── versions/                ... versions.json + <MC>.properties
+//       ├── common/                  ... MC 非依存の共有ロジック (:mods:<modid>:common)
+//       └── fabric/                  ... Fabric ターゲットの汎用ビルダ (:mods:<modid>:fabric)
+//
+//   settings.gradle は mods/*/ を走査して上記サブプロジェクトを自動 include し、
+//   各 Mod の gradle.properties を beforeProject で当該サブプロジェクトへ注入する。
+//   共有 build-logic (buildSrc の fabricmod.fabric-version plugin) は
+//   サブプロジェクトの親ディレクトリ (= mods/<modid>/) から versions/ と
+//   メタデータを解決するため、 Mod 固有名をハードコードしない。
+//
+//   新しい Mod を追加する手順:
+//     1. mods/<newmodid>/ を作る
+//     2. mods/<newmodid>/gradle.properties に mod_id / mod_version / maven_group
+//     3. mods/<newmodid>/versions/versions.json (+ <MC>.properties)
+//     4. mods/<newmodid>/common, mods/<newmodid>/fabric を置く
+//   → settings.gradle が自動で include する (このファイルの編集は不要)。
 // =====================================================================
 
 pluginManagement {
@@ -26,29 +40,80 @@ pluginManagement {
 //   convention plugin が entry.javaVersion を toolchain.languageVersion に
 //   流し込むので、 ビルドマシンに JDK 21 / 25 が「検出可能な状態」で
 //   存在すれば Gradle が自動で使い分ける。
-//
-//   JDK の供給方法 (どちらでも可):
-//     (a) ローカルに JDK 25 をインストール (Gradle が標準パス /
-//         org.gradle.java.installations.paths から自動検出)
-//     (b) foojay-resolver-convergence プラグインで auto-download
-//         ※ Gradle Plugin Portal に到達できないネットワークでは (a) を使う
 // ---------------------------------------------------------------------
 
-rootProject.name = 'omnichest'
+rootProject.name = 'fabric-mods'
 
-include 'common'
-include 'fabric'
+// ---------------------------------------------------------------------
+// Mod 探索: mods/<modid>/ を走査し、 common / fabric サブプロジェクトを
+// 階層パス (:mods:<modid>:common / :mods:<modid>:fabric) で include する。
+//   - 中間の :mods / :mods:<modid> は Gradle が自動生成する空コンテナ
+//     プロジェクト (build.gradle を持たない) となる。
+//   - 各 Mod の gradle.properties を読み、 そのサブプロジェクト 2 つへ
+//     beforeProject で ext として注入する (mod_id / mod_version など)。
+// ---------------------------------------------------------------------
+def modsDir = new File(rootDir, 'mods')
+def modPropsByProjectPath = [:]   // project path -> java.util.Properties
+def registeredMCs = []            // 全 Mod の versions.json に登録された MC の和集合
+
+if (modsDir.isDirectory()) {
+    modsDir.listFiles().findAll { it.isDirectory() }.sort { it.name }.each { File modDir ->
+        def modId = modDir.name
+
+        // この Mod の gradle.properties を読む (mod_id / mod_version / maven_group)
+        def modProps = new Properties()
+        def gpf = new File(modDir, 'gradle.properties')
+        if (gpf.exists()) {
+            gpf.withInputStream { modProps.load(it) }
+        }
+
+        // common / fabric サブプロジェクトを include
+        ['common', 'fabric'].each { String sub ->
+            def subDir = new File(modDir, sub)
+            if (new File(subDir, 'build.gradle').exists()) {
+                def includePath = "mods:${modId}:${sub}"
+                include includePath
+                modPropsByProjectPath[":${includePath}"] = modProps
+            }
+        }
+
+        // この Mod の versions.json から登録 MC を収集 (build<MC> 検証用)
+        def versionsJson = new File(modDir, 'versions/versions.json')
+        if (versionsJson.exists()) {
+            def json = new groovy.json.JsonSlurper().parse(versionsJson)
+            (json.versions ?: []).each { registeredMCs << (it.minecraft as String) }
+        }
+    }
+}
+registeredMCs = registeredMCs.unique()
+
+// 各 Mod の gradle.properties を当該サブプロジェクトへ注入する。
+//   findProperty('mod_id') 等が ext 経由で解決できるようにする。
+//   -P / root gradle.properties で明示指定された値はそちらを優先する。
+gradle.beforeProject { project ->
+    def mp = modPropsByProjectPath[project.path]
+    if (mp != null) {
+        mp.each { k, v ->
+            if (!project.hasProperty(k as String)) {
+                project.ext.set(k as String, v)
+            }
+        }
+    }
+}
 
 // ---------------------------------------------------------------------
 // `build<MC>` 形式のタスク名から -Pmc=<MC> を自動注入する。
 //
-//   例: ./gradlew build1_21_11
-//        → startParameter.projectProperties['mc'] = '1.21.11'
-//        → :fabric の convention plugin がこの mc を読んで構成
+//   例: ./gradlew build26_1_2
+//        → startParameter.projectProperties['mc'] = '26.1.2'
+//        → 各 Mod の :fabric convention plugin がこの mc を読んで構成
 //
 //   ユーザーが明示的に -Pmc を渡している場合はそれを優先する。
 //   複数の異なる build<MC> を同一 invocation で並べた場合は
 //   :fabric の構成が 1 つしかできないため明示的に拒否する。
+//
+//   実在チェックは「全 Mod の versions.json の和集合」に対して行う。
+//   その MC を持つ Mod だけが実際にビルドされる (build.gradle 側で制御)。
 // ---------------------------------------------------------------------
 def buildTaskPattern = ~/^build(\d+(?:_\d+){1,2})$/
 def matchedMCs = startParameter.taskNames.findResults { String name ->
@@ -65,34 +130,17 @@ if (matchedMCs.size() > 1) {
 if (matchedMCs.size() == 1) {
     def requestedMC = matchedMCs[0]
 
-    // versions.json に登録されている MC だけを build<MC> として受け付ける。
-    //   登録外の MC を渡すと、 従来は -Pmc を「注入した」と表示した直後に
-    //   "Task 'build<MC>' not found" で落ちて原因が分かりにくかった。
-    //   ここで settings 段階で実在チェックし、 登録済みタスク一覧を添えて
-    //   早期に明示的なエラーにする (build<MC> タスクは build.gradle が
-    //   versions.json のエントリからのみ生成するため、 ここの集合と一致する)。
-    def versionsJson = new File(rootDir, 'versions/versions.json')
-    def registeredMCs = []
-    if (versionsJson.exists()) {
-        def json = new groovy.json.JsonSlurper().parse(versionsJson)
-        registeredMCs = (json.versions ?: []).collect { it.minecraft as String }
-    }
-
     if (!registeredMCs.contains(requestedMC)) {
         def avail = registeredMCs.collect { "build${it.replace('.', '_')}" }
         throw new GradleException(
             "build${requestedMC.replace('.', '_')} は登録されていません " +
-            "(versions/versions.json に MC '${requestedMC}' のエントリがありません)。\n" +
-            "このブランチで利用可能な build<MC> タスク: ${avail.join(', ')}\n" +
-            "※ MC 1.21.11 (難読化版) をビルドするには 'legacy-1.21.11' ブランチに切り替えてください。")
+            "(どの mods/*/versions/versions.json にも MC '${requestedMC}' のエントリがありません)。\n" +
+            "現在利用可能な build<MC> タスク: ${avail.join(', ')}")
     }
 
     if (!startParameter.projectProperties.containsKey('mc')) {
         // startParameter.projectProperties は ImmutableMap なので直接 put 不可。
         // コピーを作って setter 経由で差し替える。
-        // 注意: この注入は subproject の providers.gradleProperty('mc') には
-        //       伝播しない (Gradle 9)。 :fabric 側の convention plugin は
-        //       gradle.startParameter.projectProperties['mc'] を直接読んで補完している。
         def newProps = new LinkedHashMap(startParameter.projectProperties)
         newProps['mc'] = requestedMC
         startParameter.projectProperties = newProps

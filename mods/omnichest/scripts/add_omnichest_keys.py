@@ -13,7 +13,10 @@ import json
 import pathlib
 import sys
 
-LANG_DIR = pathlib.Path("fabric/src/client/resources/assets/omnichest/lang")
+# このスクリプトは mods/omnichest/scripts/ に置かれている。 lang ディレクトリは
+# 当 Mod のツリー内 (mods/omnichest/fabric/...) にあるため、 __file__ 相対で解決する
+# (実行時の CWD に依存しない)。
+LANG_DIR = pathlib.Path(__file__).resolve().parent.parent / "fabric" / "src" / "client" / "resources" / "assets" / "omnichest" / "lang"
 
 # 追加するキーの順序 (= 挿入時の並び)。
 KEY_ORDER = [

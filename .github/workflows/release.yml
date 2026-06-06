@@ -1,8 +1,9 @@
 # =====================================================================
 # .github/workflows/release.yml
 # ---------------------------------------------------------------------
-#   v* tag push で、 versions/versions.json に登録された全 MC バージョンの
-#   jar をビルドし、 1 つの draft GitHub Release に添付する。
+#   v* tag push で、 mods/*/versions/versions.json に登録された全 MC
+#   バージョンの jar をビルドし、 1 つの draft GitHub Release に添付する。
+#   バージョン一覧は ./gradlew printVersionsJson から動的生成する (Mod 非依存)。
 #
 #   タグ命名: v1.2.3 (semver)
 # =====================================================================
@@ -23,10 +24,13 @@ jobs:
       versions: ${{ steps.read.outputs.versions }}
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with: { java-version: '21', distribution: 'temurin' }
+      - run: chmod +x ./gradlew
       - id: read
         shell: bash
         run: |
-          MATRIX=$(jq -c '[.versions[].minecraft]' versions/versions.json)
+          MATRIX=$(./gradlew -q printVersionsJson)
           echo "versions=$MATRIX" >> "$GITHUB_OUTPUT"
 
   validate:
@@ -62,9 +66,9 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: jars-${{ matrix.minecraft }}
-          # 最終 jar は fabric/build/libs/<MC>/ 配下。 *-fabric.jar だけを拾い、
-          # sources(...-fabric-sources.jar) と中間 dev jar(...-dev.jar) は除外する。
-          path: fabric/build/libs/**/*-fabric.jar
+          # 最終 jar は mods/<modid>/fabric/build/libs/<MC>/ 配下。 *-fabric.jar
+          # だけを拾い、 sources(...-fabric-sources.jar) と中間 dev jar(...-dev.jar) は除外。
+          path: mods/*/fabric/build/libs/**/*-fabric.jar
 
   release:
     needs: build
