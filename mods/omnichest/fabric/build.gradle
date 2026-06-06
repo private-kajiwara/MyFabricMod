@@ -31,10 +31,10 @@
 plugins {
     id 'net.fabricmc.fabric-loom'       version "${loom_version}" apply false
     id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
-    id 'omnichest.fabric-version'
+    id 'fabricmod.fabric-version'
 }
 
-def entry = project.ext.omniRegistryEntry
+def entry = project.ext.modRegistryEntry
 def useRemap = entry.remap
 
 apply plugin: useRemap ? 'net.fabricmc.fabric-loom-remap' : 'net.fabricmc.fabric-loom'
@@ -67,7 +67,7 @@ loom {
 // 依存
 // ---------------------------------------------------------------------
 dependencies {
-    implementation project(':common')
+    implementation project(':mods:omnichest:common')
 
     minecraft "com.mojang:minecraft:${entry.minecraftVersion}"
 
@@ -107,7 +107,7 @@ dependencies {
 // common モジュールの class を jar に同梱
 // ---------------------------------------------------------------------
 tasks.named('jar') {
-    from project(':common').sourceSets.main.output
+    from project(':mods:omnichest:common').sourceSets.main.output
 }
 
 // ---------------------------------------------------------------------

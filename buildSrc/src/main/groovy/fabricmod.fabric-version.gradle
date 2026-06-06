@@ -1,22 +1,26 @@
 // =====================================================================
-// omnichest.fabric-version (convention plugin)
+// fabricmod.fabric-version (convention plugin / Mod 非依存)
 // ---------------------------------------------------------------------
-//   :fabric サブプロジェクトで apply される共通設定。
-//   versions/versions.json と -Pmc=<MC> から VersionRegistry.Entry を解決し、
-//   その結果を以下に反映する:
+//   各 Mod の :fabric サブプロジェクト (:mods:<modid>:fabric) で apply される
+//   共通設定。 当該 Mod の versions/versions.json と -Pmc=<MC> から
+//   VersionRegistry.Entry を解決し、 その結果を以下に反映する:
 //
-//     - Java 21 toolchain
+//     - Java toolchain (entry.javaVersion)
 //     - sources jar 生成
 //     - LICENSE バンドル
 //     - fabric.mod.json への version 埋め込み
 //     - 出力 jar 名 (<modid>-<modVersion>+<MC>-fabric.jar)
 //     - maven publish の artifactId
 //
-//   解決された Entry は project.ext.omniRegistryEntry に格納され、
+//   当該 Mod の versions/ とメタデータ (mod_id 等) は、 サブプロジェクトの
+//   親ディレクトリ = mods/<modid>/ から解決するため、 Mod 固有名を
+//   ハードコードしない。
+//
+//   解決された Entry は project.ext.modRegistryEntry に格納され、
 //   :fabric/build.gradle 側からは plugins{} ブロック直後に取り出せる。
 // =====================================================================
 
-import com.kajiwara.omnichest.build.VersionRegistry
+import com.fabricmod.build.VersionRegistry
 
 plugins {
     id 'java'
@@ -26,8 +30,11 @@ plugins {
 
 // ---------------------------------------------------------------------
 // 1) Registry を読み、 -Pmc または policy.default で対象 Entry を解決
+//    この Mod の versions/ は、 当サブプロジェクト (common/fabric) の
+//    親ディレクトリ = mods/<modid>/ 配下にある。
 // ---------------------------------------------------------------------
-def registry = VersionRegistry.load(rootProject.file('versions'))
+def modDir = project.projectDir.parentFile
+def registry = VersionRegistry.load(new File(modDir, 'versions'))
 // -Pmc=<MC> の解決:
 //   1) 通常の project property (ユーザーが明示的に -Pmc=… を渡した場合)。
 //   2) settings.gradle が build<MC> タスク名から注入した値。
@@ -47,21 +54,39 @@ if (targetMcVersion == null) {
 
 def entry = registry.findByMinecraftVersion(targetMcVersion)
 if (entry == null) {
-    throw new GradleException(
-        "[${project.path}] MC '${targetMcVersion}' は versions.json に登録されていません。 " +
-        "登録済み: ${registry.entries*.minecraftVersion}")
+    // -Pmc が「この Mod には無い」MC を指している場合 (= 別 Mod 向けの
+    // build<MC> で -Pmc が全プロジェクトに効いているケース等) は、 この Mod の
+    // policy.default へフォールバックして「構成だけ」通す。 この Mod が実際の
+    // ビルド対象 (dependsOn) に含まれていなければ jar はビルドされない。
+    //   ※ 単一 Mod 構成では build<MC> はその Mod が持つ MC のみ登録されるため、
+    //     このフォールバックは発火しない (= 従来挙動と同一)。
+    def fallback = registry.policy.defaultVersion
+    def fbEntry = fallback ? registry.findByMinecraftVersion(fallback) : null
+    if (fbEntry != null) {
+        logger.lifecycle(
+            "[${project.path}] -Pmc=${targetMcVersion} はこの Mod に未登録のため " +
+            "policy.default=${fallback} で構成します (この Mod はこの MC のビルド対象外)。")
+        entry = fbEntry
+    } else {
+        throw new GradleException(
+            "[${project.path}] MC '${targetMcVersion}' は versions.json に登録されておらず、 " +
+            "policy.default も解決できません。 登録済み: ${registry.entries*.minecraftVersion}")
+    }
 }
 
-project.ext.omniRegistryEntry = entry
+project.ext.modRegistryEntry = entry
 logger.lifecycle("[${project.path}] target = MC ${entry.minecraftVersion} (loader=${entry.loaderVersion}, " +
     "api=${entry.fabricApiVersion}, yarn='${entry.yarnMappings}')")
 
 // ---------------------------------------------------------------------
 // 2) Mod メタデータ
+//    settings.gradle が mods/<modid>/gradle.properties を beforeProject で
+//    当サブプロジェクトへ ext 注入しているため findProperty で解決できる。
+//    フォールバックの mod_id は mods/<modid>/ のディレクトリ名を用いる。
 // ---------------------------------------------------------------------
-def modId      = project.findProperty('mod_id')      ?: rootProject.findProperty('mod_id')      ?: 'omnichest'
+def modId      = project.findProperty('mod_id')      ?: rootProject.findProperty('mod_id')      ?: modDir.name
 def modVersion = project.findProperty('mod_version') ?: rootProject.findProperty('mod_version') ?: '0.0.0'
-def mavenGroup = project.findProperty('maven_group') ?: rootProject.findProperty('maven_group') ?: 'com.kajiwara'
+def mavenGroup = project.findProperty('maven_group') ?: rootProject.findProperty('maven_group') ?: 'com.example'
 
 version = modVersion
 group   = mavenGroup
@@ -120,7 +145,12 @@ tasks.named('processResources') {
 // 6) LICENSE バンドル
 // ---------------------------------------------------------------------
 tasks.named('jar') {
-    def licenseFile = rootProject.file('LICENSE')
+    // Mod 固有の LICENSE (mods/<modid>/LICENSE) があればそれを、
+    // 無ければ共有基盤の root LICENSE をバンドルする。
+    def licenseFile = new File(modDir, 'LICENSE')
+    if (!licenseFile.exists()) {
+        licenseFile = rootProject.file('LICENSE')
+    }
     if (licenseFile.exists()) {
         from(licenseFile) {
             rename { "${it}_${modId}" }

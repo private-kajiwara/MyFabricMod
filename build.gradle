@@ -1,38 +1,44 @@
 // =====================================================================
-// build.gradle (root)
+// build.gradle (root / Mod 非依存の共有基盤)
 // ---------------------------------------------------------------------
-//   versions/versions.json に登録された "実在する MC" だけを対象に
-//   下記のタスクを提供する:
+//   mods/<modid>/ 配下の各 Mod を「自動探索」し、 各 Mod 固有の
+//   versions/versions.json を読んで以下のタスクを提供する。
 //
-//     ./gradlew validateVersions     — Mojang & Fabric Meta で実在性検証
-//     ./gradlew build<MC>            — 1 バージョンビルド (例: build1_21_11)
-//     ./gradlew buildAll             — 登録済み全 MC を別 invocation で順次ビルド
-//     ./gradlew buildRecommended     — 推奨ビルドを別 invocation で実行
-//     ./gradlew printVersions        — 登録バージョン一覧 (1 行 1 件)
-//     ./gradlew printVersionsJson    — CI matrix 用 JSON 配列
-//     ./gradlew printRecommended     — 推奨ビルドの MC を表示
-//     ./gradlew collectArtifacts     — fabric/build/libs/*/ の jar を集約
+//   ■ ルート集約タスク (全 Mod を横断 — 単一 Mod のときは従来と同一挙動):
+//     ./gradlew validateVersions     — 全 Mod の versions.json を検証
+//     ./gradlew build<MC>            — その MC を持つ全 Mod を 1 バージョンビルド
+//     ./gradlew buildAll             — 全 Mod の全 MC を順次ビルドし dist へ集約
+//     ./gradlew buildRecommended     — 全 Mod の推奨ビルドを生成
+//     ./gradlew printVersions        — 全 Mod の登録 MC を出力
+//     ./gradlew printVersionsJson    — CI matrix 用 JSON (全 Mod の buildable 和集合)
+//     ./gradlew printRecommended     — 推奨 MC を表示
+//     ./gradlew collectArtifacts     — 全 Mod の jar を root/build/libs に集約
+//
+//   ■ Mod 毎タスク (<modid> = mods/ 配下のディレクトリ名):
+//     ./gradlew <modid>ValidateVersions / <modid>BuildAll /
+//               <modid>CollectDist / <modid>BuildRecommended /
+//               <modid>PrintVersions / <modid>PrintVersionsJson /
+//               <modid>PrintRecommended
+//
+//   単一 Mod (例: omnichest のみ) の場合、 ルート集約タスクは
+//   その Mod だけを対象とするため、 従来の単一 Mod 構成と機能的に同一。
 // =====================================================================
 
-import com.kajiwara.omnichest.build.VersionRegistry
-import com.kajiwara.omnichest.build.VersionValidator
+import com.fabricmod.build.VersionRegistry
+import com.fabricmod.build.VersionValidator
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
     id 'base'
 }
 
-version = project.findProperty('mod_version') ?: '0.0.0'
-group   = project.findProperty('maven_group') ?: 'com.kajiwara'
+version = '0.0.0'
+group   = 'com.example'
 
 // ---------------------------------------------------------------------
 // root の `clean` を全 subproject の clean に伝播させる。
-//
-// Gradle のデフォルトでは ./gradlew clean は root project の build/ しか
-// 消さない。 fabric/build/ に過去の compile output が残っていると、
-// incremental Java compile が「変更なし」 と判定して新規ファイルだけ
-// recompile しようとし、 Loom の classpath 構築が間に合わずに
-// "package net.minecraft.* does not exist" が出るケースを防ぐ。
+// (Gradle デフォルトでは root の build/ しか消さない。 各 :fabric の
+//  過去 compile output 残留による Loom classpath 不整合を防ぐ。)
 // ---------------------------------------------------------------------
 gradle.projectsEvaluated {
     tasks.named('clean').configure {
@@ -46,18 +52,6 @@ gradle.projectsEvaluated {
 }
 
 // ---------------------------------------------------------------------
-// Registry をロード
-// ---------------------------------------------------------------------
-def registry = VersionRegistry.load(rootProject.file('versions'))
-ext.omniRegistry = registry
-
-if (registry.entries.isEmpty()) {
-    throw new GradleException(
-        "versions/versions.json に有効なエントリがありません。 " +
-        "実在する Minecraft バージョンを少なくとも 1 件登録してください。")
-}
-
-// ---------------------------------------------------------------------
 // プラットフォーム別の gradle wrapper コマンド
 // ---------------------------------------------------------------------
 def isWindows = OperatingSystem.current().isWindows()
@@ -66,198 +60,276 @@ def wrapperCmd = isWindows
     : ['./gradlew']
 
 // ---------------------------------------------------------------------
-// validateVersions
+// Mod 探索: mods/<dir>/ のうち versions/versions.json を持つものを Mod とみなす。
+//   各 Mod について次を解決する:
+//     dirName    ... mods/ 配下のディレクトリ名 (= Gradle プロジェクトパス & タスク接頭辞)
+//     id         ... mod_id (mods/<dir>/gradle.properties。 既定は dirName)
+//     version    ... mod_version (同上)
+//     registry   ... mods/<dir>/versions から読んだ VersionRegistry
+//     fabricPath ... :mods:<dir>:fabric
 // ---------------------------------------------------------------------
-def validationCacheDir = layout.buildDirectory.dir('version-validation-cache').get().asFile
+def modsRoot = file('mods')
+def mods = []
+if (modsRoot.isDirectory()) {
+    modsRoot.listFiles().findAll { it.isDirectory() }.sort { it.name }.each { File modDir ->
+        def versionsDir = new File(modDir, 'versions')
+        if (!new File(versionsDir, 'versions.json').exists()) {
+            return  // versions.json を持たないディレクトリは Mod とみなさない
+        }
+        def reg = VersionRegistry.load(versionsDir)
+        def mp = new Properties()
+        def gpf = new File(modDir, 'gradle.properties')
+        if (gpf.exists()) {
+            gpf.withInputStream { mp.load(it) }
+        }
+        mods << [
+            dirName   : modDir.name,
+            id        : (mp.getProperty('mod_id') ?: modDir.name),
+            version   : (mp.getProperty('mod_version') ?: '0.0.0'),
+            registry  : reg,
+            fabricPath: ":mods:${modDir.name}:fabric".toString(),
+        ]
+    }
+}
 
-tasks.register('validateVersions') {
-    group = 'verification'
-    description = 'versions.json の各エントリが Mojang / Fabric Meta API で解決可能か検証する'
-    def offline = providers.gradleProperty('validation.offline').getOrElse('false').toBoolean()
-    doLast {
-        def report = VersionValidator.validate(registry, validationCacheDir, offline)
-        logger.lifecycle('\n' + report.format())
-        logger.lifecycle("→ errors=${report.errors()}, warnings=${report.warns()}")
-        file(layout.buildDirectory.file('version-validation-summary.txt')).
-            tap { it.parentFile.mkdirs() }.text =
-            "errors=${report.errors()}\nwarnings=${report.warns()}\n"
-        if (!report.ok()) {
-            throw new GradleException(
-                "validateVersions: ${report.errors()} 件のエラー。 " +
-                "実在しない、 もしくは Fabric ecosystem で解決できないバージョンが含まれています。")
+if (mods.isEmpty()) {
+    throw new GradleException(
+        "mods/ 配下に versions/versions.json を持つ Mod が 1 つも見つかりません。 " +
+        "新しい Mod は mods/<modid>/ に versions/versions.json を置いてください。")
+}
+
+// ---------------------------------------------------------------------
+// 集約タスク用のコレクタ
+// ---------------------------------------------------------------------
+def allBuildAllTasks       = []
+def allCollectDistTasks    = []
+def allValidateTasks       = []
+def allBuildRecommended    = []
+// build<MC> ルートエイリアス用: MC -> [その MC を持つ Mod のリスト]
+def modsByMC = [:].withDefault { [] }
+
+// ---------------------------------------------------------------------
+// Mod 毎タスクを生成
+// ---------------------------------------------------------------------
+mods.each { m ->
+    def reg     = m.registry
+    def pfx     = m.dirName        // タスク名接頭辞
+    def modId   = m.id
+    def modVer  = m.version
+    def fabricBuild = "${m.fabricPath}:build".toString()
+
+    // ---- validateVersions (Mod 毎) ----
+    def validationCacheDir = layout.buildDirectory.dir("version-validation-cache/${pfx}").get().asFile
+    def vTask = tasks.register("${pfx}ValidateVersions") {
+        group = 'verification'
+        description = "[${modId}] versions.json の各エントリを Mojang / Fabric Meta で検証"
+        def offline = providers.gradleProperty('validation.offline').getOrElse('false').toBoolean()
+        doLast {
+            def report = VersionValidator.validate(reg, validationCacheDir, offline)
+            logger.lifecycle("\n[${modId}]\n" + report.format())
+            logger.lifecycle("→ errors=${report.errors()}, warnings=${report.warns()}")
+            if (!report.ok()) {
+                throw new GradleException(
+                    "[${modId}] validateVersions: ${report.errors()} 件のエラー。")
+            }
+        }
+    }
+    allValidateTasks << vTask.name
+
+    // ---- build<MC> ルートエイリアスへの登録情報を収集 ----
+    reg.entries.each { VersionRegistry.Entry e ->
+        modsByMC[e.minecraftVersion] << [m: m, entry: e, validate: vTask.name]
+    }
+
+    // ---- buildAll (Mod 毎): buildable な各 MC を別プロセスで順次ビルド ----
+    def execSeq = []
+    reg.buildableEntries().eachWithIndex { VersionRegistry.Entry e, int idx ->
+        def execTaskName = "_exec_${pfx}_${e.id}".toString()
+        def prevExec = idx > 0 ? execSeq.last() : null
+        tasks.register(execTaskName, Exec) {
+            group = 'mod build'
+            description = "[internal][${modId}] :mods:${pfx}:fabric:build -Pmc=${e.minecraftVersion} を別プロセスで起動"
+            workingDir = rootProject.projectDir
+            commandLine wrapperCmd + ["${m.fabricPath}:build".toString(), "-Pmc=${e.minecraftVersion}".toString()]
+            if (prevExec != null) {
+                mustRunAfter prevExec
+            }
+        }
+        execSeq << ":${execTaskName}".toString()
+    }
+
+    def cdTask = tasks.register("${pfx}CollectDist", Copy) {
+        group = 'mod build'
+        description = "[${modId}] 配布用 jar (現 mod_version) を dist/${modId}/${modVer}/ に集約"
+        into layout.projectDirectory.dir("dist/${modId}/${modVer}")
+        from(project(m.fabricPath).layout.buildDirectory.dir('libs')) {
+            include "**/${modId}-${modVer}+*-fabric.jar"
+            eachFile { it.path = it.name }   // <MC>/ 階層を平坦化
+            includeEmptyDirs = false
+        }
+        mustRunAfter execSeq
+        mustRunAfter fabricBuild
+    }
+    allCollectDistTasks << cdTask.name
+
+    def baTask = tasks.register("${pfx}BuildAll") {
+        group = 'mod build'
+        description = "[${modId}] 登録された全 MC を別プロセスで順次ビルドし dist へ集約"
+        dependsOn execSeq
+        dependsOn cdTask
+    }
+    allBuildAllTasks << baTask.name
+
+    // ---- buildRecommended (Mod 毎) ----
+    def rec = reg.recommendedStable()
+    if (rec != null) {
+        def brTask = tasks.register("${pfx}BuildRecommended", Exec) {
+            group = 'mod build'
+            description = "[${modId}] 推奨ビルド (MC ${rec.minecraftVersion}) を別プロセスで生成"
+            workingDir = rootProject.projectDir
+            commandLine wrapperCmd + ["${m.fabricPath}:build".toString(), "-Pmc=${rec.minecraftVersion}".toString()]
+        }
+        allBuildRecommended << brTask.name
+    }
+
+    // ---- print 系 (Mod 毎) ----
+    tasks.register("${pfx}PrintVersions") {
+        group = 'mod build'
+        description = "[${modId}] 登録済み MC を 1 行 1 件で出力 (保留中は [held])"
+        doLast {
+            reg.entries.each {
+                println it.buildable ? it.minecraftVersion : "${it.minecraftVersion} [held]"
+            }
+        }
+    }
+    tasks.register("${pfx}PrintVersionsJson") {
+        group = 'mod build'
+        description = "[${modId}] buildable な MC を JSON 配列で出力"
+        doLast {
+            println '[' + reg.buildableEntries().collect { "\"${it.minecraftVersion}\"" }.join(',') + ']'
+        }
+    }
+    tasks.register("${pfx}PrintRecommended") {
+        group = 'mod build'
+        description = "[${modId}] 推奨 (stable & recommended) MC を表示"
+        doLast {
+            def r = reg.recommendedStable()
+            println r == null ? '' : r.minecraftVersion
         }
     }
 }
 
 // ---------------------------------------------------------------------
-// build<MC> — settings.gradle が事前に -Pmc=<MC> を自動注入しているので、
-// ここでは :fabric:build に依存させるだけの簡単なエイリアス。
+// build<MC> ルートエイリアス
+//   settings.gradle が task 名から -Pmc=<MC> を自動注入しているので、
+//   ここではその MC を持つ全 Mod の :fabric:build に依存させる。
+//   (-Pmc は全プロジェクトに効くため、 その MC を持たない Mod の :fabric は
+//    convention plugin 側で policy.default にフォールバックして構成だけ通る。
+//    ビルド対象には含めない。)
 // ---------------------------------------------------------------------
-registry.entries.each { VersionRegistry.Entry e ->
-    String taskName = "build${e.id}"
+modsByMC.each { String mc, List targets ->
+    String taskName = "build${mc.replace('.', '_')}".toString()
     tasks.register(taskName) {
         group = 'mod build'
-        description = "MC ${e.minecraftVersion} 向け jar をビルド"
-        // policy で要求されていれば検証を先行させる
-        if (registry.policy.buildOnlyValidated) {
-            dependsOn 'validateVersions'
+        description = "MC ${mc} 向け jar をビルド (${targets.collect { it.m.id }.join(', ')})"
+        targets.each { t ->
+            if (t.m.registry.policy.buildOnlyValidated) {
+                dependsOn t.validate
+            }
+            dependsOn "${t.m.fabricPath}:build".toString()
         }
-        dependsOn ':fabric:build'
     }
 }
 
 // ---------------------------------------------------------------------
-// buildAll — 各 MC を独立した gradle invocation で順次ビルド
-//   :fabric は 1 invocation あたり 1 つの mc しか持てないため、
-//   per-MC に gradlew を fork する以外の方法はない。
+// ルート集約タスク (全 Mod 横断)
 // ---------------------------------------------------------------------
-def buildAllSequence = []
-// buildable=false (= 上流マッピング未公開で保留中) のバージョンは buildAll から除外する。
-// 個別の build<MC> エイリアスは全エントリに残してあるので、 マッピング公開後に
-// versions.json の buildable を true へ戻せば自動的に buildAll 対象へ復帰する。
-registry.buildableEntries().eachWithIndex { VersionRegistry.Entry e, int idx ->
-    def execTaskName = "_execBuild${e.id}"
-    // 「直前の exec タスク」をこのイテレーションの時点で確定させる。
-    //   tasks.register(...) の構成クロージャは遅延評価される。 もし
-    //   `mustRunAfter buildAllSequence.last()` をクロージャ内で書くと、
-    //   評価時点では list に全 exec タスクが追加され尽くしているため
-    //   .last() は常に最後のタスク (= 自分自身を含む) を指してしまい、
-    //   _execBuild26_1_2 が自分自身に mustRunAfter する循環依存になる。
-    //   ここで local 変数に固定 (eager capture) して循環を断つ。
-    def prevExecTask = idx > 0 ? buildAllSequence.last() : null
-    tasks.register(execTaskName, Exec) {
-        group = 'mod build'
-        description = "[internal] gradlew build${e.id} を別プロセスで起動"
-        workingDir = rootProject.projectDir
-        commandLine wrapperCmd + ["build${e.id}"]
-        // 直前の exec が終わってから走らせる (Gradle 並列実行を避ける)
-        if (prevExecTask != null) {
-            mustRunAfter prevExecTask
-        }
-    }
-    buildAllSequence << ":${execTaskName}"
+tasks.register('validateVersions') {
+    group = 'verification'
+    description = '全 Mod の versions.json を検証'
+    dependsOn allValidateTasks
 }
 
 tasks.register('buildAll') {
     group = 'mod build'
-    description = 'versions.json に登録された全 MC を別プロセスで順次ビルドし、 成果物を dist/ に集約'
-    dependsOn buildAllSequence
-    // 全 MC ビルド後に dist/ へ集約 (collectDist は buildAllSequence の後に走る)
-    dependsOn 'collectDist'
+    description = '全 Mod の全 MC を順次ビルドし、 成果物を dist/<modid>/<modversion>/ に集約'
+    dependsOn allBuildAllTasks
 }
 
-// ---------------------------------------------------------------------
-// buildRecommended
-// ---------------------------------------------------------------------
-def recommended = registry.recommendedStable()
-if (recommended != null) {
-    tasks.register('buildRecommended', Exec) {
+tasks.register('collectDist') {
+    group = 'mod build'
+    description = '全 Mod の配布用 jar を dist/<modid>/<modversion>/ に集約'
+    dependsOn allCollectDistTasks
+}
+
+if (!allBuildRecommended.isEmpty()) {
+    tasks.register('buildRecommended') {
         group = 'mod build'
-        description = "推奨ビルド (MC ${recommended.minecraftVersion}) を別プロセスで生成"
-        workingDir = rootProject.projectDir
-        commandLine wrapperCmd + ["build${recommended.id}"]
+        description = '全 Mod の推奨ビルドを生成'
+        dependsOn allBuildRecommended
     }
 }
 
-// ---------------------------------------------------------------------
-// printVersions / printVersionsJson / printRecommended
-// ---------------------------------------------------------------------
 tasks.register('printVersions') {
     group = 'mod build'
-    description = '登録済み MC バージョンを 1 行 1 件で出力 (保留中は [held] を付与)'
+    description = '全 Mod の登録 MC を出力 (Mod が複数なら見出し付き)'
     doLast {
-        registry.entries.each {
-            println it.buildable ? it.minecraftVersion : "${it.minecraftVersion} [held]"
+        def multi = mods.size() > 1
+        mods.each { m ->
+            if (multi) println "# ${m.id}"
+            m.registry.entries.each {
+                println it.buildable ? it.minecraftVersion : "${it.minecraftVersion} [held]"
+            }
         }
     }
 }
 
 tasks.register('printVersionsJson') {
     group = 'mod build'
-    description = 'CI matrix 用に「ビルド可能な」 MC を JSON 配列で出力 (buildable=false は除外)'
+    description = 'CI matrix 用: 全 Mod の buildable な MC を重複排除した JSON 配列で出力'
     doLast {
-        println '[' + registry.buildableEntries().collect { "\"${it.minecraftVersion}\"" }.join(',') + ']'
+        def all = mods.collectMany { it.registry.buildableEntries().collect { e -> e.minecraftVersion } }.unique()
+        println '[' + all.collect { "\"${it}\"" }.join(',') + ']'
     }
 }
 
 tasks.register('printRecommended') {
     group = 'mod build'
-    description = '推奨 (stable & recommended) MC を表示'
+    description = '推奨 MC を表示 (Mod が複数なら "modid: MC" 形式)'
     doLast {
-        def r = registry.recommendedStable()
-        println r == null ? '' : r.minecraftVersion
+        if (mods.size() == 1) {
+            def r = mods[0].registry.recommendedStable()
+            println r == null ? '' : r.minecraftVersion
+        } else {
+            mods.each { m ->
+                def r = m.registry.recommendedStable()
+                println "${m.id}: ${r == null ? '' : r.minecraftVersion}"
+            }
+        }
     }
 }
 
 // ---------------------------------------------------------------------
-// collectArtifacts — fabric/build/libs/<MC>/ 配下の jar を root build/libs に集約
+// collectArtifacts — 全 Mod の fabric/build/libs/<MC>/ の jar を
+//   root/build/libs に集約 (階層を平坦化)
 // ---------------------------------------------------------------------
 tasks.register('collectArtifacts', Copy) {
     group = 'mod build'
-    description = 'fabric/build/libs/<MC>/ の jar を root/build/libs/ に集約'
+    description = '全 Mod の fabric jar を root/build/libs/ に集約'
     destinationDir = layout.buildDirectory.dir('libs').get().asFile
-    from(project(':fabric').layout.buildDirectory.dir('libs')) {
-        include '**/*.jar'
-        // ディレクトリ階層を平坦化
-        eachFile { it.path = it.name }
-        includeEmptyDirs = false
+    mods.each { m ->
+        from(project(m.fabricPath).layout.buildDirectory.dir('libs')) {
+            include '**/*.jar'
+            eachFile { it.path = it.name }
+            includeEmptyDirs = false
+        }
     }
 }
 
 // ---------------------------------------------------------------------
-// collectDist — 配布用の最終 jar を dist/<mod_version>/ に集約 (Copy = 過去版を残す)
-//
-//   fabric/build/libs/<MC>/ には per-MC の最終 jar が出るが、 mod_version を
-//   上げると旧版 jar が同ディレクトリに残留する (clean を挟まない限り)。
-//   そこで「今回の mod_version の最終 jar だけ」を dist/<mod_version>/ にミラーする:
-//
-//     - include パターンを <modId>-<modVersion>+*-fabric.jar に固定
-//         → sources jar (...-fabric-sources.jar) と
-//           remap 版の中間 dev jar (...-dev.jar) は自動的に除外される。
-//         → 今回の版フォルダには現 mod_version の jar しか入らない (版が混在しない)。
-//     - 出力先は版別フォルダ dist/<mod_version>/。 Copy なので出力先を clean せず、
-//       別版は dist/1.0.0/ dist/1.0.2/ … と別フォルダで蓄積し、 過去版はディスク上に残る。
-//       同一版の再ビルドは同名 jar を上書き。
-//     - dist/ 全体は .gitignore で無視済みのため、 版が貯まっても Git には載らない。
-//
-//   buildAll が finalize 代わりに dependsOn しているため、
-//   ./gradlew buildAll を打てば全 MC 分の最終 jar が dist/<mod_version>/ に揃う。
-//   単一 MC の場合は ./gradlew build<MC> collectDist で同様に集約できる。
-// ---------------------------------------------------------------------
-def modId = (project.findProperty('mod_id') ?: 'omnichest').toString()
-
-tasks.register('collectDist', Copy) {
-    group = 'mod build'
-    description = "配布用の最終 jar (現 mod_version) を dist/<mod_version>/ に集約 (過去版は残す)"
-    // 版別フォルダ dist/<mod_version>/ に出力する。
-    //   Copy (≠ Sync) なので出力先を clean しない:
-    //     - 別 mod_version をビルドすると別フォルダ (dist/1.0.0/, dist/1.0.2/, …) が
-    //       追加され、 過去版フォルダはディスク上に残る。
-    //     - 同一版を再ビルドすると同名 jar は上書き (= 最新成果物で更新)。
-    //   dist/ 全体は .gitignore で無視済みなので、 版が貯まっても Git には載らない。
-    into layout.projectDirectory.dir("dist/${version}")
-    from(project(':fabric').layout.buildDirectory.dir('libs')) {
-        include "**/${modId}-${version}+*-fabric.jar"
-        // <MC>/ のディレクトリ階層を平坦化して dist/<mod_version>/ 直下に置く
-        eachFile { it.path = it.name }
-        includeEmptyDirs = false
-    }
-    // 集約は「jar が出来てから」走らなければならない。
-    //   - buildAll 経由: 各 MC を別プロセスで焼く _execBuild* の後 (buildAllSequence)。
-    //   - 単一 MC 経由 (build<MC> collectDist): 同一 invocation 内の :fabric:build の後。
-    // mustRunAfter は対象が task graph に居るときだけ効くので、 両方併記して安全。
-    mustRunAfter buildAllSequence
-    mustRunAfter ':fabric:build'
-}
-
-// ---------------------------------------------------------------------
-// :common のみ Java 設定を root から強制する。
-//
-// :fabric は fabric-loom-remap が自分で java plugin を apply し、
-// splitEnvironmentSourceSets() で client sourceSet を構成する。
-// root から `apply plugin: 'java'` を重ねがけすると sourceSet 初期化
-// 順序と衝突して compileClientJava の classpath が壊れる事例があるため、
-// :fabric には触らない。
+// 各 Mod の :common のみ Java 設定を root から強制する。
+//   (:fabric は Loom が自前で java plugin / splitEnvironmentSourceSets を
+//    構成するため触らない。)
 // ---------------------------------------------------------------------
 configure(subprojects.findAll { it.name == 'common' }) {
     apply plugin: 'java'
