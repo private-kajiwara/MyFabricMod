@@ -34,18 +34,33 @@ OmniChest は **自己完結した Stonecutter included build**（`mods/omniches
 > JDK 25** で起動している必要がある。 そのため 26.1.x を触る際は `JAVA_HOME` を JDK 25 に
 > 向けて `gradlew` を起動する（JDK 25 デーモンは toolchain=21 経由で 1.21.11 ノードも問題なくビルドできる）。
 
-### 単一版を直接ビルド / 起動（`cd mods/omnichest`）
+### クライアント起動（runClient）— そのままコピペ
+
+Windows PowerShell:
 
 ```powershell
-# 例: Windows PowerShell。 26.1.x は JAVA_HOME=JDK25 を先に設定
-$env:JAVA_HOME = "C:\Users\<you>\.jdks\jdk-25.0.3+9"
-cd mods\omnichest
-
-.\gradlew.bat :26.1.2:build        # その版をビルド (jar -> versions/26.1.2/build/libs/)
-.\gradlew.bat :1.21.11:build       # 1.21.11 は remapJar まで生成
-.\gradlew.bat :26.1.2:runClient    # クライアント起動
-.\gradlew.bat :1.21.11:runClient   # 別世代のクライアント起動
+$env:JAVA_HOME = "C:\Users\ppapk\.jdks\jdk-25.0.3+9"
+cd C:\MyFabricMod\mods\omnichest
+.\gradlew.bat :1.21.11:runClient
 ```
+
+別世代（26.1.2）を起動するときは最後の行だけ差し替える:
+
+```powershell
+.\gradlew.bat :26.1.2:runClient
+```
+
+### Minecraft ビルド（jar 生成）— そのままコピペ
+
+```powershell
+$env:JAVA_HOME = "C:\Users\ppapk\.jdks\jdk-25.0.3+9"
+cd C:\MyFabricMod\mods\omnichest
+.\gradlew.bat :1.21.11:build        # jar -> versions/1.21.11/build/libs/ (remapJar まで生成)
+.\gradlew.bat :26.1.2:build         # jar -> versions/26.1.2/build/libs/
+```
+
+> `JAVA_HOME` のパス（`C:\Users\ppapk\.jdks\jdk-25.0.3+9`）は環境に合わせて読み替える。
+> 同じ PowerShell セッション内なら `$env:JAVA_HOME` と `cd` は一度設定すれば使い回せる。
 
 タスク名は **版ノード**（`:<MC>:build` / `:<MC>:runClient`）。 旧構成の `:fabric:runClient` /
 `-Pmc=` は Stonecutter 化により**使えない**（`mods/omnichest` は included build で
