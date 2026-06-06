@@ -30,8 +30,12 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with:
-          java-version: '21'
           distribution: 'temurin'
+          # 26.1.x は Java 25 (Gradle デーモン自身が JDK25 で動く必要がある)。
+          # 1.21.11 は toolchain=21。 両方入れ、 最後の 25 が JAVA_HOME=デーモンになる。
+          java-version: |
+            21
+            25
       - run: chmod +x ./gradlew
 
       - name: build matrix from all mods' versions.json
@@ -56,8 +60,12 @@ jobs:
       - uses: gradle/actions/wrapper-validation@v6
       - uses: actions/setup-java@v5
         with:
-          java-version: '21'
           distribution: 'temurin'
+          # 26.1.x は Java 25 (Gradle デーモン自身が JDK25 で動く必要がある)。
+          # 1.21.11 は toolchain=21。 両方入れ、 最後の 25 が JAVA_HOME=デーモンになる。
+          java-version: |
+            21
+            25
       - run: chmod +x ./gradlew
       - name: validateVersions
         run: ./gradlew validateVersions --stacktrace
@@ -77,21 +85,31 @@ jobs:
       - uses: gradle/actions/wrapper-validation@v6
       - uses: actions/setup-java@v5
         with:
-          java-version: '21'
           distribution: 'temurin'
+          # 26.1.x は Java 25 (Gradle デーモン自身が JDK25 で動く必要がある)。
+          # 1.21.11 は toolchain=21。 両方入れ、 最後の 25 が JAVA_HOME=デーモンになる。
+          java-version: |
+            21
+            25
       - run: chmod +x ./gradlew
 
       - name: build MC ${{ matrix.minecraft }}
         run: |
           TASK="build$(echo '${{ matrix.minecraft }}' | tr '.' '_')"
           echo "→ ./gradlew $TASK"
-          ./gradlew "$TASK" --stacktrace
+          # setup-java が入れた JDK を Gradle の toolchain 探索に渡す
+          # (デーモン=JDK25 で 1.21.11 ノードの toolchain=21 を解決するため)。
+          ./gradlew "$TASK" --stacktrace \
+            "-Dorg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64"
 
       - uses: actions/upload-artifact@v7
         with:
           name: mods-mc${{ matrix.minecraft }}
-          # 最終 jar は mods/<modid>/fabric/build/libs/<MC>/ 配下に出る。
-          # *-fabric.jar だけを拾えば sources(...-fabric-sources.jar) と
-          # remap 版の中間 dev jar(...-dev.jar) は自動的に除外される。
-          path: mods/*/fabric/build/libs/**/*-fabric.jar
+          # 旧来 Mod: mods/<modid>/fabric/build/libs/<MC>/*-fabric.jar
+          # Stonecutter Mod: mods/<modid>/versions/<MC>/build/libs/*.jar
+          #   (sources は除外)
+          path: |
+            mods/*/fabric/build/libs/**/*-fabric.jar
+            mods/*/versions/*/build/libs/*.jar
+            !mods/*/versions/*/build/libs/*-sources.jar
           if-no-files-found: warn
