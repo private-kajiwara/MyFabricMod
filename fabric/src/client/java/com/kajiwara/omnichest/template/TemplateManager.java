@@ -114,7 +114,8 @@ public final class TemplateManager {
             return ChestTemplate.create(suggestedName, 0, kind, new ArrayList<>());
 
         List<SlotRule> rules = new ArrayList<>(containerSlotCount);
-        for (int i = 0; i < containerSlotCount; i++) {
+        int upper = Math.min(containerSlotCount, menu.slots.size());
+        for (int i = 0; i < upper; i++) {
             Slot s = menu.slots.get(i);
             ItemStack stack = s.getItem();
             if (stack.isEmpty()) {
