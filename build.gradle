@@ -117,14 +117,22 @@ def buildAllSequence = []
 // versions.json の buildable を true へ戻せば自動的に buildAll 対象へ復帰する。
 registry.buildableEntries().eachWithIndex { VersionRegistry.Entry e, int idx ->
     def execTaskName = "_execBuild${e.id}"
+    // 「直前の exec タスク」をこのイテレーションの時点で確定させる。
+    //   tasks.register(...) の構成クロージャは遅延評価される。 もし
+    //   `mustRunAfter buildAllSequence.last()` をクロージャ内で書くと、
+    //   評価時点では list に全 exec タスクが追加され尽くしているため
+    //   .last() は常に最後のタスク (= 自分自身を含む) を指してしまい、
+    //   _execBuild26_1_2 が自分自身に mustRunAfter する循環依存になる。
+    //   ここで local 変数に固定 (eager capture) して循環を断つ。
+    def prevExecTask = idx > 0 ? buildAllSequence.last() : null
     tasks.register(execTaskName, Exec) {
         group = 'mod build'
         description = "[internal] gradlew build${e.id} を別プロセスで起動"
         workingDir = rootProject.projectDir
         commandLine wrapperCmd + ["build${e.id}"]
         // 直前の exec が終わってから走らせる (Gradle 並列実行を避ける)
-        if (idx > 0) {
-            mustRunAfter buildAllSequence.last()
+        if (prevExecTask != null) {
+            mustRunAfter prevExecTask
         }
     }
     buildAllSequence << ":${execTaskName}"

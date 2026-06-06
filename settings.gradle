@@ -62,11 +62,40 @@ if (matchedMCs.size() > 1) {
         "別々に invoke するか、 ./gradlew buildAll を使ってください。")
 }
 
-if (matchedMCs.size() == 1 && !startParameter.projectProperties.containsKey('mc')) {
-    // startParameter.projectProperties は ImmutableMap なので直接 put 不可。
-    // コピーを作って setter 経由で差し替える。
-    def newProps = new LinkedHashMap(startParameter.projectProperties)
-    newProps['mc'] = matchedMCs[0]
-    startParameter.projectProperties = newProps
-    println "[settings] task name から -Pmc=${matchedMCs[0]} を自動注入しました"
+if (matchedMCs.size() == 1) {
+    def requestedMC = matchedMCs[0]
+
+    // versions.json に登録されている MC だけを build<MC> として受け付ける。
+    //   登録外の MC を渡すと、 従来は -Pmc を「注入した」と表示した直後に
+    //   "Task 'build<MC>' not found" で落ちて原因が分かりにくかった。
+    //   ここで settings 段階で実在チェックし、 登録済みタスク一覧を添えて
+    //   早期に明示的なエラーにする (build<MC> タスクは build.gradle が
+    //   versions.json のエントリからのみ生成するため、 ここの集合と一致する)。
+    def versionsJson = new File(rootDir, 'versions/versions.json')
+    def registeredMCs = []
+    if (versionsJson.exists()) {
+        def json = new groovy.json.JsonSlurper().parse(versionsJson)
+        registeredMCs = (json.versions ?: []).collect { it.minecraft as String }
+    }
+
+    if (!registeredMCs.contains(requestedMC)) {
+        def avail = registeredMCs.collect { "build${it.replace('.', '_')}" }
+        throw new GradleException(
+            "build${requestedMC.replace('.', '_')} は登録されていません " +
+            "(versions/versions.json に MC '${requestedMC}' のエントリがありません)。\n" +
+            "このブランチで利用可能な build<MC> タスク: ${avail.join(', ')}\n" +
+            "※ MC 1.21.11 (難読化版) をビルドするには 'legacy-1.21.11' ブランチに切り替えてください。")
+    }
+
+    if (!startParameter.projectProperties.containsKey('mc')) {
+        // startParameter.projectProperties は ImmutableMap なので直接 put 不可。
+        // コピーを作って setter 経由で差し替える。
+        // 注意: この注入は subproject の providers.gradleProperty('mc') には
+        //       伝播しない (Gradle 9)。 :fabric 側の convention plugin は
+        //       gradle.startParameter.projectProperties['mc'] を直接読んで補完している。
+        def newProps = new LinkedHashMap(startParameter.projectProperties)
+        newProps['mc'] = requestedMC
+        startParameter.projectProperties = newProps
+        println "[settings] task name から -Pmc=${requestedMC} を自動注入しました"
+    }
 }
