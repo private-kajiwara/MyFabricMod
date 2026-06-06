@@ -36,22 +36,25 @@ gradle wrapper) が Mod 固有名をハードコードせずに各 Mod をビル
 
 ## ビルド方法
 
-すべてリポジトリのルートで実行します（Windows は `gradlew.bat`、macOS/Linux は `./gradlew`）。
+すべてリポジトリのルートで実行します（Windows は `.\gradlew.bat`、macOS/Linux は `./gradlew`）。
+
+> 注意（このブランチの対象 MC）: 現在のブランチは **MC 26.1.x 専用**です。
+> 使えるのは `build26_1` / `build26_1_1` / `build26_1_2`。
+> MC 1.21.11（難読化版）は `legacy-1.21.11` ブランチに切り替えてください。
+> 登録済みの MC は `.\gradlew.bat printVersions` で確認できます。
 
 ### クイックスタート（そのままコピペで jar を生成）
 
-Windows (PowerShell / コマンドプロンプト) — リポジトリルート `MyFabricMod` で:
+Windows PowerShell — リポジトリルート `MyFabricMod` で（先頭の `.\` が必須。
+PowerShell はカレントディレクトリのコマンドを既定で実行しないため）:
 
-```bat
-:: 推奨版 (MC 26.1.2) をビルド
-gradlew.bat buildRecommended
-
-:: 特定の MC をビルド
-gradlew.bat build26_1_2
-
-:: 全 MC をビルドして dist/ に集約
-gradlew.bat buildAll
+```powershell
+.\gradlew.bat buildRecommended    # 推奨版 (MC 26.1.2) をビルド
+.\gradlew.bat build26_1_2         # 特定の MC をビルド
+.\gradlew.bat buildAll            # 全 MC をビルドして dist/ に集約
 ```
+
+Windows コマンドプロンプト (cmd.exe) の場合は `.\` 無しでも可: `gradlew.bat buildRecommended`
 
 macOS / Linux:
 
@@ -73,7 +76,7 @@ mods/omnichest/fabric/build/libs/26.1.2/omnichest-<mod_version>+26.1.2-fabric.ja
 dist/omnichest/<mod_version>/
 ```
 
-> メモ: ビルド可能な MC は `gradlew.bat printVersions` で確認できます（`build<MC>` の
+> メモ: ビルド可能な MC は `.\gradlew.bat printVersions` で確認できます（`build<MC>` の
 > `<MC>` はドットをアンダースコアにした形 — 例 `26.1.2` → `build26_1_2`）。
 > PowerShell で `-Pmc=26.1.2` のように直接渡す場合は、ドットでトークン分割されないよう
 > `'-Pmc=26.1.2'` と引用符で囲ってください。
