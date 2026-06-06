@@ -76,7 +76,9 @@ def modsRoot = file('mods')
 def mods = []
 if (modsRoot.isDirectory()) {
     modsRoot.listFiles().findAll { it.isDirectory() }.sort { it.name }.each { File modDir ->
-        def versionsDir = new File(modDir, 'versions')
+        // Stonecutter Mod は mc-meta/、 旧来 Mod は versions/ にメタを持つ
+        def isStonecutter = new File(modDir, 'settings.gradle.kts').exists()
+        def versionsDir = new File(modDir, isStonecutter ? 'mc-meta' : 'versions')
         if (!new File(versionsDir, 'versions.json').exists()) {
             return  // versions.json を持たないディレクトリは Mod とみなさない
         }
@@ -87,11 +89,13 @@ if (modsRoot.isDirectory()) {
             gpf.withInputStream { mp.load(it) }
         }
         mods << [
-            dirName   : modDir.name,
-            id        : (mp.getProperty('mod_id') ?: modDir.name),
-            version   : (mp.getProperty('mod_version') ?: '0.0.0'),
-            registry  : reg,
-            fabricPath: ":mods:${modDir.name}:fabric".toString(),
+            dirName    : modDir.name,
+            id         : (mp.getProperty('mod_id') ?: modDir.name),
+            version    : (mp.getProperty('mod_version') ?: '0.0.0'),
+            registry   : reg,
+            stonecutter: isStonecutter,
+            dir        : modDir,
+            fabricPath : ":mods:${modDir.name}:fabric".toString(),
         ]
     }
 }
@@ -120,7 +124,6 @@ mods.each { m ->
     def pfx     = m.dirName        // タスク名接頭辞
     def modId   = m.id
     def modVer  = m.version
-    def fabricBuild = "${m.fabricPath}:build".toString()
 
     // ---- validateVersions (Mod 毎) ----
     def validationCacheDir = layout.buildDirectory.dir("version-validation-cache/${pfx}").get().asFile
@@ -145,55 +148,96 @@ mods.each { m ->
         modsByMC[e.minecraftVersion] << [m: m, entry: e, validate: vTask.name]
     }
 
-    // ---- buildAll (Mod 毎): buildable な各 MC を別プロセスで順次ビルド ----
-    def execSeq = []
-    reg.buildableEntries().eachWithIndex { VersionRegistry.Entry e, int idx ->
-        def execTaskName = "_exec_${pfx}_${e.id}".toString()
-        def prevExec = idx > 0 ? execSeq.last() : null
-        tasks.register(execTaskName, Exec) {
+    if (m.stonecutter) {
+        // ===== Stonecutter Mod: included build のノードタスクへ委譲 =====
+        //   各 MC ノード (:<MC>) の buildAndCollect が mods/<id>/build/libs/<modver>/ に
+        //   jar+sources を集約するので、 root はそれを dist/<modid>/<modver>/ へコピーするだけ。
+        def ib = gradle.includedBuild(m.dirName)
+        def collectedDir = new File(m.dir, "build/libs/${modVer}")
+
+        // composite build ではクロスビルド参照は dependsOn のみ可 (mustRunAfter 不可)。
+        // CollectDist が各ノードの buildAndCollect に依存し、 BuildAll は CollectDist に依存する。
+        def cdTask = tasks.register("${pfx}CollectDist", Copy) {
             group = 'mod build'
-            description = "[internal][${modId}] :mods:${pfx}:fabric:build -Pmc=${e.minecraftVersion} を別プロセスで起動"
-            workingDir = rootProject.projectDir
-            commandLine wrapperCmd + ["${m.fabricPath}:build".toString(), "-Pmc=${e.minecraftVersion}".toString()]
-            if (prevExec != null) {
-                mustRunAfter prevExec
+            description = "[${modId}] 配布用 jar を dist/${modId}/${modVer}/ に集約"
+            into layout.projectDirectory.dir("dist/${modId}/${modVer}")
+            from(collectedDir) {
+                include '*.jar'
+                includeEmptyDirs = false
+            }
+            reg.buildableEntries().each { VersionRegistry.Entry e ->
+                dependsOn ib.task(":${e.minecraftVersion}:buildAndCollect")
             }
         }
-        execSeq << ":${execTaskName}".toString()
-    }
+        allCollectDistTasks << cdTask.name
 
-    def cdTask = tasks.register("${pfx}CollectDist", Copy) {
-        group = 'mod build'
-        description = "[${modId}] 配布用 jar (現 mod_version) を dist/${modId}/${modVer}/ に集約"
-        into layout.projectDirectory.dir("dist/${modId}/${modVer}")
-        from(project(m.fabricPath).layout.buildDirectory.dir('libs')) {
-            include "**/${modId}-${modVer}+*-fabric.jar"
-            eachFile { it.path = it.name }   // <MC>/ 階層を平坦化
-            includeEmptyDirs = false
-        }
-        mustRunAfter execSeq
-        mustRunAfter fabricBuild
-    }
-    allCollectDistTasks << cdTask.name
-
-    def baTask = tasks.register("${pfx}BuildAll") {
-        group = 'mod build'
-        description = "[${modId}] 登録された全 MC を別プロセスで順次ビルドし dist へ集約"
-        dependsOn execSeq
-        dependsOn cdTask
-    }
-    allBuildAllTasks << baTask.name
-
-    // ---- buildRecommended (Mod 毎) ----
-    def rec = reg.recommendedStable()
-    if (rec != null) {
-        def brTask = tasks.register("${pfx}BuildRecommended", Exec) {
+        def baTask = tasks.register("${pfx}BuildAll") {
             group = 'mod build'
-            description = "[${modId}] 推奨ビルド (MC ${rec.minecraftVersion}) を別プロセスで生成"
-            workingDir = rootProject.projectDir
-            commandLine wrapperCmd + ["${m.fabricPath}:build".toString(), "-Pmc=${rec.minecraftVersion}".toString()]
+            description = "[${modId}] 全 MC を Stonecutter (included build) でビルドし dist へ集約"
+            dependsOn cdTask
         }
-        allBuildRecommended << brTask.name
+        allBuildAllTasks << baTask.name
+
+        def rec = reg.recommendedStable()
+        if (rec != null) {
+            def brTask = tasks.register("${pfx}BuildRecommended") {
+                group = 'mod build'
+                description = "[${modId}] 推奨ビルド (MC ${rec.minecraftVersion}) を生成"
+                dependsOn ib.task(":${rec.minecraftVersion}:buildAndCollect")
+            }
+            allBuildRecommended << brTask.name
+        }
+    } else {
+        // ===== 旧来 Mod: :mods:<id>:fabric:build -Pmc=<MC> を別プロセスで順次起動 =====
+        def fabricBuild = "${m.fabricPath}:build".toString()
+        def execSeq = []
+        reg.buildableEntries().eachWithIndex { VersionRegistry.Entry e, int idx ->
+            def execTaskName = "_exec_${pfx}_${e.id}".toString()
+            def prevExec = idx > 0 ? execSeq.last() : null
+            tasks.register(execTaskName, Exec) {
+                group = 'mod build'
+                description = "[internal][${modId}] :mods:${pfx}:fabric:build -Pmc=${e.minecraftVersion} を別プロセスで起動"
+                workingDir = rootProject.projectDir
+                commandLine wrapperCmd + ["${m.fabricPath}:build".toString(), "-Pmc=${e.minecraftVersion}".toString()]
+                if (prevExec != null) {
+                    mustRunAfter prevExec
+                }
+            }
+            execSeq << ":${execTaskName}".toString()
+        }
+
+        def cdTask = tasks.register("${pfx}CollectDist", Copy) {
+            group = 'mod build'
+            description = "[${modId}] 配布用 jar (現 mod_version) を dist/${modId}/${modVer}/ に集約"
+            into layout.projectDirectory.dir("dist/${modId}/${modVer}")
+            from(project(m.fabricPath).layout.buildDirectory.dir('libs')) {
+                include "**/${modId}-${modVer}+*-fabric.jar"
+                eachFile { it.path = it.name }   // <MC>/ 階層を平坦化
+                includeEmptyDirs = false
+            }
+            mustRunAfter execSeq
+            mustRunAfter fabricBuild
+        }
+        allCollectDistTasks << cdTask.name
+
+        def baTask = tasks.register("${pfx}BuildAll") {
+            group = 'mod build'
+            description = "[${modId}] 登録された全 MC を別プロセスで順次ビルドし dist へ集約"
+            dependsOn execSeq
+            dependsOn cdTask
+        }
+        allBuildAllTasks << baTask.name
+
+        def rec = reg.recommendedStable()
+        if (rec != null) {
+            def brTask = tasks.register("${pfx}BuildRecommended", Exec) {
+                group = 'mod build'
+                description = "[${modId}] 推奨ビルド (MC ${rec.minecraftVersion}) を別プロセスで生成"
+                workingDir = rootProject.projectDir
+                commandLine wrapperCmd + ["${m.fabricPath}:build".toString(), "-Pmc=${rec.minecraftVersion}".toString()]
+            }
+            allBuildRecommended << brTask.name
+        }
     }
 
     // ---- print 系 (Mod 毎) ----
@@ -240,7 +284,11 @@ modsByMC.each { String mc, List targets ->
             if (t.m.registry.policy.buildOnlyValidated) {
                 dependsOn t.validate
             }
-            dependsOn "${t.m.fabricPath}:build".toString()
+            if (t.m.stonecutter) {
+                dependsOn gradle.includedBuild(t.m.dirName).task(":${mc}:build")
+            } else {
+                dependsOn "${t.m.fabricPath}:build".toString()
+            }
         }
     }
 }
@@ -322,10 +370,19 @@ tasks.register('collectArtifacts', Copy) {
     description = '全 Mod の fabric jar を root/build/libs/ に集約'
     destinationDir = layout.buildDirectory.dir('libs').get().asFile
     mods.each { m ->
-        from(project(m.fabricPath).layout.buildDirectory.dir('libs')) {
-            include '**/*.jar'
-            eachFile { it.path = it.name }
-            includeEmptyDirs = false
+        if (m.stonecutter) {
+            // Stonecutter Mod: included build が集約した mods/<id>/build/libs/<modver>/
+            from(new File(m.dir, "build/libs/${m.version}")) {
+                include '*.jar'
+                eachFile { it.path = it.name }
+                includeEmptyDirs = false
+            }
+        } else {
+            from(project(m.fabricPath).layout.buildDirectory.dir('libs')) {
+                include '**/*.jar'
+                eachFile { it.path = it.name }
+                includeEmptyDirs = false
+            }
         }
     }
 }

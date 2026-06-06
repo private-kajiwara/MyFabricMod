@@ -42,6 +42,14 @@ dependencies {
 
 java {
     withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+// common は全 MC 世代で共有するため Java 21 固定 (1.21.11=21 / 26.1=25 の両対応)。
+// 旧ワークスペース root が release=21 を強制していた挙動を included build でも維持する。
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
 }
 
 test {
