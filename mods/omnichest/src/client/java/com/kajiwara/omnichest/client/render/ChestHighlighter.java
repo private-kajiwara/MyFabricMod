@@ -8,6 +8,7 @@ import com.kajiwara.omnichest.search.ChestNetworkManager;
 import com.kajiwara.omnichest.search.ContainerScanner;
 import com.kajiwara.omnichest.search.ContainerSnapshot;
 import com.kajiwara.omnichest.search.ContainerType;
+import com.kajiwara.omnichest.search.EntityLocator;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 //? if >=26.1 {
 import com.mojang.blaze3d.pipeline.ColorTargetState;
@@ -52,9 +53,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -713,6 +716,15 @@ public final class ChestHighlighter {
                     : 1.0f;
             int color = packColor(themeRgb, alphaF);
 
+            // ─── エンティティコンテナ (= トロッコ / ボート / モブ): 毎フレーム現在位置で追従 ───
+            // ブロック専用の still-standing 検出 / ブロック箱 / ブロック中心ピンには掛けず、
+            // 解決した実エンティティの AABB / position から箱・ピン・ビームを描く (= 純粋な別経路)。
+            if (snap.isEntity()) {
+                renderEntityHighlight(level, queue, matrices, camState, camPos,
+                        h, snap, now, color, alphaF, themeRgb);
+                continue;
+            }
+
             // ─── 「チェストはまだそこにあるか」 の検出 ───
             // 壊された瞬間にワイヤー / ピンを消す。 entries は残し、 ドロップアイテムや
             // プレイヤーインベントリに移ったアイテムをハイライトし続ける (= 引き継ぎ強調)。
@@ -755,6 +767,102 @@ public final class ChestHighlighter {
         // プレイヤーインベントリ側は別 Mixin ({@link com.kajiwara.omnichest.mixin.SearchMatchSlotMixin}) が
         // {@link #isHighlightedItem} を経由して既にハイライトしているため、 ここでは触らない。
         renderItemEntityHighlights(level, queue, matrices, camPos, currentDim, themeRgb);
+    }
+
+    /**
+     * コンテナを持つエンティティ (= トロッコ / ボート / モブ) のハイライトを <b>毎フレーム現在位置</b> で
+     * 描画する。 ブロック経路 ({@link #submitMergedBox} / {@link #isStillContainerBlock}) には一切触れず、
+     * 解決した実エンティティの {@link AABB} と {@code position()} から箱・ピン・ビームを構築する。
+     *
+     * <p>
+     * <b>解決できない場合の方針</b> (= ブロックの未ロード/破壊検出と同方針):
+     * <ul>
+     *   <li>捕捉位置のチャンクがロード済み かつ 解決不能 → 「消滅した」 とみなし、 ブロック破壊と同じ
+     *       grace ({@link #CHEST_BROKEN_GRACE_MS}) でハイライトを失効させる (= ワールド描画は止める)。</li>
+     *   <li>未ロードチャンク → 「分からない → 残す」。 捕捉時 pos を 1 ブロック箱として描画継続する。</li>
+     * </ul>
+     */
+    private void renderEntityHighlight(net.minecraft.client.multiplayer.ClientLevel level,
+            SubmitNodeCollector queue, PoseStack matrices, CameraRenderState camState, Vec3 camPos,
+            ActiveHighlight h, ContainerSnapshot snap, long now, int color, float alphaF, int themeRgb) {
+        EntityLocator loc = snap.entity();
+        Entity e = (loc != null) ? loc.resolve(level) : null;
+
+        double cx;
+        double cz;
+        double minX;
+        double minY;
+        double minZ;
+        double maxX;
+        double maxY;
+        double maxZ;
+        double pinBaseY;
+
+        if (e != null && e.isAlive() && !e.isRemoved()) {
+            // 生存エンティティ: 実 AABB / 中心で追従 (= 移動に毎フレーム追随)。
+            AABB bb = e.getBoundingBox();
+            Vec3 p = e.position();
+            cx = p.x;
+            cz = p.z;
+            minX = bb.minX;
+            minY = bb.minY;
+            minZ = bb.minZ;
+            maxX = bb.maxX;
+            maxY = bb.maxY;
+            maxZ = bb.maxZ;
+            pinBaseY = bb.maxY + PIN_BASE_HEIGHT;
+        } else {
+            // 解決不能。 ロード済みなら消滅 → grace 失効、 未ロードなら最後の位置で残す。
+            boolean chunkLoaded = level != null && level.isLoaded(snap.pos());
+            if (chunkLoaded) {
+                if (!h.chestBroken) {
+                    h.chestBroken = true;
+                    long clamp = now + CHEST_BROKEN_GRACE_MS;
+                    if (h.expiresAt > clamp) {
+                        h.expiresAt = clamp;
+                    }
+                }
+                return;
+            }
+            BlockPos bp = snap.pos();
+            cx = bp.getX() + 0.5;
+            cz = bp.getZ() + 0.5;
+            minX = bp.getX();
+            minY = bp.getY();
+            minZ = bp.getZ();
+            maxX = bp.getX() + 1.0;
+            maxY = bp.getY() + 1.0;
+            maxZ = bp.getZ() + 1.0;
+            pinBaseY = bp.getY() + 1.0 + PIN_BASE_HEIGHT;
+        }
+
+        // ─── ボックス (X-ray): エンティティ AABB をそのまま囲う ───
+        submitEntityBox(queue, matrices, camPos, minX, minY, minZ, maxX, maxY, maxZ, color);
+
+        // ─── ピン (ネームタグ): エンティティ中心の真上に追従。 ブロックと同じ描画コア を共有 ───
+        List<HighlightEntry> pinEntries = h.pinEntries();
+        submitPinStackCore(queue, matrices, camState, cx, cz, pinBaseY, camPos, pinEntries, themeRgb);
+
+        // ─── ビーコン風ビーム: ピン上端から上空へ ───
+        double beamBaseY = pinTopWorldYCore(cx, cz, pinBaseY, pinEntries.size(), camPos);
+        BeaconEffectLayer.submit(queue, matrices, cx, cz, camPos, themeRgb, alphaF, beamBaseY);
+    }
+
+    /**
+     * 任意の AABB を camera-relative の wireframe box として submit する (= エンティティ追従用)。
+     * ブロック用 {@link #submitMergedBox} と描画先 ({@link WireHighlightRenderer#submitWireBox}) を
+     * 共有するため、 shader-safe 経路も同じく効く。
+     */
+    private static void submitEntityBox(SubmitNodeCollector queue, PoseStack matrices, Vec3 camPos,
+            double minX, double minY, double minZ, double maxX, double maxY, double maxZ, int color) {
+        float fx0 = (float) (minX - camPos.x) - BOX_INFLATE;
+        float fy0 = (float) (minY - camPos.y) - BOX_INFLATE;
+        float fz0 = (float) (minZ - camPos.z) - BOX_INFLATE;
+        float fx1 = (float) (maxX - camPos.x) + BOX_INFLATE;
+        float fy1 = (float) (maxY - camPos.y) + BOX_INFLATE;
+        float fz1 = (float) (maxZ - camPos.z) + BOX_INFLATE;
+        WireHighlightRenderer.submitWireBox(queue, matrices,
+                fx0, fy0, fz0, fx1, fy1, fz1, color, LINE_WIDTH);
     }
 
     /**
@@ -960,6 +1068,19 @@ public final class ChestHighlighter {
         }
         // ピン下端の世界 Y = チェスト天面 (y + 1) + PIN_BASE_HEIGHT
         double baseY = primary.getY() + 1.0 + PIN_BASE_HEIGHT;
+        submitPinStackCore(queue, matrices, camState, cx, cz, baseY, camPos, entries, themeRgb);
+    }
+
+    /**
+     * ピン描画の本体。 中心 {@code (cx, cz)} とピン下端 {@code baseY} を明示的に受け取り、
+     * ブロック (= チェスト中心) でもエンティティ (= 追従中心) でも同一の描画ロジックを共有する。
+     * <p>
+     * ブロック経路 ({@link #submitPinStack}) は従来と同じ {@code cx/cz/baseY} を算出して委譲するため、
+     * 既存の見え方は完全に不変。 エンティティ経路は毎フレームの追従中心を渡す。
+     */
+    private static void submitPinStackCore(SubmitNodeCollector queue, PoseStack matrices,
+            CameraRenderState camState, double cx, double cz, double baseY, Vec3 camPos,
+            List<HighlightEntry> entries, int themeRgb) {
 
         Font font = Minecraft.getInstance().font;
         int lineHeight = font.lineHeight;        // 通常 9
@@ -1164,7 +1285,14 @@ public final class ChestHighlighter {
         }
         // ピン アンカ (= テキスト スタック最下段) の世界 Y。
         double baseY = primary.getY() + 1.0 + PIN_BASE_HEIGHT;
+        return pinTopWorldYCore(cx, cz, baseY, entryCount, camPos);
+    }
 
+    /**
+     * ビーム発射基準 (= ピン上端) の計算本体。 中心 {@code (cx, cz)} とピン下端 {@code baseY} を
+     * 明示的に受け取り、 ブロック / エンティティ両経路で共有する。
+     */
+    private static double pinTopWorldYCore(double cx, double cz, double baseY, int entryCount, Vec3 camPos) {
         // ワールドスケールは submitPinStack と同じく「アンカまでの距離」 で決まる。
         double dx = cx - camPos.x;
         double dy = baseY - camPos.y;

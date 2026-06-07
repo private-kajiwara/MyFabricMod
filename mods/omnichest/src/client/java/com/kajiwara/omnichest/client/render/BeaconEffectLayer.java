@@ -64,15 +64,7 @@ public final class BeaconEffectLayer {
     public static void submit(SubmitNodeCollector queue, PoseStack matrices,
             ContainerSnapshot snap, Vec3 camPos, int themeRgb, float highlightAlpha,
             double baseWorldY) {
-        if (snap == null || highlightAlpha <= 0.001f) return;
-
-        SearchConfig cfg;
-        try {
-            cfg = ConfigManager.get().search;
-        } catch (Throwable t) {
-            return; // 設定が読めない時は描かない (= 安全側)。
-        }
-        if (cfg == null || !cfg.enableBeacon) return;
+        if (snap == null) return;
 
         // ─── ピンと同じ中心 (= 読み取りのみ、 ピン座標は変えない) ───
         BlockPos primary = snap.pos();
@@ -86,6 +78,26 @@ public final class BeaconEffectLayer {
             cxWorld = primary.getX() + 0.5;
             czWorld = primary.getZ() + 0.5;
         }
+        submit(queue, matrices, cxWorld, czWorld, camPos, themeRgb, highlightAlpha, baseWorldY);
+    }
+
+    /**
+     * 中心 {@code (cxWorld, czWorld)} を明示する overload (= コンテナを持つエンティティの追従用)。
+     * ブロック経路は {@code snap.pos()} から同じ中心を算出して委譲するため、 見え方は完全に不変。
+     */
+    public static void submit(SubmitNodeCollector queue, PoseStack matrices,
+            double cxWorld, double czWorld, Vec3 camPos, int themeRgb, float highlightAlpha,
+            double baseWorldY) {
+        if (highlightAlpha <= 0.001f) return;
+
+        SearchConfig cfg;
+        try {
+            cfg = ConfigManager.get().search;
+        } catch (Throwable t) {
+            return; // 設定が読めない時は描かない (= 安全側)。
+        }
+        if (cfg == null || !cfg.enableBeacon) return;
+
         // baseWorldY = ピンの一番真上 (引数で受け取る)。 ここでチェスト天面からは立ち上げない。
 
         // ─── distance culling ───

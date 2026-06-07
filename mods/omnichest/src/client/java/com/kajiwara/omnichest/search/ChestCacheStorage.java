@@ -117,6 +117,11 @@ public final class ChestCacheStorage {
             root.putInt("version", VERSION);
             ListTag listTag = new ListTag();
             for (ContainerSnapshot snap : ChestNetworkManager.get().snapshots()) {
+                // コンテナを持つエンティティ (= トロッコ / ボート / モブ) のスナップショットは
+                // 永続化しない (= セッション内のみ)。 networkId は再ログインで変わり、 位置も揮発する
+                // ため、 保存するとロード後に解決不能なゴーストエントリになる。 ブロックの永続化挙動は不変。
+                if (snap.isEntity())
+                    continue;
                 CompoundTag t = snapshotToTag(snap, ops);
                 if (t != null)
                     listTag.add(t);
