@@ -94,7 +94,11 @@ public abstract class SlotLockScreenMixin extends Screen {
      */
     @Inject(method = "extractSlot",
             at = @At("TAIL"))
+    //? if >=1.21.11 {
     private void cits_slotLock$overlay(GuiGraphicsExtractor g, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
+    //?} else {
+    /*private void cits_slotLock$overlay(GuiGraphics g, Slot slot, CallbackInfo ci) {*/
+    //?}
         // Renderer 側で「overlay 無効」「ロックでも保護でもない」を全部チェックするので、ここは委譲だけ。
         // 1.21.11 では renderSlot の signature が (GuiGraphicsExtractor, Slot, int mouseX, int mouseY) に
         // 拡張されている。 mouseX/Y は使わないが、引数列を完全一致させないと

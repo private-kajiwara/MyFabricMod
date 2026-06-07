@@ -12,6 +12,19 @@
 # loom-back-compat が使う Loom バージョン (全ノード共通)
 loomx.loom_version = "1.16-SNAPSHOT"
 
+# ---- MC 1.21.10 (旧世代・難読化版・Mojmap・remap Loom・Java21) ----
+#   submit/extraction 描画基盤あり (1.21.9+)。 RenderType は旧パッケージ
+#   (net.minecraft.client.renderer)・RenderSetup 無し (1.21.11 で導入) のため
+#   stonecutter.gradle.kts の <1.21.11 ブリッジ (//? + 一方向置換) で吸収する。
+["1.21.10"]
+deps.fabric_loader = "0.19.2"
+deps.fabric_api = "0.138.4+1.21.10"
+deps.mod_menu = "16.0.1"
+mod.java = "21"
+mod.mc_compat = "1.21.10"
+mod.stable = "true"
+mod.recommended = "false"
+
 # ---- MC 1.21.11 (旧世代・難読化版・Mojmap・remap Loom・Java21) ----
 ["1.21.11"]
 deps.fabric_loader = "0.19.2"

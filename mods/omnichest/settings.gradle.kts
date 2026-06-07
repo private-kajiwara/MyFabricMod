@@ -29,7 +29,7 @@ stonecutter {
         // mc-meta/versions.json の buildable な MC。
         // Phase 2: 旧世代 1.21.11 (Mojmap) を追加。世代差は stonecutter.gradle.kts の
         // global replacements (current.parsed < "26.1") と //? で吸収する。
-        versions("1.21.11", "26.1", "26.1.1", "26.1.2")
+        versions("1.21.10", "1.21.11", "26.1", "26.1.1", "26.1.2")
         vcsVersion = "26.1.2"   // policy.default と一致
     }
 }

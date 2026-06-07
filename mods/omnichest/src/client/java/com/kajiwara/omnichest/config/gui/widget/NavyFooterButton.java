@@ -45,7 +45,11 @@ public final class NavyFooterButton extends Button {
     }
 
     @Override
+    //? if >=1.21.11 {
     protected void extractContents(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+    //?} else {
+    /*protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {*/
+    //?}
         int x = this.getX();
         int y = this.getY();
         int w = this.getWidth();

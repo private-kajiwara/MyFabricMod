@@ -38,9 +38,13 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
+//?} else {
+/*import net.minecraft.client.renderer.RenderType;*/
+//?}
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
@@ -1466,8 +1470,17 @@ public final class ChestHighlighter {
                             VertexFormat.Mode.LINES)
                     .build();
 
+            //? if >=1.21.11 {
             RenderSetup setup = RenderSetup.builder(pipeline).createRenderSetup();
             RenderType rt = RenderTypeAccessor.omnichest$create("omnichest_xray_lines", setup);
+            //?} else {
+            /*net.minecraft.client.renderer.RenderType.CompositeState.CompositeStateBuilder csb =
+                    RenderType.CompositeState.builder();
+            ((com.kajiwara.omnichest.mixin.CompositeStateBuilderAccessor) (Object) csb).omnichest$setLineState(
+                    new net.minecraft.client.renderer.RenderStateShard.LineStateShard(java.util.OptionalDouble.of(LINE_WIDTH)));
+            RenderType rt = RenderTypeAccessor.omnichest$create("omnichest_xray_lines", 1536, pipeline,
+                    ((com.kajiwara.omnichest.mixin.CompositeStateBuilderAccessor) (Object) csb).omnichest$createCompositeState(false));*/
+            //?}
             xrayLinesType = rt;
             return rt;
         }

@@ -90,5 +90,52 @@ stonecutter parameters {
             replace("ctx.poseStack()", "ctx.matrices()")
             replace("ctx.submitNodeCollector()", "ctx.commandQueue()")
         }
+
+        // ─────────────────────────────────────────────────────────────
+        // (G) <1.21.11 専用ブリッジ (1.21.10 / 1.21.9)。
+        //   1.21.11 で入った改名を旧版向けに逆変換する。 base(26.1) と 1.21.11 は
+        //   ResourceLocation→Identifier 改名・RenderType の rendertype パッケージ移動・
+        //   RenderStateShard→RenderSetup を共有するが、 1.21.10 以下は旧名:
+        //     ・net.minecraft.resources.Identifier        → ResourceLocation
+        //     ・ResourceKey#identifier()                  → location()
+        //     ・SoundInstance#getIdentifier()             → getLocation()
+        //     ・GuiGraphics#renderOutline(...)            → submitOutline(...)
+        //     ・RenderTypes.textBackgroundSeeThrough()    → RenderType.textBackgroundSeeThrough()
+        //     ・Screen#resize(int,int)                    → resize(Minecraft,int,int)
+        //   描画型の構築 (RenderSetup ↔ RenderType.create+CompositeState) と import の
+        //   パッケージ差は //? で個別対応する (構造差のため置換不可)。
+        //   逆変換が 26.1/1.21.11 base を壊す規則 (to が base に部分文字列で存在: getLocation /
+        //   ResourceLocation の語 / .location()) は regex+sentinel で一方向化する。
+        // ─────────────────────────────────────────────────────────────
+        regex(current.parsed < "1.21.11") {
+            // getIdentifier()→getLocation() を Identifier クラス改名より先に。
+            //   getLocation は base に既存 (MissingTextureAtlasSprite) のため一方向必須。
+            replace("getIdentifier", "getLocation", noRev, noRev)
+            // ResourceKey#identifier()→location() (.dimension().identifier() 4 箇所)。一方向。
+            replace("\\.identifier\\(\\)", ".location()", noRev, noRev)
+            // ResourceKey::identifier→::location (メソッド参照 2 箇所)。一方向。
+            replace("ResourceKey::identifier", "ResourceKey::location", noRev, noRev)
+            // クラス改名 Identifier→ResourceLocation。 \b 境界で getIdentifier は除外済。一方向。
+            replace("\\bIdentifier\\b", "ResourceLocation", noRev, noRev)
+            // 線の頂点フォーマット: per-vertex 線幅 (1.21.11) は無い → POSITION_COLOR_NORMAL。
+            //   POSITION_COLOR_NORMAL は base の ..._LINE_WIDTH の接頭辞なので逆変換が base を壊す→一方向。
+            replace("POSITION_COLOR_NORMAL_LINE_WIDTH", "POSITION_COLOR_NORMAL", noRev, noRev)
+            // per-vertex setLineWidth は 1.21.11 追加。 旧版は CompositeState の LineStateShard で
+            //   線幅を持つため、 頂点側の .setLineWidth(lineWidth) を落とす (addLine 2 箇所)。一方向。
+            replace("\\.setNormal\\(pose, nx, ny, nz\\)\\.setLineWidth\\(lineWidth\\)", ".setNormal(pose, nx, ny, nz)", noRev, noRev)
+            // 注: Button override の extractContents→renderWidget は <26.1 regex の出力に依存し
+            //   (regex 置換は base 原文に適用され連鎖しない) ため置換では不可。 NavyFooterButton で //? 対応。
+        }
+        string(current.parsed < "1.21.11") {
+            // GuiGraphics: <26.1 で outline→renderOutline 済 → さらに submitOutline (1.21.10 名) へ。
+            replace("g.renderOutline(", "g.submitOutline(")
+            // 格納型は RenderType に (1.21.11 で RenderTypes へ分離)。
+            replace("RenderTypes.textBackgroundSeeThrough()", "RenderType.textBackgroundSeeThrough()")
+            // Screen.resize は 1.21.10 で (Minecraft,int,int)。 3 画面の override + super を一括吸収。
+            replace("public void resize(int w, int h)", "public void resize(net.minecraft.client.Minecraft ocMc, int w, int h)")
+            replace("super.resize(w, h)", "super.resize(ocMc, w, h)")
+            // 注: CompositeStateBuilderAccessor の mixins.json 登録は stonecutter の replacements が
+            //   .json に適用されないため build.gradle.kts の processResources で <1.21.11 のみ注入する。
+        }
     }
 }

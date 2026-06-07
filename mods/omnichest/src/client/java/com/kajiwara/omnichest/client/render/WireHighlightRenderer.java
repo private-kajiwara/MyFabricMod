@@ -17,8 +17,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
+//?} else {
+/*import net.minecraft.client.renderer.RenderType;*/
+//?}
 import net.minecraft.util.Mth;
 
 /**
@@ -255,8 +259,17 @@ public final class WireHighlightRenderer {
                             VertexFormat.Mode.LINES)
                     .build();
 
+            //? if >=1.21.11 {
             RenderSetup setup = RenderSetup.builder(pipeline).createRenderSetup();
             linesType = RenderTypeAccessor.omnichest$create("omnichest_xray_lines_v2", setup);
+            //?} else {
+            /*net.minecraft.client.renderer.RenderType.CompositeState.CompositeStateBuilder csb =
+                    RenderType.CompositeState.builder();
+            ((com.kajiwara.omnichest.mixin.CompositeStateBuilderAccessor) (Object) csb).omnichest$setLineState(
+                    new net.minecraft.client.renderer.RenderStateShard.LineStateShard(java.util.OptionalDouble.of(3.5)));
+            linesType = RenderTypeAccessor.omnichest$create("omnichest_xray_lines_v2", 1536, pipeline,
+                    ((com.kajiwara.omnichest.mixin.CompositeStateBuilderAccessor) (Object) csb).omnichest$createCompositeState(false));*/
+            //?}
             return linesType;
         }
     }
@@ -281,8 +294,14 @@ public final class WireHighlightRenderer {
                             VertexFormat.Mode.QUADS)
                     .build();
 
+            //? if >=1.21.11 {
             RenderSetup setup = RenderSetup.builder(pipeline).createRenderSetup();
             quadsType = RenderTypeAccessor.omnichest$create("omnichest_xray_wire_quads", setup);
+            //?} else {
+            /*quadsType = RenderTypeAccessor.omnichest$create("omnichest_xray_wire_quads", 1536, pipeline,
+                    ((com.kajiwara.omnichest.mixin.CompositeStateBuilderAccessor) (Object)
+                            RenderType.CompositeState.builder()).omnichest$createCompositeState(false));*/
+            //?}
             return quadsType;
         }
     }

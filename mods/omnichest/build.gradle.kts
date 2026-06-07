@@ -103,6 +103,29 @@ tasks.processResources {
 }
 
 // ---------------------------------------------------------------------
+// 1.21.10 以下専用: RenderSetup (1.21.11+) が無いため、 CompositeState 構築用の
+//   CompositeStateBuilderAccessor を client mixin 登録に追加する。
+//   ・omnichest.client.mixins.json は client ソースセット (splitEnvironmentSourceSets) →
+//     processClientResources が処理する (main の fabric.mod.json とは別タスク)。
+//   ・Stonecutter の replacements は .json に適用されないためここで注入する。
+//   ・>=1.21.11 では未実行 = 26.1.x / 1.21.11 の json はバイト不変 (パリティ保持)。
+//   ・Loom は remapJar 時に config 記載の mixin の参照を intermediary へ remap するため、
+//     remapJar より前 (= processClientResources) で config に載っている必要がある。
+// ---------------------------------------------------------------------
+if (sc.current.parsed < "1.21.11") {
+    tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processClientResources") {
+        inputs.property("legacyCompositeAccessor", true)
+        filesMatching("omnichest.client.mixins.json") {
+            filter { line: String ->
+                if (line.contains("\"RenderTypeAccessor\","))
+                    line + System.lineSeparator() + "\t\t\"CompositeStateBuilderAccessor\","
+                else line
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------
 // VersionProfile を resource として埋め込む (従来挙動を維持)
 //   ランタイムが自分のビルド対象版を知るための properties。
 // ---------------------------------------------------------------------

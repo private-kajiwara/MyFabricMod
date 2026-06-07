@@ -32,6 +32,14 @@
       "notes": "旧世代 (難読化版・Mojmap・remap Loom・Java 21)。 Stonecutter で 26.1 と同一ソースからビルド。"
     },
     {
+      "minecraft": "1.21.10",
+      "properties": "1.21.10.properties",
+      "stable": true,
+      "recommended": false,
+      "buildable": true,
+      "notes": "旧世代 (難読化版・Mojmap・remap Loom・Java 21)。 submit/extraction 描画基盤あり (1.21.9+) だが RenderType は旧パッケージ・RenderSetup 無し (1.21.11 で導入) のため <1.21.11 ブリッジで吸収。"
+    },
+    {
       "minecraft": "26.1",
       "properties": "26.1.properties",
       "stable": true,
