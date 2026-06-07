@@ -1,0 +1,62 @@
+# =====================================================================
+# stonecutter.properties.toml (Stonecutter centralized + per-node props)
+# ---------------------------------------------------------------------
+#   正本は mc-meta/versions.json + mc-meta/<MC>.properties。
+#   このファイルはそこから生成する想定 (現状は手生成)。
+#   build.gradle.kts は sc.properties["deps.*"] で読む。
+#
+#   VisualizeGate は v0 では ModMenu / Cloth Config に依存しないため
+#   deps.mod_menu は空 (build.gradle.kts が空文字をスキップ)。
+#   loader / fabric_api の実値は同一 MC の OmniChest と共通 (= MC 由来)。
+# =====================================================================
+
+# loom-back-compat が使う Loom バージョン (全ノード共通)
+loomx.loom_version = "1.16-SNAPSHOT"
+
+# ---- MC 1.21.10 (旧世代・難読化版・Mojmap・remap Loom・Java21) ----
+["1.21.10"]
+deps.fabric_loader = "0.19.2"
+deps.fabric_api = "0.138.4+1.21.10"
+deps.mod_menu = ""
+mod.java = "21"
+mod.mc_compat = "1.21.10"
+mod.stable = "true"
+mod.recommended = "false"
+
+# ---- MC 1.21.11 (旧世代・難読化版・Mojmap・remap Loom・Java21) ----
+["1.21.11"]
+deps.fabric_loader = "0.19.2"
+deps.fabric_api = "0.141.3+1.21.11"
+deps.mod_menu = ""
+mod.java = "21"
+mod.mc_compat = "1.21.11"
+mod.stable = "true"
+mod.recommended = "false"
+
+# ---- MC 26.1 系 (非難読化版・Java25) ----
+["26.1"]
+deps.fabric_loader = "0.19.3"
+deps.fabric_api = "0.145.1+26.1"
+deps.mod_menu = ""
+mod.java = "25"
+mod.mc_compat = "~26.1"
+mod.stable = "true"
+mod.recommended = "false"
+
+["26.1.1"]
+deps.fabric_loader = "0.19.3"
+deps.fabric_api = "0.145.4+26.1.1"
+deps.mod_menu = ""
+mod.java = "25"
+mod.mc_compat = "~26.1"
+mod.stable = "true"
+mod.recommended = "false"
+
+["26.1.2"]
+deps.fabric_loader = "0.19.3"
+deps.fabric_api = "0.150.0+26.1.2"
+deps.mod_menu = ""
+mod.java = "25"
+mod.mc_compat = "~26.1"
+mod.stable = "true"
+mod.recommended = "true"
