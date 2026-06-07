@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.event.client.player.ClientPlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -12,18 +13,24 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.animal.equine.AbstractChestedHorse;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.boat.AbstractChestBoat;
+import net.minecraft.world.entity.vehicle.minecart.MinecartChest;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.CrafterMenu;
 import net.minecraft.world.inventory.DispenserMenu;
 import net.minecraft.world.inventory.HopperMenu;
+import net.minecraft.world.inventory.HorseInventoryMenu;
 import net.minecraft.world.inventory.ShulkerBoxMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -81,6 +88,14 @@ public final class ContainerScanner {
         // (1) 右クリックでブロックを叩いた瞬間: コンテナだったら pending に保存
         // ────────────────────────────────────────────────────────────
         UseBlockCallback.EVENT.register(ContainerScanner::onUseBlock);
+
+        // ────────────────────────────────────────────────────────────
+        // (1') 右クリックでエンティティに触れた瞬間: コンテナを持つエンティティ
+        //      (= チェスト付きトロッコ / チェスト付きボート / チェストを積んだモブ) なら pending に保存。
+        //      以後の処理 (= AFTER_INIT での確定, tick での再キャプチャ, 閉じる瞬間の最終取得) は
+        //      ブロック経路と完全に共通 (= 中身は開いた menu の slots から取得)。
+        // ────────────────────────────────────────────────────────────
+        UseEntityCallback.EVENT.register(ContainerScanner::onUseEntity);
 
         // ────────────────────────────────────────────────────────────
         // (2) Screen がセットされた直後: AbstractContainerScreen なら追跡開始
@@ -141,6 +156,8 @@ public final class ContainerScanner {
         java.util.List<ContainerSnapshot.Key> toRemove = new ArrayList<>();
         for (ContainerSnapshot snap : ChestNetworkManager.get().snapshots()) {
             if (!dim.equals(snap.dimension())) continue;
+            // エンティティ snapshot はブロック破壊と無関係 (= 捕捉位置が偶然一致しても消さない)。
+            if (snap.isEntity()) continue;
             boolean match = pos.equals(snap.pos())
                     || (snap.secondaryPos() != null && pos.equals(snap.secondaryPos()));
             if (match) {
@@ -176,6 +193,55 @@ public final class ContainerScanner {
         return InteractionResult.PASS;
     }
 
+    /**
+     * エンティティ右クリック時のハンドラ。 コンテナを持つエンティティ (= トロッコ / ボート / モブ)
+     * なら「次に開かれる menu の所有者」 として {@code pendingOpen} に記録する。
+     * <p>
+     * ブロック経路と同様に <b>PASS</b> で返してバニラ挙動を妨げない。 中身は一切ここで読まず、
+     * 実際に開いた {@link #onScreenInit} 以降で menu から取得する (= 開封時キャッシュ方針を踏襲)。
+     */
+    private static InteractionResult onUseEntity(Player player, Level level,
+            net.minecraft.world.InteractionHand hand, Entity entity, @Nullable EntityHitResult hit) {
+        // クライアント側のみ。 サーバ側は無視する。
+        if (level.isClientSide() && entity != null) {
+            ContainerType ct = entityContainerType(entity);
+            if (ct != null) {
+                pendingOpen = PendingOpen.forEntity(level.dimension(), entity, ct);
+            }
+        }
+        return InteractionResult.PASS;
+    }
+
+    /**
+     * エンティティが「中身を観測できるコンテナを持つ対象」 なら {@link ContainerType} を返す。
+     * 非対象 (= 通常モブ / チェスト非搭載のボート・モブ / ホッパー付きトロッコ等) は {@code null}。
+     *
+     * <p>
+     * <b>対象</b> (= 右クリックで GUI を開いて中身を観測できるバニラエンティティ):
+     * <ul>
+     *   <li>{@link MinecartChest} → {@link ContainerType#CHEST_MINECART} (= {@code ChestMenu} 27)</li>
+     *   <li>{@link AbstractChestBoat} (= チェスト付きボート / イカダ) → {@link ContainerType#CHEST_BOAT}</li>
+     *   <li>{@link AbstractChestedHorse} かつ {@code hasChest()} (= ロバ / ラバ / ラマ / 行商ラマ)
+     *       → {@link ContainerType#MOB_CHEST} (= {@code HorseInventoryMenu})</li>
+     * </ul>
+     * <b>非対象</b>: 通常の馬 (= {@code AbstractHorse} だが {@code AbstractChestedHorse} ではない) と
+     * チェスト未装着のロバ等は {@code hasChest()==false} で弾く。 ホッパー付きトロッコは
+     * バニラで GUI を開けない (= 中身を観測できない) ため、 そもそも対象外 (instanceof で拾わない)。
+     */
+    @Nullable
+    private static ContainerType entityContainerType(Entity entity) {
+        if (entity instanceof MinecartChest) {
+            return ContainerType.CHEST_MINECART;
+        }
+        if (entity instanceof AbstractChestBoat) {
+            return ContainerType.CHEST_BOAT;
+        }
+        if (entity instanceof AbstractChestedHorse horse && horse.hasChest()) {
+            return ContainerType.MOB_CHEST;
+        }
+        return null;
+    }
+
     private static void onScreenInit(Screen screen) {
         if (!(screen instanceof AbstractContainerScreen<?> cs)) {
             // コンテナ系 Screen でなければ pending を破棄する (= 誤適用防止)。
@@ -209,17 +275,60 @@ public final class ContainerScanner {
             return;
         }
 
-        int containerSlotCount = containerSlotCountOf(menu);
-        if (containerSlotCount <= 0) {
+        // 捕捉対象スロットの範囲 [start, start+count) を決める。
+        // ブロック / トロッコ / ボートは先頭から (start=0)、 馬系 (HorseInventoryMenu) は
+        // 鞍 / 防具スロットを除いた「チェスト収納スロット」 のみ (= 容器側末尾の columns*3)。
+        int[] range = computeSlotRange(menu, pendingOpen);
+        if (range == null) {
             active = null;
+            pendingOpen = null;
             return;
         }
 
-        active = new ActiveTracker(pendingOpen, menu, containerSlotCount);
+        active = new ActiveTracker(pendingOpen, menu, range[0], range[1]);
         pendingOpen = null;
 
         // 開いた瞬間に即 1 回スナップショットを取る (初回の内容を確実に登録するため)。
         captureNow("open");
+    }
+
+    /**
+     * この menu / pendingOpen に対して、 スナップショットを取るべきコンテナ側スロットの
+     * 範囲 {@code [start, start+count)} を返す。 対象外なら {@code null}。
+     *
+     * <ul>
+     *   <li>ブロック / チェスト付きトロッコ / チェスト付きボート: {@code start=0}、
+     *       {@code count=}{@link #containerSlotCountOf}。</li>
+     *   <li>チェストを積んだモブ ({@link HorseInventoryMenu}): 鞍 / 防具スロットを除外し、
+     *       <b>チェスト収納スロットのみ</b> を取る。 チェストスロットは容器側 (= 非プレイヤー) 領域の
+     *       末尾 {@code columns*3} 個に並ぶ ({@code AbstractMountInventoryMenu} の slot 追加順) ため、
+     *       {@code start = (menu.slots.size() - 36) - columns*3}、 {@code count = columns*3}。</li>
+     * </ul>
+     */
+    @Nullable
+    private static int[] computeSlotRange(AbstractContainerMenu menu, PendingOpen p) {
+        if (menu instanceof HorseInventoryMenu) {
+            // HorseInventoryMenu はチェストを積んだモブの pendingOpen 経由でのみ追跡する。
+            if (p == null || !(p.entity instanceof AbstractChestedHorse horse) || !horse.hasChest()) {
+                return null;
+            }
+            int chestCount = Math.max(0, horse.getInventoryColumns()) * 3;
+            if (chestCount <= 0) {
+                return null;
+            }
+            // 容器側 = プレイヤーインベントリ (27+9=36) を除いた先頭領域。 チェストはその末尾。
+            int containerSide = menu.slots.size() - 36;
+            int start = containerSide - chestCount;
+            if (start < 0 || containerSide <= 0) {
+                return null;
+            }
+            return new int[] { start, chestCount };
+        }
+        int count = containerSlotCountOf(menu);
+        if (count <= 0) {
+            return null;
+        }
+        return new int[] { 0, count };
     }
 
     private static void onClientTick(Minecraft mc) {
@@ -275,6 +384,17 @@ public final class ContainerScanner {
         ResourceKey<Level> dim = level.dimension();
         for (ContainerSnapshot snap : ChestNetworkManager.get().snapshots()) {
             if (!dim.equals(snap.dimension())) continue;
+            // ─── エンティティコンテナ (= トロッコ / ボート / モブ) の生存検証 ───
+            // ブロック検証 (fromBlockState) には掛けない (= snap.pos() に対応ブロックは無く誤除去になる)。
+            // 解決できれば生存、 解決できず かつ 捕捉位置のチャンクがロード済みなら「消滅した」 とみなす。
+            // 未ロードチャンクなら「分からない → 残す」 (= ブロック側の isLoaded 安全策と同方針)。
+            if (snap.isEntity()) {
+                EntityLocator loc = snap.entity();
+                if (loc != null && loc.resolve(level) == null && level.isLoaded(snap.pos())) {
+                    toRemove.add(snap.key());
+                }
+                continue;
+            }
             BlockPos pos = snap.pos();
             if (!level.isLoaded(pos)) continue;
             BlockState state = level.getBlockState(pos);
@@ -302,10 +422,13 @@ public final class ContainerScanner {
         if (a == null)
             return;
         AbstractContainerMenu menu = a.menu;
-        int n = Math.min(a.containerSlotCount, menu.slots.size());
+        // 捕捉範囲 [slotStart, slotStart+slotCount)。 ブロックは slotStart=0 (= 従来と同一)、
+        // 馬系のみ鞍 / 防具を除いたチェスト収納スロットへオフセットする。
+        int start = a.slotStart;
+        int end = Math.min(start + a.containerSlotCount, menu.slots.size());
 
-        List<ItemStack> snap = new ArrayList<>(n);
-        for (int i = 0; i < n; i++) {
+        List<ItemStack> snap = new ArrayList<>(Math.max(0, end - start));
+        for (int i = start; i < end; i++) {
             Slot s = menu.slots.get(i);
             snap.add(s.getItem().copy());
         }
@@ -318,6 +441,20 @@ public final class ContainerScanner {
             }
         }
         a.lastSnapshot = snap;
+
+        if (a.locator != null) {
+            // エンティティコンテナ: 同一性は UUID、 フォールバック位置は現在の blockPosition()。
+            // entity が消えている (= null) 場合は捕捉時 pos を使う (= 直前まで開いていた位置)。
+            BlockPos entPos = (a.entity != null) ? a.entity.blockPosition() : a.pos;
+            ChestNetworkManager.get().captureEntity(
+                    a.dimension,
+                    entPos,
+                    a.type,
+                    snap,
+                    System.currentTimeMillis(),
+                    a.locator);
+            return;
+        }
 
         ChestNetworkManager.get().capture(
                 a.dimension,
@@ -344,6 +481,9 @@ public final class ContainerScanner {
      *   <li>{@link HopperMenu} (= ホッパー, 5 スロット)</li>
      *   <li>{@link DispenserMenu} (= ディスペンサー / ドロッパー, 9 スロット)</li>
      *   <li>{@link CrafterMenu} (= クラフター, 9 入力スロット)</li>
+     *   <li>{@link HorseInventoryMenu} (= チェストを積んだモブ。 チェスト収納スロットのみ捕捉する。
+     *       追跡対象になるのは {@code MOB_CHEST} の pendingOpen 経由のみで、 通常の馬は
+     *       {@code pendingOpen} が立たないため追跡されない)</li>
      * </ul>
      */
     public static boolean isSupportedMenu(AbstractContainerMenu menu) {
@@ -351,7 +491,8 @@ public final class ContainerScanner {
                 || menu instanceof ShulkerBoxMenu
                 || menu instanceof HopperMenu
                 || menu instanceof DispenserMenu
-                || menu instanceof CrafterMenu;
+                || menu instanceof CrafterMenu
+                || menu instanceof HorseInventoryMenu;
     }
 
     /**
@@ -402,6 +543,10 @@ public final class ContainerScanner {
         ActiveTracker a = active;
         if (a == null)
             return null;
+        // エンティティコンテナは UUID キー (= ブロックの normalizedPos キーと同じ位置付け)。
+        if (a.locator != null) {
+            return new ContainerSnapshot.Key(a.dimension, a.pos, a.locator.uuid());
+        }
         // ラージチェストでも (dim, normalizedPos) の Key を返したい。
         BlockPos normalized = a.secondaryPos == null ? a.pos
                 : ContainerSnapshot.normalize(a.pos, a.secondaryPos);
@@ -420,14 +565,33 @@ public final class ContainerScanner {
         final ContainerType type;
         @SuppressWarnings("unused")
         final long timestamp;
+        /** エンティティコンテナの場合の live 参照 (= 馬の columns / 現在位置算出用)。 ブロックは null。 */
+        @Nullable
+        final Entity entity;
+        /** エンティティコンテナの場合の同一性 + 位置解決ロケータ。 ブロックは null。 */
+        @Nullable
+        final EntityLocator locator;
 
         PendingOpen(ResourceKey<Level> dimension, BlockPos pos, @Nullable BlockPos secondaryPos,
                 ContainerType type, long timestamp) {
+            this(dimension, pos, secondaryPos, type, timestamp, null, null);
+        }
+
+        PendingOpen(ResourceKey<Level> dimension, BlockPos pos, @Nullable BlockPos secondaryPos,
+                ContainerType type, long timestamp, @Nullable Entity entity, @Nullable EntityLocator locator) {
             this.dimension = dimension;
             this.pos = pos;
             this.secondaryPos = secondaryPos;
             this.type = type;
             this.timestamp = timestamp;
+            this.entity = entity;
+            this.locator = locator;
+        }
+
+        /** コンテナを持つエンティティ用の pendingOpen を作る。 */
+        static PendingOpen forEntity(ResourceKey<Level> dimension, Entity entity, ContainerType type) {
+            return new PendingOpen(dimension, entity.blockPosition().immutable(), null, type,
+                    System.currentTimeMillis(), entity, EntityLocator.of(entity));
         }
     }
 
@@ -439,7 +603,15 @@ public final class ContainerScanner {
         final BlockPos secondaryPos;
         final ContainerType type;
         final AbstractContainerMenu menu;
+        /** 捕捉対象スロットの開始 index (= ブロックは 0、 馬系はチェスト収納の先頭)。 */
+        final int slotStart;
         final int containerSlotCount;
+        /** エンティティコンテナの live 参照 (= 現在 blockPosition 算出用)。 ブロックは null。 */
+        @Nullable
+        final Entity entity;
+        /** エンティティコンテナのロケータ (= 非 null なら captureEntity 経路へ)。 ブロックは null。 */
+        @Nullable
+        final EntityLocator locator;
 
         /** 直近スナップショット (== 直近 manager に登録した内容)。 */
         @Nullable
@@ -450,13 +622,16 @@ public final class ContainerScanner {
         /** 何 tick に 1 回再キャプチャ判定するか (= 0.5 秒程度)。 */
         private static final int RECAPTURE_INTERVAL_TICKS = 10;
 
-        ActiveTracker(PendingOpen p, AbstractContainerMenu menu, int containerSlotCount) {
+        ActiveTracker(PendingOpen p, AbstractContainerMenu menu, int slotStart, int slotCount) {
             this.dimension = p.dimension;
             this.pos = p.pos;
             this.secondaryPos = p.secondaryPos;
             this.type = p.type;
             this.menu = menu;
-            this.containerSlotCount = containerSlotCount;
+            this.slotStart = slotStart;
+            this.containerSlotCount = slotCount;
+            this.entity = p.entity;
+            this.locator = p.locator;
         }
 
         boolean tickAndShouldRecapture() {
