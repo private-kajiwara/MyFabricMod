@@ -1,5 +1,6 @@
 package com.kajiwara.omnichest.search;
 
+import com.kajiwara.omnichest.OmniChest;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
@@ -407,6 +408,10 @@ public final class ContainerScanner {
             ChestNetworkManager.get().remove(key);
             com.kajiwara.omnichest.client.render.ChestHighlighter.get().clearForKey(key);
         }
+        // 診断: ロード済みエントリを唯一サイレントに削除し得る経路。 ここが効くと「load されたのに消えた」。
+        OmniChest.LOGGER.info(
+                "[omnichest] Swept {} broken/removed containers (managerSize={})",
+                toRemove.size(), ChestNetworkManager.get().size());
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -463,6 +468,10 @@ public final class ContainerScanner {
                 a.type,
                 snap,
                 System.currentTimeMillis());
+        // 診断: ブロックコンテナ登録の瞬間 (= 何が / どこで / managerSize がいくつになったか)。
+        OmniChest.LOGGER.info(
+                "[omnichest] Captured block container {} at {} [{}] (managerSize={})",
+                a.type, a.pos, reason, ChestNetworkManager.get().size());
     }
 
     // ════════════════════════════════════════════════════════════════════

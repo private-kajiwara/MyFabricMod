@@ -88,7 +88,7 @@ public final class ChestCacheStorage {
         // 切断時に最終 save (load 完了済み & 変化あり)。
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             if (loaded)
-                trySave();
+                trySave("disconnect");
             loaded = false;
         });
 
@@ -103,7 +103,7 @@ public final class ChestCacheStorage {
         // StorageMemory / SlotLockStorage と同じ DISCONNECT + CLIENT_STOPPING の二重フックに揃える。
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             if (loaded)
-                trySave();
+                trySave("client_stopping");
         });
     }
 
@@ -112,20 +112,36 @@ public final class ChestCacheStorage {
         if (now - lastSaveMs < SAVE_THROTTLE_MS)
             return;
         lastSaveMs = now;
-        trySave();
+        trySave("throttled");
     }
 
     public static void trySave() {
+        trySave("manual");
+    }
+
+    /**
+     * @param reason 発火経路 (= "throttled" / "disconnect" / "client_stopping" / "manual")。
+     *               診断ログ用。 保存挙動には影響しない。
+     */
+    public static void trySave(String reason) {
         Path file = currentCacheFile();
-        if (file == null)
+        if (file == null) {
+            // 診断: ワールド/サーバ未接続でファイルが決まらない (= 保存対象なし)。
+            OmniChest.LOGGER.info("[omnichest] ChestCache save skip [{}]: no cache file (not in world/server)", reason);
             return;
+        }
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
-        if (level == null)
+        if (level == null) {
+            // 診断: level 破棄後の発火 (= この経路では書き込めない)。
+            OmniChest.LOGGER.info("[omnichest] ChestCache save skip [{}]: level==null, file={}", reason, file);
             return;
+        }
         RegistryAccess registries = level.registryAccess();
         DynamicOps<Tag> ops = registries.createSerializationContext(NbtOps.INSTANCE);
 
+        int written = 0;
+        int skippedEntity = 0;
         try {
             Files.createDirectories(file.getParent());
             CompoundTag root = new CompoundTag();
@@ -135,17 +151,25 @@ public final class ChestCacheStorage {
                 // コンテナを持つエンティティ (= トロッコ / ボート / モブ) のスナップショットは
                 // 永続化しない (= セッション内のみ)。 networkId は再ログインで変わり、 位置も揮発する
                 // ため、 保存するとロード後に解決不能なゴーストエントリになる。 ブロックの永続化挙動は不変。
-                if (snap.isEntity())
+                if (snap.isEntity()) {
+                    skippedEntity++;
                     continue;
+                }
                 CompoundTag t = snapshotToTag(snap, ops);
-                if (t != null)
+                if (t != null) {
                     listTag.add(t);
+                    written++;
+                }
             }
             root.put("snapshots", listTag);
 
             try (OutputStream os = Files.newOutputStream(file)) {
                 NbtIo.writeCompressed(root, os);
             }
+            // 診断: 何件を どのファイルへ どの経路で 書いたか (managerSize と突き合わせ可能)。
+            OmniChest.LOGGER.info(
+                    "[omnichest] Saved {} chest snapshots to {} [{}] (managerSize={}, skippedEntity={})",
+                    written, file, reason, ChestNetworkManager.get().size(), skippedEntity);
         } catch (Exception e) {
             OmniChest.LOGGER.warn("Failed to save chest cache to {}", file, e);
         }
@@ -156,10 +180,13 @@ public final class ChestCacheStorage {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         if (level == null) {
+            OmniChest.LOGGER.info("[omnichest] ChestCache load skip: level==null");
             loaded = true; // level 不在では load しないが、以後の save は許可。
             return;
         }
         if (file == null || !Files.exists(file)) {
+            // 診断: ロード対象ファイル不在 (= 初回 / パス不一致の切り分け用)。
+            OmniChest.LOGGER.info("[omnichest] ChestCache load: no file to load (file={})", file);
             loaded = true;
             return;
         }
