@@ -7,6 +7,7 @@ import com.kajiwara.visualizegate.client.render.PortalLinkRenderer;
 import com.kajiwara.visualizegate.config.GateConfigManager;
 import com.kajiwara.visualizegate.memory.PortalMemory;
 import com.kajiwara.visualizegate.scan.PortalIndex;
+import com.kajiwara.visualizegate.terrain.TerrainStore;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
@@ -35,6 +36,9 @@ public class VisualizeGateClient implements ClientModInitializer {
         // 世代横断のポータル記憶 (機能2/1 の前提)。 PortalIndex の後に登録し、 在ディメンション中に
         // 確定レコードを昇格保存・整合する (描画はまだ無し＝記憶基盤のみ)。
         PortalMemory.register();
+        // 地形カラム代表点の蓄積 (点群ポップアップの地形素材)。 PortalMemory の後に登録し、
+        // world-id 確定後に CHUNK_LOAD でサンプリングする (描画はまだ無し＝蓄積基盤のみ)。
+        TerrainStore.register();
         PortalBoxRenderer.register();
         // 機能2: リンク状態ベクターライン (記憶された別次元ポータルへズレ線・緑/赤/灰)。
         PortalLinkRenderer.register();
