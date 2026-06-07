@@ -1,0 +1,88 @@
+package com.kajiwara.visualizegate.config;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.kajiwara.visualizegate.VisualizeGateMod;
+import com.kajiwara.visualizegate.state.GateMenuState;
+
+import net.fabricmc.loader.api.FabricLoader;
+
+/**
+ * {@link GateConfig} の JSON 永続化 (OmniChest ConfigManager の軽量踏襲)。
+ *
+ * <p>保存先 <code>&lt;config&gt;/visualizegate.json</code>。 atomic 書き込み (tmp → ATOMIC_MOVE) で
+ * 書込中クラッシュでも喪失しない。 破損/欠落は既定値でフォールバック (= 起動を止めない)。
+ * {@link GateMenuState} を単一の真実とし、 load で state へ反映 / save で state から書出す。
+ */
+public final class GateConfigManager {
+
+    private static final String FILE_NAME = VisualizeGateMod.MOD_ID + ".json";
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .disableHtmlEscaping()
+            .create();
+
+    private GateConfigManager() {
+    }
+
+    private static Path file() {
+        return FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME);
+    }
+
+    /** 起動時に 1 回。 ディスクから読み GateMenuState へ反映。 無ければ雛形を書く。 失敗は既定値維持。 */
+    public static synchronized void load() {
+        try {
+            Path f = file();
+            GateConfig cfg;
+            if (Files.exists(f)) {
+                try (BufferedReader r = Files.newBufferedReader(f, StandardCharsets.UTF_8)) {
+                    cfg = GSON.fromJson(r, GateConfig.class);
+                }
+                if (cfg == null) {
+                    cfg = GateConfig.defaults();
+                }
+            } else {
+                cfg = GateConfig.defaults();
+                writeAtomic(f, GSON.toJson(cfg)); // 雛形を作る
+            }
+            GateMenuState.setBoxOverlayEnabled(cfg.boxOverlayEnabled);
+            GateMenuState.setHudIconEnabled(cfg.hudIconEnabled);
+        } catch (Throwable t) {
+            VisualizeGateMod.LOGGER.warn(
+                    "[visualizegate] config load failed (defaults kept): {}", t.toString());
+        }
+    }
+
+    /** GateMenuState の現在値をディスクへ書き出す。 失敗してもログのみ (UI を巻き込まない)。 */
+    public static synchronized void save() {
+        try {
+            GateConfig cfg = new GateConfig();
+            cfg.boxOverlayEnabled = GateMenuState.isBoxOverlayEnabled();
+            cfg.hudIconEnabled = GateMenuState.isHudIconEnabled();
+            writeAtomic(file(), GSON.toJson(cfg));
+        } catch (Throwable t) {
+            VisualizeGateMod.LOGGER.warn("[visualizegate] config save failed: {}", t.toString());
+        }
+    }
+
+    private static void writeAtomic(Path file, String content) throws IOException {
+        Files.createDirectories(file.getParent());
+        Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
+        try (BufferedWriter w = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
+            w.write(content);
+        }
+        try {
+            Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (java.nio.file.AtomicMoveNotSupportedException amns) {
+            Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+}

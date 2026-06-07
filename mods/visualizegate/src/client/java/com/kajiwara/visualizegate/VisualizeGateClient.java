@@ -3,6 +3,7 @@ package com.kajiwara.visualizegate;
 import com.kajiwara.visualizegate.client.keybind.GateKeyBindings;
 import com.kajiwara.visualizegate.client.render.CornerIconRenderer;
 import com.kajiwara.visualizegate.client.render.PortalBoxRenderer;
+import com.kajiwara.visualizegate.config.GateConfigManager;
 import com.kajiwara.visualizegate.scan.PortalIndex;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -26,6 +27,8 @@ public class VisualizeGateClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        // 設定をディスクからロードして GateMenuState へ反映 (= 描画/HUD が正しい初期値で始まる)。
+        GateConfigManager.load();
         PortalIndex.register();
         PortalBoxRenderer.register();
         GateKeyBindings.register();

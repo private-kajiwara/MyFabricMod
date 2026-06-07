@@ -1,5 +1,6 @@
 package com.kajiwara.visualizegate.ui;
 
+import com.kajiwara.visualizegate.config.GateConfigManager;
 import com.kajiwara.visualizegate.state.GateMenuState;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -31,12 +32,14 @@ public class GateMenuScreen extends Screen {
         addRenderableWidget(Button.builder(boxLabel(), b -> {
             GateMenuState.toggleBoxOverlay();
             b.setMessage(boxLabel());
+            GateConfigManager.save();
         }).bounds(cx - BTN_W / 2, y, BTN_W, BTN_H).build());
         y += BTN_H + GAP;
 
         addRenderableWidget(Button.builder(hudLabel(), b -> {
             GateMenuState.toggleHudIcon();
             b.setMessage(hudLabel());
+            GateConfigManager.save();
         }).bounds(cx - BTN_W / 2, y, BTN_W, BTN_H).build());
         y += BTN_H + GAP * 3;
 
@@ -59,9 +62,12 @@ public class GateMenuScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(g, mouseX, mouseY, partialTick);
-        // タイトルを中央上に描画 (font.width で水平センタリング)。
+        // タイトルを中央上に描画 (font.width で水平センタリング・Mod アクセント色)。
         int tx = this.width / 2 - this.font.width(this.title) / 2;
-        g.text(this.font, this.title, tx, this.height / 2 - 60, 0xFFFFFFFF);
+        int ty = this.height / 2 - 60;
+        g.text(this.font, this.title, tx, ty, GateColors.ACCENT);
+        // タイトル下に細いアクセント下線 (Mod カラー)。
+        g.fill(tx, ty + 11, tx + this.font.width(this.title), ty + 12, GateColors.MAIN);
     }
 
     @Override

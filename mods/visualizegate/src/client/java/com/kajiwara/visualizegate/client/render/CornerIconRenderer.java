@@ -2,6 +2,7 @@ package com.kajiwara.visualizegate.client.render;
 
 import com.kajiwara.visualizegate.client.keybind.GateKeyBindings;
 import com.kajiwara.visualizegate.state.GateMenuState;
+import com.kajiwara.visualizegate.ui.GateColors;
 
 //? if >=26.1 {
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
@@ -28,9 +29,10 @@ public final class CornerIconRenderer {
 
     private static final int SIZE = 16;
     private static final int MARGIN = 6;
-    private static final int BG_ARGB = 0x60000000;     // 半透明黒 (邪魔にならない)
-    private static final int ICON_ARGB = 0xFFC040FF;   // ポータル枠と同系のマゼンタ
-    private static final int TEXT_ARGB = 0xFFFFFFFF;
+    // Mod カラー (GateColors) を参照 — 配色は 1 箇所定義。
+    private static final int BG_ARGB = GateColors.HUD_BG;
+    private static final int ICON_ARGB = GateColors.MAIN;
+    private static final int TEXT_ARGB = GateColors.TEXT;
 
     private CornerIconRenderer() {
     }
