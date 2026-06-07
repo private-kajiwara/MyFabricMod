@@ -49,6 +49,39 @@ stonecutter parameters {
             //   simple name "CameraRenderState" と field ".cameraRenderState"/".pos" は全版同一。
             replace("renderer\\.state\\.level\\.CameraRenderState",
                     "renderer.state.CameraRenderState", noRev, noRev)
+
+            // ─────────────────────────────────────────────────────────────
+            // (UI) メニュー UI の版差 (26.1 非難読化 → 旧世代 Mojmap)。
+            //   GuiGraphics 描画クラス・メソッドと Fabric keybind helper を橋渡しする。
+            //   実 API 名は 26.1.2/1.21.11/1.21.10 を javap で確認済み (現物)。
+            //   全て一方向 (forward=current<26.1 のみ、 reverse=noRev no-op)。
+            // ─────────────────────────────────────────────────────────────
+            // GUI 描画クラス: GuiGraphicsExtractor(26.1) → GuiGraphics(Mojmap)。
+            //   "GuiGraphics" は "GuiGraphicsExtractor" の部分文字列 → 逆変換が base を壊すため
+            //   regex+sentinel で前方のみ (必須一方向)。
+            replace("GuiGraphicsExtractor", "GuiGraphics", noRev, noRev)
+            // Screen/Renderable の描画メソッド改名: extractRenderState(26.1) → render(Mojmap)。
+            //   "render" は base の renderShape/RenderType/addRenderableWidget 等に部分一致するため
+            //   必須一方向 (OmniChest と同名規則)。
+            replace("extractRenderState", "render", noRev, noRev)
+            // GUI テキスト描画メソッド: g.text( → g.drawString(。
+            replace("g\\.text\\(", "g.drawString(", noRev, noRev)
+            // Fabric keybind helper: keymapping.v1.KeyMappingHelper → keybinding.v1.KeyBindingHelper。
+            //   import パスと「クラス.メソッド」呼び出しを 2 本の非連鎖 regex で個別に橋渡しする
+            //   (重複マッチしないので順序非依存)。
+            replace("keymapping\\.v1\\.KeyMappingHelper", "keybinding.v1.KeyBindingHelper", noRev, noRev)
+            replace("KeyMappingHelper\\.registerKeyMapping",
+                    "KeyBindingHelper.registerKeyBinding", noRev, noRev)
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // (UI/G) <1.21.11 専用 (1.21.10): ResourceLocation→Identifier 改名前。
+        //   KeyMapping.Category.register(Identifier) は 26.1/1.21.11 = Identifier、
+        //   1.21.10 = ResourceLocation。 \b 境界で前方のみ一方向化 (= 1.21.11/26.1 は noRev no-op
+        //   で Identifier のまま)。 OmniChest の同名規則に倣う。
+        // ─────────────────────────────────────────────────────────────
+        regex(current.parsed < "1.21.11") {
+            replace("\\bIdentifier\\b", "ResourceLocation", noRev, noRev)
         }
     }
 }

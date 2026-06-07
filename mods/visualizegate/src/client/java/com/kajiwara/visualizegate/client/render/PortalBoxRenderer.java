@@ -5,6 +5,7 @@ import java.util.List;
 import com.kajiwara.visualizegate.VisualizeGateMod;
 import com.kajiwara.visualizegate.scan.PortalIndex;
 import com.kajiwara.visualizegate.scan.PortalRecord;
+import com.kajiwara.visualizegate.state.GateMenuState;
 
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -72,6 +73,9 @@ public final class PortalBoxRenderer {
 
     private void onAfterWater(LevelRenderContext ctx) {
         try {
+            // メニューの「ゲート枠表示」トグル。 OFF なら即 return (未操作の既定は ON = 従来挙動)。
+            if (!GateMenuState.isBoxOverlayEnabled())
+                return;
             Minecraft mc = Minecraft.getInstance();
             ClientLevel level = mc.level;
             if (level == null)
