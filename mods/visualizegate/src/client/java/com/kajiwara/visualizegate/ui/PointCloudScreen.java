@@ -36,8 +36,12 @@ public class PointCloudScreen extends Screen {
     private static final int SIDEBAR_W = 168;
     private static final int MARGIN = 8;
 
-    /** 点の world サイズ (px = この値 × 投影スケール、 [1,7] にクランプ)。 点数を絞る分やや大きめ。 */
-    private static final float POINT_WORLD_SIZE = 2.4f;
+    /** 点の最小ピクセル幅 (最遠点)。 細かいドット感のため 1px。 */
+    private static final int POINT_MIN_PX = 1;
+    /** 最近点で最小幅に加算する追加ピクセル (近=POINT_MIN_PX+EXTRA、 遠=POINT_MIN_PX)。 */
+    private static final int POINT_SIZE_EXTRA = 2;
+    /** 最遠点の明るさ係数 (大気遠近: 遠い点を暗く沈ませる・近点=1.0)。 */
+    private static final float DEPTH_DIM_MIN = 0.5f;
     private static final double DRAG_SENS = 0.012;
     private static final double NEAR = 0.1;
 
@@ -72,7 +76,6 @@ public class PointCloudScreen extends Screen {
     private float[] bSx = new float[0];
     private float[] bSy = new float[0];
     private float[] bDepth = new float[0];
-    private int[] bSize = new int[0];
     private int[] bColor = new int[0];
     private long[] bOrder = new long[0];
 
@@ -303,7 +306,21 @@ public class PointCloudScreen extends Screen {
                     cosY, sinY, cosP, sinP, cx, cy, total);
         }
 
-        // 深度ソート → 描画順 (遠→近) の確定配列へ。
+        // 深度範囲 (距離手がかり: 近=大/明、 遠=小/暗＝大気遠近で 3D に見せる)。
+        float dMin = Float.MAX_VALUE;
+        float dMax = -Float.MAX_VALUE;
+        for (int i = 0; i < total; i++) {
+            float d = bDepth[i];
+            if (d < dMin) {
+                dMin = d;
+            }
+            if (d > dMax) {
+                dMax = d;
+            }
+        }
+        float dSpan = (dMax > dMin) ? (dMax - dMin) : 1f;
+
+        // 深度ソート → 描画順 (遠→近) の確定配列へ。 サイズ/明るさを深度から焼き込む。
         for (int i = 0; i < total; i++) {
             bOrder[i] = ((long) Float.floatToIntBits(bDepth[i]) << 32) | (i & 0xFFFFFFFFL);
         }
@@ -312,10 +329,11 @@ public class PointCloudScreen extends Screen {
         int w = 0;
         for (int k = total - 1; k >= 0; k--) { // 末尾=遠 から
             int i = (int) (bOrder[k] & 0xFFFFFFFFL);
+            float near = (dMax - bDepth[i]) / dSpan; // 0=最遠 .. 1=最近
             dX[w] = bSx[i];
             dY[w] = bSy[i];
-            dSize[w] = bSize[i];
-            dColor[w] = bColor[i];
+            dSize[w] = POINT_MIN_PX + Math.round(near * POINT_SIZE_EXTRA);
+            dColor[w] = dim(bColor[i], DEPTH_DIM_MIN + near * (1f - DEPTH_DIM_MIN));
             w++;
         }
         cachedCount = total;
@@ -357,10 +375,10 @@ public class PointCloudScreen extends Screen {
     /** キャッシュから描くだけ (静止フレームの全処理＝投影/ソート無し)。 */
     private void drawCached(GuiGraphicsExtractor g) {
         for (int k = 0; k < cachedCount; k++) {
-            int r = dSize[k];
-            int x = Math.round(dX[k]);
-            int y = Math.round(dY[k]);
-            fillClamped(g, x - r, y - r, x + r, y + r, dColor[k]);
+            int s = dSize[k]; // 1〜3px の実ピクセル幅 (近いほど大)。
+            int x = Math.round(dX[k]) - s / 2;
+            int y = Math.round(dY[k]) - s / 2;
+            fillClamped(g, x, y, x + s, y + s, dColor[k]);
         }
         for (int i = 0; i < cachedLinks; i++) {
             drawSegment(g, lkAx[i], lkAy[i], lkBx[i], lkBy[i]);
@@ -389,10 +407,8 @@ public class PointCloudScreen extends Screen {
         if (sx < vpX || sx > vpX + vpW || sy < vpY || sy > vpY + vpH) {
             return total; // 中心がビューポート外 → 捨てる (手動クリップ)
         }
-        int r = Math.max(1, Math.min(7, Math.round(POINT_WORLD_SIZE * proj)));
         bSx[total] = sx;
         bSy[total] = sy;
-        bSize[total] = r;
         bColor[total] = color;
         bDepth[total] = depth;
         return total + 1;
@@ -445,6 +461,15 @@ public class PointCloudScreen extends Screen {
         return new float[] { cx + x1 * proj, cy - y2 * proj };
     }
 
+    /** ARGB の RGB を係数 f で減衰 (アルファは保持・暗背景なのでアルファでなく明度を落とす)。 */
+    private static int dim(int color, float f) {
+        int a = (color >>> 24) & 0xFF;
+        int r = Math.round(((color >> 16) & 0xFF) * f);
+        int gg = Math.round(((color >> 8) & 0xFF) * f);
+        int b = Math.round((color & 0xFF) * f);
+        return (a << 24) | (r << 16) | (gg << 8) | b;
+    }
+
     private void fillClamped(GuiGraphicsExtractor g, int x1, int y1, int x2, int y2, int color) {
         int cx1 = Math.max(vpX, x1);
         int cy1 = Math.max(vpY, y1);
@@ -459,7 +484,6 @@ public class PointCloudScreen extends Screen {
         if (bSx.length < n) {
             bSx = new float[n];
             bSy = new float[n];
-            bSize = new int[n];
             bColor = new int[n];
             bDepth = new float[n];
             bOrder = new long[n];

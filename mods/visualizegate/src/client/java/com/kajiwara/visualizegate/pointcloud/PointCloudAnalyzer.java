@@ -27,11 +27,11 @@ import com.kajiwara.visualizegate.ui.GateColors;
 public final class PointCloudAnalyzer {
 
     /**
-     * 1 層あたりの描画点上限 (超過はストライド間引き＝決定的)。 「疎いが地形が読める」 を狙い
-     * 数千点規模に抑える (CPU 律速＝投影/ソート/個別 fill を毎フレーム回すため点数が支配的)。
-     * 疎にする分は {@code PointCloudScreen} 側で点を少し大きく描いて形状を保つ。
+     * 1 層あたりの描画点上限 (超過はストライド間引き＝決定的)。 細かいドット (1〜3px) で地形面を
+     * 表すため中間値に置く。 静止フレームは投影/ソートがキャッシュ済＝idle コストは点数に依らない
+     * (回転時のみ N に比例)。 モックアップの密度に合わせた中庸値。
      */
-    public static final int POINT_BUDGET_PER_LAYER = 2_500;
+    public static final int POINT_BUDGET_PER_LAYER = 4_000;
     /** OW→ネザーのリンク探索半径 (PortalLinkRenderer と同じ・水平距離)。 */
     private static final double NETHER_SEARCH_RADIUS = 16.0;
 
