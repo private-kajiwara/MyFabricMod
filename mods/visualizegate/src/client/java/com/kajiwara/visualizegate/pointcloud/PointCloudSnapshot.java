@@ -23,7 +23,8 @@ public final class PointCloudSnapshot {
             new float[0], new float[0], new float[0], new int[0],
             new float[0], new float[0], new float[0],
             new float[0], new float[0], new float[0],
-            0f, 0, 0, 0, 0);
+            0f, 0, 0, 0, 0,
+            false, 0f, 0f, 0f, false);
 
     // OW 層 (青→青緑)。
     public final float[] owX;
@@ -53,11 +54,20 @@ public final class PointCloudSnapshot {
     public final int owDrawn;
     public final int netherDrawn;
 
+    // 解析時点のプレイヤー現在地マーカー (ビュー空間・各層 Y センタリング済、 spacing は描画時加算)。
+    public final boolean hasMarker;
+    public final float markerX;
+    public final float markerY;
+    public final float markerZ;
+    /** マーカーがネザー層か (描画時 +spacing/2、 OW なら -spacing/2)。 */
+    public final boolean markerNether;
+
     public PointCloudSnapshot(float[] owX, float[] owY, float[] owZ, int[] owColor,
             float[] nX, float[] nY, float[] nZ, int[] nColor,
             float[] linkAx, float[] linkAy, float[] linkAz,
             float[] linkBx, float[] linkBy, float[] linkBz,
-            float radius, int owSampled, int netherSampled, int owDrawn, int netherDrawn) {
+            float radius, int owSampled, int netherSampled, int owDrawn, int netherDrawn,
+            boolean hasMarker, float markerX, float markerY, float markerZ, boolean markerNether) {
         this.owX = owX;
         this.owY = owY;
         this.owZ = owZ;
@@ -77,6 +87,11 @@ public final class PointCloudSnapshot {
         this.netherSampled = netherSampled;
         this.owDrawn = owDrawn;
         this.netherDrawn = netherDrawn;
+        this.hasMarker = hasMarker;
+        this.markerX = markerX;
+        this.markerY = markerY;
+        this.markerZ = markerZ;
+        this.markerNether = markerNether;
     }
 
     public int linkCount() {

@@ -26,8 +26,12 @@ import com.kajiwara.visualizegate.ui.GateColors;
  */
 public final class PointCloudAnalyzer {
 
-    /** 1 層あたりの描画点上限 (超過はストライド間引き＝決定的)。 */
-    public static final int POINT_BUDGET_PER_LAYER = 20_000;
+    /**
+     * 1 層あたりの描画点上限 (超過はストライド間引き＝決定的)。 「疎いが地形が読める」 を狙い
+     * 数千点規模に抑える (CPU 律速＝投影/ソート/個別 fill を毎フレーム回すため点数が支配的)。
+     * 疎にする分は {@code PointCloudScreen} 側で点を少し大きく描いて形状を保つ。
+     */
+    public static final int POINT_BUDGET_PER_LAYER = 2_500;
     /** OW→ネザーのリンク探索半径 (PortalLinkRenderer と同じ・水平距離)。 */
     private static final double NETHER_SEARCH_RADIUS = 16.0;
 
@@ -119,11 +123,13 @@ public final class PointCloudAnalyzer {
 
         // ── 4. リンク (OW→ネザー LINKED のみ) ──
         Links links = buildLinks(in, hCenterX, hCenterZ, owMeanY, nMeanY);
+        Marker mk = marker(in, hCenterX, hCenterZ, owMeanY, nMeanY);
 
         float radius = horizontalRadius(owX, owZ, nX, nZ);
         return new PointCloudSnapshot(owX, owY, owZ, owColor, nX, nY, nZ, nColor,
                 links.ax, links.ay, links.az, links.bx, links.by, links.bz,
-                radius, owN, nN, owDrawn, nDrawn);
+                radius, owN, nN, owDrawn, nDrawn,
+                mk.present(), mk.x(), mk.y(), mk.z(), mk.nether());
     }
 
     /** 地形ゼロ時: ポータル/リンクのみで重心を取って組む (地形 norm 不要)。 */
@@ -153,11 +159,13 @@ public final class PointCloudAnalyzer {
         float owMeanY = in.owPortals().isEmpty() ? 0f : (float) ((double) owYSum / in.owPortals().size());
         float nMeanY = in.netherPortals().isEmpty() ? 0f : (float) ((double) nYSum / in.netherPortals().size());
         Links links = buildLinks(in, hCenterX, hCenterZ, owMeanY, nMeanY);
+        Marker mk = marker(in, hCenterX, hCenterZ, owMeanY, nMeanY);
         float radius = horizontalRadius(links.ax, links.az, links.bx, links.bz);
         return new PointCloudSnapshot(new float[0], new float[0], new float[0], new int[0],
                 new float[0], new float[0], new float[0], new int[0],
                 links.ax, links.ay, links.az, links.bx, links.by, links.bz,
-                radius, 0, 0, 0, 0);
+                radius, 0, 0, 0, 0,
+                mk.present(), mk.x(), mk.y(), mk.z(), mk.nether());
     }
 
     private static Links buildLinks(PointCloudInputs in, float hCenterX, float hCenterZ,
@@ -194,6 +202,30 @@ public final class PointCloudAnalyzer {
             out.bz[i] = b.get(i)[2];
         }
         return out;
+    }
+
+    /** プレイヤー現在地を点群と同じビュー空間 (×8 整列・各層 Y センタリング) へ写す。 spacing は描画時。 */
+    private static Marker marker(PointCloudInputs in, float hCenterX, float hCenterZ,
+            float owMeanY, float nMeanY) {
+        if (!in.playerPresent()) {
+            return Marker.NONE;
+        }
+        if (in.playerInNether()) {
+            return new Marker(true,
+                    (float) (in.playerX() * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR - hCenterX),
+                    (float) (in.playerY() - nMeanY),
+                    (float) (in.playerZ() * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR - hCenterZ),
+                    true);
+        }
+        return new Marker(true,
+                (float) (in.playerX() - hCenterX),
+                (float) (in.playerY() - owMeanY),
+                (float) (in.playerZ() - hCenterZ),
+                false);
+    }
+
+    private record Marker(boolean present, float x, float y, float z, boolean nether) {
+        static final Marker NONE = new Marker(false, 0f, 0f, 0f, false);
     }
 
     private static final class Links {

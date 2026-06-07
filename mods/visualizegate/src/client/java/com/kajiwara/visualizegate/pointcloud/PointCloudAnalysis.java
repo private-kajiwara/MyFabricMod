@@ -8,6 +8,9 @@ import com.kajiwara.visualizegate.domain.PortalDimension;
 import com.kajiwara.visualizegate.memory.PortalMemory;
 import com.kajiwara.visualizegate.terrain.TerrainStore;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+
 /**
  * 点群解析の<b>非同期オーケストレーション</b> (メインスレッド capture → ワーカー build → publish)。
  *
@@ -84,12 +87,33 @@ public final class PointCloudAnalysis {
     private PointCloudInputs capture() {
         int[] owTerrain = TerrainStore.get().snapshotColumns(PortalDimension.OVERWORLD);
         int[] netherTerrain = TerrainStore.get().snapshotColumns(PortalDimension.NETHER);
+
+        // プレイヤー現在地 (解析時点で固定・OW/ネザーのみマーカー対象)。
+        boolean present = false;
+        double px = 0;
+        double py = 0;
+        double pz = 0;
+        boolean inNether = false;
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        if (player != null && mc.level != null) {
+            PortalDimension dim = PortalMemory.dimOf(mc.level.dimension().identifier().toString());
+            if (dim == PortalDimension.OVERWORLD || dim == PortalDimension.NETHER) {
+                present = true;
+                px = player.getX();
+                py = player.getY();
+                pz = player.getZ();
+                inNether = dim == PortalDimension.NETHER;
+            }
+        }
+
         return new PointCloudInputs(
                 owTerrain,
                 netherTerrain,
                 PortalMemory.get().knownInDimension(PortalDimension.OVERWORLD),
                 PortalMemory.get().knownInDimension(PortalDimension.NETHER),
-                OW_MIN_Y, OW_MAX_Y, NETHER_MIN_Y, NETHER_MAX_Y);
+                OW_MIN_Y, OW_MAX_Y, NETHER_MIN_Y, NETHER_MAX_Y,
+                present, px, py, pz, inNether);
     }
 
     public State state() {

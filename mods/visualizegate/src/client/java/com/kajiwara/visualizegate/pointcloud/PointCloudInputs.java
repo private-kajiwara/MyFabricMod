@@ -18,6 +18,11 @@ import com.kajiwara.visualizegate.domain.DomainPortal;
  * @param owMaxY        OW の Y 上限
  * @param netherMinY    ネザーの Y 下限
  * @param netherMaxY    ネザーの Y 上限
+ * @param playerPresent 解析時にプレイヤーが OW/ネザーに居たか (居なければマーカー無し)
+ * @param playerX       プレイヤー位置 X (解析時点・現dim 生座標)
+ * @param playerY       プレイヤー位置 Y
+ * @param playerZ       プレイヤー位置 Z
+ * @param playerInNether プレイヤーがネザーに居たか (×8 整列とネザー層 Y センタリングの選択)
  */
 public record PointCloudInputs(
         int[] owTerrain,
@@ -27,5 +32,10 @@ public record PointCloudInputs(
         int owMinY,
         int owMaxY,
         int netherMinY,
-        int netherMaxY) {
+        int netherMaxY,
+        boolean playerPresent,
+        double playerX,
+        double playerY,
+        double playerZ,
+        boolean playerInNether) {
 }

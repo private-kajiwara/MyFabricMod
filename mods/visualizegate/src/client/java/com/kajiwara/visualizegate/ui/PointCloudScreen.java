@@ -36,8 +36,8 @@ public class PointCloudScreen extends Screen {
     private static final int SIDEBAR_W = 168;
     private static final int MARGIN = 8;
 
-    /** 点の world サイズ (px = この値 × 投影スケール、 [1,5] にクランプ)。 */
-    private static final float POINT_WORLD_SIZE = 1.7f;
+    /** 点の world サイズ (px = この値 × 投影スケール、 [1,7] にクランプ)。 点数を絞る分やや大きめ。 */
+    private static final float POINT_WORLD_SIZE = 2.4f;
     private static final double DRAG_SENS = 0.012;
     private static final double NEAR = 0.1;
 
@@ -68,13 +68,43 @@ public class PointCloudScreen extends Screen {
     private int slW;
     private int slH;
 
-    // ── 描画再利用バッファ (フレーム毎に再確保しない) ──
+    // ── 投影スクラッチ (rebuild 中のみ使用・フレーム毎に再確保しない) ──
     private float[] bSx = new float[0];
     private float[] bSy = new float[0];
     private float[] bDepth = new float[0];
     private int[] bSize = new int[0];
     private int[] bColor = new int[0];
     private long[] bOrder = new long[0];
+
+    // ── 投影キャッシュ: 静止フレームは再投影/再ソートしない (CPU 律速の核を消す) ──
+    private float[] dX = new float[0];   // 描画順 (遠→近) の確定スクリーン座標
+    private float[] dY = new float[0];
+    private int[] dSize = new int[0];
+    private int[] dColor = new int[0];
+    private int cachedCount = 0;
+    private float[] lkAx = new float[0]; // 投影済みリンク端点 (再投影しない)
+    private float[] lkAy = new float[0];
+    private float[] lkBx = new float[0];
+    private float[] lkBy = new float[0];
+    private int cachedLinks = 0;
+    private boolean mkVis = false;       // 現在地マーカー
+    private float mkX;
+    private float mkY;
+    private long lastBuildNanos = 0;     // 直近 rebuild 所要 (計測表示用)
+
+    // ── 署名: これが変わったフレームだけ rebuild する ──
+    private PointCloudSnapshot sigSnap;
+    private float sigYaw = Float.NaN;
+    private float sigPitch;
+    private float sigDistance;
+    private float sigSpacing;
+    private boolean sigShowOw;
+    private boolean sigShowN;
+    private boolean sigShowLinks;
+    private int sigVpX;
+    private int sigVpY;
+    private int sigVpW;
+    private int sigVpH;
 
     public PointCloudScreen(Screen parent) {
         super(Component.literal("VisualizeGate — Point Cloud"));
@@ -206,7 +236,48 @@ public class PointCloudScreen extends Screen {
         distance = Math.max(snap.radius * 2.2f, Math.max(spacing * 1.5f, 40f));
     }
 
+    /**
+     * 点群描画。 ビュー (snapshot/カメラ/spacing/トグル/ビューポート) が変わったフレームだけ
+     * {@link #rebuildProjection} で再投影+深度ソート+キャッシュ化し、 静止フレームはキャッシュから
+     * 描くだけ (= 毎フレームの投影/ソートを無くす＝CPU 律速の核を消す)。
+     */
     private void drawCloud(GuiGraphicsExtractor g, PointCloudSnapshot snap) {
+        if (signatureChanged(snap)) {
+            rebuildProjection(snap);
+        }
+        drawCached(g);
+    }
+
+    /** ビュー署名の変化検出 (変化時は新署名を保存して true)。 */
+    private boolean signatureChanged(PointCloudSnapshot snap) {
+        boolean showOw = PointCloudViewState.isShowOverworld();
+        boolean showN = PointCloudViewState.isShowNether();
+        boolean showLinks = PointCloudViewState.isShowLinks();
+        float spacing = PointCloudViewState.getDimensionSpacing();
+        if (snap == sigSnap && yaw == sigYaw && pitch == sigPitch && distance == sigDistance
+                && spacing == sigSpacing && showOw == sigShowOw && showN == sigShowN
+                && showLinks == sigShowLinks && vpX == sigVpX && vpY == sigVpY
+                && vpW == sigVpW && vpH == sigVpH) {
+            return false;
+        }
+        sigSnap = snap;
+        sigYaw = yaw;
+        sigPitch = pitch;
+        sigDistance = distance;
+        sigSpacing = spacing;
+        sigShowOw = showOw;
+        sigShowN = showN;
+        sigShowLinks = showLinks;
+        sigVpX = vpX;
+        sigVpY = vpY;
+        sigVpW = vpW;
+        sigVpH = vpH;
+        return true;
+    }
+
+    /** 全点/リンク/マーカーを投影し、 深度ソートして描画順の確定配列へ焼く。 変化時のみ呼ばれる。 */
+    private void rebuildProjection(PointCloudSnapshot snap) {
+        long t0 = System.nanoTime();
         float spacing = PointCloudViewState.getDimensionSpacing();
         float pivotY = spacing * 0.5f;
         float cosY = (float) Math.cos(yaw);
@@ -223,39 +294,79 @@ public class PointCloudScreen extends Screen {
         ensureBuffers(owN + nN);
 
         int total = 0;
-        // OW 層 (y -= pivot)。
-        for (int i = 0; i < owN; i++) {
+        for (int i = 0; i < owN; i++) {   // OW 層 (y -= pivot)
             total = project(snap.owX[i], snap.owY[i] - pivotY, snap.owZ[i], snap.owColor[i],
                     cosY, sinY, cosP, sinP, cx, cy, total);
         }
-        // ネザー層 (y += spacing - pivot = +pivot)。
-        for (int i = 0; i < nN; i++) {
+        for (int i = 0; i < nN; i++) {    // ネザー層 (y += pivot)
             total = project(snap.nX[i], snap.nY[i] + pivotY, snap.nZ[i], snap.nColor[i],
                     cosY, sinY, cosP, sinP, cx, cy, total);
         }
 
-        // 深度で並べ替え (近=小キー: 正の float の floatToIntBits は単調)。
-        // painter: 遠 (大キー) から描く＝ソート後の末尾から。
+        // 深度ソート → 描画順 (遠→近) の確定配列へ。
         for (int i = 0; i < total; i++) {
-            int depthBits = Float.floatToIntBits(bDepth[i]);
-            bOrder[i] = ((long) depthBits << 32) | (i & 0xFFFFFFFFL);
+            bOrder[i] = ((long) Float.floatToIntBits(bDepth[i]) << 32) | (i & 0xFFFFFFFFL);
         }
         Arrays.sort(bOrder, 0, total);
-        for (int k = total - 1; k >= 0; k--) {
+        ensureDrawArrays(total);
+        int w = 0;
+        for (int k = total - 1; k >= 0; k--) { // 末尾=遠 から
             int i = (int) (bOrder[k] & 0xFFFFFFFFL);
-            int r = bSize[i];
-            fillClamped(g, Math.round(bSx[i]) - r, Math.round(bSy[i]) - r,
-                    Math.round(bSx[i]) + r, Math.round(bSy[i]) + r, bColor[i]);
+            dX[w] = bSx[i];
+            dY[w] = bSy[i];
+            dSize[w] = bSize[i];
+            dColor[w] = bColor[i];
+            w++;
+        }
+        cachedCount = total;
+
+        // リンク端点を投影してキャッシュ (DDA は描画時にキャッシュ端点から)。
+        cachedLinks = 0;
+        if (PointCloudViewState.isShowLinks() && snap.linkCount() > 0) {
+            ensureLinkArrays(snap.linkCount());
+            for (int i = 0; i < snap.linkCount(); i++) {
+                float[] a = projectXY(snap.linkAx[i], snap.linkAy[i] - pivotY, snap.linkAz[i],
+                        cosY, sinY, cosP, sinP, cx, cy);
+                float[] b = projectXY(snap.linkBx[i], snap.linkBy[i] + pivotY, snap.linkBz[i],
+                        cosY, sinY, cosP, sinP, cx, cy);
+                if (a == null || b == null) {
+                    continue;
+                }
+                lkAx[cachedLinks] = a[0];
+                lkAy[cachedLinks] = a[1];
+                lkBx[cachedLinks] = b[0];
+                lkBy[cachedLinks] = b[1];
+                cachedLinks++;
+            }
         }
 
-        // リンク線 (紫・点の上に描く)。
-        if (PointCloudViewState.isShowLinks()) {
-            for (int i = 0; i < snap.linkCount(); i++) {
-                drawLink(g,
-                        snap.linkAx[i], snap.linkAy[i] - pivotY, snap.linkAz[i],
-                        snap.linkBx[i], snap.linkBy[i] + pivotY, snap.linkBz[i],
-                        cosY, sinY, cosP, sinP, cx, cy);
+        // 現在地マーカーを投影してキャッシュ。
+        mkVis = false;
+        if (snap.hasMarker) {
+            float my = snap.markerNether ? snap.markerY + pivotY : snap.markerY - pivotY;
+            float[] m = projectXY(snap.markerX, my, snap.markerZ, cosY, sinY, cosP, sinP, cx, cy);
+            if (m != null && m[0] >= vpX && m[0] <= vpX + vpW && m[1] >= vpY && m[1] <= vpY + vpH) {
+                mkVis = true;
+                mkX = m[0];
+                mkY = m[1];
             }
+        }
+        lastBuildNanos = System.nanoTime() - t0;
+    }
+
+    /** キャッシュから描くだけ (静止フレームの全処理＝投影/ソート無し)。 */
+    private void drawCached(GuiGraphicsExtractor g) {
+        for (int k = 0; k < cachedCount; k++) {
+            int r = dSize[k];
+            int x = Math.round(dX[k]);
+            int y = Math.round(dY[k]);
+            fillClamped(g, x - r, y - r, x + r, y + r, dColor[k]);
+        }
+        for (int i = 0; i < cachedLinks; i++) {
+            drawSegment(g, lkAx[i], lkAy[i], lkBx[i], lkBy[i]);
+        }
+        if (mkVis) {
+            drawMarker(g, Math.round(mkX), Math.round(mkY));
         }
     }
 
@@ -278,7 +389,7 @@ public class PointCloudScreen extends Screen {
         if (sx < vpX || sx > vpX + vpW || sy < vpY || sy > vpY + vpH) {
             return total; // 中心がビューポート外 → 捨てる (手動クリップ)
         }
-        int r = Math.max(1, Math.min(5, Math.round(POINT_WORLD_SIZE * proj)));
+        int r = Math.max(1, Math.min(7, Math.round(POINT_WORLD_SIZE * proj)));
         bSx[total] = sx;
         bSy[total] = sy;
         bSize[total] = r;
@@ -287,26 +398,19 @@ public class PointCloudScreen extends Screen {
         return total + 1;
     }
 
-    /** リンク線分: 両端を投影し DDA で 2px 点列を描く (両端 visible のときのみ)。 */
-    private void drawLink(GuiGraphicsExtractor g,
-            float ax, float ay, float az, float bx, float by, float bz,
-            float cosY, float sinY, float cosP, float sinP, float cx, float cy) {
-        float[] a = projectXY(ax, ay, az, cosY, sinY, cosP, sinP, cx, cy);
-        float[] b = projectXY(bx, by, bz, cosY, sinY, cosP, sinP, cx, cy);
-        if (a == null || b == null) {
+    /** 投影済み端点から DDA で紫線を描く (約 2px 刻みの 2x2 ドット＝fill 数を半減)。 */
+    private void drawSegment(GuiGraphicsExtractor g, float ax, float ay, float bx, float by) {
+        float dx = bx - ax;
+        float dy = by - ay;
+        float len = Math.max(Math.abs(dx), Math.abs(dy));
+        if (len <= 0f) {
             return;
         }
-        float dx = b[0] - a[0];
-        float dy = b[1] - a[1];
-        int steps = (int) Math.max(Math.abs(dx), Math.abs(dy));
-        if (steps <= 0) {
-            return;
-        }
-        steps = Math.min(steps, 4096);
+        int steps = Math.min((int) (len / 2f) + 1, 2048);
         float stepX = dx / steps;
         float stepY = dy / steps;
-        float px = a[0];
-        float py = a[1];
+        float px = ax;
+        float py = ay;
         for (int s = 0; s <= steps; s++) {
             int ix = Math.round(px);
             int iy = Math.round(py);
@@ -316,6 +420,14 @@ public class PointCloudScreen extends Screen {
             px += stepX;
             py += stepY;
         }
+    }
+
+    /** 現在地マーカー (金の十字＝地形点と一目で区別)。 */
+    private void drawMarker(GuiGraphicsExtractor g, int x, int y) {
+        int arm = 6;
+        fillClamped(g, x - arm, y - 1, x + arm, y + 1, GateColors.ACCENT); // 横棒
+        fillClamped(g, x - 1, y - arm, x + 1, y + arm, GateColors.ACCENT); // 縦棒
+        fillClamped(g, x - 2, y - 2, x + 2, y + 2, GateColors.ACCENT);     // 中心
     }
 
     /** 投影して screen (x,y) だけ返す (depth cull のみ・サイズ不要)。 cull なら null。 */
@@ -354,6 +466,24 @@ public class PointCloudScreen extends Screen {
         }
     }
 
+    private void ensureDrawArrays(int n) {
+        if (dX.length < n) {
+            dX = new float[n];
+            dY = new float[n];
+            dSize = new int[n];
+            dColor = new int[n];
+        }
+    }
+
+    private void ensureLinkArrays(int n) {
+        if (lkAx.length < n) {
+            lkAx = new float[n];
+            lkAy = new float[n];
+            lkBx = new float[n];
+            lkBy = new float[n];
+        }
+    }
+
     // ── サイドバー: スライダ + 件数 ──
 
     private void drawSlider(GuiGraphicsExtractor g) {
@@ -379,8 +509,14 @@ public class PointCloudScreen extends Screen {
                 x, y + 11, GateColors.PC_NETHER_HIGH);
         g.text(this.font, Component.literal("Links: " + snap.linkCount()),
                 x, y + 22, GateColors.PC_LINK);
+        if (snap.hasMarker) {
+            g.text(this.font, Component.literal("+ = you (at analysis)"), x, y + 33, GateColors.ACCENT);
+        }
+        String build = String.format(java.util.Locale.ROOT, "%.2f ms", lastBuildNanos / 1.0e6);
+        g.text(this.font, Component.literal("Rebuild: " + build + " (cached when still)"),
+                x, y + 44, GateColors.LINK_GRAY);
         g.text(this.font, Component.literal("Drag: rotate   Wheel: zoom"),
-                x, y + 37, GateColors.LINK_GRAY);
+                x, y + 55, GateColors.LINK_GRAY);
     }
 
     // ════════════════════════════════════════════════════════════════════
