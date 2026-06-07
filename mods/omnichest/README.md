@@ -41,7 +41,7 @@ Windows PowerShell:
 ```powershell
 $env:JAVA_HOME = "C:\Users\ppapk\.jdks\jdk-25.0.3+9"
 cd C:\MyFabricMod\mods\omnichest
-.\gradlew.bat :1.21.11:runClient
+.\gradlew.bat :26.1.2:runClient
 ```
 
 別世代（26.1.2）を起動するときは最後の行だけ差し替える:
