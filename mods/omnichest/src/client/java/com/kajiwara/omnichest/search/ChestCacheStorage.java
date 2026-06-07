@@ -2,6 +2,7 @@ package com.kajiwara.omnichest.search;
 
 import com.kajiwara.omnichest.OmniChest;
 import com.mojang.serialization.DynamicOps;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
@@ -89,6 +90,20 @@ public final class ChestCacheStorage {
             if (loaded)
                 trySave();
             loaded = false;
+        });
+
+        // ゲーム完全終了時 (= ウィンドウ× / Alt+F4 / Quit) にも最終 save。
+        // CLIENT_STOPPING は Minecraft.close() 冒頭で発火し、 この時点では level / 統合サーバが
+        // まだ生きているため currentCacheFile() / trySave() が正しく書き込める。
+        // ワールド内に居たまま直接終了する経路では DISCONNECT の発火が保証されない (発火しても
+        // level 破棄後だと trySave() が mc.level==null で no-op になる) ため、 ここで取りこぼしを防ぐ。
+        // loaded ガードにより、 タイトル画面からの Quit (退出済み = loaded false) では発火しても
+        // 既存キャッシュを空保存で上書きしない (加えて currentCacheFile() も null を返し二重に安全)。
+        // throttle の直近変更トレーリング取りこぼしも、 この無条件 flush が拾う。
+        // StorageMemory / SlotLockStorage と同じ DISCONNECT + CLIENT_STOPPING の二重フックに揃える。
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+            if (loaded)
+                trySave();
         });
     }
 
