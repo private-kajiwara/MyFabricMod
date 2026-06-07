@@ -13,7 +13,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.MultiBufferSource;
 //? if >=1.21.11 {
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -60,7 +60,13 @@ public final class SearchBeaconRenderer {
     }
 
     /**
-     * 1 本のビームを submit する。 座標はすべて <b>camera-relative</b> (= matrices がカメラ原点)。
+     * 1 本のビームを <b>immediate-mode</b> で {@code bufferSource} に描く。 座標はすべて
+     * <b>camera-relative</b> (= matrices がカメラ原点)。 実際の GPU 反映は {@link #flush} で行う。
+     *
+     * <p>
+     * 旧 submit 版 (= {@code SubmitNodeCollector}) と頂点 / RenderType / 色は完全に同一。 描画タイミング
+     * だけを「水の描画後」 に移すための immediate-mode 版 (= {@code submitCustomGeometry} を
+     * {@code bufferSource.getBuffer} + 直接頂点積みに置換しただけ)。
      *
      * @param centerX     ビーム中心の camera-relative X
      * @param centerZ     ビーム中心の camera-relative Z
@@ -71,7 +77,7 @@ public final class SearchBeaconRenderer {
      * @param topAlpha    上端の不透明度 (0..1、 通常 0 付近にして上方フェード)
      * @param coreWidth   コア柱の幅 (ブロック)
      */
-    public static void submitBeam(SubmitNodeCollector queue, PoseStack matrices,
+    public static void drawBeamImmediate(MultiBufferSource bufferSource, PoseStack matrices,
             float centerX, float centerZ, float baseY, float topY,
             int rgb, float bottomAlpha, float topAlpha, float coreWidth) {
         if (topY <= baseY) return;
@@ -85,13 +91,12 @@ public final class SearchBeaconRenderer {
         int bottomGlow = packColor(rgb, bottomAlpha * GLOW_ALPHA_MULT);
         int topGlow = packColor(rgb, topAlpha * GLOW_ALPHA_MULT);
 
-        RenderType type = beamRenderType();
-        queue.submitCustomGeometry(matrices, type, (pose, consumer) -> {
-            // 外側グロー柱 (先に描いて内側コアを上に重ねる)。
-            column(consumer, pose, centerX, centerZ, baseY, topY, glowHalf, bottomGlow, topGlow);
-            // 内側コア柱。
-            column(consumer, pose, centerX, centerZ, baseY, topY, coreHalf, bottomCore, topCore);
-        });
+        VertexConsumer consumer = bufferSource.getBuffer(beamRenderType());
+        PoseStack.Pose pose = matrices.last();
+        // 外側グロー柱 (先に描いて内側コアを上に重ねる)。
+        column(consumer, pose, centerX, centerZ, baseY, topY, glowHalf, bottomGlow, topGlow);
+        // 内側コア柱。
+        column(consumer, pose, centerX, centerZ, baseY, topY, coreHalf, bottomCore, topCore);
     }
 
     /**
