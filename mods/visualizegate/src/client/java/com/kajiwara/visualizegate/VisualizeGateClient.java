@@ -4,6 +4,7 @@ import com.kajiwara.visualizegate.client.keybind.GateKeyBindings;
 import com.kajiwara.visualizegate.client.render.CornerIconRenderer;
 import com.kajiwara.visualizegate.client.render.PortalBoxRenderer;
 import com.kajiwara.visualizegate.config.GateConfigManager;
+import com.kajiwara.visualizegate.memory.PortalMemory;
 import com.kajiwara.visualizegate.scan.PortalIndex;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -30,6 +31,9 @@ public class VisualizeGateClient implements ClientModInitializer {
         // 設定をディスクからロードして GateMenuState へ反映 (= 描画/HUD が正しい初期値で始まる)。
         GateConfigManager.load();
         PortalIndex.register();
+        // 世代横断のポータル記憶 (機能2/1 の前提)。 PortalIndex の後に登録し、 在ディメンション中に
+        // 確定レコードを昇格保存・整合する (描画はまだ無し＝記憶基盤のみ)。
+        PortalMemory.register();
         PortalBoxRenderer.register();
         GateKeyBindings.register();
         CornerIconRenderer.register();

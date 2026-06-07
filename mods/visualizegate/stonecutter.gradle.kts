@@ -82,6 +82,9 @@ stonecutter parameters {
         // ─────────────────────────────────────────────────────────────
         regex(current.parsed < "1.21.11") {
             replace("\\bIdentifier\\b", "ResourceLocation", noRev, noRev)
+            // ResourceKey#identifier()(26.1/1.21.11) → location()(1.21.10)。
+            //   PortalMemory の dimension().identifier().toString()。 一方向 (1.21.11/26.1 は noRev no-op)。
+            replace("\\.identifier\\(\\)", ".location()", noRev, noRev)
         }
     }
 }
