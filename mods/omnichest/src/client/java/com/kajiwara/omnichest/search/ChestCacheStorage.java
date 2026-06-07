@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * チェストネットワーク (= 開いたことのあるコンテナ群) を NBT で永続化する。
@@ -56,8 +57,15 @@ import java.util.Optional;
  */
 public final class ChestCacheStorage {
 
-    /** schema 形式 version。互換性破壊する変更時にインクリメント。 */
-    private static final int VERSION = 1;
+    /**
+     * schema 形式 version。互換性破壊する変更時にインクリメント。
+     * <ul>
+     * <li>1: ブロックコンテナのみ保存 (エンティティは非永続)。</li>
+     * <li>2: コンテナ持ちエンティティ (= トロッコ / ボート / モブ) も UUID 付きで保存。
+     * v1 ファイルは entity タグ無しの block 群として従来どおりロードできる (= 後方互換)。</li>
+     * </ul>
+     */
+    private static final int VERSION = 2;
     /** save の連打を抑制する最小間隔 (ms)。 */
     private static final long SAVE_THROTTLE_MS = 2000L;
 
@@ -141,24 +149,22 @@ public final class ChestCacheStorage {
         DynamicOps<Tag> ops = registries.createSerializationContext(NbtOps.INSTANCE);
 
         int written = 0;
-        int skippedEntity = 0;
+        int entityWritten = 0;
         try {
             Files.createDirectories(file.getParent());
             CompoundTag root = new CompoundTag();
             root.putInt("version", VERSION);
             ListTag listTag = new ListTag();
             for (ContainerSnapshot snap : ChestNetworkManager.get().snapshots()) {
-                // コンテナを持つエンティティ (= トロッコ / ボート / モブ) のスナップショットは
-                // 永続化しない (= セッション内のみ)。 networkId は再ログインで変わり、 位置も揮発する
-                // ため、 保存するとロード後に解決不能なゴーストエントリになる。 ブロックの永続化挙動は不変。
-                if (snap.isEntity()) {
-                    skippedEntity++;
-                    continue;
-                }
+                // ブロック / エンティティ 双方を保存する (= v2)。 エンティティは UUID で同一性を持ち、
+                // ロード時は最終既知座標で一覧へ復元、 実体再ロード時に networkId へ再アンカーされる
+                // ({@link snapshotToTag} / {@link tagToSnapshot} / ContainerScanner の ENTITY_LOAD)。
                 CompoundTag t = snapshotToTag(snap, ops);
                 if (t != null) {
                     listTag.add(t);
                     written++;
+                    if (snap.isEntity())
+                        entityWritten++;
                 }
             }
             root.put("snapshots", listTag);
@@ -168,8 +174,8 @@ public final class ChestCacheStorage {
             }
             // 診断: 何件を どのファイルへ どの経路で 書いたか (managerSize と突き合わせ可能)。
             OmniChest.LOGGER.info(
-                    "[omnichest] Saved {} chest snapshots to {} [{}] (managerSize={}, skippedEntity={})",
-                    written, file, reason, ChestNetworkManager.get().size(), skippedEntity);
+                    "[omnichest] Saved {} chest snapshots to {} [{}] (managerSize={}, entityWritten={})",
+                    written, file, reason, ChestNetworkManager.get().size(), entityWritten);
         } catch (Exception e) {
             OmniChest.LOGGER.warn("Failed to save chest cache to {}", file, e);
         }
@@ -259,6 +265,12 @@ public final class ChestCacheStorage {
         }
         t.putString("type", snap.type().name());
         t.putLong("lastSeen", snap.lastSeenMillis());
+        // エンティティコンテナ: 同一性は UUID。 networkId はセッション内ハンドルなので保存しない
+        // (= ロード時はセンチネルで未解決状態にし、 実体再ロードで再アンカーする)。
+        // pos は捕捉時 (= 最終既知) 座標で、 上の x/y/z にそのまま入る (= 一覧復元の表示位置)。
+        if (snap.isEntity() && snap.entity() != null) {
+            t.putString("entityUuid", snap.entity().uuid().toString());
+        }
 
         ListTag items = new ListTag();
         for (int i = 0; i < snap.items().size(); i++) {
@@ -339,6 +351,22 @@ public final class ChestCacheStorage {
                 continue;
             ItemStack stack = ItemStack.CODEC.parse(ops, stackTag).result().orElse(ItemStack.EMPTY);
             items.set(slot, stack);
+        }
+
+        // エンティティコンテナ (v2): UUID を持つ場合は EntityLocator 付きで復元する。
+        // networkId はまだ不明なのでセンチネル (= 未解決)。 実体が再ロードされた時に
+        // ContainerScanner の ENTITY_LOAD が UUID 一致で networkId へ再アンカーする。
+        // UUID が壊れていれば そのエントリは安全にスキップ (= クラッシュさせない)。
+        String entityUuidStr = t.getString("entityUuid").orElse(null);
+        if (entityUuidStr != null && !entityUuidStr.isEmpty()) {
+            UUID uuid;
+            try {
+                uuid = UUID.fromString(entityUuidStr);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+            return new ContainerSnapshot(dim, pos, null, type, items, lastSeen,
+                    EntityLocator.unresolved(uuid));
         }
 
         return new ContainerSnapshot(dim, pos, secondaryPos, type, items, lastSeen);
