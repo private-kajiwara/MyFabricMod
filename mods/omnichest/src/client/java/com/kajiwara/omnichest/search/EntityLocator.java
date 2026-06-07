@@ -30,6 +30,14 @@ import java.util.UUID;
  */
 public final class EntityLocator {
 
+    /**
+     * 未解決を表すセンチネル networkId。 永続化からの復元直後など、 まだ実体の networkId が
+     * 分からない状態に使う。 {@link net.minecraft.client.multiplayer.ClientLevel#getEntity(int)} は
+     * この値で常に {@code null} を返すため、 {@link #resolve} は安全に「未解決」となる。
+     * 実体が再ロードされた時 (= ContainerScanner の ENTITY_LOAD) に実 networkId へ再アンカーする。
+     */
+    public static final int UNRESOLVED_NETWORK_ID = Integer.MIN_VALUE;
+
     private final UUID uuid;
     private final int networkId;
 
@@ -41,6 +49,14 @@ public final class EntityLocator {
     /** このロケータを作るユーティリティ (= {@link Entity#getUUID()} / {@link Entity#getId()} から)。 */
     public static EntityLocator of(Entity entity) {
         return new EntityLocator(entity.getUUID(), entity.getId());
+    }
+
+    /**
+     * UUID のみ既知で networkId 未確定 (= 永続化からの復元直後) のロケータを作る。
+     * {@link #resolve} は実体が再ロードされ再アンカーされるまで {@code null} を返す。
+     */
+    public static EntityLocator unresolved(UUID uuid) {
+        return new EntityLocator(uuid, UNRESOLVED_NETWORK_ID);
     }
 
     public UUID uuid() {

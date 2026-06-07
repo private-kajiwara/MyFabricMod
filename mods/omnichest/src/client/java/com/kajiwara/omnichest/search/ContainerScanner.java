@@ -1,5 +1,7 @@
 package com.kajiwara.omnichest.search;
 
+import com.kajiwara.omnichest.OmniChest;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
@@ -34,7 +36,10 @@ import net.minecraft.world.phys.EntityHitResult;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * 「プレイヤーが実際に開いた」コンテナを観測し、スナップショットを
@@ -113,8 +118,18 @@ public final class ContainerScanner {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             pendingOpen = null;
             active = null;
+            entityUnresolvedSince.clear();
             ChestNetworkManager.get().clear();
         });
+
+        // ────────────────────────────────────────────────────────────
+        // (4') エンティティ再ロード時の再アンカー (= 永続復元したエンティティコンテナの追従復帰)。
+        //      永続化から復元した snapshot は networkId 未確定 (= センチネル) で一覧には出るが
+        //      ワールド追従ができない。 実体がクライアントに再ロードされた瞬間に UUID 一致を見て
+        //      実 networkId へ差し替える (= ピン/ハイライトが再び追従)。 Fabric API のイベントなので
+        //      MC マッピング名に依存せず全版で同一に動く。
+        // ────────────────────────────────────────────────────────────
+        ClientEntityEvents.ENTITY_LOAD.register(ContainerScanner::onEntityLoad);
 
         // ────────────────────────────────────────────────────────────
         // (5) クライアントが見ているプレイヤーがチェスト/シュルカー等を壊した瞬間に、
@@ -368,6 +383,16 @@ public final class ContainerScanner {
     private static int validityCheckCounter = 0;
 
     /**
+     * エンティティ剪定の grace (ms)。 ロード済みチャンクで解決不能なエンティティ snapshot を
+     * 「消滅」と確定するまでの猶予。 永続復元直後 (= センチネル networkId) や、 実体の
+     * ENTITY_LOAD が発火する前のタイミングでの誤剪定を防ぐ。 grace 経過後もなお
+     * 「ロード済みチャンク かつ 解決不能」なら確実に消えたとみなして剪定する。
+     */
+    private static final long ENTITY_PRUNE_GRACE_MS = 5000L;
+    /** エンティティ snapshot が「ロード済みなのに解決不能」になった最初の時刻 (= grace 計測)。 */
+    private static final Map<ContainerSnapshot.Key, Long> entityUnresolvedSince = new HashMap<>();
+
+    /**
      * 「ロード済みチャンクにあるはずなのに、 もうコンテナでないブロック」 のスナップショットを
      * {@link ChestNetworkManager} から取り除く。
      * <ul>
@@ -380,18 +405,40 @@ public final class ContainerScanner {
     private static void sweepBrokenContainers(Minecraft mc) {
         ClientLevel level = mc.level;
         if (level == null) return;
+        final long nowMs = System.currentTimeMillis();
         java.util.List<ContainerSnapshot.Key> toRemove = new ArrayList<>();
         ResourceKey<Level> dim = level.dimension();
         for (ContainerSnapshot snap : ChestNetworkManager.get().snapshots()) {
             if (!dim.equals(snap.dimension())) continue;
             // ─── エンティティコンテナ (= トロッコ / ボート / モブ) の生存検証 ───
             // ブロック検証 (fromBlockState) には掛けない (= snap.pos() に対応ブロックは無く誤除去になる)。
-            // 解決できれば生存、 解決できず かつ 捕捉位置のチャンクがロード済みなら「消滅した」 とみなす。
-            // 未ロードチャンクなら「分からない → 残す」 (= ブロック側の isLoaded 安全策と同方針)。
+            // 再アンカーは ENTITY_LOAD (onEntityLoad) が担うので、 ここでは「解決可否」だけを見る:
+            //   - 解決可 → 生存・アンカー済み。 grace タイマ解除して残す。
+            //   - 未ロードチャンク → 「分からない → 残す」 (= ブロック側 isLoaded と同方針)。
+            //   - ロード済みなのに解決不能 → 消滅の可能性。 ただし ENTITY_LOAD 前/復元直後の
+            //     誤剪定を避けるため grace 経過後にのみ剪定 (= 「確実に消えた」 のみ)。
             if (snap.isEntity()) {
                 EntityLocator loc = snap.entity();
-                if (loc != null && loc.resolve(level) == null && level.isLoaded(snap.pos())) {
+                if (loc == null) {
+                    continue;
+                }
+                // まだ一度も再アンカーされていない (= 永続復元直後のセンチネル) エントリは剪定しない。
+                // 「今セッションで実体を確認できていない」 = 不在を確証できないため (例: tryLoad より前に
+                // 既にロード済みで ENTITY_LOAD が再発火しないケース)。 一覧表示は維持され、 実体に
+                // 再遭遇すれば onEntityLoad / 再オープンで再アンカーされる。
+                if (loc.networkId() == EntityLocator.UNRESOLVED_NETWORK_ID) {
+                    continue;
+                }
+                if (loc.resolve(level) != null || !level.isLoaded(snap.pos())) {
+                    entityUnresolvedSince.remove(snap.key());
+                    continue;
+                }
+                // アンカー済み (= 今セッションで実体を確認した) のに、 ロード済みチャンクで解決不能。
+                // grace 経過後にのみ「確実に消えた」 として剪定する。
+                long since = entityUnresolvedSince.computeIfAbsent(snap.key(), k -> nowMs);
+                if (nowMs - since >= ENTITY_PRUNE_GRACE_MS) {
                     toRemove.add(snap.key());
+                    entityUnresolvedSince.remove(snap.key());
                 }
                 continue;
             }
@@ -407,6 +454,54 @@ public final class ContainerScanner {
             ChestNetworkManager.get().remove(key);
             com.kajiwara.omnichest.client.render.ChestHighlighter.get().clearForKey(key);
         }
+        // 診断: ロード済みエントリを唯一サイレントに削除し得る経路。 ここが効くと「load されたのに消えた」。
+        OmniChest.LOGGER.info(
+                "[omnichest] Swept {} broken/removed containers (managerSize={})",
+                toRemove.size(), ChestNetworkManager.get().size());
+    }
+
+    /**
+     * エンティティがクライアントに再ロードされた時の再アンカー。
+     *
+     * <p>
+     * 永続化から復元したエンティティ snapshot は networkId 未確定 (= センチネル) で
+     * {@link EntityLocator#resolve} できない。 実体が UUID 一致でロードされたら、 その snapshot を
+     * 実 networkId と現在位置で差し替える (= items / lastSeenMillis は維持) ことで、 ピン/ハイライトの
+     * ワールド追従を復帰させる。 一覧表示は再アンカー前から出ている (= 解決可否に依存しない)。
+     *
+     * <p>
+     * 大多数の mob ロードを早期に弾くため、 コンテナ持ち候補の型でのみ manager を走査する。
+     */
+    private static void onEntityLoad(Entity entity, ClientLevel world) {
+        if (entity == null || world == null) return;
+        if (!isContainerEntity(entity)) return;
+        UUID uuid = entity.getUUID();
+        ResourceKey<Level> dim = world.dimension();
+        for (ContainerSnapshot snap : ChestNetworkManager.get().snapshots()) {
+            if (!snap.isEntity()) continue;
+            EntityLocator loc = snap.entity();
+            if (loc == null || !loc.uuid().equals(uuid)) continue;
+            if (!dim.equals(snap.dimension())) continue;
+            // 既に同じ networkId なら何もしない (= 再 put のスパムと不要なセーブ通知を避ける)。
+            if (loc.networkId() == entity.getId()) return;
+            // 再アンカー: 実 networkId と現在位置で snapshot を差し替える (= 同一 UUID キーへ上書き)。
+            ChestNetworkManager.get().put(new ContainerSnapshot(
+                    snap.dimension(), entity.blockPosition(), null, snap.type(),
+                    snap.items(), snap.lastSeenMillis(),
+                    new EntityLocator(uuid, entity.getId())));
+            entityUnresolvedSince.remove(snap.key());
+            return;
+        }
+    }
+
+    /**
+     * コンテナを持ち得るエンティティ型か (= トロッコ / ボート / 荷運びモブ)。
+     * onEntityLoad の早期フィルタ用 (= 厳密な「チェスト積載中か」 ではなく、 候補型かどうか)。
+     */
+    private static boolean isContainerEntity(Entity entity) {
+        return entity instanceof MinecartChest
+                || entity instanceof AbstractChestBoat
+                || entity instanceof AbstractChestedHorse;
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -463,6 +558,10 @@ public final class ContainerScanner {
                 a.type,
                 snap,
                 System.currentTimeMillis());
+        // 診断: ブロックコンテナ登録の瞬間 (= 何が / どこで / managerSize がいくつになったか)。
+        OmniChest.LOGGER.info(
+                "[omnichest] Captured block container {} at {} [{}] (managerSize={})",
+                a.type, a.pos, reason, ChestNetworkManager.get().size());
     }
 
     // ════════════════════════════════════════════════════════════════════
