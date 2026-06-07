@@ -85,6 +85,11 @@ stonecutter parameters {
             // ResourceKey#identifier()(26.1/1.21.11) → location()(1.21.10)。
             //   PortalMemory の dimension().identifier().toString()。 一方向 (1.21.11/26.1 は noRev no-op)。
             replace("\\.identifier\\(\\)", ".location()", noRev, noRev)
+            // 線頂点の per-vertex 線幅 (POSITION_COLOR_NORMAL_LINE_WIDTH) は 1.21.11+ のみ。
+            //   1.21.10 は POSITION_COLOR_NORMAL → 頂点側 .setLineWidth(lineWidth) を落とす。
+            //   PortalLinkRenderer.addLine の現物 (OmniChest 同名規則)。 一方向。
+            replace("\\.setNormal\\(pose, nx, ny, nz\\)\\.setLineWidth\\(lineWidth\\)",
+                    ".setNormal(pose, nx, ny, nz)", noRev, noRev)
         }
     }
 }

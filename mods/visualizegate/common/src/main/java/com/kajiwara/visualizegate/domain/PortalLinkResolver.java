@@ -2,6 +2,7 @@ package com.kajiwara.visualizegate.domain;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * ポータルリンクの<b>予測</b> (MC 非依存・純粋・ヒューリスティック)。
@@ -26,11 +27,13 @@ public final class PortalLinkResolver {
      * @param toMaxY               対象次元の最高 Y
      * @param knownInTo            対象次元の既知ポータル集合 (PortalMemory 由来)
      * @param searchRadius         探索半径 (OW=128 / Nether=16)
-     * @param targetRegionObserved 対象領域を観測済みか (false なら UNKNOWN; 呼び出し側が記憶被覆から判定)
+     * @param targetRegionObserved 「理想ターゲット周辺のリージョンが観測済みか」 を返す述語。
+     *                             一致ポータルが無いとき: true→WILL_CREATE(赤) / false→UNKNOWN(灰)。
+     *                             述語には算出した理想ターゲット座標が渡される (= 領域単位の正直な被覆判定)。
      */
     public static LinkPrediction predict(GridPos source, PortalDimension from, PortalDimension to,
             int toMinY, int toMaxY, Collection<DomainPortal> knownInTo,
-            double searchRadius, boolean targetRegionObserved) {
+            double searchRadius, Predicate<GridPos> targetRegionObserved) {
 
         GridPos ideal = PortalCoordinateMapper.project(source, from, to, toMinY, toMaxY);
 
@@ -51,7 +54,7 @@ public final class PortalLinkResolver {
             return new LinkPrediction(PredictedLinkState.LINKED, ideal,
                     Optional.of(nearest), best, searchRadius);
         }
-        PredictedLinkState state = targetRegionObserved
+        PredictedLinkState state = targetRegionObserved.test(ideal)
                 ? PredictedLinkState.WILL_CREATE
                 : PredictedLinkState.UNKNOWN;
         return new LinkPrediction(state, ideal, Optional.empty(), Double.NaN, searchRadius);

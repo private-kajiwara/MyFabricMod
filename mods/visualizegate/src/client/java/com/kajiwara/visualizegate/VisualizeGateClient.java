@@ -3,6 +3,7 @@ package com.kajiwara.visualizegate;
 import com.kajiwara.visualizegate.client.keybind.GateKeyBindings;
 import com.kajiwara.visualizegate.client.render.CornerIconRenderer;
 import com.kajiwara.visualizegate.client.render.PortalBoxRenderer;
+import com.kajiwara.visualizegate.client.render.PortalLinkRenderer;
 import com.kajiwara.visualizegate.config.GateConfigManager;
 import com.kajiwara.visualizegate.memory.PortalMemory;
 import com.kajiwara.visualizegate.scan.PortalIndex;
@@ -35,6 +36,8 @@ public class VisualizeGateClient implements ClientModInitializer {
         // 確定レコードを昇格保存・整合する (描画はまだ無し＝記憶基盤のみ)。
         PortalMemory.register();
         PortalBoxRenderer.register();
+        // 機能2: リンク状態ベクターライン (記憶された別次元ポータルへズレ線・緑/赤/灰)。
+        PortalLinkRenderer.register();
         GateKeyBindings.register();
         CornerIconRenderer.register();
         VisualizeGateMod.LOGGER.info("VisualizeGate client initialized (portal scan + box renderer + menu UI).");

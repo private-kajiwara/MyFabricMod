@@ -10,6 +10,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -20,6 +22,7 @@ import com.kajiwara.visualizegate.domain.PortalDimension;
 import com.kajiwara.visualizegate.scan.PortalIndex;
 import com.kajiwara.visualizegate.scan.PortalRecord;
 
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -27,7 +30,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.chunk.LevelChunk;
 
 /**
  * 世代横断のポータル記憶 (機能2 の緑/赤判定の前提)。 {@link PortalIndex} はディメンションを去ると
@@ -44,6 +49,8 @@ public final class PortalMemory {
 
     private static final String FILE_NAME = "visualizegate-portals.json";
     private static final int PERIODIC_INTERVAL = 20; // tick
+    /** 観測リージョンセルのサイズ (チャンク四方)。 4ch=64ブロック。 */
+    private static final int CELL_CHUNKS = 4;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
     private static final PortalMemory INSTANCE = new PortalMemory();
@@ -62,6 +69,7 @@ public final class PortalMemory {
     public static void register() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> INSTANCE.onJoin(client));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> INSTANCE.onLeave());
+        ClientChunkEvents.CHUNK_LOAD.register((level, chunk) -> INSTANCE.onChunkLoad(level, chunk));
         ClientTickEvents.END_CLIENT_TICK.register(INSTANCE::onClientTick);
     }
 
@@ -83,6 +91,25 @@ public final class PortalMemory {
             VisualizeGateMod.LOGGER.warn("[visualizegate] portal-memory save-on-leave failed: {}", t.toString());
         } finally {
             currentWorldId = null;
+        }
+    }
+
+    /** CHUNK_LOAD: そのチャンクが属するリージョンセルを「観測済み」に印す (安価)。 */
+    private void onChunkLoad(ClientLevel level, LevelChunk chunk) {
+        try {
+            ensureLoaded();
+            Minecraft mc = Minecraft.getInstance();
+            if (currentWorldId == null) {
+                currentWorldId = worldId(mc);
+                if (currentWorldId == null) {
+                    return;
+                }
+            }
+            String dimId = dimensionId(level);
+            ChunkPos cp = chunk.getPos();
+            file.observedCells(currentWorldId, dimId).add(cellKey(cp.getMinBlockX() >> 4, cp.getMinBlockZ() >> 4));
+        } catch (Throwable t) {
+            VisualizeGateMod.LOGGER.warn("[visualizegate] portal-memory observe failed: {}", t.toString());
         }
     }
 
@@ -241,6 +268,48 @@ public final class PortalMemory {
             default:
                 return PortalDimension.OTHER;
         }
+    }
+
+    /** domain enum → 正規 dim id (観測セット照合用)。 OW↔Nether のみ (それ以外は null)。 */
+    public static String canonicalDimId(PortalDimension dim) {
+        switch (dim) {
+            case OVERWORLD:
+                return "minecraft:overworld";
+            case NETHER:
+                return "minecraft:the_nether";
+            case END:
+                return "minecraft:the_end";
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * 指定ディメンションの指定ブロック XZ が属するリージョンセルを観測済みか。
+     * Resolver の「理想ターゲット周辺が観測済みか」 判定に使う (未観測なら UNKNOWN=灰)。
+     */
+    public boolean isRegionObserved(PortalDimension dim, int blockX, int blockZ) {
+        if (file == null || currentWorldId == null) {
+            return false;
+        }
+        String dimId = canonicalDimId(dim);
+        if (dimId == null) {
+            return false;
+        }
+        long key = cellKey(blockX >> 4, blockZ >> 4);
+        Map<String, java.util.Set<Long>> byDim = file.observed.get(currentWorldId);
+        if (byDim == null) {
+            return false;
+        }
+        java.util.Set<Long> cells = byDim.get(dimId);
+        return cells != null && cells.contains(key);
+    }
+
+    /** チャンク座標 → リージョンセルキー (CELL_CHUNKS 四方で集約)。 */
+    private static long cellKey(int chunkX, int chunkZ) {
+        long cx = Math.floorDiv(chunkX, CELL_CHUNKS);
+        long cz = Math.floorDiv(chunkZ, CELL_CHUNKS);
+        return (cx & 0xFFFFFFFFL) << 32 | (cz & 0xFFFFFFFFL);
     }
 
     // ── 永続化 (GSON atomic) ────────────────────────────────────────────

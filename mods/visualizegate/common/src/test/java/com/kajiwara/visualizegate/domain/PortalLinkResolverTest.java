@@ -23,7 +23,7 @@ class PortalLinkResolverTest {
         // OW(800,70,160) -> Nether ideal (100,70,20)。
         LinkPrediction pred = PortalLinkResolver.predict(new GridPos(800, 70, 160),
                 PortalDimension.OVERWORLD, PortalDimension.NETHER, NETHER_MIN, NETHER_MAX,
-                List.of(), NETHER_RADIUS, false);
+                List.of(), NETHER_RADIUS, p -> false);
         assertEquals(new GridPos(100, 70, 20), pred.idealTarget());
     }
 
@@ -33,7 +33,7 @@ class PortalLinkResolverTest {
         DomainPortal near = nether(105, 70, 22, true, 1000L);
         LinkPrediction pred = PortalLinkResolver.predict(new GridPos(800, 70, 160),
                 PortalDimension.OVERWORLD, PortalDimension.NETHER, NETHER_MIN, NETHER_MAX,
-                List.of(near), NETHER_RADIUS, true);
+                List.of(near), NETHER_RADIUS, p -> true);
         assertEquals(PredictedLinkState.LINKED, pred.state());
         assertTrue(pred.matched().isPresent());
         assertEquals(near, pred.matched().get());
@@ -46,7 +46,7 @@ class PortalLinkResolverTest {
         DomainPortal far = nether(200, 70, 20, true, 1000L);
         LinkPrediction pred = PortalLinkResolver.predict(new GridPos(800, 70, 160),
                 PortalDimension.OVERWORLD, PortalDimension.NETHER, NETHER_MIN, NETHER_MAX,
-                List.of(far), NETHER_RADIUS, true);
+                List.of(far), NETHER_RADIUS, p -> true);
         assertEquals(PredictedLinkState.WILL_CREATE, pred.state());
         assertTrue(pred.matched().isEmpty());
     }
@@ -56,7 +56,7 @@ class PortalLinkResolverTest {
         // 既知ポータル無し かつ 未観測 → UNKNOWN (灰)。 嘘の赤を出さない。
         LinkPrediction pred = PortalLinkResolver.predict(new GridPos(800, 70, 160),
                 PortalDimension.OVERWORLD, PortalDimension.NETHER, NETHER_MIN, NETHER_MAX,
-                List.of(), NETHER_RADIUS, false);
+                List.of(), NETHER_RADIUS, p -> false);
         assertEquals(PredictedLinkState.UNKNOWN, pred.state());
         assertTrue(pred.matched().isEmpty());
     }
@@ -67,7 +67,7 @@ class PortalLinkResolverTest {
         DomainPortal b = nether(103, 70, 20, true, 2L);   // dist 3 (nearest)
         LinkPrediction pred = PortalLinkResolver.predict(new GridPos(800, 70, 160),
                 PortalDimension.OVERWORLD, PortalDimension.NETHER, NETHER_MIN, NETHER_MAX,
-                List.of(a, b), NETHER_RADIUS, true);
+                List.of(a, b), NETHER_RADIUS, p -> true);
         assertEquals(PredictedLinkState.LINKED, pred.state());
         assertEquals(b, pred.matched().get());
     }
@@ -77,7 +77,7 @@ class PortalLinkResolverTest {
         DomainPortal owGhost = new DomainPortal(PortalDimension.OVERWORLD, new GridPos(100, 70, 20), true, 1L);
         LinkPrediction pred = PortalLinkResolver.predict(new GridPos(800, 70, 160),
                 PortalDimension.OVERWORLD, PortalDimension.NETHER, NETHER_MIN, NETHER_MAX,
-                List.of(owGhost), NETHER_RADIUS, true);
+                List.of(owGhost), NETHER_RADIUS, p -> true);
         assertEquals(PredictedLinkState.WILL_CREATE, pred.state()); // OW のゴーストは Nether 探索で無視
     }
 
@@ -91,11 +91,21 @@ class PortalLinkResolverTest {
     }
 
     @Test
+    void observationPredicateReceivesIdealTarget() {
+        // 述語には算出した理想ターゲットが渡る (= 領域単位の観測判定がその座標で行える)。
+        GridPos[] seen = new GridPos[1];
+        PortalLinkResolver.predict(new GridPos(800, 70, 160),
+                PortalDimension.OVERWORLD, PortalDimension.NETHER, NETHER_MIN, NETHER_MAX,
+                List.of(), NETHER_RADIUS, p -> { seen[0] = p; return false; });
+        assertEquals(new GridPos(100, 70, 20), seen[0]);
+    }
+
+    @Test
     void staleMemoryFlagIsCarried() {
         DomainPortal remembered = nether(105, 70, 22, false, 50L); // liveConfirmed=false (記憶のみ)
         LinkPrediction pred = PortalLinkResolver.predict(new GridPos(800, 70, 160),
                 PortalDimension.OVERWORLD, PortalDimension.NETHER, NETHER_MIN, NETHER_MAX,
-                List.of(remembered), NETHER_RADIUS, true);
+                List.of(remembered), NETHER_RADIUS, p -> true);
         assertEquals(PredictedLinkState.LINKED, pred.state());
         assertFalse(pred.matched().get().liveConfirmed()); // 記憶（古い可能性）であることがデータ上残る
     }

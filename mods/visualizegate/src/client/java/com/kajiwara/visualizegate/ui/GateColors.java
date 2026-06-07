@@ -24,4 +24,12 @@ public final class GateColors {
 
     /** HUD 隅アイコンの半透明背景 (BASE を ~75% alpha 化＝視界を塞がない)。 */
     public static final int HUD_BG = 0xC00F0A17;
+
+    // ── 機能2 リンク状態色 (緑=既存リンク / 赤=新規生成 / 灰=未観測) ──
+    /** LINKED: 既存リンク有り (線の長さ＝ズレ量)。 */
+    public static final int LINK_GREEN = 0xFF49D17A;
+    /** WILL_CREATE: 範囲内に既存無し → 新規生成 (理想スポットに短マーカー・優劣ではなく状態)。 */
+    public static final int LINK_RED = 0xFFE0544A;
+    /** UNKNOWN: 対象領域未観測 → 緑/赤を主張しない。 */
+    public static final int LINK_GRAY = 0xFFA8A2B2;
 }
