@@ -422,10 +422,19 @@ public final class ContainerScanner {
                 if (loc == null) {
                     continue;
                 }
+                // まだ一度も再アンカーされていない (= 永続復元直後のセンチネル) エントリは剪定しない。
+                // 「今セッションで実体を確認できていない」 = 不在を確証できないため (例: tryLoad より前に
+                // 既にロード済みで ENTITY_LOAD が再発火しないケース)。 一覧表示は維持され、 実体に
+                // 再遭遇すれば onEntityLoad / 再オープンで再アンカーされる。
+                if (loc.networkId() == EntityLocator.UNRESOLVED_NETWORK_ID) {
+                    continue;
+                }
                 if (loc.resolve(level) != null || !level.isLoaded(snap.pos())) {
                     entityUnresolvedSince.remove(snap.key());
                     continue;
                 }
+                // アンカー済み (= 今セッションで実体を確認した) のに、 ロード済みチャンクで解決不能。
+                // grace 経過後にのみ「確実に消えた」 として剪定する。
                 long since = entityUnresolvedSince.computeIfAbsent(snap.key(), k -> nowMs);
                 if (nowMs - since >= ENTITY_PRUNE_GRACE_MS) {
                     toRemove.add(snap.key());
