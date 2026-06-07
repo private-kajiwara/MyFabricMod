@@ -77,6 +77,11 @@ public final class PortalLinkRenderer {
 
     private MultiBufferSource.BufferSource afterWaterBuffer;
 
+    // ─── 予測キャッシュ (境界 strobe 防止: 毎フレームでなく source ブロック移動時のみ再計算) ───
+    private GridPos cachedSource;
+    private PortalDimension cachedDim;
+    private LinkPrediction cachedPrediction;
+
     private PortalLinkRenderer() {
     }
 
@@ -103,7 +108,7 @@ public final class PortalLinkRenderer {
             PortalDimension other = (cur == PortalDimension.OVERWORLD)
                     ? PortalDimension.NETHER : PortalDimension.OVERWORLD;
 
-            // ─── トリガ + source 中心 (現次元ブロック座標) ───
+            // ─── トリガ + source 中心 (描画用は現次元の連続座標) ───
             boolean holdingFlint = isHoldingFlint(player);
             BlockPos lookedObsidian = lookedObsidian(mc, level);
             PortalRecord srcPortal = (lookedObsidian != null)
@@ -113,27 +118,35 @@ public final class PortalLinkRenderer {
             double srcY;
             double srcZ;
             if (srcPortal != null) {
+                // 注視ポータル = 静的ブロックアンカー (補間不要・従来どおり)。
                 AABB bb = srcPortal.aabb();
                 srcX = (bb.minX + bb.maxX) * 0.5;
                 srcY = (bb.minY + bb.maxY) * 0.5;
                 srcZ = (bb.minZ + bb.maxZ) * 0.5;
             } else if (holdingFlint) {
-                BlockPos pp = player.blockPosition();
-                srcX = pp.getX() + 0.5;
-                srcY = pp.getY() + 0.5;
-                srcZ = pp.getZ() + 0.5;
+                // 動的プレイヤー端点: partial-tick 補間位置でアンカー (カメラと同じ補間基準＝ちらつき解消)。
+                float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+                Vec3 p = player.getPosition(partialTick);
+                srcX = p.x;
+                srcY = p.y + 1.0; // 足元 → 胴中心あたりへ
+                srcZ = p.z;
             } else {
                 return; // トリガ無し
             }
 
-            // ─── 予測 ───
+            // ─── 予測 (ブロック移動しきい値でキャッシュ: 同ブロック&同次元なら再利用＝境界 strobe 防止) ───
             GridPos source = new GridPos((int) Math.floor(srcX), (int) Math.floor(srcY), (int) Math.floor(srcZ));
-            int otherMinY = (other == PortalDimension.NETHER) ? NETHER_MIN_Y : OW_MIN_Y;
-            int otherMaxY = (other == PortalDimension.NETHER) ? NETHER_MAX_Y : OW_MAX_Y;
-            double radius = (other == PortalDimension.NETHER) ? 16.0 : 128.0;
-            List<DomainPortal> known = PortalMemory.get().knownInDimension(other);
-            LinkPrediction pred = PortalLinkResolver.predict(source, cur, other, otherMinY, otherMaxY,
-                    known, radius, ideal -> PortalMemory.get().isRegionObserved(other, ideal.x(), ideal.z()));
+            if (cachedPrediction == null || !source.equals(cachedSource) || cur != cachedDim) {
+                int otherMinY = (other == PortalDimension.NETHER) ? NETHER_MIN_Y : OW_MIN_Y;
+                int otherMaxY = (other == PortalDimension.NETHER) ? NETHER_MAX_Y : OW_MAX_Y;
+                double radius = (other == PortalDimension.NETHER) ? 16.0 : 128.0;
+                List<DomainPortal> known = PortalMemory.get().knownInDimension(other);
+                cachedPrediction = PortalLinkResolver.predict(source, cur, other, otherMinY, otherMaxY,
+                        known, radius, ideal -> PortalMemory.get().isRegionObserved(other, ideal.x(), ideal.z()));
+                cachedSource = source;
+                cachedDim = cur;
+            }
+            LinkPrediction pred = cachedPrediction;
 
             // ─── 描画準備 (camera-relative) ───
             CameraRenderState camState = ctx.levelState().cameraRenderState;
