@@ -35,8 +35,12 @@ public abstract class SearchMatchSlotMixin extends Screen {
     }
 
     @Inject(method = "extractSlot", at = @At("TAIL"))
+    //? if >=1.21.11 {
     private void cits_searchMatch$overlay(GuiGraphicsExtractor g, Slot slot, int mouseX, int mouseY,
             CallbackInfo ci) {
+    //?} else {
+    /*private void cits_searchMatch$overlay(GuiGraphics g, Slot slot, CallbackInfo ci) {*/
+    //?}
         // 互換層: Safe Overlay 設定が ON の場合は OverlayRenderer で PoseStack を隔離する。
         // OFF の場合は素のまま (= 既存挙動) で呼び、 ただし例外だけは SafeRenderDispatcher で握る。
         // どちらの経路でも描画位置・色・タイミングは変わらない (= 視覚的に不変)。

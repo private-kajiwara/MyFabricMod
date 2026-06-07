@@ -14,8 +14,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
+//?} else {
+/*import net.minecraft.client.renderer.RenderType;*/
+//?}
 import net.minecraft.util.Mth;
 
 /**
@@ -156,8 +160,14 @@ public final class SearchBeaconRenderer {
                             VertexFormat.Mode.QUADS)
                     .build();
 
+            //? if >=1.21.11 {
             RenderSetup setup = RenderSetup.builder(pipeline).createRenderSetup();
             beamType = RenderTypeAccessor.omnichest$create("omnichest_search_beacon_beam", setup);
+            //?} else {
+            /*beamType = RenderTypeAccessor.omnichest$create("omnichest_search_beacon_beam", 1536, pipeline,
+                    ((com.kajiwara.omnichest.mixin.CompositeStateBuilderAccessor) (Object)
+                            RenderType.CompositeState.builder()).omnichest$createCompositeState(false));*/
+            //?}
             return beamType;
         }
     }
