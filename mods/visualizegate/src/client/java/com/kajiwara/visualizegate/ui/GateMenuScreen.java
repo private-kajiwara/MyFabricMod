@@ -1,6 +1,7 @@
 package com.kajiwara.visualizegate.ui;
 
 import com.kajiwara.visualizegate.config.GateConfigManager;
+import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
 import com.kajiwara.visualizegate.state.GateMenuState;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -40,6 +41,13 @@ public class GateMenuScreen extends Screen {
             GateMenuState.toggleHudIcon();
             b.setMessage(hudLabel());
             GateConfigManager.save();
+        }).bounds(cx - BTN_W / 2, y, BTN_W, BTN_H).build());
+        y += BTN_H + GAP * 3;
+
+        // 点群解析: その場のデータでスナップショットを組み (ワーカー)、 ポップアップを開く。
+        addRenderableWidget(Button.builder(Component.literal("Point-cloud analysis"), b -> {
+            PointCloudAnalysis.get().requestAnalysis();
+            this.minecraft.setScreen(new PointCloudScreen(this));
         }).bounds(cx - BTN_W / 2, y, BTN_W, BTN_H).build());
         y += BTN_H + GAP * 3;
 

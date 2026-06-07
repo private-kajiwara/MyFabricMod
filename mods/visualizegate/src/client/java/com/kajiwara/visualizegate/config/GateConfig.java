@@ -12,6 +12,12 @@ public final class GateConfig {
     public boolean boxOverlayEnabled = true;
     public boolean hudIconEnabled = true;
 
+    // 点群ポップアップの表示オプション (PointCloudViewState の器)。
+    public boolean pcShowOverworld = true;
+    public boolean pcShowNether = true;
+    public boolean pcShowLinks = true;
+    public int pcDimensionSpacing = 100;
+
     public static GateConfig defaults() {
         return new GateConfig();
     }

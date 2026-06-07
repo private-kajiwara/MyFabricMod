@@ -1,0 +1,102 @@
+package com.kajiwara.visualizegate.pointcloud;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import com.kajiwara.visualizegate.VisualizeGateMod;
+import com.kajiwara.visualizegate.domain.PortalDimension;
+import com.kajiwara.visualizegate.memory.PortalMemory;
+import com.kajiwara.visualizegate.terrain.TerrainStore;
+
+/**
+ * 点群解析の<b>非同期オーケストレーション</b> (メインスレッド capture → ワーカー build → publish)。
+ *
+ * <p>「解析」押下で {@link #requestAnalysis()} を<b>メインスレッドから</b>呼ぶ。 ライブ World 依存のデータ
+ * ({@link TerrainStore}/{@link PortalMemory}) は<b>その場で不変コピー</b>し ({@link PointCloudInputs})、
+ * 重い組み立て ({@link PointCloudAnalyzer}) だけを単一ワーカースレッドへ投げる。 完了で volatile に
+ * スナップショットを差し替える＝ Screen はメインスレッドからロックなしで最新を読む。
+ *
+ * <p>ワーカーは {@link PointCloudInputs} (プリミティブ＋不変 record) しか触らない＝ ライブ World 非接触。
+ */
+public final class PointCloudAnalysis {
+
+    /** バニラ標準の次元境界 (Y クランプ用・PortalLinkRenderer と同じ前提)。 */
+    private static final int OW_MIN_Y = -64;
+    private static final int OW_MAX_Y = 319;
+    private static final int NETHER_MIN_Y = 0;
+    private static final int NETHER_MAX_Y = 127;
+
+    public enum State {
+        IDLE, ANALYZING, READY
+    }
+
+    private static final PointCloudAnalysis INSTANCE = new PointCloudAnalysis();
+
+    private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "visualizegate-pointcloud");
+        t.setDaemon(true);
+        return t;
+    });
+
+    private volatile State state = State.IDLE;
+    private volatile PointCloudSnapshot snapshot = PointCloudSnapshot.EMPTY;
+    private volatile long generation = 0;
+
+    private PointCloudAnalysis() {
+    }
+
+    public static PointCloudAnalysis get() {
+        return INSTANCE;
+    }
+
+    /**
+     * 解析を開始する (<b>メインスレッドから呼ぶこと</b>)。 入力をその場でコピーし、 組み立てをワーカーへ。
+     * 連打は最後の要求で上書きされる (世代カウンタで古い結果を捨てる)。
+     */
+    public void requestAnalysis() {
+        final PointCloudInputs in;
+        try {
+            in = capture();
+        } catch (Throwable t) {
+            VisualizeGateMod.LOGGER.warn("[visualizegate] point-cloud capture failed: {}", t.toString());
+            return;
+        }
+        final long myGen = ++generation;
+        state = State.ANALYZING;
+        worker.submit(() -> {
+            try {
+                PointCloudSnapshot s = PointCloudAnalyzer.analyze(in);
+                if (myGen == generation) {
+                    snapshot = s;
+                    state = State.READY;
+                }
+            } catch (Throwable t) {
+                VisualizeGateMod.LOGGER.warn("[visualizegate] point-cloud analyze failed: {}", t.toString());
+                if (myGen == generation) {
+                    snapshot = PointCloudSnapshot.EMPTY;
+                    state = State.READY;
+                }
+            }
+        });
+    }
+
+    /** メインスレッドで全入力を不変コピーする (= ライブ World をワーカーへ漏らさない)。 */
+    private PointCloudInputs capture() {
+        int[] owTerrain = TerrainStore.get().snapshotColumns(PortalDimension.OVERWORLD);
+        int[] netherTerrain = TerrainStore.get().snapshotColumns(PortalDimension.NETHER);
+        return new PointCloudInputs(
+                owTerrain,
+                netherTerrain,
+                PortalMemory.get().knownInDimension(PortalDimension.OVERWORLD),
+                PortalMemory.get().knownInDimension(PortalDimension.NETHER),
+                OW_MIN_Y, OW_MAX_Y, NETHER_MIN_Y, NETHER_MAX_Y);
+    }
+
+    public State state() {
+        return state;
+    }
+
+    public PointCloudSnapshot snapshot() {
+        return snapshot;
+    }
+}

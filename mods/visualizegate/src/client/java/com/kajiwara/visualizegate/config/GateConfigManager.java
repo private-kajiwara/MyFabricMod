@@ -12,6 +12,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.kajiwara.visualizegate.VisualizeGateMod;
 import com.kajiwara.visualizegate.state.GateMenuState;
+import com.kajiwara.visualizegate.state.PointCloudViewState;
 
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -55,6 +56,10 @@ public final class GateConfigManager {
             }
             GateMenuState.setBoxOverlayEnabled(cfg.boxOverlayEnabled);
             GateMenuState.setHudIconEnabled(cfg.hudIconEnabled);
+            PointCloudViewState.setShowOverworld(cfg.pcShowOverworld);
+            PointCloudViewState.setShowNether(cfg.pcShowNether);
+            PointCloudViewState.setShowLinks(cfg.pcShowLinks);
+            PointCloudViewState.setDimensionSpacing(cfg.pcDimensionSpacing);
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn(
                     "[visualizegate] config load failed (defaults kept): {}", t.toString());
@@ -67,6 +72,10 @@ public final class GateConfigManager {
             GateConfig cfg = new GateConfig();
             cfg.boxOverlayEnabled = GateMenuState.isBoxOverlayEnabled();
             cfg.hudIconEnabled = GateMenuState.isHudIconEnabled();
+            cfg.pcShowOverworld = PointCloudViewState.isShowOverworld();
+            cfg.pcShowNether = PointCloudViewState.isShowNether();
+            cfg.pcShowLinks = PointCloudViewState.isShowLinks();
+            cfg.pcDimensionSpacing = PointCloudViewState.getDimensionSpacing();
             writeAtomic(file(), GSON.toJson(cfg));
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] config save failed: {}", t.toString());
