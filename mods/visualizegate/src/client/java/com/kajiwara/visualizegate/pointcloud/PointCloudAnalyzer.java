@@ -31,7 +31,7 @@ public final class PointCloudAnalyzer {
      * 表すため中間値に置く。 静止フレームは投影/ソートがキャッシュ済＝idle コストは点数に依らない
      * (回転時のみ N に比例)。 モックアップの密度に合わせた中庸値。
      */
-    public static final int POINT_BUDGET_PER_LAYER = 4_000;
+    public static final int POINT_BUDGET_PER_LAYER = 3_000;
     /** OW→ネザーのリンク探索半径 (PortalLinkRenderer と同じ・水平距離)。 */
     private static final double NETHER_SEARCH_RADIUS = 16.0;
 

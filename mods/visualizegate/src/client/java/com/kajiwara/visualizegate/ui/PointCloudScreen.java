@@ -36,10 +36,10 @@ public class PointCloudScreen extends Screen {
     private static final int SIDEBAR_W = 168;
     private static final int MARGIN = 8;
 
-    /** 点の最小ピクセル幅 (最遠点)。 細かいドット感のため 1px。 */
+    /** 点の最小ピクセル径 (最遠点)。 細かいドット感のため 1px。 */
     private static final int POINT_MIN_PX = 1;
-    /** 最近点で最小幅に加算する追加ピクセル (近=POINT_MIN_PX+EXTRA、 遠=POINT_MIN_PX)。 */
-    private static final int POINT_SIZE_EXTRA = 2;
+    /** 最近点で最小径に加算する追加ピクセル (近=POINT_MIN_PX+EXTRA、 遠=POINT_MIN_PX)。 1〜5px。 */
+    private static final int POINT_SIZE_EXTRA = 4;
     /** 最遠点の明るさ係数 (大気遠近: 遠い点を暗く沈ませる・近点=1.0)。 */
     private static final float DEPTH_DIM_MIN = 0.5f;
     private static final double DRAG_SENS = 0.012;
@@ -375,10 +375,7 @@ public class PointCloudScreen extends Screen {
     /** キャッシュから描くだけ (静止フレームの全処理＝投影/ソート無し)。 */
     private void drawCached(GuiGraphicsExtractor g) {
         for (int k = 0; k < cachedCount; k++) {
-            int s = dSize[k]; // 1〜3px の実ピクセル幅 (近いほど大)。
-            int x = Math.round(dX[k]) - s / 2;
-            int y = Math.round(dY[k]) - s / 2;
-            fillClamped(g, x, y, x + s, y + s, dColor[k]);
+            drawDot(g, Math.round(dX[k]), Math.round(dY[k]), dSize[k], dColor[k]);
         }
         for (int i = 0; i < cachedLinks; i++) {
             drawSegment(g, lkAx[i], lkAy[i], lkBx[i], lkBy[i]);
@@ -459,6 +456,37 @@ public class PointCloudScreen extends Screen {
         }
         float proj = focal / depth;
         return new float[] { cx + x1 * proj, cy - y2 * proj };
+    }
+
+    /**
+     * 丸いドットを描く (正方形タイルでなく円形シルエット＝Minecraft のドットグリッド脱却)。
+     * 円は行スパンの fill で近似 (テクスチャ/blit 不使用＝版差なし・g.fill バッチに乗る)。 径が小さい遠点は
+     * 1px、 近点ほど大きい円。 {@code s>=4} は中心やや上を明るくして球状の陰影感を出す。
+     */
+    private void drawDot(GuiGraphicsExtractor g, int cx, int cy, int s, int color) {
+        if (s <= 1) {
+            fillClamped(g, cx, cy, cx + 1, cy + 1, color);
+            return;
+        }
+        int r = (s - 1) / 2;
+        int r2 = r * r;
+        for (int dy = -r; dy <= r; dy++) {
+            int hw = (int) Math.round(Math.sqrt(Math.max(0, r2 - dy * dy)));
+            int y = cy + dy;
+            fillClamped(g, cx - hw, y, cx + hw + 1, y + 1, color);
+        }
+        if (s >= 4) {
+            fillClamped(g, cx, cy - 1, cx + 1, cy, brighten(color, 1.35f)); // 球状ハイライト
+        }
+    }
+
+    /** ARGB の RGB を係数 f で増光 (255 クランプ・アルファ保持)。 */
+    private static int brighten(int color, float f) {
+        int a = (color >>> 24) & 0xFF;
+        int r = Math.min(255, Math.round(((color >> 16) & 0xFF) * f));
+        int gg = Math.min(255, Math.round(((color >> 8) & 0xFF) * f));
+        int b = Math.min(255, Math.round((color & 0xFF) * f));
+        return (a << 24) | (r << 16) | (gg << 8) | b;
     }
 
     /** ARGB の RGB を係数 f で減衰 (アルファは保持・暗背景なのでアルファでなく明度を落とす)。 */

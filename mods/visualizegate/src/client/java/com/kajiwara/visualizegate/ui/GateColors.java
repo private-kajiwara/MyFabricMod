@@ -33,15 +33,17 @@ public final class GateColors {
     /** UNKNOWN: 対象領域未観測 → 緑/赤を主張しない。 */
     public static final int LINK_GRAY = 0xFFA8A2B2;
 
-    // ── 点群ポップアップ (OW=青/青緑・ネザー=橙・リンク=紫) ──
-    /** OW 地形点の低い高さ (青)。 */
-    public static final int PC_OW_LOW = 0xFF2E6BE6;
-    /** OW 地形点の高い高さ (青緑)。 */
-    public static final int PC_OW_HIGH = 0xFF35D0C0;
+    // ── 点群ポップアップ (OW=青緑/teal・ネザー=橙・リンク=紫) ──
+    // 高さ配色は「各 dim の色相内で明暗だけ」を変える (青↔橙を反転させない＝色相で dim を一意判別)。
+    // OW は teal 単色の暗→明、 ネザーは橙単色の暗→明。
+    /** OW 地形点の低い高さ (暗い teal)。 */
+    public static final int PC_OW_LOW = 0xFF1F8A99;
+    /** OW 地形点の高い高さ (明るい teal/aqua)。 */
+    public static final int PC_OW_HIGH = 0xFF4FE3D6;
     /** ネザー地形点の低い高さ (暗橙)。 */
-    public static final int PC_NETHER_LOW = 0xFFB3460F;
+    public static final int PC_NETHER_LOW = 0xFF9C3C0A;
     /** ネザー地形点の高い高さ (明橙)。 */
-    public static final int PC_NETHER_HIGH = 0xFFFF8A3D;
+    public static final int PC_NETHER_HIGH = 0xFFFF9A45;
     /** ゲートリンク線 (紫＝ゲート間の水平ズレ)。 */
     public static final int PC_LINK = 0xFF8E3BE6;
 }
