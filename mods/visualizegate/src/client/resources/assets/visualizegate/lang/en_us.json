@@ -9,6 +9,7 @@
 
 	"visualizegate.menu.box": "Gate frame overlay: %s",
 	"visualizegate.menu.hud": "Corner icon: %s",
+	"visualizegate.menu.hologram": "Hologram frame: %s",
 	"visualizegate.menu.mode": "Display mode: %s",
 	"visualizegate.menu.legend": "Legend: %s",
 	"visualizegate.menu.pointcloud": "Point-cloud analysis",

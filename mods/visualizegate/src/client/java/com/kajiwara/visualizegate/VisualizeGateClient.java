@@ -2,6 +2,7 @@ package com.kajiwara.visualizegate;
 
 import com.kajiwara.visualizegate.client.keybind.GateKeyBindings;
 import com.kajiwara.visualizegate.client.render.CornerIconRenderer;
+import com.kajiwara.visualizegate.client.render.HologramFrameRenderer;
 import com.kajiwara.visualizegate.client.render.LegendOverlayRenderer;
 import com.kajiwara.visualizegate.client.render.PortalBoxRenderer;
 import com.kajiwara.visualizegate.client.render.PortalInfoCardRenderer;
@@ -44,6 +45,8 @@ public class VisualizeGateClient implements ClientModInitializer {
         PortalBoxRenderer.register();
         // 機能2: リンク状態ベクターライン (記憶された別次元ポータルへズレ線・緑/赤/灰)。
         PortalLinkRenderer.register();
+        // 機能1: ホログラム枠 v1 (LINKED の「ズレ無し設置位置」に金枠・水後ステージ・Mixin 0)。
+        HologramFrameRenderer.register();
         GateKeyBindings.register();
         CornerIconRenderer.register();
         // UX 層 (純追加・HUD パス): ① 自動インフォカード ② 常設凡例。 いずれも注視/所持トリガで表示。

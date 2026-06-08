@@ -39,10 +39,15 @@ public final class PortalGaze {
     private static final int NETHER_MIN_Y = 0;
     private static final int NETHER_MAX_Y = 127;
 
-    // 予測キャッシュ (source ブロック移動 or 次元変化時のみ再計算)。
+    // 予測キャッシュ (source ブロック移動 or 次元変化時のみ再計算)。 注視カード用スロット。
     private static GridPos cachedSource;
     private static PortalDimension cachedDim;
     private static LinkPrediction cachedPrediction;
+
+    // 計画 (resolvePlanning) 用の独立キャッシュスロット (注視と source が別になり得るので分離＝相互 thrash 防止)。
+    private static GridPos planSource;
+    private static PortalDimension planDim;
+    private static LinkPrediction planPrediction;
 
     private PortalGaze() {
     }
@@ -119,15 +124,66 @@ public final class PortalGaze {
         GridPos source = new GridPos((int) Math.floor(sx), (int) Math.floor(sy), (int) Math.floor(sz));
 
         if (cachedPrediction == null || !source.equals(cachedSource) || cur != cachedDim) {
-            int otherMinY = (other == PortalDimension.NETHER) ? NETHER_MIN_Y : OW_MIN_Y;
-            int otherMaxY = (other == PortalDimension.NETHER) ? NETHER_MAX_Y : OW_MAX_Y;
-            double radius = (other == PortalDimension.NETHER) ? 16.0 : 128.0;
-            List<DomainPortal> known = PortalMemory.get().knownInDimension(other);
-            cachedPrediction = PortalLinkResolver.predict(source, cur, other, otherMinY, otherMaxY,
-                    known, radius, ideal -> PortalMemory.get().isRegionObserved(other, ideal.x(), ideal.z()));
+            cachedPrediction = predict(source, cur, other);
             cachedSource = source;
             cachedDim = cur;
         }
         return new Result(looked, sx, sy, sz, cachedPrediction, cur, other);
+    }
+
+    /**
+     * 機能1 ホログラム用の「計画」解決 (機能2 と<b>同じトリガ</b>＝注視 or 火打石所持)。 注視ポータルがあれば
+     * その中心、 無く F&S 所持ならプレイヤー補間位置を仮想 source として予測を読む (独立キャッシュ)。 OW↔Nether
+     * 以外/トリガ無しは null。 機能2 (PortalLinkRenderer) の内部状態には一切触れない (=既存挙動不変)。
+     */
+    public static Result resolvePlanning(Minecraft mc) {
+        ClientLevel level = mc.level;
+        LocalPlayer player = mc.player;
+        if (level == null || player == null) {
+            return null;
+        }
+        PortalDimension cur = PortalMemory.dimOf(level.dimension().identifier().toString());
+        if (cur != PortalDimension.OVERWORLD && cur != PortalDimension.NETHER) {
+            return null;
+        }
+        PortalDimension other = (cur == PortalDimension.OVERWORLD)
+                ? PortalDimension.NETHER : PortalDimension.OVERWORLD;
+
+        PortalRecord looked = lookedPortal(mc, level);
+        double sx;
+        double sy;
+        double sz;
+        if (looked != null) {
+            sx = (looked.aabb().minX + looked.aabb().maxX) * 0.5;
+            sy = (looked.aabb().minY + looked.aabb().maxY) * 0.5;
+            sz = (looked.aabb().minZ + looked.aabb().maxZ) * 0.5;
+        } else if (isHoldingFlint(player)) {
+            // 機能2 と同じ仮想 source: カメラと同じ partial-tick 補間位置 (足元→胴中心へ +1.0Y)。
+            float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+            net.minecraft.world.phys.Vec3 p = player.getPosition(partialTick);
+            sx = p.x;
+            sy = p.y + 1.0;
+            sz = p.z;
+        } else {
+            return null; // トリガ無し
+        }
+
+        GridPos source = new GridPos((int) Math.floor(sx), (int) Math.floor(sy), (int) Math.floor(sz));
+        if (planPrediction == null || !source.equals(planSource) || cur != planDim) {
+            planPrediction = predict(source, cur, other);
+            planSource = source;
+            planDim = cur;
+        }
+        return new Result(looked, sx, sy, sz, planPrediction, cur, other);
+    }
+
+    /** 機能2 と同一パラメータ (半径/Y境界/既知集合/観測述語) で予測する (キャッシュは呼び出し側スロット)。 */
+    private static LinkPrediction predict(GridPos source, PortalDimension cur, PortalDimension other) {
+        int otherMinY = (other == PortalDimension.NETHER) ? NETHER_MIN_Y : OW_MIN_Y;
+        int otherMaxY = (other == PortalDimension.NETHER) ? NETHER_MAX_Y : OW_MAX_Y;
+        double radius = (other == PortalDimension.NETHER) ? 16.0 : 128.0;
+        List<DomainPortal> known = PortalMemory.get().knownInDimension(other);
+        return PortalLinkResolver.predict(source, cur, other, otherMinY, otherMaxY,
+                known, radius, ideal -> PortalMemory.get().isRegionObserved(other, ideal.x(), ideal.z()));
     }
 }

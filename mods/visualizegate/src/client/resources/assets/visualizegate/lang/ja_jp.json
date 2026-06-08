@@ -9,6 +9,7 @@
 
 	"visualizegate.menu.box": "ゲート枠表示: %s",
 	"visualizegate.menu.hud": "隅アイコン: %s",
+	"visualizegate.menu.hologram": "ホログラム枠: %s",
 	"visualizegate.menu.mode": "表示モード: %s",
 	"visualizegate.menu.legend": "凡例: %s",
 	"visualizegate.menu.pointcloud": "点群解析",

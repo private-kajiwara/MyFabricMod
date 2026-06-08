@@ -15,6 +15,8 @@ public final class GateMenuState {
     private static boolean advancedMode = false;
     private static boolean legendEnabled = true;
     private static boolean firstRunDone = false;
+    // 機能1 ホログラム枠 (ズレ無し設置位置) 既定 ON。
+    private static boolean hologramEnabled = true;
 
     private GateMenuState() {
     }
@@ -80,5 +82,19 @@ public final class GateMenuState {
 
     public static void setFirstRunDone(boolean v) {
         firstRunDone = v;
+    }
+
+    // ── 機能1 ホログラム枠 ──
+    public static boolean isHologramEnabled() {
+        return hologramEnabled;
+    }
+
+    public static void setHologramEnabled(boolean v) {
+        hologramEnabled = v;
+    }
+
+    public static boolean toggleHologram() {
+        hologramEnabled = !hologramEnabled;
+        return hologramEnabled;
     }
 }

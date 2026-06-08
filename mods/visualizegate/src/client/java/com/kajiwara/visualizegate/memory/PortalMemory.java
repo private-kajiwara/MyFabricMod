@@ -217,6 +217,30 @@ public final class PortalMemory {
         return out;
     }
 
+    /** ポータル枠の寸法 (ブロック単位の各軸スパン)。 厚み軸は ~1.0、 幅軸=横幅、 dy=高さ。 */
+    public record FrameExtents(double dx, double dy, double dz) {
+    }
+
+    /**
+     * 指定ディメンションの指定アンカー (グローバル最低コーナー) を持つ記憶ポータルの寸法を返す。
+     * 機能1 ホログラム枠が matched ポータルの axis/サイズを再現するために使う (anchor は予測の matched 由来)。
+     */
+    public java.util.Optional<FrameExtents> frameExtentsAt(PortalDimension dim, GridPos anchor) {
+        if (file == null || currentWorldId == null) {
+            return java.util.Optional.empty();
+        }
+        for (List<MemoryPortal> list : file.worldPortals(currentWorldId).values()) {
+            for (MemoryPortal mp : list) {
+                if (dimOf(mp.dimensionId) == dim
+                        && mp.ax == anchor.x() && mp.ay == anchor.y() && mp.az == anchor.z()) {
+                    return java.util.Optional.of(
+                            new FrameExtents(mp.maxX - mp.minX, mp.maxY - mp.minY, mp.maxZ - mp.minZ));
+                }
+            }
+        }
+        return java.util.Optional.empty();
+    }
+
     /** 対象ディメンションを観測済みか (未観測なら Resolver は UNKNOWN を返す・被覆ヒューリスティック)。 */
     public boolean targetRegionObserved(PortalDimension dim) {
         if (file == null || currentWorldId == null) {

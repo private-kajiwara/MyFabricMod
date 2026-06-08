@@ -16,6 +16,7 @@ public final class GateConfig {
     public boolean advancedMode = false;
     public boolean legendEnabled = true;
     public boolean firstRunDone = false;
+    public boolean hologramEnabled = true;
 
     // 点群ポップアップの表示オプション (PointCloudViewState の器)。
     public boolean pcShowOverworld = true;

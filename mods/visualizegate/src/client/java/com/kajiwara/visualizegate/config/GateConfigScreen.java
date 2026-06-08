@@ -66,24 +66,32 @@ public class GateConfigScreen extends Screen {
             b.setMessage(hudLabel());
             GateConfigManager.save();
         }).bounds(detailX, dy + 24, btnW, 20).build();
+        // 機能1 ホログラム枠 (ズレ無し設置位置の金枠) on/off。
+        Button holoBtn = Button.builder(hologramLabel(), b -> {
+            GateMenuState.toggleHologram();
+            b.setMessage(hologramLabel());
+            GateConfigManager.save();
+        }).bounds(detailX, dy + 48, btnW, 20).build();
         // かんたん⇄詳細 (in-game メニューと同じ GateMenuState を共有＝双方向反映)。
         Button modeBtn = Button.builder(modeLabel(), b -> {
             GateMenuState.toggleAdvancedMode();
             b.setMessage(modeLabel());
             GateConfigManager.save();
-        }).bounds(detailX, dy + 48, btnW, 20).build();
+        }).bounds(detailX, dy + 72, btnW, 20).build();
         // 常設凡例 on/off (上級者向け)。
         Button legendBtn = Button.builder(legendLabel(), b -> {
             GateMenuState.toggleLegend();
             b.setMessage(legendLabel());
             GateConfigManager.save();
-        }).bounds(detailX, dy + 72, btnW, 20).build();
+        }).bounds(detailX, dy + 96, btnW, 20).build();
         addRenderableWidget(boxBtn);
         addRenderableWidget(hudBtn);
+        addRenderableWidget(holoBtn);
         addRenderableWidget(modeBtn);
         addRenderableWidget(legendBtn);
         displayWidgets.add(boxBtn);
         displayWidgets.add(hudBtn);
+        displayWidgets.add(holoBtn);
         displayWidgets.add(modeBtn);
         displayWidgets.add(legendBtn);
 
@@ -118,6 +126,10 @@ public class GateConfigScreen extends Screen {
     private static Component modeLabel() {
         return Component.translatable("visualizegate.menu.mode", Component.translatable(
                 GateMenuState.isAdvancedMode() ? "visualizegate.mode.advanced" : "visualizegate.mode.simple"));
+    }
+
+    private static Component hologramLabel() {
+        return Component.translatable("visualizegate.menu.hologram", onOff(GateMenuState.isHologramEnabled()));
     }
 
     private static Component legendLabel() {

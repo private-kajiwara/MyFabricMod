@@ -59,6 +59,7 @@ public final class GateConfigManager {
             GateMenuState.setAdvancedMode(cfg.advancedMode);
             GateMenuState.setLegendEnabled(cfg.legendEnabled);
             GateMenuState.setFirstRunDone(cfg.firstRunDone);
+            GateMenuState.setHologramEnabled(cfg.hologramEnabled);
             PointCloudViewState.setShowOverworld(cfg.pcShowOverworld);
             PointCloudViewState.setShowNether(cfg.pcShowNether);
             PointCloudViewState.setShowLinks(cfg.pcShowLinks);
@@ -78,6 +79,7 @@ public final class GateConfigManager {
             cfg.advancedMode = GateMenuState.isAdvancedMode();
             cfg.legendEnabled = GateMenuState.isLegendEnabled();
             cfg.firstRunDone = GateMenuState.isFirstRunDone();
+            cfg.hologramEnabled = GateMenuState.isHologramEnabled();
             cfg.pcShowOverworld = PointCloudViewState.isShowOverworld();
             cfg.pcShowNether = PointCloudViewState.isShowNether();
             cfg.pcShowLinks = PointCloudViewState.isShowLinks();

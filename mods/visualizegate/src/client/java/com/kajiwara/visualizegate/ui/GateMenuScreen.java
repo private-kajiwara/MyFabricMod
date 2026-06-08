@@ -28,7 +28,7 @@ public class GateMenuScreen extends Screen {
     @Override
     protected void init() {
         int cx = this.width / 2;
-        int y = this.height / 2 - 42;
+        int y = this.height / 2 - 54;
 
         addRenderableWidget(Button.builder(boxLabel(), b -> {
             GateMenuState.toggleBoxOverlay();
@@ -40,6 +40,14 @@ public class GateMenuScreen extends Screen {
         addRenderableWidget(Button.builder(hudLabel(), b -> {
             GateMenuState.toggleHudIcon();
             b.setMessage(hudLabel());
+            GateConfigManager.save();
+        }).bounds(cx - BTN_W / 2, y, BTN_W, BTN_H).build());
+        y += BTN_H + GAP;
+
+        // 機能1 ホログラム枠 (ズレ無し設置位置の金枠) トグル。
+        addRenderableWidget(Button.builder(hologramLabel(), b -> {
+            GateMenuState.toggleHologram();
+            b.setMessage(hologramLabel());
             GateConfigManager.save();
         }).bounds(cx - BTN_W / 2, y, BTN_W, BTN_H).build());
         y += BTN_H + GAP;
@@ -75,6 +83,10 @@ public class GateMenuScreen extends Screen {
 
     private static Component hudLabel() {
         return Component.translatable("visualizegate.menu.hud", onOff(GateMenuState.isHudIconEnabled()));
+    }
+
+    private static Component hologramLabel() {
+        return Component.translatable("visualizegate.menu.hologram", onOff(GateMenuState.isHologramEnabled()));
     }
 
     private static Component modeLabel() {
