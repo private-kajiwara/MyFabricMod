@@ -25,6 +25,12 @@ public final class GateColors {
     /** HUD 隅アイコンの半透明背景 (BASE を ~75% alpha 化＝視界を塞がない)。 */
     public static final int HUD_BG = 0xC00F0A17;
 
+    // ── 機能3 探索ドーム (検索範囲＝シアン / 混線＝警告オレンジ) ──
+    /** 探索ドームのワイヤフレーム色 (シアン＝検索範囲・緑/赤/金/枠マゼンタと判別可能)。 */
+    public static final int DOME = 0xFF49C0E0;
+    /** 混線強調色 (警告オレンジ＝範囲内の他ゲート・状態色とは別系統)。 */
+    public static final int CROSSTALK = 0xFFFF7A2A;
+
     // ── 機能2 リンク状態色 (緑=既存リンク / 赤=新規生成 / 灰=未観測) ──
     /** LINKED: 既存リンク有り (線の長さ＝ズレ量)。 */
     public static final int LINK_GREEN = 0xFF49D17A;

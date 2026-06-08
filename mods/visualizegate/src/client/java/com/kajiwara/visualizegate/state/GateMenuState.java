@@ -17,6 +17,8 @@ public final class GateMenuState {
     private static boolean firstRunDone = false;
     // 機能1 ホログラム枠 (ズレ無し設置位置) 既定 ON。
     private static boolean hologramEnabled = true;
+    // 機能3 探索ドーム (リンク検索範囲＋混線検出) 既定 ON。
+    private static boolean domeEnabled = true;
 
     private GateMenuState() {
     }
@@ -96,5 +98,19 @@ public final class GateMenuState {
     public static boolean toggleHologram() {
         hologramEnabled = !hologramEnabled;
         return hologramEnabled;
+    }
+
+    // ── 機能3 探索ドーム ──
+    public static boolean isDomeEnabled() {
+        return domeEnabled;
+    }
+
+    public static void setDomeEnabled(boolean v) {
+        domeEnabled = v;
+    }
+
+    public static boolean toggleDome() {
+        domeEnabled = !domeEnabled;
+        return domeEnabled;
     }
 }

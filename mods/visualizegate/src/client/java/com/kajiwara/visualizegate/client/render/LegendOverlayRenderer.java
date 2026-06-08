@@ -44,6 +44,8 @@ public final class LegendOverlayRenderer {
             new Row(SwatchKind.FILL, GateColors.LINK_GRAY, "visualizegate.legend.unknown"),
             new Row(SwatchKind.LINE, GateColors.MAIN, "visualizegate.legend.link_line"),
             new Row(SwatchKind.FRAME, GateColors.ACCENT, "visualizegate.legend.ghost"),
+            new Row(SwatchKind.LINE, GateColors.DOME, "visualizegate.legend.dome"),
+            new Row(SwatchKind.FRAME, GateColors.CROSSTALK, "visualizegate.legend.crosstalk"),
     };
 
     private LegendOverlayRenderer() {

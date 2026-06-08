@@ -60,8 +60,9 @@ public class GateMenuScreen extends Screen {
         addToggle(leftX, y, COL_W, GateMenuScreen::boxLabel, GateMenuState::toggleBoxOverlay);
         addToggle(rightColX, y, COL_W, GateMenuScreen::hudLabel, GateMenuState::toggleHudIcon);
         y += H + GAP;
-        // 行B: ホログラム | (空き＝将来のトグル枠)
+        // 行B: ホログラム | 探索ドーム
         addToggle(leftX, y, COL_W, GateMenuScreen::hologramLabel, GateMenuState::toggleHologram);
+        addToggle(rightColX, y, COL_W, GateMenuScreen::domeLabel, GateMenuState::toggleDome);
         y += H + GROUP_GAP;
 
         // ── グループ2: 表示モード (かんたん/詳細) ──
@@ -114,6 +115,10 @@ public class GateMenuScreen extends Screen {
 
     private static Component hologramLabel() {
         return Component.translatable("visualizegate.menu.hologram", onOff(GateMenuState.isHologramEnabled()));
+    }
+
+    private static Component domeLabel() {
+        return Component.translatable("visualizegate.menu.dome", onOff(GateMenuState.isDomeEnabled()));
     }
 
     private static Component modeLabel() {

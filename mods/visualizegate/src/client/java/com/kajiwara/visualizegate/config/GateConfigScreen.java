@@ -72,26 +72,34 @@ public class GateConfigScreen extends Screen {
             b.setMessage(hologramLabel());
             GateConfigManager.save();
         }).bounds(detailX, dy + 48, btnW, 20).build();
+        // 機能3 探索ドーム (リンク検索範囲＋混線検出) on/off。
+        Button domeBtn = Button.builder(domeLabel(), b -> {
+            GateMenuState.toggleDome();
+            b.setMessage(domeLabel());
+            GateConfigManager.save();
+        }).bounds(detailX, dy + 72, btnW, 20).build();
         // かんたん⇄詳細 (in-game メニューと同じ GateMenuState を共有＝双方向反映)。
         Button modeBtn = Button.builder(modeLabel(), b -> {
             GateMenuState.toggleAdvancedMode();
             b.setMessage(modeLabel());
             GateConfigManager.save();
-        }).bounds(detailX, dy + 72, btnW, 20).build();
+        }).bounds(detailX, dy + 96, btnW, 20).build();
         // 常設凡例 on/off (上級者向け)。
         Button legendBtn = Button.builder(legendLabel(), b -> {
             GateMenuState.toggleLegend();
             b.setMessage(legendLabel());
             GateConfigManager.save();
-        }).bounds(detailX, dy + 96, btnW, 20).build();
+        }).bounds(detailX, dy + 120, btnW, 20).build();
         addRenderableWidget(boxBtn);
         addRenderableWidget(hudBtn);
         addRenderableWidget(holoBtn);
+        addRenderableWidget(domeBtn);
         addRenderableWidget(modeBtn);
         addRenderableWidget(legendBtn);
         displayWidgets.add(boxBtn);
         displayWidgets.add(hudBtn);
         displayWidgets.add(holoBtn);
+        displayWidgets.add(domeBtn);
         displayWidgets.add(modeBtn);
         displayWidgets.add(legendBtn);
 
@@ -130,6 +138,10 @@ public class GateConfigScreen extends Screen {
 
     private static Component hologramLabel() {
         return Component.translatable("visualizegate.menu.hologram", onOff(GateMenuState.isHologramEnabled()));
+    }
+
+    private static Component domeLabel() {
+        return Component.translatable("visualizegate.menu.dome", onOff(GateMenuState.isDomeEnabled()));
     }
 
     private static Component legendLabel() {

@@ -10,6 +10,7 @@
 	"visualizegate.menu.box": "Gate frame overlay: %s",
 	"visualizegate.menu.hud": "Corner icon: %s",
 	"visualizegate.menu.hologram": "Hologram frame: %s",
+	"visualizegate.menu.dome": "Search dome: %s",
 	"visualizegate.menu.mode": "Display mode: %s",
 	"visualizegate.menu.legend": "Legend: %s",
 	"visualizegate.menu.pointcloud": "Point-cloud analysis",
@@ -45,6 +46,8 @@
 	"visualizegate.legend.unknown": "Unconfirmed",
 	"visualizegate.legend.link_line": "Link",
 	"visualizegate.legend.ghost": "Zero-offset spot",
+	"visualizegate.legend.dome": "Search range",
+	"visualizegate.legend.crosstalk": "Crosstalk gate",
 
 	"visualizegate.guide.title": "How to use",
 	"visualizegate.guide.1.title": "Welcome",
