@@ -25,6 +25,9 @@ public final class GateColors {
     /** HUD 隅アイコンの半透明背景 (BASE を ~75% alpha 化＝視界を塞がない)。 */
     public static final int HUD_BG = 0xC00F0A17;
 
+    /** 機能1 ホログラム v2: ポータル内部面の半透明な紫塗り (MAIN を低 alpha 化＝金枠を主張させる)。 */
+    public static final int HOLO_FILL = 0x668E3BE6;
+
     // ── 機能3 探索ドーム (検索範囲＝シアン / 混線＝警告オレンジ) ──
     /** 探索ドームのワイヤフレーム色 (シアン＝検索範囲・緑/赤/金/枠マゼンタと判別可能)。 */
     public static final int DOME = 0xFF49C0E0;

@@ -117,17 +117,29 @@ public final class HologramFrameRenderer {
                 return;
             Vec3 camPos = camState.pos;
             PoseStack matrices = ctx.poseStack();
+            PoseStack.Pose pose = matrices.last();
 
             if (afterWaterBuffer == null) {
-                afterWaterBuffer = MultiBufferSource.immediate(new ByteBufferBuilder(256));
+                afterWaterBuffer = MultiBufferSource.immediate(new ByteBufferBuilder(2048));
             }
             MultiBufferSource.BufferSource bufferSource = afterWaterBuffer;
+
+            // v2: ポータル内部面の半透明な紫クアッド。 バニラ debugFilledBox = TRANSLUCENT 混合 ＋ 深度テスト
+            //     LEQUAL (書込み無し) ＝地形に正しく遮蔽される (壁裏で透けっぱなしにしない)・<b>Mixin 不要</b>。
+            //     金枠より先に描き、 線を面の上へ。 型名は lines() と同じ版分岐 (RenderTypes/RenderType)。
+            //? if >=1.21.11 {
+            VertexConsumer fill = bufferSource.getBuffer(RenderTypes.debugFilledBox());
+            //?} else {
+            /*VertexConsumer fill = bufferSource.getBuffer(RenderType.debugFilledBox());*/
+            //?}
+            drawInteriorFace(fill, pose, gx, gy, gz, dx, dy, dz, axisX, camPos);
+
+            // 金アウトライン (v1・線は面の上に乗る)。
             //? if >=1.21.11 {
             VertexConsumer vc = bufferSource.getBuffer(RenderTypes.lines());
             //?} else {
             /*VertexConsumer vc = bufferSource.getBuffer(RenderType.lines());*/
             //?}
-
             drawOutline(matrices, vc, ring, camPos);     // 黒曜石リング
             drawOutline(matrices, vc, interior, camPos); // 内部面の輪郭
 
@@ -135,6 +147,51 @@ public final class HologramFrameRenderer {
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] hologram render failed (continuing): {}", t.toString());
         }
+    }
+
+    /**
+     * ポータル内部面の半透明クアッド (POSITION_COLOR/QUADS)。 厚み軸の中央に幅×高さの矩形を、
+     * cull 対策で表裏 2 枚 (両 winding) 描く。 座標はカメラ相対。
+     */
+    private static void drawInteriorFace(VertexConsumer fill, PoseStack.Pose pose,
+            double gx, double gy, double gz, double dx, double dy, double dz, boolean axisX, Vec3 cam) {
+        double yb = gy;
+        double yt = gy + dy;
+        double ax;
+        double az;
+        double bx;
+        double bz;
+        if (axisX) { // 幅は X、 厚みは Z → Z 中央に X×Y 矩形
+            double zc = gz + dz * 0.5;
+            ax = gx;
+            az = zc;
+            bx = gx + dx;
+            bz = zc;
+        } else { // 幅は Z、 厚みは X → X 中央に Z×Y 矩形
+            double xc = gx + dx * 0.5;
+            ax = xc;
+            az = gz;
+            bx = xc;
+            bz = gz + dz;
+        }
+        // 表 (a-bottom, b-bottom, b-top, a-top) と裏 (逆順) ＝両面可視。
+        quad(fill, pose, cam, ax, yb, az, bx, yb, bz, bx, yt, bz, ax, yt, az);
+        quad(fill, pose, cam, ax, yt, az, bx, yt, bz, bx, yb, bz, ax, yb, az);
+    }
+
+    private static void quad(VertexConsumer c, PoseStack.Pose pose, Vec3 cam,
+            double x0, double y0, double z0, double x1, double y1, double z1,
+            double x2, double y2, double z2, double x3, double y3, double z3) {
+        vertex(c, pose, cam, x0, y0, z0);
+        vertex(c, pose, cam, x1, y1, z1);
+        vertex(c, pose, cam, x2, y2, z2);
+        vertex(c, pose, cam, x3, y3, z3);
+    }
+
+    private static void vertex(VertexConsumer c, PoseStack.Pose pose, Vec3 cam,
+            double x, double y, double z) {
+        c.addVertex(pose, (float) (x - cam.x), (float) (y - cam.y), (float) (z - cam.z))
+                .setColor(GateColors.HOLO_FILL);
     }
 
     private static void drawOutline(PoseStack matrices, VertexConsumer vc, AABB box, Vec3 camPos) {
