@@ -28,7 +28,7 @@ public class GateMenuScreen extends Screen {
     @Override
     protected void init() {
         int cx = this.width / 2;
-        int y = this.height / 2 - 30;
+        int y = this.height / 2 - 42;
 
         addRenderableWidget(Button.builder(boxLabel(), b -> {
             GateMenuState.toggleBoxOverlay();
@@ -42,29 +42,51 @@ public class GateMenuScreen extends Screen {
             b.setMessage(hudLabel());
             GateConfigManager.save();
         }).bounds(cx - BTN_W / 2, y, BTN_W, BTN_H).build());
-        y += BTN_H + GAP * 3;
+        y += BTN_H + GAP;
 
-        // 点群解析: その場のデータでスナップショットを組み (ワーカー)、 ポップアップを開く。
-        addRenderableWidget(Button.builder(Component.literal("Point-cloud analysis"), b -> {
-            PointCloudAnalysis.get().requestAnalysis();
-            this.minecraft.setScreen(new PointCloudScreen(this));
+        // かんたん⇄詳細 トグル (card/将来オーバーレイが参照する advancedMode を共有)。
+        addRenderableWidget(Button.builder(modeLabel(), b -> {
+            GateMenuState.toggleAdvancedMode();
+            b.setMessage(modeLabel());
+            GateConfigManager.save();
         }).bounds(cx - BTN_W / 2, y, BTN_W, BTN_H).build());
         y += BTN_H + GAP * 3;
 
-        addRenderableWidget(Button.builder(Component.literal("Done"), b -> this.onClose())
+        // 点群解析: その場のデータでスナップショットを組み (ワーカー)、 ポップアップを開く。
+        addRenderableWidget(Button.builder(Component.translatable("visualizegate.menu.pointcloud"), b -> {
+            PointCloudAnalysis.get().requestAnalysis();
+            this.minecraft.setScreen(new PointCloudScreen(this));
+        }).bounds(cx - BTN_W / 2, y, BTN_W, BTN_H).build());
+        y += BTN_H + GAP;
+
+        // 使い方: 初回ガイドをいつでも再表示 (閉じると本メニューへ戻る)。
+        addRenderableWidget(Button.builder(Component.translatable("visualizegate.menu.guide"),
+                b -> this.minecraft.setScreen(new GuideScreen(this)))
+                .bounds(cx - BTN_W / 2, y, BTN_W, BTN_H).build());
+        y += BTN_H + GAP * 3;
+
+        addRenderableWidget(Button.builder(Component.translatable("visualizegate.menu.done"), b -> this.onClose())
                 .bounds(cx - BTN_W / 2, y, BTN_W, BTN_H).build());
     }
 
     private static Component boxLabel() {
-        return Component.literal("Gate frame overlay: " + onOff(GateMenuState.isBoxOverlayEnabled()));
+        return Component.translatable("visualizegate.menu.box", onOff(GateMenuState.isBoxOverlayEnabled()));
     }
 
     private static Component hudLabel() {
-        return Component.literal("Corner icon: " + onOff(GateMenuState.isHudIconEnabled()));
+        return Component.translatable("visualizegate.menu.hud", onOff(GateMenuState.isHudIconEnabled()));
     }
 
-    private static String onOff(boolean b) {
-        return b ? "ON" : "OFF";
+    private static Component modeLabel() {
+        return Component.translatable("visualizegate.menu.mode", modeName(GateMenuState.isAdvancedMode()));
+    }
+
+    private static Component modeName(boolean advanced) {
+        return Component.translatable(advanced ? "visualizegate.mode.advanced" : "visualizegate.mode.simple");
+    }
+
+    private static Component onOff(boolean b) {
+        return Component.translatable(b ? "visualizegate.state.on" : "visualizegate.state.off");
     }
 
     @Override

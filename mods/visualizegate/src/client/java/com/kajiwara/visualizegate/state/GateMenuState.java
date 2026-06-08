@@ -11,6 +11,10 @@ public final class GateMenuState {
 
     private static boolean boxOverlayEnabled = true;
     private static boolean hudIconEnabled = true;
+    // UX 層 (純追加)。 advancedMode 既定 false=かんたん / legend 既定 ON / firstRunDone 既定 false。
+    private static boolean advancedMode = false;
+    private static boolean legendEnabled = true;
+    private static boolean firstRunDone = false;
 
     private GateMenuState() {
     }
@@ -39,5 +43,42 @@ public final class GateMenuState {
     public static boolean toggleHudIcon() {
         hudIconEnabled = !hudIconEnabled;
         return hudIconEnabled;
+    }
+
+    // ── かんたん/詳細 (card・将来オーバーレイが参照) ──
+    public static boolean isAdvancedMode() {
+        return advancedMode;
+    }
+
+    public static void setAdvancedMode(boolean v) {
+        advancedMode = v;
+    }
+
+    public static boolean toggleAdvancedMode() {
+        advancedMode = !advancedMode;
+        return advancedMode;
+    }
+
+    // ── 常設凡例 (上級者向け on/off) ──
+    public static boolean isLegendEnabled() {
+        return legendEnabled;
+    }
+
+    public static void setLegendEnabled(boolean v) {
+        legendEnabled = v;
+    }
+
+    public static boolean toggleLegend() {
+        legendEnabled = !legendEnabled;
+        return legendEnabled;
+    }
+
+    // ── 初回ガイド表示済みフラグ ──
+    public static boolean isFirstRunDone() {
+        return firstRunDone;
+    }
+
+    public static void setFirstRunDone(boolean v) {
+        firstRunDone = v;
     }
 }

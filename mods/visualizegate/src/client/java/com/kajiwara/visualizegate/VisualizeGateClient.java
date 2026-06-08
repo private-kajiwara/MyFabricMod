@@ -2,7 +2,9 @@ package com.kajiwara.visualizegate;
 
 import com.kajiwara.visualizegate.client.keybind.GateKeyBindings;
 import com.kajiwara.visualizegate.client.render.CornerIconRenderer;
+import com.kajiwara.visualizegate.client.render.LegendOverlayRenderer;
 import com.kajiwara.visualizegate.client.render.PortalBoxRenderer;
+import com.kajiwara.visualizegate.client.render.PortalInfoCardRenderer;
 import com.kajiwara.visualizegate.client.render.PortalLinkRenderer;
 import com.kajiwara.visualizegate.config.GateConfigManager;
 import com.kajiwara.visualizegate.memory.PortalMemory;
@@ -44,6 +46,9 @@ public class VisualizeGateClient implements ClientModInitializer {
         PortalLinkRenderer.register();
         GateKeyBindings.register();
         CornerIconRenderer.register();
+        // UX 層 (純追加・HUD パス): ① 自動インフォカード ② 常設凡例。 いずれも注視/所持トリガで表示。
+        PortalInfoCardRenderer.register();
+        LegendOverlayRenderer.register();
         VisualizeGateMod.LOGGER.info("VisualizeGate client initialized (portal scan + box renderer + menu UI).");
     }
 }

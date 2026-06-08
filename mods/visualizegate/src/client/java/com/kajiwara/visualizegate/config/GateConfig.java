@@ -12,6 +12,11 @@ public final class GateConfig {
     public boolean boxOverlayEnabled = true;
     public boolean hudIconEnabled = true;
 
+    // UX 層 (純追加・前方互換: 旧 JSON に欠落していても GSON が既定値を残す)。
+    public boolean advancedMode = false;
+    public boolean legendEnabled = true;
+    public boolean firstRunDone = false;
+
     // 点群ポップアップの表示オプション (PointCloudViewState の器)。
     public boolean pcShowOverworld = true;
     public boolean pcShowNether = true;

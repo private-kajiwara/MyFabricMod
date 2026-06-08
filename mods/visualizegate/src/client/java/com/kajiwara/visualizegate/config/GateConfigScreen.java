@@ -47,10 +47,10 @@ public class GateConfigScreen extends Screen {
 
         // ─── 左サイドバー: タブボタン ───
         int tabY = HEADER_H + 6;
-        addRenderableWidget(Button.builder(Component.literal("Display"), b -> selectTab(Tab.DISPLAY))
-                .bounds(8, tabY, SIDEBAR_W - 14, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("About"), b -> selectTab(Tab.ABOUT))
-                .bounds(8, tabY + 24, SIDEBAR_W - 14, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("visualizegate.config.tab.display"),
+                b -> selectTab(Tab.DISPLAY)).bounds(8, tabY, SIDEBAR_W - 14, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("visualizegate.config.tab.about"),
+                b -> selectTab(Tab.ABOUT)).bounds(8, tabY + 24, SIDEBAR_W - 14, 20).build());
 
         // ─── 右詳細: Display タブのトグル群 ───
         int detailX = SIDEBAR_W + 16;
@@ -66,13 +66,29 @@ public class GateConfigScreen extends Screen {
             b.setMessage(hudLabel());
             GateConfigManager.save();
         }).bounds(detailX, dy + 24, btnW, 20).build();
+        // かんたん⇄詳細 (in-game メニューと同じ GateMenuState を共有＝双方向反映)。
+        Button modeBtn = Button.builder(modeLabel(), b -> {
+            GateMenuState.toggleAdvancedMode();
+            b.setMessage(modeLabel());
+            GateConfigManager.save();
+        }).bounds(detailX, dy + 48, btnW, 20).build();
+        // 常設凡例 on/off (上級者向け)。
+        Button legendBtn = Button.builder(legendLabel(), b -> {
+            GateMenuState.toggleLegend();
+            b.setMessage(legendLabel());
+            GateConfigManager.save();
+        }).bounds(detailX, dy + 72, btnW, 20).build();
         addRenderableWidget(boxBtn);
         addRenderableWidget(hudBtn);
+        addRenderableWidget(modeBtn);
+        addRenderableWidget(legendBtn);
         displayWidgets.add(boxBtn);
         displayWidgets.add(hudBtn);
+        displayWidgets.add(modeBtn);
+        displayWidgets.add(legendBtn);
 
         // ─── フッタ: Done ───
-        addRenderableWidget(Button.builder(Component.literal("Done"), b -> this.onClose())
+        addRenderableWidget(Button.builder(Component.translatable("visualizegate.menu.done"), b -> this.onClose())
                 .bounds(this.width / 2 - 60, this.height - FOOTER_H + 7, 120, 20).build());
 
         applyTabVisibility();
@@ -92,11 +108,24 @@ public class GateConfigScreen extends Screen {
     }
 
     private static Component boxLabel() {
-        return Component.literal("Gate frame overlay: " + (GateMenuState.isBoxOverlayEnabled() ? "ON" : "OFF"));
+        return Component.translatable("visualizegate.menu.box", onOff(GateMenuState.isBoxOverlayEnabled()));
     }
 
     private static Component hudLabel() {
-        return Component.literal("Corner icon: " + (GateMenuState.isHudIconEnabled() ? "ON" : "OFF"));
+        return Component.translatable("visualizegate.menu.hud", onOff(GateMenuState.isHudIconEnabled()));
+    }
+
+    private static Component modeLabel() {
+        return Component.translatable("visualizegate.menu.mode", Component.translatable(
+                GateMenuState.isAdvancedMode() ? "visualizegate.mode.advanced" : "visualizegate.mode.simple"));
+    }
+
+    private static Component legendLabel() {
+        return Component.translatable("visualizegate.menu.legend", onOff(GateMenuState.isLegendEnabled()));
+    }
+
+    private static Component onOff(boolean b) {
+        return Component.translatable(b ? "visualizegate.state.on" : "visualizegate.state.off");
     }
 
     @Override
@@ -117,7 +146,7 @@ public class GateConfigScreen extends Screen {
             int x = SIDEBAR_W + 16;
             int y = HEADER_H + 12;
             g.text(this.font, Component.literal("VisualizeGate"), x, y, GateColors.TEXT);
-            g.text(this.font, Component.literal("Client-side Nether portal visualizer"), x, y + 14, GateColors.MAIN);
+            g.text(this.font, Component.translatable("visualizegate.config.about.tagline"), x, y + 14, GateColors.MAIN);
         }
     }
 
