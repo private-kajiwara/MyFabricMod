@@ -15,6 +15,7 @@
 	"visualizegate.menu.pointcloud": "点群解析",
 	"visualizegate.menu.guide": "使い方",
 	"visualizegate.menu.done": "閉じる",
+	"visualizegate.menu.status": "%s · ゲート: %s · %s",
 
 	"visualizegate.config.tab.display": "表示",
 	"visualizegate.config.tab.about": "情報",
@@ -22,6 +23,7 @@
 
 	"visualizegate.dim.overworld": "オーバーワールド",
 	"visualizegate.dim.nether": "ネザー",
+	"visualizegate.dim.other": "他次元",
 
 	"visualizegate.card.linked.title": "既存のゲートにつながります",
 	"visualizegate.card.linked.aligned": "ほぼぴったり",

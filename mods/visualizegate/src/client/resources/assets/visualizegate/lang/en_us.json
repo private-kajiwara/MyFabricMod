@@ -15,6 +15,7 @@
 	"visualizegate.menu.pointcloud": "Point-cloud analysis",
 	"visualizegate.menu.guide": "How to use",
 	"visualizegate.menu.done": "Done",
+	"visualizegate.menu.status": "%s · Gates: %s · %s",
 
 	"visualizegate.config.tab.display": "Display",
 	"visualizegate.config.tab.about": "About",
@@ -22,6 +23,7 @@
 
 	"visualizegate.dim.overworld": "Overworld",
 	"visualizegate.dim.nether": "Nether",
+	"visualizegate.dim.other": "Other",
 
 	"visualizegate.card.linked.title": "Links to an existing gate",
 	"visualizegate.card.linked.aligned": "Almost perfectly aligned",
