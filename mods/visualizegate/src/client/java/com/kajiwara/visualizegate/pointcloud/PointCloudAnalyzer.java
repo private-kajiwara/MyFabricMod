@@ -28,10 +28,11 @@ public final class PointCloudAnalyzer {
 
     /**
      * 1 層あたりの描画点上限 (超過はストライド間引き＝決定的)。 細かいドット (1〜3px) で地形面を
-     * 表すため中間値に置く。 静止フレームは投影/ソートがキャッシュ済＝idle コストは点数に依らない
-     * (回転時のみ N に比例)。 モックアップの密度に合わせた中庸値。
+     * 表すため疎めに置く (モックアップは疎・1〜3px の細かいドットで形状が読める)。 静止フレームは
+     * 投影/ソートがキャッシュ済だが <b>毎フレームの g.fill 発行数は点数に比例する</b> (GUI 描画状態は
+     * 毎フレーム再構築するモデルのため)＝点数削減が idle/回転とも CPU 律速を直接削る最大の効き。
      */
-    public static final int POINT_BUDGET_PER_LAYER = 3_000;
+    public static final int POINT_BUDGET_PER_LAYER = 1_400;
     /** OW→ネザーのリンク探索半径 (PortalLinkRenderer と同じ・水平距離)。 */
     private static final double NETHER_SEARCH_RADIUS = 16.0;
 

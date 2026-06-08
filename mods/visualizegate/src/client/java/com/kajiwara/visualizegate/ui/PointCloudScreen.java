@@ -38,18 +38,22 @@ public class PointCloudScreen extends Screen {
 
     /** 点の最小ピクセル径 (最遠点)。 細かいドット感のため 1px。 */
     private static final int POINT_MIN_PX = 1;
-    /** 最近点で最小径に加算する追加ピクセル (近=POINT_MIN_PX+EXTRA、 遠=POINT_MIN_PX)。 1〜5px。 */
-    private static final int POINT_SIZE_EXTRA = 4;
-    /** 最遠点の明るさ係数 (大気遠近: 遠い点を暗く沈ませる・近点=1.0)。 */
-    private static final float DEPTH_DIM_MIN = 0.5f;
+    /**
+     * 最近点で最小径に加算する追加ピクセル (近=POINT_MIN_PX+EXTRA、 遠=POINT_MIN_PX)。 1〜3px。
+     * サイズは深度の二乗カーブで割り当てる (= 大半の点は 1px=1 fill のまま・最近の一部だけ太る)＝
+     * モックアップの細かいドット感と g.fill 発行数削減 (②) を両立する。
+     */
+    private static final int POINT_SIZE_EXTRA = 2;
+    /** 最遠点の明るさ係数 (大気遠近: 遠い点を暗く沈ませる・近点=1.0)。 モック寄せで強めのフェード。 */
+    private static final float DEPTH_DIM_MIN = 0.35f;
     private static final double DRAG_SENS = 0.012;
     private static final double NEAR = 0.1;
 
     private final Screen parent;
 
-    // ── カメラ ──
-    private float yaw = 0.7f;
-    private float pitch = 0.55f;
+    // ── カメラ ── (既定はモックアップ2枚に寄せた・やや見上げ＆側面寄りで縦分離と扇状収束が出る角度)
+    private float yaw = 0.6f;
+    private float pitch = 0.32f;
     private float distance = 200f;
     private float focal = 400f;
     /** distance を自動フレームした対象スナップショット (参照同一性で 1 回だけ枠合わせ)。 */
@@ -94,6 +98,9 @@ public class PointCloudScreen extends Screen {
     private float mkX;
     private float mkY;
     private long lastBuildNanos = 0;     // 直近 rebuild 所要 (計測表示用)
+    private long lastDrawNanos = 0;      // 直近フレームの drawCached 所要 (静止/回転とも計測)
+    private int lastFillCount = 0;       // 直近フレームの g.fill 発行数 (点+リンク+マーカー)
+    private int fillCount = 0;           // 集計用 (フレーム毎に drawCached 冒頭でリセット)
 
     // ── 署名: これが変わったフレームだけ rebuild する ──
     private PointCloudSnapshot sigSnap;
@@ -297,12 +304,12 @@ public class PointCloudScreen extends Screen {
         ensureBuffers(owN + nN);
 
         int total = 0;
-        for (int i = 0; i < owN; i++) {   // OW 層 (y -= pivot)
-            total = project(snap.owX[i], snap.owY[i] - pivotY, snap.owZ[i], snap.owColor[i],
+        for (int i = 0; i < owN; i++) {   // OW 層 (上＝広く疎: y += pivot)
+            total = project(snap.owX[i], snap.owY[i] + pivotY, snap.owZ[i], snap.owColor[i],
                     cosY, sinY, cosP, sinP, cx, cy, total);
         }
-        for (int i = 0; i < nN; i++) {    // ネザー層 (y += pivot)
-            total = project(snap.nX[i], snap.nY[i] + pivotY, snap.nZ[i], snap.nColor[i],
+        for (int i = 0; i < nN; i++) {    // ネザー層 (下＝密なコンパクト塊: y -= pivot)
+            total = project(snap.nX[i], snap.nY[i] - pivotY, snap.nZ[i], snap.nColor[i],
                     cosY, sinY, cosP, sinP, cx, cy, total);
         }
 
@@ -332,7 +339,8 @@ public class PointCloudScreen extends Screen {
             float near = (dMax - bDepth[i]) / dSpan; // 0=最遠 .. 1=最近
             dX[w] = bSx[i];
             dY[w] = bSy[i];
-            dSize[w] = POINT_MIN_PX + Math.round(near * POINT_SIZE_EXTRA);
+            // サイズは near の二乗 (= 大半 1px=1 fill、 最近の一部だけ 2〜3px)。 明るさは線形 (大気遠近)。
+            dSize[w] = POINT_MIN_PX + Math.round(near * near * POINT_SIZE_EXTRA);
             dColor[w] = dim(bColor[i], DEPTH_DIM_MIN + near * (1f - DEPTH_DIM_MIN));
             w++;
         }
@@ -343,9 +351,9 @@ public class PointCloudScreen extends Screen {
         if (PointCloudViewState.isShowLinks() && snap.linkCount() > 0) {
             ensureLinkArrays(snap.linkCount());
             for (int i = 0; i < snap.linkCount(); i++) {
-                float[] a = projectXY(snap.linkAx[i], snap.linkAy[i] - pivotY, snap.linkAz[i],
+                float[] a = projectXY(snap.linkAx[i], snap.linkAy[i] + pivotY, snap.linkAz[i],
                         cosY, sinY, cosP, sinP, cx, cy);
-                float[] b = projectXY(snap.linkBx[i], snap.linkBy[i] + pivotY, snap.linkBz[i],
+                float[] b = projectXY(snap.linkBx[i], snap.linkBy[i] - pivotY, snap.linkBz[i],
                         cosY, sinY, cosP, sinP, cx, cy);
                 if (a == null || b == null) {
                     continue;
@@ -361,7 +369,7 @@ public class PointCloudScreen extends Screen {
         // 現在地マーカーを投影してキャッシュ。
         mkVis = false;
         if (snap.hasMarker) {
-            float my = snap.markerNether ? snap.markerY + pivotY : snap.markerY - pivotY;
+            float my = snap.markerNether ? snap.markerY - pivotY : snap.markerY + pivotY;
             float[] m = projectXY(snap.markerX, my, snap.markerZ, cosY, sinY, cosP, sinP, cx, cy);
             if (m != null && m[0] >= vpX && m[0] <= vpX + vpW && m[1] >= vpY && m[1] <= vpY + vpH) {
                 mkVis = true;
@@ -372,8 +380,13 @@ public class PointCloudScreen extends Screen {
         lastBuildNanos = System.nanoTime() - t0;
     }
 
-    /** キャッシュから描くだけ (静止フレームの全処理＝投影/ソート無し)。 */
+    /**
+     * キャッシュから描くだけ (静止フレームの全処理＝投影/ソート無し)。 ここで発行する g.fill 数が
+     * 毎フレームの CPU/レンダースレッド律速の実体なので、 所要時間と fill 数を計測して表示する (②計測)。
+     */
     private void drawCached(GuiGraphicsExtractor g) {
+        long t0 = System.nanoTime();
+        fillCount = 0;
         for (int k = 0; k < cachedCount; k++) {
             drawDot(g, Math.round(dX[k]), Math.round(dY[k]), dSize[k], dColor[k]);
         }
@@ -383,6 +396,8 @@ public class PointCloudScreen extends Screen {
         if (mkVis) {
             drawMarker(g, Math.round(mkX), Math.round(mkY));
         }
+        lastFillCount = fillCount;
+        lastDrawNanos = System.nanoTime() - t0;
     }
 
     /**
@@ -465,7 +480,11 @@ public class PointCloudScreen extends Screen {
      */
     private void drawDot(GuiGraphicsExtractor g, int cx, int cy, int s, int color) {
         if (s <= 1) {
-            fillClamped(g, cx, cy, cx + 1, cy + 1, color);
+            fillClamped(g, cx, cy, cx + 1, cy + 1, color); // 1 fill (大半の点)
+            return;
+        }
+        if (s == 2) {
+            fillClamped(g, cx, cy, cx + 2, cy + 2, color); // 2x2 を 1 fill で
             return;
         }
         int r = (s - 1) / 2;
@@ -475,18 +494,6 @@ public class PointCloudScreen extends Screen {
             int y = cy + dy;
             fillClamped(g, cx - hw, y, cx + hw + 1, y + 1, color);
         }
-        if (s >= 4) {
-            fillClamped(g, cx, cy - 1, cx + 1, cy, brighten(color, 1.35f)); // 球状ハイライト
-        }
-    }
-
-    /** ARGB の RGB を係数 f で増光 (255 クランプ・アルファ保持)。 */
-    private static int brighten(int color, float f) {
-        int a = (color >>> 24) & 0xFF;
-        int r = Math.min(255, Math.round(((color >> 16) & 0xFF) * f));
-        int gg = Math.min(255, Math.round(((color >> 8) & 0xFF) * f));
-        int b = Math.min(255, Math.round((color & 0xFF) * f));
-        return (a << 24) | (r << 16) | (gg << 8) | b;
     }
 
     /** ARGB の RGB を係数 f で減衰 (アルファは保持・暗背景なのでアルファでなく明度を落とす)。 */
@@ -505,6 +512,7 @@ public class PointCloudScreen extends Screen {
         int cy2 = Math.min(vpY + vpH, y2);
         if (cx2 > cx1 && cy2 > cy1) {
             g.fill(cx1, cy1, cx2, cy2, color);
+            fillCount++;
         }
     }
 
@@ -565,10 +573,13 @@ public class PointCloudScreen extends Screen {
             g.text(this.font, Component.literal("+ = you (at analysis)"), x, y + 33, GateColors.ACCENT);
         }
         String build = String.format(java.util.Locale.ROOT, "%.2f ms", lastBuildNanos / 1.0e6);
+        String draw = String.format(java.util.Locale.ROOT, "%.2f ms", lastDrawNanos / 1.0e6);
         g.text(this.font, Component.literal("Rebuild: " + build + " (cached when still)"),
                 x, y + 44, GateColors.LINK_GRAY);
-        g.text(this.font, Component.literal("Drag: rotate   Wheel: zoom"),
+        g.text(this.font, Component.literal("Draw: " + draw + " / " + lastFillCount + " fills /frame"),
                 x, y + 55, GateColors.LINK_GRAY);
+        g.text(this.font, Component.literal("Drag: rotate   Wheel: zoom"),
+                x, y + 66, GateColors.LINK_GRAY);
     }
 
     // ════════════════════════════════════════════════════════════════════
