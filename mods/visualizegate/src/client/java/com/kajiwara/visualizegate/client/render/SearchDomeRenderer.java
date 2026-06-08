@@ -9,7 +9,6 @@ import com.kajiwara.visualizegate.ui.GateColors;
 
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 //? if >=26.1 {
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
@@ -20,19 +19,10 @@ import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;*/
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.ShapeRenderer;
-//? if >=1.21.11 {
-import net.minecraft.client.renderer.rendertype.RenderTypes;
-//?} else {
-/*import net.minecraft.client.renderer.RenderType;*/
-//?}
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * 機能3: 探索ドーム v1 (リンク検索範囲の可視化＋混線検出・<b>Mixin 不使用</b>)。
@@ -98,20 +88,15 @@ public final class SearchDomeRenderer {
                 return;
             Vec3 camPos = camState.pos;
             PoseStack matrices = ctx.poseStack();
-            PoseStack.Pose pose = matrices.last();
 
             if (afterWaterBuffer == null) {
                 afterWaterBuffer = MultiBufferSource.immediate(new ByteBufferBuilder(2048));
             }
             MultiBufferSource.BufferSource bufferSource = afterWaterBuffer;
-            //? if >=1.21.11 {
-            VertexConsumer vc = bufferSource.getBuffer(RenderTypes.lines());
-            //?} else {
-            /*VertexConsumer vc = bufferSource.getBuffer(RenderType.lines());*/
-            //?}
 
-            drawDome(vc, pose, cx, cy, cz, radius, camPos, nether);
-            highlightCrosstalk(matrices, vc, level, r, cx, cz, radius, camPos);
+            // 描画は共有ヘルパへ委譲 (非シェーダ=従来の lines / Iris シェーダ時=細クアッド)。
+            drawDome(bufferSource, matrices, cx, cy, cz, radius, camPos, nether);
+            highlightCrosstalk(bufferSource, matrices, level, r, cx, cz, radius, camPos);
 
             bufferSource.endBatch();
         } catch (Throwable t) {
@@ -121,7 +106,7 @@ public final class SearchDomeRenderer {
 
     // ── ドーム (半球ワイヤフレーム) ──────────────────────────────────────
 
-    private void drawDome(VertexConsumer vc, PoseStack.Pose pose,
+    private void drawDome(MultiBufferSource.BufferSource bs, PoseStack matrices,
             double cx, double cy, double cz, double radius, Vec3 cam, boolean nether) {
         // 128 は巨大 → 薄く疎 (緯度リング少なめ); Nether=16 は密め。
         int latRings = nether ? 5 : 3;   // 赤道 (i=0) から上へ
@@ -133,7 +118,7 @@ public final class SearchDomeRenderer {
             double phi = (Math.PI / 2.0) * i / latRings;
             double ringY = cy + radius * Math.sin(phi);
             double ringR = radius * Math.cos(phi);
-            drawHorizontalCircle(vc, pose, cx, ringY, cz, ringR, cam);
+            drawHorizontalCircle(bs, matrices, cx, ringY, cz, ringR, cam);
         }
         // 経度リング (赤道→頂点の四分円)。
         for (int m = 0; m < meridians; m++) {
@@ -149,10 +134,7 @@ public final class SearchDomeRenderer {
                 double nx = cx + rr * cosT;
                 double ny = cy + radius * Math.sin(phi);
                 double nz = cz + rr * sinT;
-                addLine(vc, pose,
-                        (float) (px - cam.x), (float) (py - cam.y), (float) (pz - cam.z),
-                        (float) (nx - cam.x), (float) (ny - cam.y), (float) (nz - cam.z),
-                        DOME_ARGB, DOME_WIDTH);
+                OverlayDraw.segment(bs, matrices, cam, px, py, pz, nx, ny, nz, DOME_ARGB, DOME_WIDTH);
                 px = nx;
                 py = ny;
                 pz = nz;
@@ -160,7 +142,7 @@ public final class SearchDomeRenderer {
         }
     }
 
-    private void drawHorizontalCircle(VertexConsumer vc, PoseStack.Pose pose,
+    private void drawHorizontalCircle(MultiBufferSource.BufferSource bs, PoseStack matrices,
             double cx, double cy, double cz, double r, Vec3 cam) {
         double prevX = cx + r;
         double prevZ = cz;
@@ -168,10 +150,7 @@ public final class SearchDomeRenderer {
             double th = (Math.PI * 2.0) * s / CIRCLE_SEG;
             double x = cx + r * Math.cos(th);
             double z = cz + r * Math.sin(th);
-            addLine(vc, pose,
-                    (float) (prevX - cam.x), (float) (cy - cam.y), (float) (prevZ - cam.z),
-                    (float) (x - cam.x), (float) (cy - cam.y), (float) (z - cam.z),
-                    DOME_ARGB, DOME_WIDTH);
+            OverlayDraw.segment(bs, matrices, cam, prevX, cy, prevZ, x, cy, z, DOME_ARGB, DOME_WIDTH);
             prevX = x;
             prevZ = z;
         }
@@ -179,7 +158,7 @@ public final class SearchDomeRenderer {
 
     // ── 混線検出 (範囲内の他ゲートを強調) ────────────────────────────────
 
-    private void highlightCrosstalk(PoseStack matrices, VertexConsumer vc, ClientLevel level,
+    private void highlightCrosstalk(MultiBufferSource.BufferSource bs, PoseStack matrices, ClientLevel level,
             PortalGaze.Result r, double cx, double cz, double radius, Vec3 camPos) {
         // 注視ポータル P 自身は除外 (火打石計画時は looked==null＝全件が「他ゲート」)。
         BlockPos selfAnchor = (r.portal() != null) ? r.portal().anchor() : null;
@@ -194,36 +173,8 @@ public final class SearchDomeRenderer {
             double dxh = rxc - cx;
             double dzh = rzc - cz;
             if (dxh * dxh + dzh * dzh <= r2) { // 水平距離 (実探索メトリックに一致)
-                drawBox(matrices, vc, bb.inflate(CROSS_INFLATE), camPos, CROSSTALK_ARGB);
+                OverlayDraw.box(bs, matrices, camPos, bb.inflate(CROSS_INFLATE), CROSSTALK_ARGB, CROSS_WIDTH);
             }
         }
-    }
-
-    private static void drawBox(PoseStack matrices, VertexConsumer vc, AABB box, Vec3 camPos, int color) {
-        VoxelShape shape = Shapes.create(box);
-        //? if >=1.21.11 {
-        ShapeRenderer.renderShape(matrices, vc, shape,
-                -camPos.x, -camPos.y, -camPos.z, color, CROSS_WIDTH);
-        //?} else {
-        /*ShapeRenderer.renderShape(matrices, vc, shape,
-                -camPos.x, -camPos.y, -camPos.z, color);*/
-        //?}
-    }
-
-    /** OmniChest WireHighlightRenderer.addLine の現物を流用 (lines 頂点フォーマット)。 */
-    private static void addLine(VertexConsumer c, PoseStack.Pose pose,
-            float x1, float y1, float z1, float x2, float y2, float z2,
-            int color, float lineWidth) {
-        float nx = x2 - x1;
-        float ny = y2 - y1;
-        float nz = z2 - z1;
-        float len = Mth.sqrt(nx * nx + ny * ny + nz * nz);
-        if (len > 1e-6f) {
-            nx /= len;
-            ny /= len;
-            nz /= len;
-        }
-        c.addVertex(pose, x1, y1, z1).setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(lineWidth);
-        c.addVertex(pose, x2, y2, z2).setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(lineWidth);
     }
 }

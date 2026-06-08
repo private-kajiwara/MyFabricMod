@@ -9,7 +9,6 @@ import com.kajiwara.visualizegate.state.GateMenuState;
 
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 //? if >=26.1 {
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
@@ -20,19 +19,10 @@ import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;*/
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.ShapeRenderer;
-//? if >=1.21.11 {
-import net.minecraft.client.renderer.rendertype.RenderTypes;
-//?} else {
-/*import net.minecraft.client.renderer.RenderType;*/
-//?}
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * {@link PortalIndex} の各ポータルの AABB に枠 (ワイヤーボックス) を描画する。
@@ -93,26 +83,13 @@ public final class PortalBoxRenderer {
             PoseStack matrices = ctx.poseStack();
 
             if (afterWaterBuffer == null) {
-                afterWaterBuffer = MultiBufferSource.immediate(new ByteBufferBuilder(256));
+                afterWaterBuffer = MultiBufferSource.immediate(new ByteBufferBuilder(2048));
             }
             MultiBufferSource.BufferSource bufferSource = afterWaterBuffer;
 
-            //? if >=1.21.11 {
-            VertexConsumer vc = bufferSource.getBuffer(RenderTypes.lines());
-            //?} else {
-            /*VertexConsumer vc = bufferSource.getBuffer(RenderType.lines());*/
-            //?}
-
+            // 描画は共有ヘルパへ委譲 (非シェーダ=従来の lines / Iris シェーダ時=細クアッド)。
             for (PortalRecord rec : records) {
-                AABB box = rec.aabb();
-                VoxelShape shape = Shapes.create(box);
-                //? if >=1.21.11 {
-                ShapeRenderer.renderShape(matrices, vc, shape,
-                        -camPos.x, -camPos.y, -camPos.z, BOX_ARGB, LINE_WIDTH);
-                //?} else {
-                /*ShapeRenderer.renderShape(matrices, vc, shape,
-                        -camPos.x, -camPos.y, -camPos.z, BOX_ARGB);*/
-                //?}
+                OverlayDraw.box(bufferSource, matrices, camPos, rec.aabb(), BOX_ARGB, LINE_WIDTH);
             }
 
             bufferSource.endBatch();

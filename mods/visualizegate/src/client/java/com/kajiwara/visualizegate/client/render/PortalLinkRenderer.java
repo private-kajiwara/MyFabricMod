@@ -16,7 +16,6 @@ import com.kajiwara.visualizegate.ui.GateColors;
 
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 //? if >=26.1 {
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
@@ -28,16 +27,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.ShapeRenderer;
-//? if >=1.21.11 {
-import net.minecraft.client.renderer.rendertype.RenderTypes;
-//?} else {
-/*import net.minecraft.client.renderer.RenderType;*/
-//?}
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.util.Mth;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -45,8 +37,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * 機能2: リンク状態ベクターライン (水後ステージ・<b>Mixin 不使用</b>・バニラ {@code RenderTypes.lines()})。
@@ -156,15 +146,9 @@ public final class PortalLinkRenderer {
             Vec3 camPos = camState.pos;
             PoseStack matrices = ctx.poseStack();
             if (afterWaterBuffer == null) {
-                afterWaterBuffer = MultiBufferSource.immediate(new ByteBufferBuilder(256));
+                afterWaterBuffer = MultiBufferSource.immediate(new ByteBufferBuilder(2048));
             }
             MultiBufferSource.BufferSource bufferSource = afterWaterBuffer;
-            //? if >=1.21.11 {
-            VertexConsumer vc = bufferSource.getBuffer(RenderTypes.lines());
-            //?} else {
-            /*VertexConsumer vc = bufferSource.getBuffer(RenderType.lines());*/
-            //?}
-            PoseStack.Pose pose = matrices.last();
 
             switch (pred.state()) {
                 case LINKED -> {
@@ -174,19 +158,18 @@ public final class PortalLinkRenderer {
                     double ex = endC.x() + 0.5;
                     double ey = endC.y() + 0.5;
                     double ez = endC.z() + 0.5;
-                    // 主 signal: source → project(P_other) のライン。長さ＝ズレ量。
-                    addLine(vc, pose,
-                            (float) (srcX - camPos.x), (float) (srcY - camPos.y), (float) (srcZ - camPos.z),
-                            (float) (ex - camPos.x), (float) (ey - camPos.y), (float) (ez - camPos.z),
-                            GateColors.LINK_GREEN, LINE_WIDTH);
-                    drawMarker(matrices, vc, ex, ey, ez, camPos, GateColors.LINK_GREEN);
+                    // 主 signal: source → project(P_other) のライン。長さ＝ズレ量。 描画は共有ヘルパ
+                    // (非シェーダ=lines / Iris シェーダ時=細クアッド)。
+                    OverlayDraw.segment(bufferSource, matrices, camPos,
+                            srcX, srcY, srcZ, ex, ey, ez, GateColors.LINK_GREEN, LINE_WIDTH);
+                    drawMarker(bufferSource, matrices, ex, ey, ez, camPos, GateColors.LINK_GREEN);
                 }
                 case WILL_CREATE ->
                     // 長い線を引かない: 理想スポット(≈source)に短い赤マーカー。
-                    drawMarker(matrices, vc, srcX, srcY, srcZ, camPos, GateColors.LINK_RED);
+                    drawMarker(bufferSource, matrices, srcX, srcY, srcZ, camPos, GateColors.LINK_RED);
                 case UNKNOWN ->
                     // 対象領域未観測: 灰マーカーのみ (緑/赤を主張しない)。
-                    drawMarker(matrices, vc, srcX, srcY, srcZ, camPos, GateColors.LINK_GRAY);
+                    drawMarker(bufferSource, matrices, srcX, srcY, srcZ, camPos, GateColors.LINK_GRAY);
                 default -> {
                     // no-op
                 }
@@ -231,35 +214,11 @@ public final class PortalLinkRenderer {
 
     // ── 描画ヘルパ ──────────────────────────────────────────────────────
 
-    /** OmniChest WireHighlightRenderer.addLine の現物を流用 (lines 頂点フォーマット)。 */
-    private static void addLine(VertexConsumer c, PoseStack.Pose pose,
-            float x1, float y1, float z1, float x2, float y2, float z2,
-            int color, float lineWidth) {
-        float nx = x2 - x1;
-        float ny = y2 - y1;
-        float nz = z2 - z1;
-        float len = Mth.sqrt(nx * nx + ny * ny + nz * nz);
-        if (len > 1e-6f) {
-            nx /= len;
-            ny /= len;
-            nz /= len;
-        }
-        c.addVertex(pose, x1, y1, z1).setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(lineWidth);
-        c.addVertex(pose, x2, y2, z2).setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(lineWidth);
-    }
-
-    /** world pos に小さな箱マーカーを描く (バニラ ShapeRenderer・Mixin 不要)。 */
-    private static void drawMarker(PoseStack matrices, VertexConsumer vc,
+    /** world pos に小さな箱マーカーを描く (共有ヘルパ経由・非シェーダ=lines / シェーダ=細クアッド)。 */
+    private static void drawMarker(MultiBufferSource.BufferSource bs, PoseStack matrices,
             double wx, double wy, double wz, Vec3 camPos, int color) {
         AABB box = new AABB(wx - MARKER_HALF, wy - MARKER_HALF, wz - MARKER_HALF,
                 wx + MARKER_HALF, wy + MARKER_HALF, wz + MARKER_HALF);
-        VoxelShape shape = Shapes.create(box);
-        //? if >=1.21.11 {
-        ShapeRenderer.renderShape(matrices, vc, shape,
-                -camPos.x, -camPos.y, -camPos.z, color, LINE_WIDTH);
-        //?} else {
-        /*ShapeRenderer.renderShape(matrices, vc, shape,
-                -camPos.x, -camPos.y, -camPos.z, color);*/
-        //?}
+        OverlayDraw.box(bs, matrices, camPos, box, color, LINE_WIDTH);
     }
 }

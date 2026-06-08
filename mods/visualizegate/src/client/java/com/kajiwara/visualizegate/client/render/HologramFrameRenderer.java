@@ -23,7 +23,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;*/
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.ShapeRenderer;
 //? if >=1.21.11 {
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 //?} else {
@@ -32,8 +31,6 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * 機能1: ホログラム枠 v1 (「ズレ無し設置位置」を世界に金枠で示す・<b>Mixin 不使用</b>)。
@@ -134,14 +131,9 @@ public final class HologramFrameRenderer {
             //?}
             drawInteriorFace(fill, pose, gx, gy, gz, dx, dy, dz, axisX, camPos);
 
-            // 金アウトライン (v1・線は面の上に乗る)。
-            //? if >=1.21.11 {
-            VertexConsumer vc = bufferSource.getBuffer(RenderTypes.lines());
-            //?} else {
-            /*VertexConsumer vc = bufferSource.getBuffer(RenderType.lines());*/
-            //?}
-            drawOutline(matrices, vc, ring, camPos);     // 黒曜石リング
-            drawOutline(matrices, vc, interior, camPos); // 内部面の輪郭
+            // 金アウトライン (v1・線は面の上)。 共有ヘルパ (非シェーダ=lines / Iris シェーダ時=細クアッド)。
+            OverlayDraw.box(bufferSource, matrices, camPos, ring, FRAME_ARGB, LINE_WIDTH);     // 黒曜石リング
+            OverlayDraw.box(bufferSource, matrices, camPos, interior, FRAME_ARGB, LINE_WIDTH); // 内部面の輪郭
 
             bufferSource.endBatch();
         } catch (Throwable t) {
@@ -194,14 +186,4 @@ public final class HologramFrameRenderer {
                 .setColor(GateColors.HOLO_FILL);
     }
 
-    private static void drawOutline(PoseStack matrices, VertexConsumer vc, AABB box, Vec3 camPos) {
-        VoxelShape shape = Shapes.create(box);
-        //? if >=1.21.11 {
-        ShapeRenderer.renderShape(matrices, vc, shape,
-                -camPos.x, -camPos.y, -camPos.z, FRAME_ARGB, LINE_WIDTH);
-        //?} else {
-        /*ShapeRenderer.renderShape(matrices, vc, shape,
-                -camPos.x, -camPos.y, -camPos.z, FRAME_ARGB);*/
-        //?}
-    }
 }
