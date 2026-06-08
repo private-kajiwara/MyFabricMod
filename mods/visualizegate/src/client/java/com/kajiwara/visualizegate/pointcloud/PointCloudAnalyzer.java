@@ -17,9 +17,11 @@ import com.kajiwara.visualizegate.ui.GateColors;
  *
  * <p>ワーカースレッドから呼ぶ。 ライブ World には触れず、 入力の不変コピーだけを読む。 処理:
  * <ol>
- *   <li>地形を OW スケール水平へ整列 (ネザーは XZ ×8)。 全点の水平重心と各層の平均 Y を算出。</li>
- *   <li>各層を描画予算 {@link #POINT_BUDGET_PER_LAYER} までストライド間引き (= 決定的・乱数不使用)。</li>
- *   <li>水平センタリング (重心)＋各層 Y センタリング (平均) で<b>ビュー空間</b>へ。 高さで配色。</li>
+ *   <li>地形を OW スケール水平へ整列 (ネザーは XZ ×8)。 視野中心は<b>OW 重心</b>、 各層の平均 Y を算出。</li>
+ *   <li>各層を描画予算 {@link #POINT_BUDGET_PER_LAYER} までストライド間引き (= 決定的・乱数不使用)。
+ *       <b>ネザーは OW 視野半径 R_ow へクリップ</b> (×8 膨張バグの修正＝案A: 表示上ネザーが 8 倍に
+ *       膨らむのを防ぐ。 OW 完全探索＝両層同フットプリント、 ネザー探索が狭ければ自然に小さい塊)。</li>
+ *   <li>水平センタリング (OW 重心)＋各層 Y センタリング (平均) で<b>ビュー空間</b>へ。 高さで配色。</li>
  *   <li>リンク: OW ポータル → ネザー partner ({@link PortalLinkResolver}) の LINKED のみ線分化。</li>
  * </ol>
  * <b>垂直分離 (spacing)</b> は織り込まない (描画時に Screen が加算＝ライブスライダ対応)。
@@ -46,6 +48,8 @@ public final class PointCloudAnalyzer {
         // ── 1. 水平重心・各層平均 Y (OW スケール) ──
         double sumX = 0;
         double sumZ = 0;
+        double owSumX = 0;   // OW のみの重心 (= 視野中心。 ネザー×8 で重心が膨らむのを防ぐ)
+        double owSumZ = 0;
         long hCount = 0;
         long owYSum = 0;
         long nYSum = 0;
@@ -59,6 +63,8 @@ public final class PointCloudAnalyzer {
             int y = in.owTerrain()[i * 3 + 2];
             sumX += x;
             sumZ += z;
+            owSumX += x;
+            owSumZ += z;
             hCount++;
             owYSum += y;
             owYMin = Math.min(owYMin, y);
@@ -79,10 +85,30 @@ public final class PointCloudAnalyzer {
             // 地形が無くてもポータル/リンクだけは描けるよう重心はポータルから取る。
             return analyzePortalsOnly(in);
         }
-        float hCenterX = (float) (sumX / hCount);
-        float hCenterZ = (float) (sumZ / hCount);
+        // 視野中心 = OW 重心 (OW があれば)。 OW が無い時のみ全点 (=ネザーのみ) 重心へフォールバック。
+        float hCenterX = (owN > 0) ? (float) (owSumX / owN) : (float) (sumX / hCount);
+        float hCenterZ = (owN > 0) ? (float) (owSumZ / owN) : (float) (sumZ / hCount);
         float owMeanY = (owN > 0) ? (float) ((double) owYSum / owN) : 0f;
         float nMeanY = (nN > 0) ? (float) ((double) nYSum / nN) : 0f;
+
+        // ── 案A: ネザー膨張バグ修正 ──
+        // ネザー地形は ×8 で OW スケールへ整列するが、 同じブロック半径だと表示上 8 倍に膨らむ。
+        // OW の視野半径 R_ow を基準に、 ネザー (×8・中心合わせ済) を R_ow 内へクリップする
+        // (= 実質「ネザーは R_ow/8 ブロックだけ採る」)。 OW を完全探索＝両層同フットプリント、
+        // ネザー探索が狭ければ自然に小さい塊。 OW が無い時はクリップしない (ネザー自然スケール)。
+        float clipR2 = Float.MAX_VALUE;
+        if (owN > 0) {
+            double maxR2 = 0;
+            for (int i = 0; i < owN; i++) {
+                double dx = in.owTerrain()[i * 3] - hCenterX;
+                double dz = in.owTerrain()[i * 3 + 1] - hCenterZ;
+                double r2 = dx * dx + dz * dz;
+                if (r2 > maxR2) {
+                    maxR2 = r2;
+                }
+            }
+            clipR2 = (float) maxR2;
+        }
 
         // ── 2-3. 各層を間引き＋センタリング＋配色 ──
         int owStride = stride(owN, POINT_BUDGET_PER_LAYER);
@@ -106,21 +132,31 @@ public final class PointCloudAnalyzer {
             k++;
         }
 
-        float[] nX = new float[nDrawn];
-        float[] nY = new float[nDrawn];
-        float[] nZ = new float[nDrawn];
-        int[] nColor = new int[nDrawn];
-        k = 0;
+        // ネザーは上限 nDrawn 個で確保し、 R_ow クリップを通った点だけ詰める (nk = 実描画数)。
+        float[] nXt = new float[nDrawn];
+        float[] nYt = new float[nDrawn];
+        float[] nZt = new float[nDrawn];
+        int[] nColort = new int[nDrawn];
+        int nk = 0;
         for (int i = 0; i < nN; i += nStride) {
             int x = in.netherTerrain()[i * 3] * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR;
             int z = in.netherTerrain()[i * 3 + 1] * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR;
             int y = in.netherTerrain()[i * 3 + 2];
-            nX[k] = x - hCenterX;
-            nY[k] = y - nMeanY;
-            nZ[k] = z - hCenterZ;
-            nColor[k] = lerp(GateColors.PC_NETHER_LOW, GateColors.PC_NETHER_HIGH, norm(y, nYMin, nYMax));
-            k++;
+            float vx = x - hCenterX;
+            float vz = z - hCenterZ;
+            if (vx * vx + vz * vz > clipR2) {
+                continue; // OW 視野半径の外 → ネザー膨張分を捨てる (案A)
+            }
+            nXt[nk] = vx;
+            nYt[nk] = y - nMeanY;
+            nZt[nk] = vz;
+            nColort[nk] = lerp(GateColors.PC_NETHER_LOW, GateColors.PC_NETHER_HIGH, norm(y, nYMin, nYMax));
+            nk++;
         }
+        float[] nX = (nk == nDrawn) ? nXt : java.util.Arrays.copyOf(nXt, nk);
+        float[] nY = (nk == nDrawn) ? nYt : java.util.Arrays.copyOf(nYt, nk);
+        float[] nZ = (nk == nDrawn) ? nZt : java.util.Arrays.copyOf(nZt, nk);
+        int[] nColor = (nk == nDrawn) ? nColort : java.util.Arrays.copyOf(nColort, nk);
 
         // ── 4. リンク (OW→ネザー LINKED のみ) ──
         Links links = buildLinks(in, hCenterX, hCenterZ, owMeanY, nMeanY);
@@ -129,7 +165,7 @@ public final class PointCloudAnalyzer {
         float radius = horizontalRadius(owX, owZ, nX, nZ);
         return new PointCloudSnapshot(owX, owY, owZ, owColor, nX, nY, nZ, nColor,
                 links.ax, links.ay, links.az, links.bx, links.by, links.bz,
-                radius, owN, nN, owDrawn, nDrawn,
+                radius, owN, nN, owDrawn, nk,
                 mk.present(), mk.x(), mk.y(), mk.z(), mk.nether());
     }
 

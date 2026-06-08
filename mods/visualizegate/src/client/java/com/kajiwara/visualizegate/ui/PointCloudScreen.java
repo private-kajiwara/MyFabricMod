@@ -39,13 +39,15 @@ public class PointCloudScreen extends Screen {
     /** 点の最小ピクセル径 (最遠点)。 細かいドット感のため 1px。 */
     private static final int POINT_MIN_PX = 1;
     /**
-     * 最近点で最小径に加算する追加ピクセル (近=POINT_MIN_PX+EXTRA、 遠=POINT_MIN_PX)。 1〜3px。
-     * サイズは深度の二乗カーブで割り当てる (= 大半の点は 1px=1 fill のまま・最近の一部だけ太る)＝
-     * モックアップの細かいドット感と g.fill 発行数削減 (②) を両立する。
+     * 最近点で最小径に加算する追加ピクセル (近=POINT_MIN_PX+EXTRA、 遠=POINT_MIN_PX)。 1〜2px。
+     * サイズは深度の二乗カーブで割り当てる (= 大半の点は 1px コア・最近のみ 2px)＝モックの細かいドット感。
+     * <b>注</b>: {@code g.fill} は整数ピクセル矩形なので、 サブピクセル/float 位置や真円スプライトは
+     * この描画方式では不可能 (テクスチャ blit は全版 {@code RenderPipeline} 必須＝版差/Mixin リスクで不採用)。
+     * よって「px 基準で極小＋距離フェード＋丸近似」でドットグリッド感を最小化する。
      */
-    private static final int POINT_SIZE_EXTRA = 2;
+    private static final int POINT_SIZE_EXTRA = 1;
     /** 最遠点の明るさ係数 (大気遠近: 遠い点を暗く沈ませる・近点=1.0)。 モック寄せで強めのフェード。 */
-    private static final float DEPTH_DIM_MIN = 0.35f;
+    private static final float DEPTH_DIM_MIN = 0.3f;
     private static final double DRAG_SENS = 0.012;
     private static final double NEAR = 0.1;
 
