@@ -1,6 +1,7 @@
 package com.kajiwara.visualizegate;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +19,14 @@ public class VisualizeGateMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        LOGGER.info("VisualizeGate (0.1.0) initialized.");
+        LOGGER.info("VisualizeGate ({}) initialized.", version());
+    }
+
+    /** 実 mod_version を Fabric メタから取得 (ハードコード回避)。 取得不能なら "?"。 */
+    private static String version() {
+        return FabricLoader.getInstance()
+                .getModContainer(MOD_ID)
+                .map(c -> c.getMetadata().getVersion().getFriendlyString())
+                .orElse("?");
     }
 }
