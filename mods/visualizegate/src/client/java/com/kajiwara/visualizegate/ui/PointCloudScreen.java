@@ -7,20 +7,27 @@ import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
 import com.kajiwara.visualizegate.pointcloud.PointCloudSnapshot;
 import com.kajiwara.visualizegate.state.PointCloudViewState;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 
 /**
  * ディメンション点群マッピング・ポップアップ (回転可能な GUI 内 3D ビュー・<b>Mixin 不使用</b>)。
  *
  * <p><b>描画方式</b>: 不変スナップショット ({@link PointCloudSnapshot}) の各点を、 オービットカメラ
- * (yaw/pitch/distance) の<b>プレーン Java 行列</b>で 2D へ投影し、 小クアッド ({@code g.fill}) で描く。
- * 紫リンク線は両端を投影して DDA で点列描画する。 行列/頂点の MC API を使わない＝版差レンダ面ゼロ
- * (使うのは既設ブリッジ済の {@code g.fill}/{@code g.text} のみ)。 painter のアルゴリズム (深度降順) で
- * 重なりを解決し、 点サイズは近いほど大きい (= 深度手がかり)。
+ * (yaw/pitch/distance) の<b>プレーン Java 行列</b>で 2D へ投影する (行列/頂点の MC API 不使用＝版差レンダ面ゼロ)。
+ * <b>バッチ描画</b>: 投影後の全点を<b>ビューポート大の {@link DynamicTexture}</b> へ丸いソフトドット
+ * (円形アルファ減衰) として CPU ラスタライズし、 <b>毎フレーム 1 回の {@code g.blit}</b> で出す
+ * (= fills/frame が点数に依存しない・GUI の {@code RenderPipelines.GUI_TEXTURED}/{@code DynamicTexture}/
+ * {@code NativeImage} は全版同名・javap 確認)。 ラスタライズはビュー変化時のみ (静止は blit だけ＝最軽量)。
+ * リンク線/現在地マーカーも同テクスチャへ焼く。 万一テクスチャ経路が失敗したら従来の {@code g.fill} へ
+ * 自動フォールバック (描画途絶しない)。 深度ソート (降順) で近点を上に、 近いほど大きく明るい (= 深度手がかり)。
  *
  * <p><b>整列</b>: ネザー点/リンク端はスナップショット側で XZ ×8 済 ("Nether 1:8")。 <b>垂直分離</b>
  * (ディメンション間隔スライダ) はここで Y へ加算する (= スライダ変更で再解析不要)。 クリップは
@@ -85,10 +92,24 @@ public class PointCloudScreen extends Screen {
     private int[] bColor = new int[0];
     private long[] bOrder = new long[0];
 
+    // ── バッチ描画 (DynamicTexture + 1 blit): 全点を 1 枚へ焼き、 毎フレーム 1 ドローコール ──
+    /** バッチ経路を使う (false で従来 g.fill)。 失敗時は texFailed で自動フォールバック。 */
+    private static final boolean USE_TEXTURE_BATCH = true;
+    private static final Identifier PC_TEX_ID =
+            Identifier.fromNamespaceAndPath("visualizegate", "pointcloud_dyn");
+    // テクスチャ/スクラッチは static (同時に開く Screen は 1 つ＝再オープンで再利用・GPU リーク回避)。
+    private static DynamicTexture pcTex;
+    private static int texW;
+    private static int texH;
+    private static int[] pix = new int[0]; // ビューポート内 ARGB スクラッチ (rebuild 時のみ書く)
+    /** テクスチャ経路が失敗したら true → 以後フォールバック (この Screen を開いている間)。 */
+    private boolean texFailed = false;
+
     // ── 投影キャッシュ: 静止フレームは再投影/再ソートしない (CPU 律速の核を消す) ──
     private float[] dX = new float[0];   // 描画順 (遠→近) の確定スクリーン座標
     private float[] dY = new float[0];
-    private int[] dSize = new int[0];
+    private int[] dSize = new int[0];     // フォールバック g.fill 用の整数径
+    private float[] dRad = new float[0];  // テクスチャ用ソフト半径 (px・rebuild 時に算出)
     private int[] dColor = new int[0];
     private int cachedCount = 0;
     private float[] lkAx = new float[0]; // 投影済みリンク端点 (再投影しない)
@@ -341,8 +362,10 @@ public class PointCloudScreen extends Screen {
             float near = (dMax - bDepth[i]) / dSpan; // 0=最遠 .. 1=最近
             dX[w] = bSx[i];
             dY[w] = bSy[i];
-            // サイズは near の二乗 (= 大半 1px=1 fill、 最近の一部だけ 2〜3px)。 明るさは線形 (大気遠近)。
+            // フォールバック g.fill 用の整数径 (大半 1px・最近のみ 2px)。
             dSize[w] = POINT_MIN_PX + Math.round(near * near * POINT_SIZE_EXTRA);
+            // テクスチャ用ソフト半径 (px)。 遠 ~1.0 / 近 ~2.4 で丸いソフトドット (float 位置・サブピクセル)。
+            dRad[w] = 1.0f + near * 1.4f;
             dColor[w] = dim(bColor[i], DEPTH_DIM_MIN + near * (1f - DEPTH_DIM_MIN));
             w++;
         }
@@ -379,15 +402,35 @@ public class PointCloudScreen extends Screen {
                 mkY = m[1];
             }
         }
-        lastBuildNanos = System.nanoTime() - t0;
+
+        // バッチ: 投影結果をビューポート大テクスチャへラスタライズ (ビュー変化時のみ＝静止は blit だけ)。
+        if (USE_TEXTURE_BATCH && !texFailed) {
+            rasterizeTexture();
+        }
+        lastBuildNanos = System.nanoTime() - t0; // rebuild ms にラスタライズ+upload も含める (回転時コスト)
     }
 
     /**
-     * キャッシュから描くだけ (静止フレームの全処理＝投影/ソート無し)。 ここで発行する g.fill 数が
-     * 毎フレームの CPU/レンダースレッド律速の実体なので、 所要時間と fill 数を計測して表示する (②計測)。
+     * 静止フレームの描画。 バッチ経路では<b>テクスチャを 1 回 blit するだけ</b> (= 1 ドローコール・
+     * 点数に依存しない)。 失敗時は従来の点ごと {@code g.fill} へフォールバック (描画途絶しない)。 所要時間と
+     * ドローコール数を計測表示する (①計測: before=点数比例の fills / after=常に 1)。
      */
     private void drawCached(GuiGraphicsExtractor g) {
         long t0 = System.nanoTime();
+        if (USE_TEXTURE_BATCH && !texFailed && pcTex != null) {
+            try {
+                // 全点+リンク+マーカーを焼いた 1 枚を viewport へ等倍 blit (アルファ合成)。
+                g.blit(RenderPipelines.GUI_TEXTURED, PC_TEX_ID, vpX, vpY, 0f, 0f, vpW, vpH, vpW, vpH);
+                lastFillCount = 1; // 1 ドローコール
+                lastDrawNanos = System.nanoTime() - t0;
+                return;
+            } catch (Throwable t) {
+                texFailed = true;
+                com.kajiwara.visualizegate.VisualizeGateMod.LOGGER.warn(
+                        "[visualizegate] point-cloud blit failed, falling back to g.fill: {}", t.toString());
+            }
+        }
+        // フォールバック: 従来の点ごと g.fill (キャッシュ済み座標から)。
         fillCount = 0;
         for (int k = 0; k < cachedCount; k++) {
             drawDot(g, Math.round(dX[k]), Math.round(dY[k]), dSize[k], dColor[k]);
@@ -400,6 +443,172 @@ public class PointCloudScreen extends Screen {
         }
         lastFillCount = fillCount;
         lastDrawNanos = System.nanoTime() - t0;
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // バッチ: DynamicTexture へのソフトドット・ラスタライズ (ビュー変化時のみ・Mixin 0)
+    // ════════════════════════════════════════════════════════════════════
+
+    /** 投影済みの点/リンク/マーカーを ARGB スクラッチへ焼き、 NativeImage へ転送して upload。 */
+    private void rasterizeTexture() {
+        try {
+            int w = vpW;
+            int h = vpH;
+            ensureTexture(w, h);
+            if (pcTex == null) {
+                texFailed = true;
+                return;
+            }
+            Arrays.fill(pix, 0, w * h, 0);
+            for (int k = 0; k < cachedCount; k++) {
+                stampDot(dX[k] - vpX, dY[k] - vpY, dRad[k], dColor[k], w, h);
+            }
+            for (int i = 0; i < cachedLinks; i++) {
+                rasterLine(lkAx[i] - vpX, lkAy[i] - vpY, lkBx[i] - vpX, lkBy[i] - vpY,
+                        GateColors.PC_LINK, w, h);
+            }
+            if (mkVis) {
+                rasterMarker(mkX - vpX, mkY - vpY, w, h);
+            }
+            NativeImage img = pcTex.getPixels();
+            if (img == null) {
+                texFailed = true;
+                return;
+            }
+            int idx = 0;
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    img.setPixelABGR(x, y, argbToAbgr(pix[idx++]));
+                }
+            }
+            pcTex.upload();
+        } catch (Throwable t) {
+            texFailed = true;
+            com.kajiwara.visualizegate.VisualizeGateMod.LOGGER.warn(
+                    "[visualizegate] point-cloud texture batch failed, falling back to g.fill: {}",
+                    t.toString());
+        }
+    }
+
+    /** ビューポートサイズの DynamicTexture を用意 (サイズ変化時のみ作り直し＝再登録)。 */
+    private void ensureTexture(int w, int h) {
+        if (pcTex != null && texW == w && texH == h) {
+            return;
+        }
+        releaseTexture();
+        pcTex = new DynamicTexture(() -> "visualizegate pointcloud", w, h, false);
+        this.minecraft.getTextureManager().register(PC_TEX_ID, pcTex);
+        texW = w;
+        texH = h;
+        if (pix.length < w * h) {
+            pix = new int[w * h];
+        }
+    }
+
+    private static void releaseTexture() {
+        if (pcTex != null) {
+            try {
+                pcTex.close();
+            } catch (Throwable ignored) {
+                // close 失敗は無視 (次の register で置換される)。
+            }
+            pcTex = null;
+        }
+    }
+
+    /** 丸いソフトドット (中心明→縁透明)。 被覆度が高い点が色+αを決める (順不同・近大が勝つ)。 */
+    private void stampDot(float cx, float cy, float radius, int argb, int w, int h) {
+        int srcA = (argb >>> 24) & 0xFF;
+        if (srcA <= 0 || radius <= 0f) {
+            return;
+        }
+        int rgb = argb & 0xFFFFFF;
+        int x0 = Math.max(0, (int) Math.floor(cx - radius));
+        int x1 = Math.min(w - 1, (int) Math.ceil(cx + radius));
+        int y0 = Math.max(0, (int) Math.floor(cy - radius));
+        int y1 = Math.min(h - 1, (int) Math.ceil(cy + radius));
+        float inv = 1f / radius;
+        for (int y = y0; y <= y1; y++) {
+            float dyf = (y + 0.5f) - cy;
+            int row = y * w;
+            for (int x = x0; x <= x1; x++) {
+                float dxf = (x + 0.5f) - cx;
+                float d = (float) Math.sqrt(dxf * dxf + dyf * dyf);
+                float cov = 1f - d * inv;     // 1=中心 .. 0=縁
+                if (cov <= 0f) {
+                    continue;
+                }
+                int a8 = Math.round(srcA * cov * cov); // 二乗でソフトな丸
+                if (a8 <= 0) {
+                    continue;
+                }
+                int idx = row + x;
+                if (a8 > ((pix[idx] >>> 24) & 0xFF)) {
+                    pix[idx] = (a8 << 24) | rgb;
+                }
+            }
+        }
+    }
+
+    /** 1px の線 (リンク)。 最前として上書き。 */
+    private void rasterLine(float ax, float ay, float bx, float by, int color, int w, int h) {
+        float dx = bx - ax;
+        float dy = by - ay;
+        float len = Math.max(Math.abs(dx), Math.abs(dy));
+        if (len <= 0f) {
+            return;
+        }
+        int steps = Math.min((int) len + 1, 4096);
+        float sx = dx / steps;
+        float sy = dy / steps;
+        int a = (color >>> 24) & 0xFF;
+        if (a == 0) {
+            a = 0xFF;
+        }
+        int packed = (a << 24) | (color & 0xFFFFFF);
+        float px = ax;
+        float py = ay;
+        for (int s = 0; s <= steps; s++) {
+            int ix = Math.round(px);
+            int iy = Math.round(py);
+            if (ix >= 0 && ix < w && iy >= 0 && iy < h) {
+                pix[iy * w + ix] = packed;
+            }
+            px += sx;
+            py += sy;
+        }
+    }
+
+    /** 現在地マーカー (金の十字)。 */
+    private void rasterMarker(float cxf, float cyf, int w, int h) {
+        int cx = Math.round(cxf);
+        int cy = Math.round(cyf);
+        int c = 0xFF000000 | (GateColors.ACCENT & 0xFFFFFF);
+        int arm = 6;
+        for (int d = -arm; d <= arm; d++) {
+            putPix(cx + d, cy, c, w, h);
+            putPix(cx, cy + d, c, w, h);
+        }
+        for (int dy = -2; dy <= 2; dy++) {
+            for (int dx = -2; dx <= 2; dx++) {
+                putPix(cx + dx, cy + dy, c, w, h);
+            }
+        }
+    }
+
+    private static void putPix(int x, int y, int c, int w, int h) {
+        if (x >= 0 && x < w && y >= 0 && y < h) {
+            pix[y * w + x] = c;
+        }
+    }
+
+    /** ARGB → NativeImage の ABGR パック (R↔B 入替・アルファ保持)。 */
+    private static int argbToAbgr(int argb) {
+        int a = (argb >>> 24) & 0xFF;
+        int r = (argb >> 16) & 0xFF;
+        int g = (argb >> 8) & 0xFF;
+        int b = argb & 0xFF;
+        return (a << 24) | (b << 16) | (g << 8) | r;
     }
 
     /**
@@ -533,6 +742,7 @@ public class PointCloudScreen extends Screen {
             dX = new float[n];
             dY = new float[n];
             dSize = new int[n];
+            dRad = new float[n];
             dColor = new int[n];
         }
     }
@@ -578,8 +788,9 @@ public class PointCloudScreen extends Screen {
         String draw = String.format(java.util.Locale.ROOT, "%.2f ms", lastDrawNanos / 1.0e6);
         g.text(this.font, Component.literal("Rebuild: " + build + " (cached when still)"),
                 x, y + 44, GateColors.LINK_GRAY);
-        g.text(this.font, Component.literal("Draw: " + draw + " / " + lastFillCount + " fills /frame"),
-                x, y + 55, GateColors.LINK_GRAY);
+        String mode = (USE_TEXTURE_BATCH && !texFailed) ? "tex batch" : "g.fill";
+        g.text(this.font, Component.literal("Draw: " + draw + " / " + lastFillCount + " draws/frame ("
+                + mode + ")"), x, y + 55, GateColors.LINK_GRAY);
         g.text(this.font, Component.literal("Drag: rotate   Wheel: zoom"),
                 x, y + 66, GateColors.LINK_GRAY);
     }
