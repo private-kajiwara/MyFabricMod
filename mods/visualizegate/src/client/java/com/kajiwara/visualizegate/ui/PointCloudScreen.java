@@ -22,7 +22,7 @@ import net.minecraft.resources.Identifier;
  *
  * <p><b>描画方式</b>: 不変スナップショット ({@link PointCloudSnapshot}) の各点を、 オービットカメラ
  * (yaw/pitch/distance) の<b>プレーン Java 行列</b>で 2D へ投影する (行列/頂点の MC API 不使用＝版差レンダ面ゼロ)。
- * <b>バッチ描画</b>: 投影後の全点を<b>ビューポート大の {@link DynamicTexture}</b> へ丸いソフトドット
+ * <b>バッチ描画</b>: 投影後の全点を<b>ネイティブ解像度 (guiScale 倍) の {@link DynamicTexture}</b> へ丸いソフトドット
  * (円形アルファ減衰) として CPU ラスタライズし、 <b>毎フレーム 1 回の {@code g.blit}</b> で出す
  * (= fills/frame が点数に依存しない・GUI の {@code RenderPipelines.GUI_TEXTURED}/{@code DynamicTexture}/
  * {@code NativeImage} は全版同名・javap 確認)。 ラスタライズはビュー変化時のみ (静止は blit だけ＝最軽量)。
@@ -103,11 +103,18 @@ public class PointCloudScreen extends Screen {
     private static final boolean USE_TEXTURE_BATCH = true;
     private static final Identifier PC_TEX_ID =
             Identifier.fromNamespaceAndPath("visualizegate", "pointcloud_dyn");
+    /**
+     * ⑦ スーパーサンプル上限 (テクセル数)。 SS=guiScale でテクスチャ≈ネイティブ解像度＝1:1 でくっきり blit
+     * (ネイティブとテクスチャが同寸なので nearest でも 1:1＝ボケない)。 巨大画面 (4K@guiScale1 等) のみ
+     * この上限で SS を整数で段階的に下げる (= ラスタライズ/upload コストの暴走を防ぐ)。
+     */
+    private static final long MAX_TEXELS = 2_500_000L;
     // テクスチャ/スクラッチは static (同時に開く Screen は 1 つ＝再オープンで再利用・GPU リーク回避)。
     private static DynamicTexture pcTex;
-    private static int texW;
+    private static int texW;   // テクスチャ実寸 (= vpW * texSS)
     private static int texH;
-    private static int[] pix = new int[0]; // ビューポート内 ARGB スクラッチ (rebuild 時のみ書く)
+    private static int texSS = 1; // 直近のスーパーサンプル倍率 (HUD 表示用)
+    private static int[] pix = new int[0]; // ネイティブ解像度 ARGB スクラッチ (rebuild 時のみ書く)
     /** テクスチャ経路が失敗したら true → 以後フォールバック (この Screen を開いている間)。 */
     private boolean texFailed = false;
 
@@ -444,8 +451,9 @@ public class PointCloudScreen extends Screen {
         long t0 = System.nanoTime();
         if (USE_TEXTURE_BATCH && !texFailed && pcTex != null) {
             try {
-                // 全点+リンク+マーカーを焼いた 1 枚を viewport へ等倍 blit (アルファ合成)。
-                g.blit(RenderPipelines.GUI_TEXTURED, PC_TEX_ID, vpX, vpY, 0f, 0f, vpW, vpH, vpW, vpH);
+                // ネイティブ解像度テクスチャ (texW×texH) を viewport 論理矩形 (vpW×vpH) へ blit
+                // (texSS=guiScale なら 1:1 ネイティブ＝くっきり、 それ以外は GPU が縮小)。
+                g.blit(RenderPipelines.GUI_TEXTURED, PC_TEX_ID, vpX, vpY, 0f, 0f, vpW, vpH, texW, texH);
                 lastFillCount = 1; // 1 ドローコール
                 lastDrawNanos = System.nanoTime() - t0;
                 return;
@@ -474,26 +482,31 @@ public class PointCloudScreen extends Screen {
     // バッチ: DynamicTexture へのソフトドット・ラスタライズ (ビュー変化時のみ・Mixin 0)
     // ════════════════════════════════════════════════════════════════════
 
-    /** 投影済みの点/リンク/マーカーを ARGB スクラッチへ焼き、 NativeImage へ転送して upload。 */
+    /**
+     * 投影済みの点/リンク/マーカーを<b>ネイティブ解像度</b> (SS=guiScale) の ARGB スクラッチへ焼き、
+     * NativeImage へ転送して upload (⑦ 解像度の本丸: GUI 論理解像度でなくネイティブで描く＝くっきり)。
+     */
     private void rasterizeTexture() {
         try {
-            int w = vpW;
-            int h = vpH;
+            int ss = supersample();        // ≈ネイティブ (guiScale)、 巨大画面のみ上限で段階縮小
+            int w = vpW * ss;
+            int h = vpH * ss;
             ensureTexture(w, h);
             if (pcTex == null) {
                 texFailed = true;
                 return;
             }
+            texSS = ss;
             Arrays.fill(pix, 0, w * h, 0);
             for (int k = 0; k < cachedCount; k++) {
-                stampDot(dX[k] - vpX, dY[k] - vpY, dRad[k], dColor[k], w, h);
+                stampDot((dX[k] - vpX) * ss, (dY[k] - vpY) * ss, dRad[k] * ss, dColor[k], w, h);
             }
             for (int i = 0; i < cachedLinks; i++) {
-                rasterLine(lkAx[i] - vpX, lkAy[i] - vpY, lkBx[i] - vpX, lkBy[i] - vpY,
-                        GateColors.PC_LINK, w, h);
+                rasterLine((lkAx[i] - vpX) * ss, (lkAy[i] - vpY) * ss, (lkBx[i] - vpX) * ss,
+                        (lkBy[i] - vpY) * ss, GateColors.PC_LINK, ss, w, h);
             }
             if (mkVis) {
-                rasterMarker(mkX - vpX, mkY - vpY, w, h);
+                rasterMarker((mkX - vpX) * ss, (mkY - vpY) * ss, ss, w, h);
             }
             NativeImage img = pcTex.getPixels();
             if (img == null) {
@@ -541,6 +554,15 @@ public class PointCloudScreen extends Screen {
         }
     }
 
+    /** スーパーサンプル倍率 = guiScale (≈ネイティブ)。 巨大画面のみ {@link #MAX_TEXELS} 上限で整数縮小。 */
+    private int supersample() {
+        int ss = Math.max(1, this.minecraft.getWindow().getGuiScale());
+        while (ss > 1 && (long) (vpW * ss) * (long) (vpH * ss) > MAX_TEXELS) {
+            ss--;
+        }
+        return ss;
+    }
+
     /** 丸いソフトドット (中心明→縁透明)。 被覆度が高い点が色+αを決める (順不同・近大が勝つ)。 */
     private void stampDot(float cx, float cy, float radius, int argb, int w, int h) {
         int srcA = (argb >>> 24) & 0xFF;
@@ -575,15 +597,15 @@ public class PointCloudScreen extends Screen {
         }
     }
 
-    /** 1px の線 (リンク)。 最前として上書き。 */
-    private void rasterLine(float ax, float ay, float bx, float by, int color, int w, int h) {
+    /** リンク線 (太さ {@code thick} テクセル≒1 論理px)。 最前として上書き。 */
+    private void rasterLine(float ax, float ay, float bx, float by, int color, int thick, int w, int h) {
         float dx = bx - ax;
         float dy = by - ay;
         float len = Math.max(Math.abs(dx), Math.abs(dy));
         if (len <= 0f) {
             return;
         }
-        int steps = Math.min((int) len + 1, 4096);
+        int steps = Math.min((int) len + 1, 16384);
         float sx = dx / steps;
         float sy = dy / steps;
         int a = (color >>> 24) & 0xFF;
@@ -591,31 +613,38 @@ public class PointCloudScreen extends Screen {
             a = 0xFF;
         }
         int packed = (a << 24) | (color & 0xFFFFFF);
+        int t = Math.max(1, thick);
         float px = ax;
         float py = ay;
         for (int s = 0; s <= steps; s++) {
             int ix = Math.round(px);
             int iy = Math.round(py);
-            if (ix >= 0 && ix < w && iy >= 0 && iy < h) {
-                pix[iy * w + ix] = packed;
+            for (int dyy = 0; dyy < t; dyy++) {
+                for (int dxx = 0; dxx < t; dxx++) {
+                    putPix(ix + dxx, iy + dyy, packed, w, h);
+                }
             }
             px += sx;
             py += sy;
         }
     }
 
-    /** 現在地マーカー (金の十字)。 */
-    private void rasterMarker(float cxf, float cyf, int w, int h) {
+    /** 現在地マーカー (金の十字)。 論理サイズを保つよう {@code ss} 倍でスケール。 */
+    private void rasterMarker(float cxf, float cyf, int ss, int w, int h) {
         int cx = Math.round(cxf);
         int cy = Math.round(cyf);
         int c = 0xFF000000 | (GateColors.ACCENT & 0xFFFFFF);
-        int arm = 6;
+        int arm = 6 * ss;
+        int half = Math.max(0, ss);          // 縦横棒の太さ ≈1 論理px
         for (int d = -arm; d <= arm; d++) {
-            putPix(cx + d, cy, c, w, h);
-            putPix(cx, cy + d, c, w, h);
+            for (int t = -half; t <= half; t++) {
+                putPix(cx + d, cy + t, c, w, h); // 横棒
+                putPix(cx + t, cy + d, c, w, h); // 縦棒
+            }
         }
-        for (int dy = -2; dy <= 2; dy++) {
-            for (int dx = -2; dx <= 2; dx++) {
+        int core = 2 * ss;
+        for (int dy = -core; dy <= core; dy++) {
+            for (int dx = -core; dx <= core; dx++) {
                 putPix(cx + dx, cy + dy, c, w, h);
             }
         }
@@ -821,7 +850,7 @@ public class PointCloudScreen extends Screen {
         int maxW = slW;                          // インセット済みパネル内幅
         int bottom = this.height - FOOTER_H - 2; // フッタ(Done)を侵さない予約線
         int y = slY + slH + 12;
-        String mode = (USE_TEXTURE_BATCH && !texFailed) ? "tex" : "fill";
+        String mode = (USE_TEXTURE_BATCH && !texFailed) ? ("tex x" + texSS) : "fill";
         y = statLine(g, "OW pts " + snap.owDrawn + "/" + snap.owSampled, x, y, maxW, bottom, GateColors.PC_OW_HIGH);
         y = statLine(g, "Nether pts " + snap.netherDrawn + "/" + snap.netherSampled, x, y, maxW, bottom,
                 GateColors.PC_NETHER_HIGH);
