@@ -61,6 +61,8 @@ public class PointCloudScreen extends Screen {
     private static final int DIM_TINT_OW = GateColors.PC_OW_HIGH;
     private static final int DIM_TINT_NETHER = GateColors.PC_NETHER_HIGH;
     private static final float DIM_TINT_FRAC = 0.15f;
+    /** ⑪ ゲート位置マーカー (紫の中空リング) の半径 (論理px・×SSでネイティブ)。 少し大きめ・地形は隠さない。 */
+    private static final float GATE_RING_R = 3.5f;
     private static final double DRAG_SENS = 0.012;
     private static final double NEAR = 0.1;
 
@@ -140,6 +142,9 @@ public class PointCloudScreen extends Screen {
     private float[] lkBx = new float[0];
     private float[] lkBy = new float[0];
     private int cachedLinks = 0;
+    private float[] gkX = new float[0];   // ⑪ 投影済みゲート位置 (screen・紫リング)
+    private float[] gkY = new float[0];
+    private int cachedGates = 0;
     private boolean mkVis = false;       // 現在地マーカー
     private float mkX;
     private float mkY;
@@ -445,6 +450,22 @@ public class PointCloudScreen extends Screen {
             }
         }
 
+        // ⑪ 既知ゲート位置を投影してキャッシュ (Gate links トグルに追従)。
+        cachedGates = 0;
+        if (PointCloudViewState.isShowLinks() && snap.gateCount() > 0) {
+            ensureGateArrays(snap.gateCount());
+            for (int i = 0; i < snap.gateCount(); i++) {
+                float gy2 = snap.gateNether[i] ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
+                float[] p = projectXY(snap.gateX[i], gy2, snap.gateZ[i], cosY, sinY, cosP, sinP, cx, cy);
+                if (p == null || p[0] < vpX || p[0] > vpX + vpW || p[1] < vpY || p[1] > vpY + vpH) {
+                    continue;
+                }
+                gkX[cachedGates] = p[0];
+                gkY[cachedGates] = p[1];
+                cachedGates++;
+            }
+        }
+
         // 現在地マーカーを投影してキャッシュ。
         mkVis = false;
         if (snap.hasMarker) {
@@ -536,6 +557,10 @@ public class PointCloudScreen extends Screen {
             for (int i = 0; i < cachedLinks; i++) {
                 rasterLine((lkAx[i] - vpX) * ss, (lkAy[i] - vpY) * ss, (lkBx[i] - vpX) * ss,
                         (lkBy[i] - vpY) * ss, GateColors.PC_LINK, ss, w, h);
+            }
+            for (int i = 0; i < cachedGates; i++) {   // ⑪ ゲート位置の紫リング (地形の上)
+                rasterRing((gkX[i] - vpX) * ss, (gkY[i] - vpY) * ss, GATE_RING_R * ss,
+                        GateColors.PC_LINK, ss, w, h);
             }
             if (mkVis) {
                 rasterMarker((mkX - vpX) * ss, (mkY - vpY) * ss, ss, w, h);
@@ -688,6 +713,31 @@ public class PointCloudScreen extends Screen {
         for (int dy = -core; dy <= core; dy++) {
             for (int dx = -core; dx <= core; dx++) {
                 putPix(cx + dx, cy + dy, c, w, h);
+            }
+        }
+    }
+
+    /** ⑪ 中空リング (紫ゲートマーカー)。 太さ {@code thick} テクセル・内側は塗らない＝地形を隠さない。 */
+    private void rasterRing(float cxf, float cyf, float rOuter, int color, int thick, int w, int h) {
+        int packed = 0xFF000000 | (color & 0xFFFFFF);
+        float rIn = rOuter - Math.max(1, thick);
+        if (rIn < 0f) {
+            rIn = 0f;
+        }
+        float ro2 = rOuter * rOuter;
+        float ri2 = rIn * rIn;
+        int x0 = Math.max(0, (int) Math.floor(cxf - rOuter));
+        int x1 = Math.min(w - 1, (int) Math.ceil(cxf + rOuter));
+        int y0 = Math.max(0, (int) Math.floor(cyf - rOuter));
+        int y1 = Math.min(h - 1, (int) Math.ceil(cyf + rOuter));
+        for (int y = y0; y <= y1; y++) {
+            float dy = (y + 0.5f) - cyf;
+            for (int x = x0; x <= x1; x++) {
+                float dx = (x + 0.5f) - cxf;
+                float d2 = dx * dx + dy * dy;
+                if (d2 <= ro2 && d2 >= ri2) {
+                    putPix(x, y, packed, w, h);
+                }
             }
         }
     }
@@ -864,6 +914,13 @@ public class PointCloudScreen extends Screen {
             lkAy = new float[n];
             lkBx = new float[n];
             lkBy = new float[n];
+        }
+    }
+
+    private void ensureGateArrays(int n) {
+        if (gkX.length < n) {
+            gkX = new float[n];
+            gkY = new float[n];
         }
     }
 

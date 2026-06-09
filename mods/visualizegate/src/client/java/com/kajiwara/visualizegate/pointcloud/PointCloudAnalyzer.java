@@ -144,15 +144,17 @@ public final class PointCloudAnalyzer {
         float[] nZ = (nk == nDrawn) ? nZt : java.util.Arrays.copyOf(nZt, nk);
         int[] nColor = (nk == nDrawn) ? nColort : java.util.Arrays.copyOf(nColort, nk);
 
-        // ── 4. リンク (OW→ネザー LINKED のみ) ──
+        // ── 4. リンク (OW→ネザー LINKED のみ) ＋ ⑪ 既知ゲート位置 (OW/ネザー全部) ──
         Links links = buildLinks(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
         Marker mk = marker(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
+        Gates gates = buildGates(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
 
         float radius = horizontalRadius(owX, owZ, nX, nZ);
         return new PointCloudSnapshot(owX, owY, owZ, owColor, nX, nY, nZ, nColor,
                 links.ax, links.ay, links.az, links.bx, links.by, links.bz,
                 radius, owN, nN, owDrawn, nk,
-                mk.present(), mk.x(), mk.y(), mk.z(), mk.nether());
+                mk.present(), mk.x(), mk.y(), mk.z(), mk.nether(),
+                gates.x, gates.y, gates.z, gates.nether);
     }
 
     /** 地形ゼロ時: ポータルのみで各層の重心を取って組む (⑥ ネザーも 1:1・自分の重心)。 */
@@ -189,12 +191,14 @@ public final class PointCloudAnalyzer {
         float nMeanY = (nc == 0) ? 0f : (float) ((double) nYSum / nc);
         Links links = buildLinks(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
         Marker mk = marker(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
+        Gates gates = buildGates(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
         float radius = horizontalRadius(links.ax, links.az, links.bx, links.bz);
         return new PointCloudSnapshot(new float[0], new float[0], new float[0], new int[0],
                 new float[0], new float[0], new float[0], new int[0],
                 links.ax, links.ay, links.az, links.bx, links.by, links.bz,
                 radius, 0, 0, 0, 0,
-                mk.present(), mk.x(), mk.y(), mk.z(), mk.nether());
+                mk.present(), mk.x(), mk.y(), mk.z(), mk.nether(),
+                gates.x, gates.y, gates.z, gates.nether);
     }
 
     private static Links buildLinks(PointCloudInputs in, float owCenterX, float owCenterZ,
@@ -232,6 +236,35 @@ public final class PointCloudAnalyzer {
             out.bz[i] = b.get(i)[2];
         }
         return out;
+    }
+
+    /** ⑪ 既知ゲート (OW/ネザー両方) を点群と同じビュー空間へ写す (OW=OW 変換 / ネザー=1:1 ネザー変換)。 */
+    private static Gates buildGates(PointCloudInputs in, float owCenterX, float owCenterZ,
+            float nCenterX, float nCenterZ, float owMeanY, float nMeanY) {
+        int n = in.owPortals().size() + in.netherPortals().size();
+        float[] gx = new float[n];
+        float[] gy = new float[n];
+        float[] gz = new float[n];
+        boolean[] gn = new boolean[n];
+        int k = 0;
+        for (DomainPortal p : in.owPortals()) {
+            gx[k] = p.anchor().x() - owCenterX;
+            gy[k] = p.anchor().y() - owMeanY;
+            gz[k] = p.anchor().z() - owCenterZ;
+            gn[k] = false;
+            k++;
+        }
+        for (DomainPortal p : in.netherPortals()) {
+            gx[k] = p.anchor().x() - nCenterX;   // ⑥ 1:1 (×8 なし)
+            gy[k] = p.anchor().y() - nMeanY;
+            gz[k] = p.anchor().z() - nCenterZ;
+            gn[k] = true;
+            k++;
+        }
+        return new Gates(gx, gy, gz, gn);
+    }
+
+    private record Gates(float[] x, float[] y, float[] z, boolean[] nether) {
     }
 
     /** プレイヤー現在地を点群と同じビュー空間 (⑥ ネザーは 1:1・各層は自分の重心と Y 平均) へ写す。 */
