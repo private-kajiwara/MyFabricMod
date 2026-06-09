@@ -50,8 +50,8 @@ public final class TerrainStore {
 
     private static final TerrainStore INSTANCE = new TerrainStore();
 
-    /** worldId → dimId → 格子キー(packed gx,gz) → 代表 y。 */
-    private final Map<String, Map<String, Map<Long, Integer>>> mem = new HashMap<>();
+    /** worldId → dimId → 格子キー(packed gx,gz) → 値(packed color&lt;&lt;32 | y)。 color は 0xRRGGBB / NO_COLOR。 */
+    private final Map<String, Map<String, Map<Long, Long>>> mem = new HashMap<>();
     private boolean loaded = false;
     private long lastCapWarnMs = -1;
 
@@ -89,14 +89,15 @@ public final class TerrainStore {
                 bandBot = Math.max(NETHER_MIN_Y, py - NETHER_BAND_DOWN);
             }
 
-            Map<Long, Integer> grid = dimGrid(worldId, dimId);
+            Map<Long, Long> grid = dimGrid(worldId, dimId);
             int cap = CAP_PER_DIM;
-            TerrainSampler.sampleChunk(level, chunk, hasCeiling, bandTop, bandBot, (wx, wz, y) -> {
+            TerrainSampler.sampleChunk(level, chunk, hasCeiling, bandTop, bandBot, (wx, wz, y, color) -> {
                 long key = gridKey(wx, wz);
+                long val = pack(color, y);
                 if (grid.containsKey(key)) {
-                    grid.put(key, y); // 既知格子は最新観測で更新
+                    grid.put(key, val); // 既知格子は最新観測で更新 (色も)
                 } else if (grid.size() < cap) {
-                    grid.put(key, y);
+                    grid.put(key, val);
                 } else {
                     warnCapThrottled(dimId);
                 }
@@ -126,8 +127,9 @@ public final class TerrainStore {
     // ── クエリ (スナップショット用・不変コピー) ───────────────────────────
 
     /**
-     * 現 world の指定ディメンションの全カラムを flat int[] (wx, wz, y の 3 つ組連結) で返す。
-     * 解析押下時にメインスレッドで呼び、 ワーカーへ渡す不変コピー。 無ければ空配列。
+     * 現 world の指定ディメンションの全カラムを flat int[] (wx, wz, y, color の <b>4 つ組</b>連結) で返す。
+     * color は 0xRRGGBB / {@link TerrainSampler#NO_COLOR}。 解析押下時にメインスレッドで呼び、 ワーカーへ
+     * 渡す不変コピー。 無ければ空配列。
      */
     public int[] snapshotColumns(PortalDimension dim) {
         String worldId = PortalMemory.get().currentWorldId();
@@ -138,21 +140,23 @@ public final class TerrainStore {
         if (dimId == null) {
             return new int[0];
         }
-        Map<String, Map<Long, Integer>> byDim = mem.get(worldId);
+        Map<String, Map<Long, Long>> byDim = mem.get(worldId);
         if (byDim == null) {
             return new int[0];
         }
-        Map<Long, Integer> grid = byDim.get(dimId);
+        Map<Long, Long> grid = byDim.get(dimId);
         if (grid == null || grid.isEmpty()) {
             return new int[0];
         }
-        int[] out = new int[grid.size() * 3];
+        int[] out = new int[grid.size() * 4];
         int i = 0;
-        for (Map.Entry<Long, Integer> e : grid.entrySet()) {
+        for (Map.Entry<Long, Long> e : grid.entrySet()) {
             long key = e.getKey();
+            long val = e.getValue();
             out[i++] = unpackX(key) * TerrainSampler.STRIDE;
             out[i++] = unpackZ(key) * TerrainSampler.STRIDE;
-            out[i++] = e.getValue();
+            out[i++] = unpackY(val);
+            out[i++] = unpackColor(val);
         }
         return out;
     }
@@ -172,21 +176,35 @@ public final class TerrainStore {
         if (dimId == null) {
             return java.util.OptionalInt.empty();
         }
-        Map<String, Map<Long, Integer>> byDim = mem.get(worldId);
+        Map<String, Map<Long, Long>> byDim = mem.get(worldId);
         if (byDim == null) {
             return java.util.OptionalInt.empty();
         }
-        Map<Long, Integer> grid = byDim.get(dimId);
+        Map<Long, Long> grid = byDim.get(dimId);
         if (grid == null) {
             return java.util.OptionalInt.empty();
         }
-        Integer y = grid.get(gridKey(blockX, blockZ));
-        return (y == null) ? java.util.OptionalInt.empty() : java.util.OptionalInt.of(y);
+        Long v = grid.get(gridKey(blockX, blockZ));
+        return (v == null) ? java.util.OptionalInt.empty() : java.util.OptionalInt.of(unpackY(v));
     }
 
-    private Map<Long, Integer> dimGrid(String worldId, String dimId) {
+    private Map<Long, Long> dimGrid(String worldId, String dimId) {
         return mem.computeIfAbsent(worldId, k -> new HashMap<>())
                 .computeIfAbsent(dimId, k -> new HashMap<>());
+    }
+
+    // ── 値パック (color &lt;&lt; 32 | y)。 y は符号付き 32bit、 color は 0xRRGGBB / NO_COLOR(-1)。 ──
+
+    private static long pack(int color, int y) {
+        return ((long) color << 32) | (y & 0xFFFFFFFFL);
+    }
+
+    private static int unpackY(long v) {
+        return (int) v;
+    }
+
+    private static int unpackColor(long v) {
+        return (int) (v >> 32);
     }
 
     // ── 格子キー (packed gx,gz / STRIDE 格子) ─────────────────────────────
@@ -218,20 +236,41 @@ public final class TerrainStore {
         }
         try (BufferedReader r = Files.newBufferedReader(f, StandardCharsets.UTF_8)) {
             TerrainFile tf = GSON.fromJson(r, TerrainFile.class);
-            if (tf == null || tf.columns == null) {
+            if (tf == null) {
                 return;
             }
-            for (Map.Entry<String, Map<String, int[]>> we : tf.columns.entrySet()) {
-                for (Map.Entry<String, int[]> de : we.getValue().entrySet()) {
-                    Map<Long, Integer> grid = dimGrid(we.getKey(), de.getKey());
-                    int[] flat = de.getValue();
-                    if (flat == null) {
-                        continue;
+            // 新: 4 つ組 (色あり)。
+            if (tf.columnsC != null) {
+                for (Map.Entry<String, Map<String, int[]>> we : tf.columnsC.entrySet()) {
+                    for (Map.Entry<String, int[]> de : we.getValue().entrySet()) {
+                        Map<Long, Long> grid = dimGrid(we.getKey(), de.getKey());
+                        int[] flat = de.getValue();
+                        if (flat == null) {
+                            continue;
+                        }
+                        for (int i = 0; i + 3 < flat.length; i += 4) {
+                            long gx = flat[i];
+                            long gz = flat[i + 1];
+                            grid.put((gx & 0xFFFFFFFFL) << 32 | (gz & 0xFFFFFFFFL), pack(flat[i + 3], flat[i + 2]));
+                        }
                     }
-                    for (int i = 0; i + 2 < flat.length; i += 3) {
-                        long gx = flat[i];
-                        long gz = flat[i + 1];
-                        grid.put((gx & 0xFFFFFFFFL) << 32 | (gz & 0xFFFFFFFFL), flat[i + 2]);
+                }
+            }
+            // 旧: 3 つ組 (色なし)。 まだ無いセルだけ NO_COLOR で補完 (再訪で色が付く)。
+            if (tf.columns != null) {
+                for (Map.Entry<String, Map<String, int[]>> we : tf.columns.entrySet()) {
+                    for (Map.Entry<String, int[]> de : we.getValue().entrySet()) {
+                        Map<Long, Long> grid = dimGrid(we.getKey(), de.getKey());
+                        int[] flat = de.getValue();
+                        if (flat == null) {
+                            continue;
+                        }
+                        for (int i = 0; i + 2 < flat.length; i += 3) {
+                            long gx = flat[i];
+                            long gz = flat[i + 1];
+                            grid.putIfAbsent((gx & 0xFFFFFFFFL) << 32 | (gz & 0xFFFFFFFFL),
+                                    pack(TerrainSampler.NO_COLOR, flat[i + 2]));
+                        }
                     }
                 }
             }
@@ -246,17 +285,19 @@ public final class TerrainStore {
             return;
         }
         TerrainFile tf = new TerrainFile();
-        for (Map.Entry<String, Map<String, Map<Long, Integer>>> we : mem.entrySet()) {
-            Map<String, int[]> outDims = tf.worldColumns(we.getKey());
-            for (Map.Entry<String, Map<Long, Integer>> de : we.getValue().entrySet()) {
-                Map<Long, Integer> grid = de.getValue();
-                int[] flat = new int[grid.size() * 3];
+        for (Map.Entry<String, Map<String, Map<Long, Long>>> we : mem.entrySet()) {
+            Map<String, int[]> outDims = tf.worldColumnsC(we.getKey());
+            for (Map.Entry<String, Map<Long, Long>> de : we.getValue().entrySet()) {
+                Map<Long, Long> grid = de.getValue();
+                int[] flat = new int[grid.size() * 4];
                 int i = 0;
-                for (Map.Entry<Long, Integer> ge : grid.entrySet()) {
+                for (Map.Entry<Long, Long> ge : grid.entrySet()) {
                     long key = ge.getKey();
+                    long val = ge.getValue();
                     flat[i++] = unpackX(key);
                     flat[i++] = unpackZ(key);
-                    flat[i++] = ge.getValue();
+                    flat[i++] = unpackY(val);
+                    flat[i++] = unpackColor(val);
                 }
                 outDims.put(de.getKey(), flat);
             }

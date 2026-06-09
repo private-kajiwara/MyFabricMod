@@ -17,6 +17,8 @@ public final class PointCloudViewState {
     private static boolean showOverworld = true;
     private static boolean showNether = true;
     private static boolean showLinks = true;
+    /** ⑤ 淡いディメンション色ティント (ブロック色へ dim 色を 15% 混ぜる)。 既定 OFF＝純ブロック色。 */
+    private static boolean dimTint = false;
     private static int dimensionSpacing = SPACING_DEFAULT;
 
     private PointCloudViewState() {
@@ -59,6 +61,19 @@ public final class PointCloudViewState {
     public static boolean toggleLinks() {
         showLinks = !showLinks;
         return showLinks;
+    }
+
+    public static boolean isDimTint() {
+        return dimTint;
+    }
+
+    public static void setDimTint(boolean v) {
+        dimTint = v;
+    }
+
+    public static boolean toggleDimTint() {
+        dimTint = !dimTint;
+        return dimTint;
     }
 
     public static int getDimensionSpacing() {

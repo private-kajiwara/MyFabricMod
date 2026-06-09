@@ -64,6 +64,7 @@ public final class GateConfigManager {
             PointCloudViewState.setShowOverworld(cfg.pcShowOverworld);
             PointCloudViewState.setShowNether(cfg.pcShowNether);
             PointCloudViewState.setShowLinks(cfg.pcShowLinks);
+            PointCloudViewState.setDimTint(cfg.pcDimTint);
             PointCloudViewState.setDimensionSpacing(cfg.pcDimensionSpacing);
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn(
@@ -85,6 +86,7 @@ public final class GateConfigManager {
             cfg.pcShowOverworld = PointCloudViewState.isShowOverworld();
             cfg.pcShowNether = PointCloudViewState.isShowNether();
             cfg.pcShowLinks = PointCloudViewState.isShowLinks();
+            cfg.pcDimTint = PointCloudViewState.isDimTint();
             cfg.pcDimensionSpacing = PointCloudViewState.getDimensionSpacing();
             writeAtomic(file(), GSON.toJson(cfg));
         } catch (Throwable t) {

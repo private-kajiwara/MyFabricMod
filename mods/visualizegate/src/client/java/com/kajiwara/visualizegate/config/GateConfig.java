@@ -23,6 +23,7 @@ public final class GateConfig {
     public boolean pcShowOverworld = true;
     public boolean pcShowNether = true;
     public boolean pcShowLinks = true;
+    public boolean pcDimTint = false; // ⑤ 淡いディメンション色ティント (既定 OFF=純ブロック色)
     public int pcDimensionSpacing = 100;
 
     public static GateConfig defaults() {

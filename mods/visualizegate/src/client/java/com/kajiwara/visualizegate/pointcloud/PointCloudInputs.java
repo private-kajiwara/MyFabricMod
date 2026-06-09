@@ -10,8 +10,8 @@ import com.kajiwara.visualizegate.domain.DomainPortal;
  * <p>全フィールドはプリミティブ配列か不変 record ({@link DomainPortal}) のみ＝ライブ World を参照しない。
  * ワーカーはこのスナップショット入力だけを読んで {@link PointCloudSnapshot} を組む (= スレッド安全)。
  *
- * @param owTerrain     OW 地形カラム flat int[] (wx, wz, y の 3 つ組連結)
- * @param netherTerrain ネザー地形カラム flat int[] (wx, wz, y の 3 つ組連結)
+ * @param owTerrain     OW 地形カラム flat int[] (wx, wz, y, color の 4 つ組連結。 color=0xRRGGBB / NO_COLOR)
+ * @param netherTerrain ネザー地形カラム flat int[] (wx, wz, y, color の 4 つ組連結)
  * @param owPortals     OW の既知ポータル
  * @param netherPortals ネザーの既知ポータル
  * @param owMinY        OW の Y 下限 (リンク射影の Y クランプ用)

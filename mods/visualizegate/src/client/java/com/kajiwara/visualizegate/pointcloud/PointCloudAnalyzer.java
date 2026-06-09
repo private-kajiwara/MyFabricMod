@@ -21,7 +21,8 @@ import com.kajiwara.visualizegate.ui.GateColors;
  *   <li>各層を描画予算 {@link #POINT_BUDGET_PER_LAYER} までストライド間引き (= 決定的・乱数不使用)。
  *       <b>ネザーは OW 視野半径 R_ow へクリップ</b> (×8 膨張バグの修正＝案A: 表示上ネザーが 8 倍に
  *       膨らむのを防ぐ。 OW 完全探索＝両層同フットプリント、 ネザー探索が狭ければ自然に小さい塊)。</li>
- *   <li>水平センタリング (OW 重心)＋各層 Y センタリング (平均) で<b>ビュー空間</b>へ。 高さで配色。</li>
+ *   <li>水平センタリング (OW 重心)＋各層 Y センタリング (平均) で<b>ビュー空間</b>へ。 配色は⑤の
+ *       <b>実ブロック色 (MapColor)</b>＋高さ明暗 (色なしデータはディメンション色グラデへフォールバック)。</li>
  *   <li>リンク: OW ポータル → ネザー partner ({@link PortalLinkResolver}) の LINKED のみ線分化。</li>
  * </ol>
  * <b>垂直分離 (spacing)</b> は織り込まない (描画時に Screen が加算＝ライブスライダ対応)。
@@ -45,8 +46,8 @@ public final class PointCloudAnalyzer {
     }
 
     public static PointCloudSnapshot analyze(PointCloudInputs in) {
-        int owN = in.owTerrain().length / 3;
-        int nN = in.netherTerrain().length / 3;
+        int owN = in.owTerrain().length / 4;   // flat 4 つ組 (wx, wz, y, color)
+        int nN = in.netherTerrain().length / 4;
 
         // ── 1. 水平重心・各層平均 Y (OW スケール) ──
         double sumX = 0;
@@ -61,9 +62,9 @@ public final class PointCloudAnalyzer {
         int nYMin = Integer.MAX_VALUE;
         int nYMax = Integer.MIN_VALUE;
         for (int i = 0; i < owN; i++) {
-            int x = in.owTerrain()[i * 3];
-            int z = in.owTerrain()[i * 3 + 1];
-            int y = in.owTerrain()[i * 3 + 2];
+            int x = in.owTerrain()[i * 4];
+            int z = in.owTerrain()[i * 4 + 1];
+            int y = in.owTerrain()[i * 4 + 2];
             sumX += x;
             sumZ += z;
             owSumX += x;
@@ -74,9 +75,9 @@ public final class PointCloudAnalyzer {
             owYMax = Math.max(owYMax, y);
         }
         for (int i = 0; i < nN; i++) {
-            int x = in.netherTerrain()[i * 3] * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR;
-            int z = in.netherTerrain()[i * 3 + 1] * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR;
-            int y = in.netherTerrain()[i * 3 + 2];
+            int x = in.netherTerrain()[i * 4] * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR;
+            int z = in.netherTerrain()[i * 4 + 1] * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR;
+            int y = in.netherTerrain()[i * 4 + 2];
             sumX += x;
             sumZ += z;
             hCount++;
@@ -103,8 +104,8 @@ public final class PointCloudAnalyzer {
         if (owN > 0) {
             double maxR2 = 0;
             for (int i = 0; i < owN; i++) {
-                double dx = in.owTerrain()[i * 3] - hCenterX;
-                double dz = in.owTerrain()[i * 3 + 1] - hCenterZ;
+                double dx = in.owTerrain()[i * 4] - hCenterX;
+                double dz = in.owTerrain()[i * 4 + 1] - hCenterZ;
                 double r2 = dx * dx + dz * dz;
                 if (r2 > maxR2) {
                     maxR2 = r2;
@@ -125,13 +126,15 @@ public final class PointCloudAnalyzer {
         int[] owColor = new int[owDrawn];
         int k = 0;
         for (int i = 0; i < owN; i += owStride) {
-            int x = in.owTerrain()[i * 3];
-            int z = in.owTerrain()[i * 3 + 1];
-            int y = in.owTerrain()[i * 3 + 2];
+            int x = in.owTerrain()[i * 4];
+            int z = in.owTerrain()[i * 4 + 1];
+            int y = in.owTerrain()[i * 4 + 2];
+            int color = in.owTerrain()[i * 4 + 3];
             owX[k] = x - hCenterX;
             owY[k] = y - owMeanY;
             owZ[k] = z - hCenterZ;
-            owColor[k] = lerp(GateColors.PC_OW_LOW, GateColors.PC_OW_HIGH, norm(y, owYMin, owYMax));
+            owColor[k] = blockOrDimColor(color, GateColors.PC_OW_LOW, GateColors.PC_OW_HIGH,
+                    norm(y, owYMin, owYMax));
             k++;
         }
 
@@ -142,9 +145,10 @@ public final class PointCloudAnalyzer {
         int[] nColort = new int[nDrawn];
         int nk = 0;
         for (int i = 0; i < nN; i += nStride) {
-            int x = in.netherTerrain()[i * 3] * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR;
-            int z = in.netherTerrain()[i * 3 + 1] * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR;
-            int y = in.netherTerrain()[i * 3 + 2];
+            int x = in.netherTerrain()[i * 4] * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR;
+            int z = in.netherTerrain()[i * 4 + 1] * PortalCoordinateMapper.OVERWORLD_TO_NETHER_DIVISOR;
+            int y = in.netherTerrain()[i * 4 + 2];
+            int color = in.netherTerrain()[i * 4 + 3];
             float vx = x - hCenterX;
             float vz = z - hCenterZ;
             if (vx * vx + vz * vz > clipR2) {
@@ -153,7 +157,8 @@ public final class PointCloudAnalyzer {
             nXt[nk] = vx;
             nYt[nk] = y - nMeanY;
             nZt[nk] = vz;
-            nColort[nk] = lerp(GateColors.PC_NETHER_LOW, GateColors.PC_NETHER_HIGH, norm(y, nYMin, nYMax));
+            nColort[nk] = blockOrDimColor(color, GateColors.PC_NETHER_LOW, GateColors.PC_NETHER_HIGH,
+                    norm(y, nYMin, nYMax));
             nk++;
         }
         float[] nX = (nk == nDrawn) ? nXt : java.util.Arrays.copyOf(nXt, nk);
@@ -319,6 +324,27 @@ public final class PointCloudAnalyzer {
             max = Math.max(max, x2[i] * x2[i] + z2[i] * z2[i]);
         }
         return (float) Math.sqrt(max);
+    }
+
+    /**
+     * ⑤ 点の基本色: ブロック色 (MapColor 由来 0xRRGGBB) があれば高さ明暗を<b>軽く</b>乗せて使い、
+     * 無ければ (色なしデータ＝再訪前) 従来のディメンション色グラデへフォールバック。 距離フェードは
+     * 描画側 ({@code PointCloudScreen}) で別途乗る。 戻り値はアルファ 0xFF 付き ARGB。
+     */
+    private static int blockOrDimColor(int storedColor, int dimLow, int dimHigh, float heightNorm) {
+        if (storedColor == com.kajiwara.visualizegate.terrain.TerrainSampler.NO_COLOR) {
+            return lerp(dimLow, dimHigh, heightNorm); // 色なし → ディメンション色 (正直なフォールバック)
+        }
+        return shadeByHeight(storedColor, heightNorm);
+    }
+
+    /** ブロック色 (0xRRGGBB) に高さ明暗を軽く乗せる (0.8〜1.2 倍・縮小)。 アルファ 0xFF。 */
+    private static int shadeByHeight(int rgb, float t) {
+        float f = 0.8f + 0.4f * Math.max(0f, Math.min(1f, t));
+        int r = Math.min(255, Math.round(((rgb >> 16) & 0xFF) * f));
+        int g = Math.min(255, Math.round(((rgb >> 8) & 0xFF) * f));
+        int b = Math.min(255, Math.round((rgb & 0xFF) * f));
+        return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
 
     /** ARGB 線形補間 (t=0→a / t=1→b)。 */

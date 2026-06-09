@@ -31,11 +31,17 @@ public final class TerrainSampler {
     private TerrainSampler() {
     }
 
-    /** カラムを受け取るシンク (TerrainStore へ流す)。 y は world 絶対高さ。 */
+    /**
+     * カラムを受け取るシンク (TerrainStore へ流す)。 y は world 絶対高さ、 color は表面ブロックの
+     * MapColor 由来 RGB (0xRRGGBB)、 取得不能/NONE は {@link #NO_COLOR}。
+     */
     @FunctionalInterface
     public interface ColumnSink {
-        void accept(int blockX, int blockZ, int y);
+        void accept(int blockX, int blockZ, int y, int color);
     }
+
+    /** ブロック色が取れない (MapColor.NONE 等) ときの番兵 (= ディメンション色フォールバック)。 */
+    public static final int NO_COLOR = -1;
 
     /**
      * 1 チャンクを {@link #STRIDE} 格子でサンプルし、 各カラムの代表点を {@code sink} へ渡す。
@@ -49,6 +55,7 @@ public final class TerrainSampler {
         ChunkPos cp = chunk.getPos();
         int baseX = cp.getMinBlockX();
         int baseZ = cp.getMinBlockZ();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int dx = 0; dx < 16; dx += STRIDE) {
             for (int dz = 0; dz < 16; dz += STRIDE) {
                 int wx = baseX + dx;
@@ -63,8 +70,27 @@ public final class TerrainSampler {
                     // WORLD_SURFACE は「最上の非空気ブロックの 1 つ上」を返す → 面ブロックは y-1。
                     y = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz) - 1;
                 }
-                sink.accept(wx, wz, y);
+                int color = mapColorAt(level, pos.set(wx, y, wz)); // 表面ブロックの実色 (⑤)
+                sink.accept(wx, wz, y, color);
             }
+        }
+    }
+
+    /**
+     * 表面ブロックの MapColor 由来 RGB (0xRRGGBB)。 {@code MapColor.NONE}/取得不能は {@link #NO_COLOR}。
+     * API 名は 26.1.2/1.21.11/1.21.10 同一 (javap 確認・置換不要): {@code BlockState.getMapColor(level,pos)} →
+     * {@code MapColor.calculateARGBColor(Brightness.NORMAL)}。 メインスレッド・level 有でのみ呼ぶ。
+     */
+    private static int mapColorAt(ClientLevel level, BlockPos pos) {
+        try {
+            net.minecraft.world.level.material.MapColor mc = level.getBlockState(pos).getMapColor(level, pos);
+            if (mc == null || mc.col == 0) {
+                return NO_COLOR; // MapColor.NONE (col=0) は色なし扱い
+            }
+            int argb = mc.calculateARGBColor(net.minecraft.world.level.material.MapColor.Brightness.NORMAL);
+            return argb & 0xFFFFFF;
+        } catch (Throwable t) {
+            return NO_COLOR;
         }
     }
 

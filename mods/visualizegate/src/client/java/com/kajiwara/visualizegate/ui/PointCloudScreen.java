@@ -55,6 +55,10 @@ public class PointCloudScreen extends Screen {
     private static final int POINT_SIZE_EXTRA = 1;
     /** 最遠点の明るさ係数 (大気遠近: 遠い点を暗く沈ませる・近点=1.0)。 モック寄せで強めのフェード。 */
     private static final float DEPTH_DIM_MIN = 0.3f;
+    /** ⑤ ディメンション色ティント: ブロック色へ混ぜる dim 色とブレンド率 (淡く＝判別補助)。 */
+    private static final int DIM_TINT_OW = GateColors.PC_OW_HIGH;
+    private static final int DIM_TINT_NETHER = GateColors.PC_NETHER_HIGH;
+    private static final float DIM_TINT_FRAC = 0.15f;
     private static final double DRAG_SENS = 0.012;
     private static final double NEAR = 0.1;
 
@@ -134,6 +138,7 @@ public class PointCloudScreen extends Screen {
     private boolean sigShowOw;
     private boolean sigShowN;
     private boolean sigShowLinks;
+    private boolean sigDimTint;
     private int sigVpX;
     private int sigVpY;
     private int sigVpW;
@@ -179,6 +184,12 @@ public class PointCloudScreen extends Screen {
             b.setMessage(linksLabel());
             GateConfigManager.save();
         }).bounds(sbX, y, sbW, 20).build());
+        y += 24;
+        addRenderableWidget(Button.builder(tintLabel(), b -> {
+            PointCloudViewState.toggleDimTint();
+            b.setMessage(tintLabel());
+            GateConfigManager.save();
+        }).bounds(sbX, y, sbW, 20).build());
         y += 30;
 
         // 間隔スライダ (手動描画・手動入力)。 ラベルはこの上、 トラックは slY。
@@ -206,6 +217,10 @@ public class PointCloudScreen extends Screen {
 
     private static Component linksLabel() {
         return Component.literal("Gate links: " + onOff(PointCloudViewState.isShowLinks()));
+    }
+
+    private static Component tintLabel() {
+        return Component.literal("Dim tint: " + onOff(PointCloudViewState.isDimTint()));
     }
 
     private static String onOff(boolean b) {
@@ -286,10 +301,11 @@ public class PointCloudScreen extends Screen {
         boolean showOw = PointCloudViewState.isShowOverworld();
         boolean showN = PointCloudViewState.isShowNether();
         boolean showLinks = PointCloudViewState.isShowLinks();
+        boolean dimTint = PointCloudViewState.isDimTint();
         float spacing = PointCloudViewState.getDimensionSpacing();
         if (snap == sigSnap && yaw == sigYaw && pitch == sigPitch && distance == sigDistance
                 && spacing == sigSpacing && showOw == sigShowOw && showN == sigShowN
-                && showLinks == sigShowLinks && vpX == sigVpX && vpY == sigVpY
+                && showLinks == sigShowLinks && dimTint == sigDimTint && vpX == sigVpX && vpY == sigVpY
                 && vpW == sigVpW && vpH == sigVpH) {
             return false;
         }
@@ -301,6 +317,7 @@ public class PointCloudScreen extends Screen {
         sigShowOw = showOw;
         sigShowN = showN;
         sigShowLinks = showLinks;
+        sigDimTint = dimTint;
         sigVpX = vpX;
         sigVpY = vpY;
         sigVpW = vpW;
@@ -326,13 +343,19 @@ public class PointCloudScreen extends Screen {
         int nN = showN ? snap.nX.length : 0;
         ensureBuffers(owN + nN);
 
+        // ⑤ 淡いディメンション色ティント (トグル時のみ・ブロック色へ dim 色を 15% 混ぜる)。 ライブ
+        // 反映のため描画側で適用 (再解析不要)。 OFF なら純ブロック色 (=解析の色そのまま)。
+        boolean tint = PointCloudViewState.isDimTint();
+
         int total = 0;
         for (int i = 0; i < owN; i++) {   // OW 層 (上＝広く疎: y += pivot)
-            total = project(snap.owX[i], snap.owY[i] + pivotY, snap.owZ[i], snap.owColor[i],
+            int c = tint ? mix(snap.owColor[i], DIM_TINT_OW, DIM_TINT_FRAC) : snap.owColor[i];
+            total = project(snap.owX[i], snap.owY[i] + pivotY, snap.owZ[i], c,
                     cosY, sinY, cosP, sinP, cx, cy, total);
         }
         for (int i = 0; i < nN; i++) {    // ネザー層 (下＝密なコンパクト塊: y -= pivot)
-            total = project(snap.nX[i], snap.nY[i] - pivotY, snap.nZ[i], snap.nColor[i],
+            int c = tint ? mix(snap.nColor[i], DIM_TINT_NETHER, DIM_TINT_FRAC) : snap.nColor[i];
+            total = project(snap.nX[i], snap.nY[i] - pivotY, snap.nZ[i], c,
                     cosY, sinY, cosP, sinP, cx, cy, total);
         }
 
@@ -705,6 +728,21 @@ public class PointCloudScreen extends Screen {
             int y = cy + dy;
             fillClamped(g, cx - hw, y, cx + hw + 1, y + 1, color);
         }
+    }
+
+    /** ARGB の RGB を t で線形ブレンド (a→b・アルファは a を保持)。 ⑤ ティント用。 */
+    private static int mix(int a, int b, float t) {
+        int al = (a >>> 24) & 0xFF;
+        int ar = (a >> 16) & 0xFF;
+        int ag = (a >> 8) & 0xFF;
+        int ab = a & 0xFF;
+        int br = (b >> 16) & 0xFF;
+        int bg = (b >> 8) & 0xFF;
+        int bb = b & 0xFF;
+        int r = Math.round(ar + (br - ar) * t);
+        int g = Math.round(ag + (bg - ag) * t);
+        int bl = Math.round(ab + (bb - ab) * t);
+        return (al << 24) | (r << 16) | (g << 8) | bl;
     }
 
     /** ARGB の RGB を係数 f で減衰 (アルファは保持・暗背景なのでアルファでなく明度を落とす)。 */
