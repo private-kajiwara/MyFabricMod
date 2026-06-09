@@ -108,7 +108,8 @@ public class PointCloudScreen extends Screen {
      * (ネイティブとテクスチャが同寸なので nearest でも 1:1＝ボケない)。 巨大画面 (4K@guiScale1 等) のみ
      * この上限で SS を整数で段階的に下げる (= ラスタライズ/upload コストの暴走を防ぐ)。
      */
-    private static final long MAX_TEXELS = 2_500_000L;
+    private static final long MAX_TEXELS = 10_000_000L; // ⑩ 上限を引き上げ＝大画面/4K でも真ネイティブ SS
+    private static final int MAX_TEX_DIM = 16384;        // GL 最大テクスチャ寸 (これを超えない範囲で SS)
     // テクスチャ/スクラッチは static (同時に開く Screen は 1 つ＝再オープンで再利用・GPU リーク回避)。
     private static DynamicTexture pcTex;
     private static int texW;   // テクスチャ実寸 (= vpW * texSS)
@@ -417,8 +418,8 @@ public class PointCloudScreen extends Screen {
             dY[w] = bSy[i];
             // フォールバック g.fill 用の整数径 (大半 1px・最近のみ 2px)。
             dSize[w] = POINT_MIN_PX + Math.round(near * near * POINT_SIZE_EXTRA);
-            // テクスチャ用ソフト半径 (px)。 遠 ~1.0 / 近 ~2.4 で丸いソフトドット (float 位置・サブピクセル)。
-            dRad[w] = 1.0f + near * 1.4f;
+            // ⑩ テクスチャ用半径 (論理px・×SSでネイティブ)。 小さく＝シャープ (遠 ~0.85 / 近 ~1.75)。
+            dRad[w] = 0.85f + near * 0.9f;
             dColor[w] = dim(bColor[i], DEPTH_DIM_MIN + near * (1f - DEPTH_DIM_MIN));
             w++;
         }
@@ -594,7 +595,8 @@ public class PointCloudScreen extends Screen {
     /** スーパーサンプル倍率 = guiScale (≈ネイティブ)。 巨大画面のみ {@link #MAX_TEXELS} 上限で整数縮小。 */
     private int supersample() {
         int ss = Math.max(1, this.minecraft.getWindow().getGuiScale());
-        while (ss > 1 && (long) (vpW * ss) * (long) (vpH * ss) > MAX_TEXELS) {
+        while (ss > 1 && ((long) (vpW * ss) * (long) (vpH * ss) > MAX_TEXELS
+                || vpW * ss > MAX_TEX_DIM || vpH * ss > MAX_TEX_DIM)) {
             ss--;
         }
         return ss;
@@ -611,18 +613,21 @@ public class PointCloudScreen extends Screen {
         int x1 = Math.min(w - 1, (int) Math.ceil(cx + radius));
         int y0 = Math.max(0, (int) Math.floor(cy - radius));
         int y1 = Math.min(h - 1, (int) Math.ceil(cy + radius));
-        float inv = 1f / radius;
         for (int y = y0; y <= y1; y++) {
             float dyf = (y + 0.5f) - cy;
             int row = y * w;
             for (int x = x0; x <= x1; x++) {
                 float dxf = (x + 0.5f) - cx;
                 float d = (float) Math.sqrt(dxf * dxf + dyf * dyf);
-                float cov = 1f - d * inv;     // 1=中心 .. 0=縁
+                // ⑩ 硬い芯＋細い (1 テクセル) AA 縁: 芯は cov=1 (フェザー無し)、 縁だけ滑らか＝くっきり。
+                float cov = (radius - d) + 0.5f;
                 if (cov <= 0f) {
                     continue;
                 }
-                int a8 = Math.round(srcA * cov * cov); // 二乗でソフトな丸
+                if (cov > 1f) {
+                    cov = 1f;
+                }
+                int a8 = Math.round(srcA * cov);
                 if (a8 <= 0) {
                     continue;
                 }
