@@ -63,6 +63,8 @@ public class PointCloudScreen extends Screen {
     private static final float DIM_TINT_FRAC = 0.15f;
     /** ⑪ ゲート位置マーカー (紫の中空リング) の半径 (論理px・×SSでネイティブ)。 少し大きめ・地形は隠さない。 */
     private static final float GATE_RING_R = 3.5f;
+    /** ⑫ リンク線の太さ (固定ネイティブpx・SSに乗算しない)。 最細で鮮明＝1。 */
+    private static final int LINK_THICK_NATIVE = 1;
     private static final double DRAG_SENS = 0.012;
     private static final double NEAR = 0.1;
 
@@ -554,9 +556,9 @@ public class PointCloudScreen extends Screen {
             for (int k = 0; k < cachedCount; k++) {
                 stampDot((dX[k] - vpX) * ss, (dY[k] - vpY) * ss, dRad[k] * ss, dColor[k], w, h);
             }
-            for (int i = 0; i < cachedLinks; i++) {
+            for (int i = 0; i < cachedLinks; i++) {   // ⑫ 線は固定 1 ネイティブpx＝細く鮮明 (SS非乗算)
                 rasterLine((lkAx[i] - vpX) * ss, (lkAy[i] - vpY) * ss, (lkBx[i] - vpX) * ss,
-                        (lkBy[i] - vpY) * ss, GateColors.PC_LINK, ss, w, h);
+                        (lkBy[i] - vpY) * ss, GateColors.PC_LINK, LINK_THICK_NATIVE, w, h);
             }
             for (int i = 0; i < cachedGates; i++) {   // ⑪ ゲート位置の紫リング (地形の上)
                 rasterRing((gkX[i] - vpX) * ss, (gkY[i] - vpY) * ss, GATE_RING_R * ss,
