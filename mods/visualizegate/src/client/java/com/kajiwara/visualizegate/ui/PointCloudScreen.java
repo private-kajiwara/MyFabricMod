@@ -29,7 +29,8 @@ import net.minecraft.resources.Identifier;
  * リンク線/現在地マーカーも同テクスチャへ焼く。 万一テクスチャ経路が失敗したら従来の {@code g.fill} へ
  * 自動フォールバック (描画途絶しない)。 深度ソート (降順) で近点を上に、 近いほど大きく明るい (= 深度手がかり)。
  *
- * <p><b>整列</b>: ネザー点/リンク端はスナップショット側で XZ ×8 済 ("Nether 1:8")。 <b>垂直分離</b>
+ * <p><b>整列</b>: ⑥ ネザー点/リンク端はスナップショット側で 1:1 自然スケール・ネザー重心センタリング済
+ * (OW の約 1/8 の塊＝"Nether 1:8")。 <b>垂直分離</b>
  * (ディメンション間隔スライダ) はここで Y へ加算する (= スライダ変更で再解析不要)。 クリップは
  * ビューポート矩形の<b>手動境界判定</b> (scissor 不使用＝版差なし)。
  *
@@ -40,8 +41,9 @@ public class PointCloudScreen extends Screen {
 
     private static final int HEADER_H = 28;
     private static final int FOOTER_H = 34;
-    private static final int SIDEBAR_W = 168;
+    private static final int SIDEBAR_W = 200; // ⑧ 長い stats 文字が収まる幅へ (旧 168 で右見切れ)
     private static final int MARGIN = 8;
+    private static final int SIDE_PAD = 4;     // ⑧ サイドバー内テキスト/スライダの左右インセット
 
     /** 点の最小ピクセル径 (最遠点)。 細かいドット感のため 1px。 */
     private static final int POINT_MIN_PX = 1;
@@ -192,10 +194,10 @@ public class PointCloudScreen extends Screen {
         }).bounds(sbX, y, sbW, 20).build());
         y += 30;
 
-        // 間隔スライダ (手動描画・手動入力)。 ラベルはこの上、 トラックは slY。
-        slX = sbX;
+        // 間隔スライダ (手動描画・手動入力)。 ラベルはこの上、 トラックは slY。 ⑧ パネル内へインセット。
+        slX = sbX + SIDE_PAD;
         slY = y + 10;
-        slW = sbW;
+        slW = sbW - 2 * SIDE_PAD;
         slH = 10;
 
         // フッタ: Re-analyze / Done。
@@ -810,27 +812,56 @@ public class PointCloudScreen extends Screen {
         g.fill(hx, slY - 2, hx + 6, slY + slH + 2, GateColors.MAIN);
     }
 
+    /**
+     * ⑧ stats を再フロー: パネル内幅へ<b>収まる文字だけ</b> (超過は「…」省略)、 縦は<b>フッタ手前で打ち切り</b>
+     * (Done ボタンと重ねない)。 GUI スケール 2/3/4 でも論理座標基準＝崩れない。
+     */
     private void drawCounts(GuiGraphicsExtractor g, PointCloudSnapshot snap) {
-        int y = slY + slH + 10;
         int x = slX;
-        g.text(this.font, Component.literal("OW pts: " + snap.owDrawn + " / " + snap.owSampled),
-                x, y, GateColors.PC_OW_HIGH);
-        g.text(this.font, Component.literal("Nether pts: " + snap.netherDrawn + " / " + snap.netherSampled),
-                x, y + 11, GateColors.PC_NETHER_HIGH);
-        g.text(this.font, Component.literal("Links: " + snap.linkCount()),
-                x, y + 22, GateColors.PC_LINK);
+        int maxW = slW;                          // インセット済みパネル内幅
+        int bottom = this.height - FOOTER_H - 2; // フッタ(Done)を侵さない予約線
+        int y = slY + slH + 12;
+        String mode = (USE_TEXTURE_BATCH && !texFailed) ? "tex" : "fill";
+        y = statLine(g, "OW pts " + snap.owDrawn + "/" + snap.owSampled, x, y, maxW, bottom, GateColors.PC_OW_HIGH);
+        y = statLine(g, "Nether pts " + snap.netherDrawn + "/" + snap.netherSampled, x, y, maxW, bottom,
+                GateColors.PC_NETHER_HIGH);
+        y = statLine(g, "Links " + snap.linkCount(), x, y, maxW, bottom, GateColors.PC_LINK);
         if (snap.hasMarker) {
-            g.text(this.font, Component.literal("+ = you (at analysis)"), x, y + 33, GateColors.ACCENT);
+            y = statLine(g, "+ = you (at analysis)", x, y, maxW, bottom, GateColors.ACCENT);
         }
-        String build = String.format(java.util.Locale.ROOT, "%.2f ms", lastBuildNanos / 1.0e6);
-        String draw = String.format(java.util.Locale.ROOT, "%.2f ms", lastDrawNanos / 1.0e6);
-        g.text(this.font, Component.literal("Rebuild: " + build + " (cached when still)"),
-                x, y + 44, GateColors.LINK_GRAY);
-        String mode = (USE_TEXTURE_BATCH && !texFailed) ? "tex batch" : "g.fill";
-        g.text(this.font, Component.literal("Draw: " + draw + " / " + lastFillCount + " draws/frame ("
-                + mode + ")"), x, y + 55, GateColors.LINK_GRAY);
-        g.text(this.font, Component.literal("Drag: rotate   Wheel: zoom"),
-                x, y + 66, GateColors.LINK_GRAY);
+        y = statLine(g, String.format(java.util.Locale.ROOT, "Rebuild %.2f ms (idle cached)",
+                lastBuildNanos / 1.0e6), x, y, maxW, bottom, GateColors.LINK_GRAY);
+        y = statLine(g, String.format(java.util.Locale.ROOT, "Draw %.2f ms / %d dc (%s)",
+                lastDrawNanos / 1.0e6, lastFillCount, mode), x, y, maxW, bottom, GateColors.LINK_GRAY);
+        statLine(g, "Drag rotate / wheel zoom", x, y, maxW, bottom, GateColors.LINK_GRAY);
+    }
+
+    /** 1 行: フッタ手前なら幅に収めて描き次の y を返す。 入るなら描かず y 据え置き (重なり防止)。 */
+    private int statLine(GuiGraphicsExtractor g, String s, int x, int y, int maxW, int bottom, int color) {
+        if (y + 9 > bottom) {
+            return y;
+        }
+        g.text(this.font, Component.literal(fitWidth(s, maxW)), x, y, color);
+        return y + 11;
+    }
+
+    /** 文字列を maxW(px) 以内へ。 超過は末尾を切って「…」を付す (フォント幅実測)。 */
+    private String fitWidth(String s, int maxW) {
+        if (this.font.width(Component.literal(s)) <= maxW) {
+            return s;
+        }
+        int ew = this.font.width(Component.literal("…"));
+        StringBuilder sb = new StringBuilder();
+        int w = 0;
+        for (int i = 0; i < s.length(); i++) {
+            int cw = this.font.width(Component.literal(String.valueOf(s.charAt(i))));
+            if (w + cw + ew > maxW) {
+                break;
+            }
+            sb.append(s.charAt(i));
+            w += cw;
+        }
+        return sb.append("…").toString();
     }
 
     // ════════════════════════════════════════════════════════════════════
