@@ -7,7 +7,9 @@ import com.kajiwara.visualizegate.domain.DomainPortal;
 import com.kajiwara.visualizegate.domain.GridPos;
 import com.kajiwara.visualizegate.domain.LinkPrediction;
 import com.kajiwara.visualizegate.domain.PortalDimension;
+import com.kajiwara.visualizegate.domain.PredictedLinkState;
 import com.kajiwara.visualizegate.state.GateMenuState;
+import com.kajiwara.visualizegate.terrain.TerrainStore;
 import com.kajiwara.visualizegate.ui.GateColors;
 
 //? if >=26.1 {
@@ -48,6 +50,8 @@ public final class PortalInfoCardRenderer {
     // 平易表現のズレしきい値。
     private static final double ALIGNED_BLOCKS = 2.0;       // これ未満は「ほぼぴったり」
     private static final double BIG_OFFSET_FRACTION = 0.5;  // searchRadius のこの割合超で「ズレ大」
+    // 予定地が観測サーフェスからこれ以上下なら「地中/洞窟に生成され得る」警告 (ヒューリスティック)。
+    private static final int UNDERGROUND_DEPTH = 8;
 
     private PortalInfoCardRenderer() {
     }
@@ -86,6 +90,7 @@ public final class PortalInfoCardRenderer {
 
         List<Line> body = new ArrayList<>();
         addSummaryLine(body, pred);
+        addCaveRiskLine(body, r, pred, advanced); // ③ 地中/洞窟生成の可能性
         if (advanced) {
             addDetailLines(body, r, pred);
         }
@@ -163,6 +168,47 @@ public final class PortalInfoCardRenderer {
                     Component.translatable("visualizegate.card.will_create.desc"), GateColors.TEXT));
             case UNKNOWN -> body.add(new Line(
                     Component.translatable("visualizegate.card.unknown.desc"), GateColors.TEXT));
+        }
+    }
+
+    /**
+     * ③「地中/洞窟生成の可能性」行 (ヒューリスティック・事実でなく可能性として表現)。
+     *
+     * <p>LINKED は既存ゲートへ接続＝新規生成なしなので対象外。 ターゲットがネザー側なら基本囲って生成される旨を
+     * 一言。 ターゲットが OW 側のとき、 予定地 XZ の観測サーフェス Y と予測ターゲット Y を比較し、 十分下なら
+     * 「地中/洞窟に生成され得る」、 サーフェス未観測なら UNKNOWN (向こう未探索＝判定不可)。 詳細モードでは
+     * 対象 Y・推定サーフェス Y を併記。 バニラ配置ロジックの完全再現はしない (Y とサーフェス高の比較のみ)。
+     */
+    private static void addCaveRiskLine(List<Line> body, PortalGaze.Result r, LinkPrediction pred,
+            boolean advanced) {
+        if (pred.state() == PredictedLinkState.LINKED) {
+            return; // 既存ゲートへ接続＝新規生成なし
+        }
+        if (r.other() == PortalDimension.NETHER) {
+            body.add(new Line(Component.translatable("visualizegate.card.cave.nether_enclosed"),
+                    GateColors.LINK_GRAY));
+            return;
+        }
+        GridPos ideal = pred.idealTarget();
+        java.util.OptionalInt surf =
+                TerrainStore.get().surfaceYAt(PortalDimension.OVERWORLD, ideal.x(), ideal.z());
+        if (surf.isEmpty()) {
+            body.add(new Line(Component.translatable("visualizegate.card.cave.unknown"),
+                    GateColors.LINK_GRAY));
+            return;
+        }
+        int surfaceY = surf.getAsInt();
+        int depth = surfaceY - ideal.y();
+        if (depth > UNDERGROUND_DEPTH) {
+            body.add(new Line(Component.translatable("visualizegate.card.cave.risk", depth),
+                    GateColors.ACCENT));
+        } else {
+            body.add(new Line(Component.translatable("visualizegate.card.cave.surface_ok"),
+                    GateColors.LINK_GREEN));
+        }
+        if (advanced) {
+            body.add(new Line(Component.translatable("visualizegate.card.cave.detail",
+                    ideal.y(), surfaceY), GateColors.TEXT));
         }
     }
 

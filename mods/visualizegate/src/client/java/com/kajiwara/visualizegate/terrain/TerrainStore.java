@@ -157,6 +157,33 @@ public final class TerrainStore {
         return out;
     }
 
+    /**
+     * 指定ディメンションの blockX/blockZ が属する STRIDE 格子セルの観測サーフェス代表 Y を返す
+     * (現 world)。 未観測 (そのセルがロード/サンプルされていない) なら空 (=「向こう未探索」判定に使う)。
+     * HUD/カード用の軽量クエリ (in-memory HashMap 参照のみ・蓄積と同じクライアントスレッド)。
+     */
+    public java.util.OptionalInt surfaceYAt(PortalDimension dim, int blockX, int blockZ) {
+        ensureLoaded();
+        String worldId = PortalMemory.get().currentWorldId();
+        if (worldId == null) {
+            return java.util.OptionalInt.empty();
+        }
+        String dimId = PortalMemory.canonicalDimId(dim);
+        if (dimId == null) {
+            return java.util.OptionalInt.empty();
+        }
+        Map<String, Map<Long, Integer>> byDim = mem.get(worldId);
+        if (byDim == null) {
+            return java.util.OptionalInt.empty();
+        }
+        Map<Long, Integer> grid = byDim.get(dimId);
+        if (grid == null) {
+            return java.util.OptionalInt.empty();
+        }
+        Integer y = grid.get(gridKey(blockX, blockZ));
+        return (y == null) ? java.util.OptionalInt.empty() : java.util.OptionalInt.of(y);
+    }
+
     private Map<Long, Integer> dimGrid(String worldId, String dimId) {
         return mem.computeIfAbsent(worldId, k -> new HashMap<>())
                 .computeIfAbsent(dimId, k -> new HashMap<>());

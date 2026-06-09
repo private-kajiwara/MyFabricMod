@@ -40,6 +40,11 @@
 	"visualizegate.card.detail.live": "Confidence: live-confirmed",
 	"visualizegate.card.detail.memory": "Confidence: from memory (may be stale)",
 	"visualizegate.card.detail.ideal": "Planned spot: %s %s,%s,%s",
+	"visualizegate.card.cave.risk": "May generate underground / in a cave (~%s below surface)",
+	"visualizegate.card.cave.surface_ok": "Likely generates near the surface",
+	"visualizegate.card.cave.unknown": "Underground risk: far side unexplored",
+	"visualizegate.card.cave.nether_enclosed": "Nether side is generated enclosed (low cave risk)",
+	"visualizegate.card.cave.detail": "Target Y %s vs est. surface Y %s",
 
 	"visualizegate.legend.linked": "Links to existing",
 	"visualizegate.legend.will_create": "New gate",

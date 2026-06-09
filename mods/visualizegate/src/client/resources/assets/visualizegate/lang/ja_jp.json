@@ -40,6 +40,11 @@
 	"visualizegate.card.detail.live": "確度: ライブ確認",
 	"visualizegate.card.detail.memory": "確度: 記憶 (古い可能性)",
 	"visualizegate.card.detail.ideal": "予定地: %s %s,%s,%s",
+	"visualizegate.card.cave.risk": "地中／洞窟内に生成の可能性 (地表から約%s下)",
+	"visualizegate.card.cave.surface_ok": "地表付近に生成される見込み",
+	"visualizegate.card.cave.unknown": "地中判定: 向こう側が未探索",
+	"visualizegate.card.cave.nether_enclosed": "ネザー側は囲って生成 (洞窟リスク低)",
+	"visualizegate.card.cave.detail": "対象Y %s / 推定サーフェスY %s",
 
 	"visualizegate.legend.linked": "既存にリンク",
 	"visualizegate.legend.will_create": "新規生成",
