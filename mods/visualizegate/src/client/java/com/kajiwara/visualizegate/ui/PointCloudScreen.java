@@ -117,6 +117,8 @@ public class PointCloudScreen extends Screen {
     private static int[] pix = new int[0]; // ネイティブ解像度 ARGB スクラッチ (rebuild 時のみ書く)
     /** テクスチャ経路が失敗したら true → 以後フォールバック (この Screen を開いている間)。 */
     private boolean texFailed = false;
+    /** 直近 rasterize で書いた非透明ピクセル数 (0 なら不発 → drawCached が g.fill へ落とす防御)。 */
+    private int lastRasterWrote = 0;
 
     // ── 投影キャッシュ: 静止フレームは再投影/再ソートしない (CPU 律速の核を消す) ──
     private float[] dX = new float[0];   // 描画順 (遠→近) の確定スクリーン座標
@@ -449,11 +451,16 @@ public class PointCloudScreen extends Screen {
      */
     private void drawCached(GuiGraphicsExtractor g) {
         long t0 = System.nanoTime();
-        if (USE_TEXTURE_BATCH && !texFailed && pcTex != null) {
+        boolean texOk = USE_TEXTURE_BATCH && !texFailed && pcTex != null && texW > 0 && texH > 0
+                && (cachedCount == 0 || lastRasterWrote > 0); // 書込み0 (rasterize 不発) なら g.fill へ
+        if (texOk) {
             try {
-                // ネイティブ解像度テクスチャ (texW×texH) を viewport 論理矩形 (vpW×vpH) へ blit
-                // (texSS=guiScale なら 1:1 ネイティブ＝くっきり、 それ以外は GPU が縮小)。
-                g.blit(RenderPipelines.GUI_TEXTURED, PC_TEX_ID, vpX, vpY, 0f, 0f, vpW, vpH, texW, texH);
+                // ネイティブ解像度テクスチャ (texW×texH の<b>全域</b>) を viewport 論理矩形 (vpW×vpH) へ
+                // <b>スケール blit</b> (12 引数: draw=vpW×vpH / source 領域=texW×texH 全域)。 10 引数版は
+                // source 領域=draw サイズ＝vpW のため SS 倍テクスチャでは左上 1/SS しかサンプルせず不可視に
+                // なる (0.20.0 リグレッションの原因)。 texSS=guiScale なら 1:1 ネイティブ＝くっきり。
+                g.blit(RenderPipelines.GUI_TEXTURED, PC_TEX_ID, vpX, vpY, 0f, 0f, vpW, vpH, texW, texH,
+                        texW, texH);
                 lastFillCount = 1; // 1 ドローコール
                 lastDrawNanos = System.nanoTime() - t0;
                 return;
@@ -491,8 +498,12 @@ public class PointCloudScreen extends Screen {
             int ss = supersample();        // ≈ネイティブ (guiScale)、 巨大画面のみ上限で段階縮小
             int w = vpW * ss;
             int h = vpH * ss;
+            if (w <= 0 || h <= 0) {
+                texFailed = true; // ビューポート異常 → g.fill フォールバック
+                return;
+            }
             ensureTexture(w, h);
-            if (pcTex == null) {
+            if (pcTex == null || texW <= 0 || texH <= 0) {
                 texFailed = true;
                 return;
             }
@@ -514,11 +525,17 @@ public class PointCloudScreen extends Screen {
                 return;
             }
             int idx = 0;
+            int wrote = 0;
             for (int y = 0; y < h; y++) {
                 for (int x = 0; x < w; x++) {
-                    img.setPixelABGR(x, y, argbToAbgr(pix[idx++]));
+                    int p = pix[idx++];
+                    img.setPixelABGR(x, y, argbToAbgr(p));
+                    if ((p & 0xFF000000) != 0) {
+                        wrote++;
+                    }
                 }
             }
+            lastRasterWrote = wrote;
             pcTex.upload();
         } catch (Throwable t) {
             texFailed = true;
