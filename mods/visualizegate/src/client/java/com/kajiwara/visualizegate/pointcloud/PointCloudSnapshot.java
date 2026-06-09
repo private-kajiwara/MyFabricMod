@@ -6,7 +6,7 @@ package com.kajiwara.visualizegate.pointcloud;
  * <p>座標は「OW スケール整列・各層 Y センタリング・水平センタリング」済の<b>ビュー空間</b>:
  * <ul>
  *   <li>OW 点: {@code X=wx-hCenterX, Y=wy-owMeanY, Z=wz-hCenterZ}</li>
- *   <li>ネザー点: {@code X=wx*8-hCenterX, Y=wy-netherMeanY, Z=wz*8-hCenterZ} (×8 で水平整列)</li>
+ *   <li>ネザー点: {@code X=wx-nCenterX, Y=wy-netherMeanY, Z=wz-nCenterZ} (⑥ 1:1 自然スケール・ネザー重心)</li>
  * </ul>
  * <b>垂直分離 (ディメンション間隔)</b> はライブのスライダ値なので<b>ここには織り込まない</b>。 描画時に
  * Screen がネザー層 (点・リンク B 端) の Y へ {@code +spacing} を足す (= スライダ変更でスナップショット再構築不要)。
