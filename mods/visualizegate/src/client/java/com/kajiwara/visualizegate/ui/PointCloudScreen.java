@@ -7,8 +7,15 @@ import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
 import com.kajiwara.visualizegate.pointcloud.PointCloudSnapshot;
 import com.kajiwara.visualizegate.state.PointCloudViewState;
 
+import com.kajiwara.visualizegate.client.render.PointCloudGpuRenderer;
 import com.mojang.blaze3d.platform.NativeImage;
+//? if >=26.1 {
+import com.mojang.blaze3d.textures.GpuTextureView;
+//?}
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//? if >=26.1 {
+import net.minecraft.client.gui.render.TextureSetup;
+//?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -105,6 +112,9 @@ public class PointCloudScreen extends Screen {
     // ── バッチ描画 (DynamicTexture + 1 blit): 全点を 1 枚へ焼き、 毎フレーム 1 ドローコール ──
     /** バッチ経路を使う (false で従来 g.fill)。 失敗時は texFailed で自動フォールバック。 */
     private static final boolean USE_TEXTURE_BATCH = true;
+    /** ⑬ 案A スパイク: 真の GPU3D 経路を試す (失敗時は texbatch へ自動フォールバック・非クラッシュ)。 */
+    private static final boolean USE_GPU3D_SPIKE = true;
+    private boolean gpu3dActive = false; // 直近フレームが GPU3D 経路だったか (HUD 表示用)
     private static final Identifier PC_TEX_ID =
             Identifier.fromNamespaceAndPath("visualizegate", "pointcloud_dyn");
     /**
@@ -286,7 +296,10 @@ public class PointCloudScreen extends Screen {
             centerText(g, "No data — explore to observe terrain, then Re-analyze", GateColors.LINK_GRAY);
         } else {
             frameIfNeeded(snap);
-            drawCloud(g, snap);
+            gpu3dActive = false;
+            if (!(USE_GPU3D_SPIKE && tryGpu3d(g))) {
+                drawCloud(g, snap);
+            }
         }
 
         drawSlider(g);
@@ -315,6 +328,42 @@ public class PointCloudScreen extends Screen {
      * {@link #rebuildProjection} で再投影+深度ソート+キャッシュ化し、 静止フレームはキャッシュから
      * 描くだけ (= 毎フレームの投影/ソートを無くす＝CPU 律速の核を消す)。
      */
+    /**
+     * ⑬ 案A スパイク: FBO へ真の GPU3D (深度付) で描き、 FBO 色をビューポートへ合成。 成功で true。
+     * 失敗 (当該 gen で不可/例外) なら false を返し、 呼び出し側が texbatch へフォールバック。
+     */
+    //? if >=26.1 {
+    private boolean tryGpu3d(GuiGraphicsExtractor g) {
+        if (!PointCloudGpuRenderer.usable()) {
+            return false;
+        }
+        long t0 = System.nanoTime();
+        int ss = supersample();
+        int w = vpW * ss;
+        int h = vpH * ss;
+        if (!PointCloudGpuRenderer.renderSpike(w, h, yaw, pitch, distance, GateColors.BASE)) {
+            return false;
+        }
+        GpuTextureView cv = PointCloudGpuRenderer.colorView();
+        if (cv == null) {
+            return false;
+        }
+        // FBO 色をビューポート矩形へ合成 (GUI_TEXTURED パイプライン・TextureSetup)。
+        g.fill(RenderPipelines.GUI_TEXTURED,
+                TextureSetup.singleTexture(cv, PointCloudGpuRenderer.sampler()),
+                vpX, vpY, vpX + vpW, vpY + vpH);
+        gpu3dActive = true;
+        texSS = ss;
+        lastFillCount = 1;
+        lastDrawNanos = System.nanoTime() - t0;
+        return true;
+    }
+    //?} else {
+    /*private boolean tryGpu3d(GuiGraphicsExtractor g) {
+        return false; // legacy は GPU3D 未対応 (新パイプライン版差) → texbatch
+    }*/
+    //?}
+
     private void drawCloud(GuiGraphicsExtractor g, PointCloudSnapshot snap) {
         // ⑨ 適応 SS: ドラッグ中 or 最終入力から SETTLE 未満は「動作中」→ SS=1+間引きで安く rasterize。
         // 静止したら一度だけ targetSS!=texSS で再 rebuild され、 ネイティブ SS+全点でくっきり (静止品質不変)。
@@ -951,8 +1000,9 @@ public class PointCloudScreen extends Screen {
         int maxW = slW;                          // インセット済みパネル内幅
         int bottom = this.height - FOOTER_H - 2; // フッタ(Done)を侵さない予約線
         int y = slY + slH + 12;
-        String mode = (USE_TEXTURE_BATCH && !texFailed)
-                ? ("tex x" + texSS + (lastBuildMotion ? " motion" : " settled")) : "fill";
+        String mode = gpu3dActive ? ("gpu3d x" + texSS)
+                : (USE_TEXTURE_BATCH && !texFailed)
+                        ? ("tex x" + texSS + (lastBuildMotion ? " motion" : " settled")) : "fill";
         y = statLine(g, "OW pts " + snap.owDrawn + "/" + snap.owSampled, x, y, maxW, bottom, GateColors.PC_OW_HIGH);
         y = statLine(g, "Nether pts " + snap.netherDrawn + "/" + snap.netherSampled, x, y, maxW, bottom,
                 GateColors.PC_NETHER_HIGH);
