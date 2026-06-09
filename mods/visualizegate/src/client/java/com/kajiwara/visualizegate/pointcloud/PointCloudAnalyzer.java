@@ -32,9 +32,12 @@ public final class PointCloudAnalyzer {
      * 1 層あたりの描画点上限 (超過はストライド間引き＝決定的)。 細かいドット (1〜3px) で地形面を
      * 表す。 描画は {@link com.kajiwara.visualizegate.ui.PointCloudScreen} のテクスチャバッチ
      * (DynamicTexture + 1 blit) なので<b>静止フレームは点数に依存しない</b> (idle=1 ドローコール)＝
-     * 高解像度に上げられる。 回転時のみラスタライズが N に比例。 地形の起伏が読める密度の中庸値。
+     * 高解像度に上げられる。 回転時のみラスタライズが N に比例 (rebuild ms を HUD で確認しながら調整)。
+     * ストライド ({@link com.kajiwara.visualizegate.terrain.TerrainSampler#STRIDE}=4) は据え置き
+     * (細かくすると既存 TerrainStore 格子座標の
+     * 意味が変わり蓄積済みデータの位置がずれる＋容量 4 倍＝互換破壊のため)。 在庫密度内で予算だけ上げる。
      */
-    public static final int POINT_BUDGET_PER_LAYER = 5_000;
+    public static final int POINT_BUDGET_PER_LAYER = 16_000;
     /** OW→ネザーのリンク探索半径 (PortalLinkRenderer と同じ・水平距離)。 */
     private static final double NETHER_SEARCH_RADIUS = 16.0;
 
