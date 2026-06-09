@@ -120,6 +120,13 @@ public class PointCloudScreen extends Screen {
     /** 直近 rasterize で書いた非透明ピクセル数 (0 なら不発 → drawCached が g.fill へ落とす防御)。 */
     private int lastRasterWrote = 0;
 
+    // ── ⑨ 適応スーパーサンプル: 操作中は SS=1+間引きで安く、 静止 (settle) で一度だけネイティブ SS ──
+    private static final long SETTLE_NANOS = 150_000_000L; // 最終入力から ~150ms で「静止」とみなす
+    private static final int MOTION_STRIDE = 2;            // 動作中のみ点を 1/2 間引き (静止は全点)
+    private long lastInputNanos = Long.MIN_VALUE / 2;      // 直近のドラッグ/ホイール時刻 (初期=静止扱い)
+    private int lastBuildStride = 1;                       // 直近 rebuild の間引き (再 rebuild 判定用)
+    private boolean lastBuildMotion = false;              // 直近 rebuild が動作中だったか (HUD 表示用)
+
     // ── 投影キャッシュ: 静止フレームは再投影/再ソートしない (CPU 律速の核を消す) ──
     private float[] dX = new float[0];   // 描画順 (遠→近) の確定スクリーン座標
     private float[] dY = new float[0];
@@ -301,8 +308,16 @@ public class PointCloudScreen extends Screen {
      * 描くだけ (= 毎フレームの投影/ソートを無くす＝CPU 律速の核を消す)。
      */
     private void drawCloud(GuiGraphicsExtractor g, PointCloudSnapshot snap) {
-        if (signatureChanged(snap)) {
-            rebuildProjection(snap);
+        // ⑨ 適応 SS: ドラッグ中 or 最終入力から SETTLE 未満は「動作中」→ SS=1+間引きで安く rasterize。
+        // 静止したら一度だけ targetSS!=texSS で再 rebuild され、 ネイティブ SS+全点でくっきり (静止品質不変)。
+        long now = System.nanoTime();
+        boolean motion = (drag == Drag.ROTATE) || (now - lastInputNanos < SETTLE_NANOS);
+        int targetSS = motion ? 1 : supersample();
+        int targetStride = motion ? MOTION_STRIDE : 1;
+        boolean texActive = USE_TEXTURE_BATCH && !texFailed;
+        boolean sigChanged = signatureChanged(snap);
+        if (sigChanged || (texActive && (targetSS != texSS || targetStride != lastBuildStride))) {
+            rebuildProjection(snap, targetSS, targetStride);
         }
         drawCached(g);
     }
@@ -336,8 +351,11 @@ public class PointCloudScreen extends Screen {
         return true;
     }
 
-    /** 全点/リンク/マーカーを投影し、 深度ソートして描画順の確定配列へ焼く。 変化時のみ呼ばれる。 */
-    private void rebuildProjection(PointCloudSnapshot snap) {
+    /**
+     * 全点/リンク/マーカーを投影し、 深度ソートして描画順の確定配列へ焼く。 変化時のみ呼ばれる。
+     * {@code ss}=スーパーサンプル倍率、 {@code stride}=点の間引き (⑨ 動作中=1+MOTION_STRIDE で安く)。
+     */
+    private void rebuildProjection(PointCloudSnapshot snap, int ss, int stride) {
         long t0 = System.nanoTime();
         float spacing = PointCloudViewState.getDimensionSpacing();
         float pivotY = spacing * 0.5f;
@@ -358,13 +376,14 @@ public class PointCloudScreen extends Screen {
         // 反映のため描画側で適用 (再解析不要)。 OFF なら純ブロック色 (=解析の色そのまま)。
         boolean tint = PointCloudViewState.isDimTint();
 
+        int st = Math.max(1, stride);
         int total = 0;
-        for (int i = 0; i < owN; i++) {   // OW 層 (上＝広く疎: y += pivot)
+        for (int i = 0; i < owN; i += st) {   // OW 層 (上＝広く疎: y += pivot)
             int c = tint ? mix(snap.owColor[i], DIM_TINT_OW, DIM_TINT_FRAC) : snap.owColor[i];
             total = project(snap.owX[i], snap.owY[i] + pivotY, snap.owZ[i], c,
                     cosY, sinY, cosP, sinP, cx, cy, total);
         }
-        for (int i = 0; i < nN; i++) {    // ネザー層 (下＝密なコンパクト塊: y -= pivot)
+        for (int i = 0; i < nN; i += st) {    // ネザー層 (下＝密なコンパクト塊: y -= pivot)
             int c = tint ? mix(snap.nColor[i], DIM_TINT_NETHER, DIM_TINT_FRAC) : snap.nColor[i];
             total = project(snap.nX[i], snap.nY[i] - pivotY, snap.nZ[i], c,
                     cosY, sinY, cosP, sinP, cx, cy, total);
@@ -437,11 +456,13 @@ public class PointCloudScreen extends Screen {
             }
         }
 
-        // バッチ: 投影結果をビューポート大テクスチャへラスタライズ (ビュー変化時のみ＝静止は blit だけ)。
+        // バッチ: 投影結果を SS 倍テクスチャへラスタライズ (ビュー変化時のみ＝静止は blit だけ)。
         if (USE_TEXTURE_BATCH && !texFailed) {
-            rasterizeTexture();
+            rasterizeTexture(ss);
         }
-        lastBuildNanos = System.nanoTime() - t0; // rebuild ms にラスタライズ+upload も含める (回転時コスト)
+        lastBuildStride = st;
+        lastBuildMotion = st > 1;
+        lastBuildNanos = System.nanoTime() - t0; // rebuild ms にラスタライズ+upload も含める (動作中コスト)
     }
 
     /**
@@ -493,9 +514,8 @@ public class PointCloudScreen extends Screen {
      * 投影済みの点/リンク/マーカーを<b>ネイティブ解像度</b> (SS=guiScale) の ARGB スクラッチへ焼き、
      * NativeImage へ転送して upload (⑦ 解像度の本丸: GUI 論理解像度でなくネイティブで描く＝くっきり)。
      */
-    private void rasterizeTexture() {
+    private void rasterizeTexture(int ss) {
         try {
-            int ss = supersample();        // ≈ネイティブ (guiScale)、 巨大画面のみ上限で段階縮小
             int w = vpW * ss;
             int h = vpH * ss;
             if (w <= 0 || h <= 0) {
@@ -867,7 +887,8 @@ public class PointCloudScreen extends Screen {
         int maxW = slW;                          // インセット済みパネル内幅
         int bottom = this.height - FOOTER_H - 2; // フッタ(Done)を侵さない予約線
         int y = slY + slH + 12;
-        String mode = (USE_TEXTURE_BATCH && !texFailed) ? ("tex x" + texSS) : "fill";
+        String mode = (USE_TEXTURE_BATCH && !texFailed)
+                ? ("tex x" + texSS + (lastBuildMotion ? " motion" : " settled")) : "fill";
         y = statLine(g, "OW pts " + snap.owDrawn + "/" + snap.owSampled, x, y, maxW, bottom, GateColors.PC_OW_HIGH);
         y = statLine(g, "Nether pts " + snap.netherDrawn + "/" + snap.netherSampled, x, y, maxW, bottom,
                 GateColors.PC_NETHER_HIGH);
@@ -940,6 +961,7 @@ public class PointCloudScreen extends Screen {
             yaw += (float) (dragX * DRAG_SENS);
             pitch += (float) (dragY * DRAG_SENS);
             pitch = Math.max(-1.5f, Math.min(1.5f, pitch));
+            lastInputNanos = System.nanoTime(); // ⑨ 動作中 → SS=1
             return true;
         }
         return super.mouseDragged(event, dragX, dragY);
@@ -961,6 +983,7 @@ public class PointCloudScreen extends Screen {
             float min = (framedFor != null) ? Math.max(framedFor.radius * 0.2f, 5f) : 5f;
             float max = (framedFor != null) ? framedFor.radius * 12f + 200f : 5000f;
             distance = Math.max(min, Math.min(max, distance));
+            lastInputNanos = System.nanoTime(); // ⑨ ズーム中 → SS=1 (settle で再ネイティブ)
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
