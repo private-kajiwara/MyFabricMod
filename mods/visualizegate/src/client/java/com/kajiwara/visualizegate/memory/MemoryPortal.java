@@ -21,6 +21,12 @@ public final class MemoryPortal {
     public String axis;            // "X" / "Z"
     public long lastSeenTick;
     public boolean liveConfirmed;
+    /**
+     * ⑰ 今セッションで最後にライブ確認 (PortalIndex スキャン一致) した tick。 <b>transient</b>＝永続しない
+     * (tickCounter はセッション毎に 0 から＝跨ぐと無意味なため)。 reconcile の猶予判定に使い、 ディメンション
+     * 往復直後のチャンクロード過渡 (ロード済みだが portal ブロックがまだ読めない一瞬) で記憶を誤除去しない。
+     */
+    public transient long sessionConfirmTick;
 
     public MemoryPortal() {
         // GSON 用 no-arg ctor

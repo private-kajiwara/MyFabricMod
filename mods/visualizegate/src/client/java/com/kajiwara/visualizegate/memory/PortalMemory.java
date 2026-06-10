@@ -49,6 +49,13 @@ public final class PortalMemory {
 
     private static final String FILE_NAME = "visualizegate-portals.json";
     private static final int PERIODIC_INTERVAL = 20; // tick
+    /**
+     * ⑰ reconcile 猶予 (tick)。 ロード済みなのに anchor が portal でなくても、 今セッションで最近
+     * (この tick 数以内) ライブ確認済みなら除去しない＝ディメンション往復直後のチャンクロード過渡で
+     * 記憶 (=点群 Links の素) を誤って失わない。 本当に破壊されたポータルは PortalIndex から消え
+     * sessionConfirmTick が更新されなくなり、 この猶予を過ぎて初めて除去される。 100t≒5s。
+     */
+    private static final long RECONCILE_GRACE_TICKS = 100;
     /** 観測リージョンセルのサイズ (チャンク四方)。 4ch=64ブロック。 */
     private static final int CELL_CHUNKS = 4;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -79,18 +86,22 @@ public final class PortalMemory {
         try {
             ensureLoaded();
             currentWorldId = worldId(mc); // null 可 (= 取得不能なら記憶を触らない)
+            VisualizeGateMod.LOGGER.info("[visualizegate] portal-memory JOIN worldId={}", currentWorldId);
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] portal-memory join failed: {}", t.toString());
         }
     }
 
     private void onLeave() {
+        // ⑰ currentWorldId は<b>あえて null にしない</b> (保持)。 万一ディメンション移動で DISCONNECT が
+        // 発火しても記憶クエリ (knownInDimension=点群 Links の素) が空にならない。 別 world へ実接続する時は
+        // onJoin が先に上書きし、 メニュー中 (world 無し) は解析が走らないので stale でも無害。
         try {
             save();
+            VisualizeGateMod.LOGGER.info("[visualizegate] portal-memory LEAVE (saved; worldId kept={})",
+                    currentWorldId);
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] portal-memory save-on-leave failed: {}", t.toString());
-        } finally {
-            currentWorldId = null;
         }
     }
 
@@ -170,11 +181,17 @@ public final class PortalMemory {
             mp.maxZ = r.aabb().maxZ;
             mp.axis = r.axis().name();
             mp.lastSeenTick = tickCounter;
+            mp.sessionConfirmTick = tickCounter; // ⑰ reconcile 猶予の基準
             mp.liveConfirmed = true;
         }
     }
 
-    /** 記憶位置がライブでロード済みなのに実ポータルが無ければ除去 (破壊済みポータルの嘘を防ぐ)。 */
+    /**
+     * 記憶位置がライブでロード済みなのに実ポータルが無ければ除去 (破壊済みポータルの嘘を防ぐ)。
+     * ⑰ ただし<b>今セッションで最近ライブ確認済み</b> ({@link #RECONCILE_GRACE_TICKS} 以内) のものは除去しない＝
+     * ディメンション往復直後のチャンクロード過渡 (ロード済みだが portal ブロックがまだ読めない一瞬) で
+     * 点群 Links の素を誤失しない。 本当に消えたポータルは PortalIndex から外れ confirm が止まり、 猶予経過後に除去。
+     */
     private void reconcile(ClientLevel level, String dimId) {
         List<MemoryPortal> mem = file.dimPortals(currentWorldId, dimId);
         for (Iterator<MemoryPortal> it = mem.iterator(); it.hasNext();) {
@@ -183,9 +200,16 @@ public final class PortalMemory {
                 continue; // 未ロード → 「分からない」ので保持 (liveConfirmed は据置)
             }
             BlockPos a = new BlockPos(mp.ax, mp.ay, mp.az);
-            if (level.getBlockState(a).getBlock() != Blocks.NETHER_PORTAL) {
-                it.remove(); // ロード済みなのに消えている → 記憶を失効
+            if (level.getBlockState(a).getBlock() == Blocks.NETHER_PORTAL) {
+                continue; // 実在 → 保持
             }
+            if (tickCounter - mp.sessionConfirmTick <= RECONCILE_GRACE_TICKS) {
+                continue; // ⑰ 最近ライブ確認済み → 過渡の誤読とみなし猶予 (除去しない)
+            }
+            it.remove(); // ロード済み・portal 不在・猶予経過 → 記憶を失効
+            VisualizeGateMod.LOGGER.info(
+                    "[visualizegate] reconcile removed portal dim={} anchor=({},{},{}) (absent, grace passed)",
+                    dimId, mp.ax, mp.ay, mp.az);
         }
     }
 

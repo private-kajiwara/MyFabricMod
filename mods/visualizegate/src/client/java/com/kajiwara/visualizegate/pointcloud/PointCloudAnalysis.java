@@ -107,11 +107,20 @@ public final class PointCloudAnalysis {
             }
         }
 
+        java.util.List<com.kajiwara.visualizegate.domain.DomainPortal> owP =
+                PortalMemory.get().knownInDimension(PortalDimension.OVERWORLD);
+        java.util.List<com.kajiwara.visualizegate.domain.DomainPortal> nP =
+                PortalMemory.get().knownInDimension(PortalDimension.NETHER);
+        // ⑰ 診断: 解析ごとに記憶ポータル数を出す (Links が消えたらここで OW/Nether どちらが 0 か分かる)。
+        VisualizeGateMod.LOGGER.info(
+                "[visualizegate] point-cloud capture: worldId={} memPortals OW={} Nether={}",
+                PortalMemory.get().currentWorldId(), owP.size(), nP.size());
+
         return new PointCloudInputs(
                 owTerrain,
                 netherTerrain,
-                PortalMemory.get().knownInDimension(PortalDimension.OVERWORLD),
-                PortalMemory.get().knownInDimension(PortalDimension.NETHER),
+                owP,
+                nP,
                 OW_MIN_Y, OW_MAX_Y, NETHER_MIN_Y, NETHER_MAX_Y,
                 present, px, py, pz, inNether);
     }

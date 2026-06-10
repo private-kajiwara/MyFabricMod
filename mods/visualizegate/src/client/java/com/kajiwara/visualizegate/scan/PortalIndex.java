@@ -68,6 +68,9 @@ public final class PortalIndex {
     }
 
     public void clear() {
+        // ⑰ 診断: ディメンション往復で Links が消える件の切り分け用。 dim 移動でこれが出るなら DISCONNECT が
+        // dim 変更でも発火している (ライブ index のみ消える＝点群 Links は PortalMemory から読むので本来不変)。
+        VisualizeGateMod.LOGGER.info("[visualizegate] PortalIndex.clear() (DISCONNECT) — live index wiped");
         byDim.clear();
     }
 
