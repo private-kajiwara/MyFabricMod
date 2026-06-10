@@ -306,6 +306,7 @@ public class PointCloudScreen extends Screen {
                 drawCloud(g, snap);
                 logRoute(texFailed ? "fill" : "tex", gpu3dReason);
             }
+            drawRouteBanner(g); // 経路を画面に大きく表示 (ログ不要に)
         }
 
         drawSlider(g);
@@ -338,6 +339,23 @@ public class PointCloudScreen extends Screen {
      * ⑬ 案A スパイク: FBO へ真の GPU3D (深度付) で描き、 FBO 色をビューポートへ合成。 成功で true。
      * 失敗 (当該 gen で不可/例外) なら false を返し、 呼び出し側が texbatch へフォールバック。
      */
+    /** ビューポート上部に描画経路を大きく表示 (ログを掘らず一目で確認・スクショ可)。 */
+    private void drawRouteBanner(GuiGraphicsExtractor g) {
+        String txt;
+        int col;
+        if (gpu3dActive) {
+            txt = "RENDER: GPU3D";
+            col = GateColors.PC_OW_HIGH;          // 青緑＝成功
+        } else {
+            txt = "RENDER: TEX — " + (texFailed ? "fill (texbatch failed)" : gpu3dReason);
+            col = GateColors.PC_NETHER_HIGH;      // 橙＝フォールバック
+        }
+        int top = vpY + 2;
+        g.fill(vpX, top, vpX + vpW, top + 13, 0xC0000000); // 帯背景
+        g.fill(vpX, top, vpX + vpW, top + 1, GateColors.MAIN);
+        g.text(this.font, Component.literal(fitWidth(txt, vpW - 6)), vpX + 4, top + 3, col);
+    }
+
     /** 経路を一度きりログ (HUD に依存しない自己診断・経路や理由が変わった時だけ出す)。 */
     private void logRoute(String route, String reason) {
         String key = route + "|" + (reason == null ? "" : reason);
