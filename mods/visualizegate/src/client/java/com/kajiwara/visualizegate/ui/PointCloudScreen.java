@@ -60,8 +60,6 @@ public class PointCloudScreen extends Screen {
      * よって「px 基準で極小＋距離フェード＋丸近似」でドットグリッド感を最小化する。
      */
     private static final int POINT_SIZE_EXTRA = 1;
-    /** ⑬ GPU3D 経路の点キューブ半辺＝雲半径×この比 (固定ワールド寸・ズーム比例)。 小さくくっきり優先。 */
-    private static final float GPU_POINT_HALF_FRAC = 0.003f;
     /** ⑬ GPU3D リンク角柱の半幅＝雲半径×比 (点より太く＝4K でも見える線)。 太さ調整はここ。 */
     private static final float GPU_LINK_W_FRAC = 0.004f;
     /** ⑬ GPU3D ゲートマーカー (紫キューブ) の半辺＝雲半径×比 (点群より明確に大きく・全角度で視認)。 */
@@ -95,7 +93,7 @@ public class PointCloudScreen extends Screen {
 
     // ── 入力ドラッグ ──
     private enum Drag {
-        NONE, ROTATE, SLIDER, DETAIL
+        NONE, ROTATE, SLIDER, DETAIL, POINTSIZE
     }
 
     private Drag drag = Drag.NONE;
@@ -110,6 +108,7 @@ public class PointCloudScreen extends Screen {
     private int slW;
     private int slH;
     private int sl2Y; // ⑭ 2 本目のスライダ (GPU detail) のトラック Y
+    private int sl3Y; // ⑯ 3 本目のスライダ (点サイズ) のトラック Y
 
     // ── 投影スクラッチ (rebuild 中のみ使用・フレーム毎に再確保しない) ──
     private float[] bSx = new float[0];
@@ -134,6 +133,7 @@ public class PointCloudScreen extends Screen {
     private boolean gDimTint;
     private int gSpacing = -1;
     private int gDetail = -1; // ⑭ GPU detail 署名 (変化で VBO 再構築)
+    private int gPointSize = -1; // ⑯ 点サイズ署名 (lineWidth は頂点に焼くので変化で再構築)
     private int gpuOwPts;     // ⑭ 直近に GPU へ送った OW/ネザー点数 (detail 上限後・HUD 用)
     private int gpuNPts;
     private static final Identifier PC_TEX_ID =
@@ -255,6 +255,7 @@ public class PointCloudScreen extends Screen {
         slW = sbW - 2 * SIDE_PAD;
         slH = 10;
         sl2Y = slY + slH + 22; // ⑭ GPU detail スライダ (ラベル + トラック分の余白を空けて下へ)
+        sl3Y = sl2Y + slH + 22; // ⑯ 点サイズスライダ
 
         // フッタ: Re-analyze / Done。
         int fy = this.height - FOOTER_H + 7;
@@ -430,8 +431,10 @@ public class PointCloudScreen extends Screen {
         boolean dimTint = PointCloudViewState.isDimTint();
         int spacing = PointCloudViewState.getDimensionSpacing();
         int detail = PointCloudViewState.getGpuDetail();
+        int pointSize = PointCloudViewState.getPointSize();
         if (snap == gSnap && showOw == gShowOw && showN == gShowN && showLinks == gShowLinks
-                && dimTint == gDimTint && spacing == gSpacing && detail == gDetail) {
+                && dimTint == gDimTint && spacing == gSpacing && detail == gDetail
+                && pointSize == gPointSize) {
             return false;
         }
         gSnap = snap;
@@ -441,6 +444,7 @@ public class PointCloudScreen extends Screen {
         gDimTint = dimTint;
         gSpacing = spacing;
         gDetail = detail;
+        gPointSize = pointSize;
         return true;
     }
 
@@ -480,10 +484,8 @@ public class PointCloudScreen extends Screen {
             k++;
         }
         gpuNPts = k - gpuOwPts;
-        // 極小キューブの半辺 (ワールド単位)。 雲の広がりに比例＝既定フレーミングで数 px・固定ワールド寸なので
-        // ズームで自然に拡縮する (カメラ非依存を保つため px 下限は持たない)。 大きすぎ/重なりはここを下げて調整。
-        float pointHalf = Math.max(0.2f, snap.radius * GPU_POINT_HALF_FRAC);
-        PointCloudGpuRenderer.uploadPoints(pxyz, pcol, k, pointHalf);
+        // ⑯ GL 点サイズ (px・スライダ)。 小さく＝密で滑らかな高密度クラウド。
+        PointCloudGpuRenderer.uploadPoints(pxyz, pcol, k, PointCloudViewState.getPointSize());
 
         // ── マーカー類 (太さを持つ 3D ジオメトリ・QUADS): リンク=細角柱 / ゲート=紫キューブ / 現在地=金の太十字 ──
         // 生 1px GL ライン (旧 DEBUG_LINES) は 4K で細すぎたため全て立体化＝ワールド寸なので透視で解像度比例に
@@ -625,7 +627,11 @@ public class PointCloudScreen extends Screen {
         long now = System.nanoTime();
         boolean motion = (drag == Drag.ROTATE) || (now - lastInputNanos < SETTLE_NANOS);
         int targetSS = motion ? 1 : supersample();
-        int targetStride = motion ? MOTION_STRIDE : 1;
+        // ⑯ texbatch (CPU フォールバック) も品質設定の detail で上限化＝高 budget(20万) でも暴走しない。
+        int detail = PointCloudViewState.getGpuDetail();
+        int maxLayer = Math.max(snap.owX.length, snap.nX.length);
+        int detailStride = (detail > 0 && maxLayer > detail) ? (maxLayer + detail - 1) / detail : 1;
+        int targetStride = Math.max(motion ? MOTION_STRIDE : 1, detailStride);
         boolean texActive = USE_TEXTURE_BATCH && !texFailed;
         boolean sigChanged = signatureChanged(snap);
         if (sigChanged || (texActive && (targetSS != texSS || targetStride != lastBuildStride))) {
@@ -1242,6 +1248,11 @@ public class PointCloudScreen extends Screen {
         drawTrack(g, "GPU detail: " + detail + " pts/layer", sl2Y,
                 (float) (detail - PointCloudViewState.DETAIL_MIN)
                         / (PointCloudViewState.DETAIL_MAX - PointCloudViewState.DETAIL_MIN));
+        // ⑯ 点サイズ (px)。 小さく＝密で滑らか。
+        int ps = PointCloudViewState.getPointSize();
+        drawTrack(g, "Point size: " + ps + " px", sl3Y,
+                (float) (ps - PointCloudViewState.POINT_SIZE_MIN)
+                        / (PointCloudViewState.POINT_SIZE_MAX - PointCloudViewState.POINT_SIZE_MIN));
     }
 
     /** スライダ 1 本 (ラベル上・トラック・ハンドル) を {@code trackY} に描く。 {@code frac}=0..1。 */
@@ -1262,7 +1273,7 @@ public class PointCloudScreen extends Screen {
         int x = slX;
         int maxW = slW;                          // インセット済みパネル内幅
         int bottom = this.height - FOOTER_H - 2; // フッタ(Done)を侵さない予約線
-        int y = sl2Y + slH + 12;
+        int y = sl3Y + slH + 12;
         String mode = gpu3dActive ? ("gpu3d x" + texSS)
                 : (USE_TEXTURE_BATCH && !texFailed)
                         ? ("tex x" + texSS + (lastBuildMotion ? " motion" : " settled")) : "fill";
@@ -1334,6 +1345,11 @@ public class PointCloudScreen extends Screen {
             setDetailFromMouse(mx);
             return true;
         }
+        if (event.button() == 0 && inSlider3(mx, my)) {
+            drag = Drag.POINTSIZE;
+            setPointSizeFromMouse(mx);
+            return true;
+        }
         if (event.button() == 0 && inViewport(mx, my)) {
             drag = Drag.ROTATE;
             return true;
@@ -1351,6 +1367,10 @@ public class PointCloudScreen extends Screen {
             setDetailFromMouse(event.x());
             return true;
         }
+        if (drag == Drag.POINTSIZE) {
+            setPointSizeFromMouse(event.x());
+            return true;
+        }
         if (drag == Drag.ROTATE) {
             yaw += (float) (dragX * DRAG_SENS);
             pitch += (float) (dragY * DRAG_SENS);
@@ -1363,7 +1383,7 @@ public class PointCloudScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (drag == Drag.SLIDER || drag == Drag.DETAIL) {
+        if (drag == Drag.SLIDER || drag == Drag.DETAIL || drag == Drag.POINTSIZE) {
             GateConfigManager.save();
         }
         drag = Drag.NONE;
@@ -1395,6 +1415,10 @@ public class PointCloudScreen extends Screen {
         return mx >= slX && mx <= slX + slW && my >= sl2Y - 3 && my <= sl2Y + slH + 3;
     }
 
+    private boolean inSlider3(double mx, double my) {
+        return mx >= slX && mx <= slX + slW && my >= sl3Y - 3 && my <= sl3Y + slH + 3;
+    }
+
     private void setSpacingFromMouse(double mx) {
         float frac = (float) ((mx - slX) / Math.max(1, slW - 6));
         frac = Math.max(0f, Math.min(1f, frac));
@@ -1410,6 +1434,15 @@ public class PointCloudScreen extends Screen {
         int v = PointCloudViewState.DETAIL_MIN
                 + Math.round(frac * (PointCloudViewState.DETAIL_MAX - PointCloudViewState.DETAIL_MIN));
         PointCloudViewState.setGpuDetail(v);
+    }
+
+    /** ⑯ 点サイズスライダ: マウス x → GL 点サイズ (px)。 lineWidth は頂点に焼くので変化で VBO 再構築。 */
+    private void setPointSizeFromMouse(double mx) {
+        float frac = (float) ((mx - slX) / Math.max(1, slW - 6));
+        frac = Math.max(0f, Math.min(1f, frac));
+        int v = PointCloudViewState.POINT_SIZE_MIN
+                + Math.round(frac * (PointCloudViewState.POINT_SIZE_MAX - PointCloudViewState.POINT_SIZE_MIN));
+        PointCloudViewState.setPointSize(v);
     }
 
     @Override

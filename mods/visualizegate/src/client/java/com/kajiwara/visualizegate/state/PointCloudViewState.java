@@ -21,8 +21,13 @@ public final class PointCloudViewState {
      * GPU3D は Screen 表示中のみ・SP は停止中＝通常プレイ FPS/サーバーに影響しない。
      */
     public static final int DETAIL_MIN = 500;
-    public static final int DETAIL_MAX = 16000;
-    public static final int DETAIL_DEFAULT = 5000;
+    public static final int DETAIL_MAX = 200_000;   // ⑯ GL 点 (1 頂点/点) で数十万点が現実的＝上限を大幅増
+    public static final int DETAIL_DEFAULT = 20_000; // ⑯ 中位 GPU 安全値 (低スペックはスライダで下げる)
+
+    /** ⑯ GL 点サイズ (ピクセル・スライダ範囲)。 小さく＝密で滑らかな高密度クラウド (参照寄せ)。 */
+    public static final int POINT_SIZE_MIN = 1;
+    public static final int POINT_SIZE_MAX = 6;
+    public static final int POINT_SIZE_DEFAULT = 2;
 
     private static boolean showOverworld = true;
     private static boolean showNether = true;
@@ -31,6 +36,7 @@ public final class PointCloudViewState {
     private static boolean dimTint = false;
     private static int dimensionSpacing = SPACING_DEFAULT;
     private static int gpuDetail = DETAIL_DEFAULT;
+    private static int pointSize = POINT_SIZE_DEFAULT;
 
     private PointCloudViewState() {
     }
@@ -102,5 +108,14 @@ public final class PointCloudViewState {
 
     public static void setGpuDetail(int v) {
         gpuDetail = Math.max(DETAIL_MIN, Math.min(DETAIL_MAX, v));
+    }
+
+    /** ⑯ GL 点サイズ (px)。 */
+    public static int getPointSize() {
+        return pointSize;
+    }
+
+    public static void setPointSize(int v) {
+        pointSize = Math.max(POINT_SIZE_MIN, Math.min(POINT_SIZE_MAX, v));
     }
 }

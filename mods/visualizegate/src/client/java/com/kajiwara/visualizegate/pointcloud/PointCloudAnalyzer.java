@@ -37,7 +37,7 @@ public final class PointCloudAnalyzer {
      * (細かくすると既存 TerrainStore 格子座標の
      * 意味が変わり蓄積済みデータの位置がずれる＋容量 4 倍＝互換破壊のため)。 在庫密度内で予算だけ上げる。
      */
-    public static final int POINT_BUDGET_PER_LAYER = 16_000;
+    public static final int POINT_BUDGET_PER_LAYER = 200_000;
     /** OW→ネザーのリンク探索半径 (PortalLinkRenderer と同じ・水平距離)。 */
     private static final double NETHER_SEARCH_RADIUS = 16.0;
 

@@ -67,6 +67,7 @@ public final class GateConfigManager {
             PointCloudViewState.setDimTint(cfg.pcDimTint);
             PointCloudViewState.setDimensionSpacing(cfg.pcDimensionSpacing);
             PointCloudViewState.setGpuDetail(cfg.pcGpuDetail);
+            PointCloudViewState.setPointSize(cfg.pcPointSize);
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn(
                     "[visualizegate] config load failed (defaults kept): {}", t.toString());
@@ -90,6 +91,7 @@ public final class GateConfigManager {
             cfg.pcDimTint = PointCloudViewState.isDimTint();
             cfg.pcDimensionSpacing = PointCloudViewState.getDimensionSpacing();
             cfg.pcGpuDetail = PointCloudViewState.getGpuDetail();
+            cfg.pcPointSize = PointCloudViewState.getPointSize();
             writeAtomic(file(), GSON.toJson(cfg));
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] config save failed: {}", t.toString());
