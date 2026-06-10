@@ -15,8 +15,10 @@ import com.kajiwara.visualizegate.VisualizeGateMod;
 import com.mojang.blaze3d.ProjectionType;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.TextureTarget;
+import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderPass;
@@ -25,21 +27,32 @@ import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
 import net.minecraft.client.renderer.ProjectionMatrixBuffer;
-import net.minecraft.client.renderer.RenderPipelines;
 
 /**
  * ⑬ 点群ポップアップを<b>真の GPU3D</b> で描く (Mixin 不使用・<b>>=26.1 限定</b>)。
  *
- * <p>オフスクリーン {@link TextureTarget} (色+<b>深度</b>) へ、 <b>カメラ非依存の頂点バッファ</b> (点=
- * {@code DEBUG_POINTS} の GL 点、 線={@code WIREFRAME}) を自前オービット投影＋<b>GPU 深度テスト</b>で描き、 FBO 色を
- * GUI ビューポートへ合成する。 点バッファはデータ/トグル/spacing 変化時だけ {@link #uploadPoints}/{@link #uploadLines}
- * で再構築し、 <b>回転/ズームは行列更新のみ</b> ({@link #render})＝再ラスタライズ無し。 GPU 深度で同層内も 2 層間も
- * 正しく遮蔽＝「大きく重なる」「層が貫通」を解消。 失敗時は {@link #failed} を立て、 呼び出し側が texbatch へ戻る。
+ * <p>オフスクリーン {@link TextureTarget} (色+<b>深度</b>) へ、 <b>カメラ非依存の頂点バッファ</b>を自前オービット
+ * 投影＋<b>GPU 深度テスト/書込み</b>で描き、 FBO 色を GUI ビューポートへ合成する。
+ *
+ * <p><b>パイプライン</b> ({@link #ensurePipelines}): vanilla の {@code DEBUG_POINTS} は頂点フォーマットが
+ * {@code POSITION_COLOR_LINE_WIDTH} (= {@code LineWidth} 要素必須) で {@code POSITION_COLOR} begin と不一致＝
+ * MeshData 検証で落ちる。 {@code DEBUG_QUADS}/{@code DEBUG_FILLED_BOX} は {@code POSITION_COLOR} だが深度<b>書込み
+ * OFF</b>＝点同士が遮蔽しない。 そこで {@link RenderPipeline#builder} (public) で <b>{@code POSITION_COLOR} のみ・
+ * 深度テスト+書込み ON ({@link DepthStencilState#DEFAULT})</b> の自前パイプラインを 2 本作る (shader は vanilla の
+ * {@code core/position_color}・uniform は {@code DynamicTransforms}/{@code Projection} のみ＝{@code DEBUG_FILLED}
+ * と同一・javap 確認)。 点= {@code QUADS} で<b>極小ワールド軸整列キューブ</b> (どの回転角でも見える立体・1点=6面24頂点)、
+ * 線= {@code DEBUG_LINES} (生 GL ライン・1px)。
+ *
+ * <p>頂点バッファはデータ/トグル/spacing 変化時だけ {@link #uploadPoints}/{@link #uploadLines} で再構築し、
+ * <b>回転/ズームは行列更新のみ</b> ({@link #render})＝再ラスタライズ無し。 キューブはワールド固定サイズ＝透視投影で
+ * <b>ズーム比例</b>に縮む (カメラ非依存を保つため画面 px 下限は持たない)。 GPU 深度で同層内も 2 層間も正しく遮蔽＝
+ * 「大きく重なる」「層が貫通」を解消。 失敗時は {@link #failed} を立て、 呼び出し側が texbatch へ戻る。
  */
 public final class PointCloudGpuRenderer {
 
@@ -50,12 +63,44 @@ public final class PointCloudGpuRenderer {
     private static boolean failed = false;
     private static String lastError = "(none)";
 
+    /** 点= POSITION_COLOR / QUADS / 深度 DEFAULT (test+write) / cull off。 極小キューブを描く。 */
+    private static RenderPipeline pointsPipeline;
+    /** 線= POSITION_COLOR / DEBUG_LINES / 深度 DEFAULT。 生 GL ライン。 */
+    private static RenderPipeline linesPipeline;
+
     private static GpuBuffer pointsVbo;
-    private static int pointsCount;   // 頂点数 (= 点数)
+    private static int pointsIndexCount; // QUADS 索引数 (= 点数×36)
     private static GpuBuffer linesVbo;
-    private static int linesCount;    // 頂点数 (= 線分×2)
+    private static int linesIndexCount;  // DEBUG_LINES 索引数 (= 頂点数 = 線分×2)
 
     private PointCloudGpuRenderer() {
+    }
+
+    /** 自前パイプライン (POSITION_COLOR・深度 test+write) を遅延生成。 例外時は {@link #fail} で texbatch へ。 */
+    private static void ensurePipelines() {
+        if (pointsPipeline == null) {
+            pointsPipeline = RenderPipeline.builder()
+                    .withLocation("visualizegate/pipeline/pc_points")
+                    .withVertexShader("core/position_color")
+                    .withFragmentShader("core/position_color")
+                    .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+                    .withUniform("Projection", UniformType.UNIFORM_BUFFER)
+                    .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS)
+                    .withDepthStencilState(DepthStencilState.DEFAULT)
+                    .withCull(false)
+                    .build();
+        }
+        if (linesPipeline == null) {
+            linesPipeline = RenderPipeline.builder()
+                    .withLocation("visualizegate/pipeline/pc_lines")
+                    .withVertexShader("core/position_color")
+                    .withFragmentShader("core/position_color")
+                    .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+                    .withUniform("Projection", UniformType.UNIFORM_BUFFER)
+                    .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.DEBUG_LINES)
+                    .withDepthStencilState(DepthStencilState.DEFAULT)
+                    .build();
+        }
     }
 
     public static boolean usable() {
@@ -74,14 +119,23 @@ public final class PointCloudGpuRenderer {
         return RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
     }
 
-    /** 点群頂点 (xyz の 3 連結 + argb) を DEBUG_POINTS フォーマットで VBO 化 (データ変化時のみ)。 */
-    public static void uploadPoints(float[] xyz, int[] argb, int n) {
-        pointsCount = 0;
+    /**
+     * 点群 (xyz の 3 連結 + argb) を<b>極小ワールド軸整列キューブ</b> (1 点=6 面 24 頂点・QUADS) として VBO 化
+     * (データ変化時のみ)。 {@code half}=キューブ半辺 (ワールド単位・固定＝透視投影でズーム比例に縮む)。
+     */
+    public static void uploadPoints(float[] xyz, int[] argb, int n, float half) {
+        pointsIndexCount = 0;
         if (failed || n <= 0) {
             return;
         }
         try {
-            MeshData mesh = buildMesh(RenderPipelines.DEBUG_POINTS, xyz, argb, n);
+            ensurePipelines();
+            BufferBuilder bb = Tesselator.getInstance()
+                    .begin(VertexFormat.Mode.QUADS, pointsPipeline.getVertexFormat());
+            for (int i = 0; i < n; i++) {
+                addCube(bb, xyz[i * 3], xyz[i * 3 + 1], xyz[i * 3 + 2], half, argb[i]);
+            }
+            MeshData mesh = bb.build();
             if (mesh == null) {
                 return;
             }
@@ -91,21 +145,27 @@ public final class PointCloudGpuRenderer {
                 }
                 pointsVbo = RenderSystem.getDevice().createBuffer(() -> "visualizegate-pc-points",
                         GpuBuffer.USAGE_VERTEX, mesh.vertexBuffer());
-                pointsCount = mesh.drawState().vertexCount();
+                pointsIndexCount = mesh.drawState().indexCount();
             }
         } catch (Throwable t) {
             fail("uploadPoints", t);
         }
     }
 
-    /** 線分頂点 (xyz の 3 連結 + argb・偶数個) を WIREFRAME フォーマットで VBO 化。 */
+    /** 線分頂点 (xyz の 3 連結 + argb・偶数個) を DEBUG_LINES (生 GL ライン) フォーマットで VBO 化。 */
     public static void uploadLines(float[] xyz, int[] argb, int n) {
-        linesCount = 0;
+        linesIndexCount = 0;
         if (failed || n <= 0) {
             return;
         }
         try {
-            MeshData mesh = buildMesh(RenderPipelines.WIREFRAME, xyz, argb, n);
+            ensurePipelines();
+            BufferBuilder bb = Tesselator.getInstance()
+                    .begin(VertexFormat.Mode.DEBUG_LINES, linesPipeline.getVertexFormat());
+            for (int i = 0; i < n; i++) {
+                bb.addVertex(xyz[i * 3], xyz[i * 3 + 1], xyz[i * 3 + 2]).setColor(argb[i]);
+            }
+            MeshData mesh = bb.build();
             if (mesh == null) {
                 return;
             }
@@ -115,21 +175,35 @@ public final class PointCloudGpuRenderer {
                 }
                 linesVbo = RenderSystem.getDevice().createBuffer(() -> "visualizegate-pc-lines",
                         GpuBuffer.USAGE_VERTEX, mesh.vertexBuffer());
-                linesCount = mesh.drawState().vertexCount();
+                linesIndexCount = mesh.drawState().indexCount();
             }
         } catch (Throwable t) {
             fail("uploadLines", t);
         }
     }
 
-    private static MeshData buildMesh(RenderPipeline pipeline, float[] xyz, int[] argb, int n) {
-        VertexFormat fmt = pipeline.getVertexFormat();
-        VertexFormat.Mode mode = pipeline.getVertexFormatMode();
-        BufferBuilder bb = Tesselator.getInstance().begin(mode, fmt);
-        for (int i = 0; i < n; i++) {
-            bb.addVertex(xyz[i * 3], xyz[i * 3 + 1], xyz[i * 3 + 2]).setColor(argb[i]);
-        }
-        return bb.build();
+    /** 中心 (x,y,z)・半辺 {@code h} の軸整列キューブを 6 面 (QUADS・各 4 頂点) で書き込む (cull off＝巻き順不問)。 */
+    private static void addCube(BufferBuilder bb, float x, float y, float z, float h, int c) {
+        float x0 = x - h;
+        float x1 = x + h;
+        float y0 = y - h;
+        float y1 = y + h;
+        float z0 = z - h;
+        float z1 = z + h;
+        quad(bb, x0, y0, z0, x1, y0, z0, x1, y1, z0, x0, y1, z0, c); // z-
+        quad(bb, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1, c); // z+
+        quad(bb, x0, y0, z0, x0, y1, z0, x0, y1, z1, x0, y0, z1, c); // x-
+        quad(bb, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1, c); // x+
+        quad(bb, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, c); // y-
+        quad(bb, x0, y1, z0, x1, y1, z0, x1, y1, z1, x0, y1, z1, c); // y+
+    }
+
+    private static void quad(BufferBuilder bb, float ax, float ay, float az, float bx, float by, float bz,
+            float cx, float cy, float cz, float dx, float dy, float dz, int col) {
+        bb.addVertex(ax, ay, az).setColor(col);
+        bb.addVertex(bx, by, bz).setColor(col);
+        bb.addVertex(cx, cy, cz).setColor(col);
+        bb.addVertex(dx, dy, dz).setColor(col);
     }
 
     /**
@@ -139,11 +213,12 @@ public final class PointCloudGpuRenderer {
         if (failed || w <= 0 || h <= 0) {
             return false;
         }
-        if (pointsCount == 0 && linesCount == 0) {
+        if (pointsIndexCount == 0 && linesIndexCount == 0) {
             return false; // 描く物が無い
         }
         boolean projSet = false;
         try {
+            ensurePipelines();
             ensureFbo(w, h);
             GpuDevice device = RenderSystem.getDevice();
 
@@ -163,19 +238,27 @@ public final class PointCloudGpuRenderer {
             try (RenderPass pass = enc.createRenderPass(() -> "visualizegate-pointcloud",
                     fbo.getColorTextureView(), OptionalInt.of(clearArgb),
                     fbo.getDepthTextureView(), OptionalDouble.of(1.0))) {
-                if (pointsCount > 0 && pointsVbo != null) {
-                    pass.setPipeline(RenderPipelines.DEBUG_POINTS);
-                    RenderSystem.bindDefaultUniforms(pass);
+                // 自前パイプラインは Projection/DynamicTransforms のみ宣言＝この 2 本だけ束ねる
+                // (bindDefaultUniforms は Fog/Globals/Lights も触るので未使用＝最小束縛)。
+                if (pointsIndexCount > 0 && pointsVbo != null) {
+                    pass.setPipeline(pointsPipeline);
+                    pass.setUniform("Projection", projSlice);
                     pass.setUniform("DynamicTransforms", dyn);
                     pass.setVertexBuffer(0, pointsVbo);
-                    pass.draw(0, pointsCount);
+                    RenderSystem.AutoStorageIndexBuffer idx =
+                            RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+                    pass.setIndexBuffer(idx.getBuffer(pointsIndexCount), idx.type());
+                    pass.drawIndexed(0, 0, pointsIndexCount, 1);
                 }
-                if (linesCount > 0 && linesVbo != null) {
-                    pass.setPipeline(RenderPipelines.WIREFRAME);
-                    RenderSystem.bindDefaultUniforms(pass);
+                if (linesIndexCount > 0 && linesVbo != null) {
+                    pass.setPipeline(linesPipeline);
+                    pass.setUniform("Projection", projSlice);
                     pass.setUniform("DynamicTransforms", dyn);
                     pass.setVertexBuffer(0, linesVbo);
-                    pass.draw(0, linesCount);
+                    RenderSystem.AutoStorageIndexBuffer idx =
+                            RenderSystem.getSequentialBuffer(VertexFormat.Mode.DEBUG_LINES);
+                    pass.setIndexBuffer(idx.getBuffer(linesIndexCount), idx.type());
+                    pass.drawIndexed(0, 0, linesIndexCount, 1);
                 }
             }
             return true;

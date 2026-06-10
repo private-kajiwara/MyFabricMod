@@ -63,6 +63,8 @@ public class PointCloudScreen extends Screen {
      * よって「px 基準で極小＋距離フェード＋丸近似」でドットグリッド感を最小化する。
      */
     private static final int POINT_SIZE_EXTRA = 1;
+    /** ⑬ GPU3D 経路の点キューブ半辺＝雲半径×この比 (固定ワールド寸・ズーム比例)。 小さくくっきり優先。 */
+    private static final float GPU_POINT_HALF_FRAC = 0.003f;
     /** 最遠点の明るさ係数 (大気遠近: 遠い点を暗く沈ませる・近点=1.0)。 モック寄せで強めのフェード。 */
     private static final float DEPTH_DIM_MIN = 0.3f;
     /** ⑤ ディメンション色ティント: ブロック色へ混ぜる dim 色とブレンド率 (淡く＝判別補助)。 */
@@ -455,7 +457,10 @@ public class PointCloudScreen extends Screen {
             pcol[k] = tint ? mix(snap.nColor[i], DIM_TINT_NETHER, DIM_TINT_FRAC) : snap.nColor[i];
             k++;
         }
-        PointCloudGpuRenderer.uploadPoints(pxyz, pcol, pc);
+        // 極小キューブの半辺 (ワールド単位)。 雲の広がりに比例＝既定フレーミングで数 px・固定ワールド寸なので
+        // ズームで自然に拡縮する (カメラ非依存を保つため px 下限は持たない)。 大きすぎ/重なりはここを下げて調整。
+        float pointHalf = Math.max(0.2f, snap.radius * GPU_POINT_HALF_FRAC);
+        PointCloudGpuRenderer.uploadPoints(pxyz, pcol, pc, pointHalf);
 
         // ── 線 (リンク線分 + ゲート/現在地の 3D 十字) ──
         int links = showLinks ? snap.linkCount() : 0;
