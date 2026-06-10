@@ -14,9 +14,6 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.textures.GpuTextureView;
 //?}
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//? if >=26.1 {
-import net.minecraft.client.gui.render.TextureSetup;
-//?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -398,9 +395,13 @@ public class PointCloudScreen extends Screen {
             gpu3dReason = "colorView=null";
             return false;
         }
-        g.fill(RenderPipelines.GUI_TEXTURED,
-                TextureSetup.singleTexture(cv, PointCloudGpuRenderer.sampler()),
-                vpX, vpY, vpX + vpW, vpY + vpH);
+        // FBO 色を合成。 g.fill(GUI_TEXTURED, TextureSetup,…) は ColoredRectangleRenderState (UV0 を書かない)
+        // を作り GUI_TEXTURED(UV0 必須) と不一致＝フレーム末の遅延 mesh 構築で IllegalStateException:
+        // "Missing elements in vertex: UV0" → try/catch 外でクラッシュ。 GpuTextureView を直接取る blit
+        // オーバーロードは UV0 付き BlitRenderState を作る (内部で GUI_TEXTURED 使用・javap 確認) ＝正しい合成。
+        // FBO(GL レンダーターゲット) は下原点なので V を反転 (v0=1 上 / v1=0 下) して GUI 上向きに。
+        g.blit(cv, PointCloudGpuRenderer.sampler(),
+                vpX, vpY, vpX + vpW, vpY + vpH, 0f, 1f, 1f, 0f);
         gpu3dActive = true;
         texSS = ss;
         lastFillCount = 1;
