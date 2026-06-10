@@ -95,7 +95,7 @@ public class PointCloudScreen extends Screen {
 
     // ── 入力ドラッグ ──
     private enum Drag {
-        NONE, ROTATE, SLIDER
+        NONE, ROTATE, SLIDER, DETAIL
     }
 
     private Drag drag = Drag.NONE;
@@ -109,6 +109,7 @@ public class PointCloudScreen extends Screen {
     private int slY;
     private int slW;
     private int slH;
+    private int sl2Y; // ⑭ 2 本目のスライダ (GPU detail) のトラック Y
 
     // ── 投影スクラッチ (rebuild 中のみ使用・フレーム毎に再確保しない) ──
     private float[] bSx = new float[0];
@@ -132,6 +133,9 @@ public class PointCloudScreen extends Screen {
     private boolean gShowLinks;
     private boolean gDimTint;
     private int gSpacing = -1;
+    private int gDetail = -1; // ⑭ GPU detail 署名 (変化で VBO 再構築)
+    private int gpuOwPts;     // ⑭ 直近に GPU へ送った OW/ネザー点数 (detail 上限後・HUD 用)
+    private int gpuNPts;
     private static final Identifier PC_TEX_ID =
             Identifier.fromNamespaceAndPath("visualizegate", "pointcloud_dyn");
     /**
@@ -250,6 +254,7 @@ public class PointCloudScreen extends Screen {
         slY = y + 10;
         slW = sbW - 2 * SIDE_PAD;
         slH = 10;
+        sl2Y = slY + slH + 22; // ⑭ GPU detail スライダ (ラベル + トラック分の余白を空けて下へ)
 
         // フッタ: Re-analyze / Done。
         int fy = this.height - FOOTER_H + 7;
@@ -424,8 +429,9 @@ public class PointCloudScreen extends Screen {
         boolean showLinks = PointCloudViewState.isShowLinks();
         boolean dimTint = PointCloudViewState.isDimTint();
         int spacing = PointCloudViewState.getDimensionSpacing();
+        int detail = PointCloudViewState.getGpuDetail();
         if (snap == gSnap && showOw == gShowOw && showN == gShowN && showLinks == gShowLinks
-                && dimTint == gDimTint && spacing == gSpacing) {
+                && dimTint == gDimTint && spacing == gSpacing && detail == gDetail) {
             return false;
         }
         gSnap = snap;
@@ -434,6 +440,7 @@ public class PointCloudScreen extends Screen {
         gShowLinks = showLinks;
         gDimTint = dimTint;
         gSpacing = spacing;
+        gDetail = detail;
         return true;
     }
 
@@ -446,30 +453,37 @@ public class PointCloudScreen extends Screen {
         boolean showLinks = PointCloudViewState.isShowLinks();
 
         // ── 点群 (OW=+pivot 上層 / ネザー=-pivot 下層・⑤頂点色) ──
+        // ⑭ 品質設定: 各層を GPU detail (= 1 層の最大描画点数) へ stride 間引き。 スナップショットは不変
+        // ＝再解析不要・ライブ。 GPU3D は Screen 表示中のみ＝通常 FPS/サーバーに影響しない。
+        int detail = PointCloudViewState.getGpuDetail();
         int owN = showOw ? snap.owX.length : 0;
         int nN = showN ? snap.nX.length : 0;
-        int pc = owN + nN;
+        int owStride = (owN > detail) ? (owN + detail - 1) / detail : 1;
+        int nStride = (nN > detail) ? (nN + detail - 1) / detail : 1;
+        int pc = (owN + owStride - 1) / owStride + (nN + nStride - 1) / nStride;
         float[] pxyz = new float[pc * 3];
         int[] pcol = new int[pc];
         int k = 0;
-        for (int i = 0; i < owN; i++) {
+        for (int i = 0; i < owN; i += owStride) {
             pxyz[k * 3] = snap.owX[i];
             pxyz[k * 3 + 1] = snap.owY[i] + pivotY;
             pxyz[k * 3 + 2] = snap.owZ[i];
             pcol[k] = tint ? mix(snap.owColor[i], DIM_TINT_OW, DIM_TINT_FRAC) : snap.owColor[i];
             k++;
         }
-        for (int i = 0; i < nN; i++) {
+        gpuOwPts = k;
+        for (int i = 0; i < nN; i += nStride) {
             pxyz[k * 3] = snap.nX[i];
             pxyz[k * 3 + 1] = snap.nY[i] - pivotY;
             pxyz[k * 3 + 2] = snap.nZ[i];
             pcol[k] = tint ? mix(snap.nColor[i], DIM_TINT_NETHER, DIM_TINT_FRAC) : snap.nColor[i];
             k++;
         }
+        gpuNPts = k - gpuOwPts;
         // 極小キューブの半辺 (ワールド単位)。 雲の広がりに比例＝既定フレーミングで数 px・固定ワールド寸なので
         // ズームで自然に拡縮する (カメラ非依存を保つため px 下限は持たない)。 大きすぎ/重なりはここを下げて調整。
         float pointHalf = Math.max(0.2f, snap.radius * GPU_POINT_HALF_FRAC);
-        PointCloudGpuRenderer.uploadPoints(pxyz, pcol, pc, pointHalf);
+        PointCloudGpuRenderer.uploadPoints(pxyz, pcol, k, pointHalf);
 
         // ── マーカー類 (太さを持つ 3D ジオメトリ・QUADS): リンク=細角柱 / ゲート=紫キューブ / 現在地=金の太十字 ──
         // 生 1px GL ライン (旧 DEBUG_LINES) は 4K で細すぎたため全て立体化＝ワールド寸なので透視で解像度比例に
@@ -1220,16 +1234,24 @@ public class PointCloudScreen extends Screen {
 
     private void drawSlider(GuiGraphicsExtractor g) {
         int spacing = PointCloudViewState.getDimensionSpacing();
-        g.text(this.font, Component.literal("Dimension spacing: " + spacing),
-                slX, slY - 11, GateColors.TEXT);
-        // トラック。
-        g.fill(slX, slY, slX + slW, slY + slH, GateColors.PANEL);
-        g.fill(slX, slY, slX + slW, slY + 1, GateColors.MAIN_DIM);
-        // ハンドル。
-        float frac = (float) (spacing - PointCloudViewState.SPACING_MIN)
-                / (PointCloudViewState.SPACING_MAX - PointCloudViewState.SPACING_MIN);
+        drawTrack(g, "Dimension spacing: " + spacing, slY,
+                (float) (spacing - PointCloudViewState.SPACING_MIN)
+                        / (PointCloudViewState.SPACING_MAX - PointCloudViewState.SPACING_MIN));
+        // ⑭ GPU detail (1 層の最大描画点数)。 軽くしたい時は左へ。 既定=中位 GPU 安全値。
+        int detail = PointCloudViewState.getGpuDetail();
+        drawTrack(g, "GPU detail: " + detail + " pts/layer", sl2Y,
+                (float) (detail - PointCloudViewState.DETAIL_MIN)
+                        / (PointCloudViewState.DETAIL_MAX - PointCloudViewState.DETAIL_MIN));
+    }
+
+    /** スライダ 1 本 (ラベル上・トラック・ハンドル) を {@code trackY} に描く。 {@code frac}=0..1。 */
+    private void drawTrack(GuiGraphicsExtractor g, String label, int trackY, float frac) {
+        g.text(this.font, Component.literal(label), slX, trackY - 11, GateColors.TEXT);
+        g.fill(slX, trackY, slX + slW, trackY + slH, GateColors.PANEL);
+        g.fill(slX, trackY, slX + slW, trackY + 1, GateColors.MAIN_DIM);
+        frac = Math.max(0f, Math.min(1f, frac));
         int hx = slX + Math.round(frac * (slW - 6));
-        g.fill(hx, slY - 2, hx + 6, slY + slH + 2, GateColors.MAIN);
+        g.fill(hx, trackY - 2, hx + 6, trackY + slH + 2, GateColors.MAIN);
     }
 
     /**
@@ -1240,13 +1262,21 @@ public class PointCloudScreen extends Screen {
         int x = slX;
         int maxW = slW;                          // インセット済みパネル内幅
         int bottom = this.height - FOOTER_H - 2; // フッタ(Done)を侵さない予約線
-        int y = slY + slH + 12;
+        int y = sl2Y + slH + 12;
         String mode = gpu3dActive ? ("gpu3d x" + texSS)
                 : (USE_TEXTURE_BATCH && !texFailed)
                         ? ("tex x" + texSS + (lastBuildMotion ? " motion" : " settled")) : "fill";
-        y = statLine(g, "OW pts " + snap.owDrawn + "/" + snap.owSampled, x, y, maxW, bottom, GateColors.PC_OW_HIGH);
-        y = statLine(g, "Nether pts " + snap.netherDrawn + "/" + snap.netherSampled, x, y, maxW, bottom,
-                GateColors.PC_NETHER_HIGH);
+        // ⑭ GPU3D 時は実描画点数 (detail 上限後)、 texbatch 時はスナップショット件数を表示。
+        if (gpu3dActive) {
+            y = statLine(g, "OW pts " + gpuOwPts + " (max " + PointCloudViewState.getGpuDetail() + ")",
+                    x, y, maxW, bottom, GateColors.PC_OW_HIGH);
+            y = statLine(g, "Nether pts " + gpuNPts, x, y, maxW, bottom, GateColors.PC_NETHER_HIGH);
+        } else {
+            y = statLine(g, "OW pts " + snap.owDrawn + "/" + snap.owSampled, x, y, maxW, bottom,
+                    GateColors.PC_OW_HIGH);
+            y = statLine(g, "Nether pts " + snap.netherDrawn + "/" + snap.netherSampled, x, y, maxW, bottom,
+                    GateColors.PC_NETHER_HIGH);
+        }
         y = statLine(g, "Links " + snap.linkCount(), x, y, maxW, bottom, GateColors.PC_LINK);
         if (snap.hasMarker) {
             y = statLine(g, "+ = you (at analysis)", x, y, maxW, bottom, GateColors.ACCENT);
@@ -1299,6 +1329,11 @@ public class PointCloudScreen extends Screen {
             setSpacingFromMouse(mx);
             return true;
         }
+        if (event.button() == 0 && inSlider2(mx, my)) {
+            drag = Drag.DETAIL;
+            setDetailFromMouse(mx);
+            return true;
+        }
         if (event.button() == 0 && inViewport(mx, my)) {
             drag = Drag.ROTATE;
             return true;
@@ -1310,6 +1345,10 @@ public class PointCloudScreen extends Screen {
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         if (drag == Drag.SLIDER) {
             setSpacingFromMouse(event.x());
+            return true;
+        }
+        if (drag == Drag.DETAIL) {
+            setDetailFromMouse(event.x());
             return true;
         }
         if (drag == Drag.ROTATE) {
@@ -1324,7 +1363,7 @@ public class PointCloudScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (drag == Drag.SLIDER) {
+        if (drag == Drag.SLIDER || drag == Drag.DETAIL) {
             GateConfigManager.save();
         }
         drag = Drag.NONE;
@@ -1352,12 +1391,25 @@ public class PointCloudScreen extends Screen {
         return mx >= slX && mx <= slX + slW && my >= slY - 3 && my <= slY + slH + 3;
     }
 
+    private boolean inSlider2(double mx, double my) {
+        return mx >= slX && mx <= slX + slW && my >= sl2Y - 3 && my <= sl2Y + slH + 3;
+    }
+
     private void setSpacingFromMouse(double mx) {
         float frac = (float) ((mx - slX) / Math.max(1, slW - 6));
         frac = Math.max(0f, Math.min(1f, frac));
         int v = PointCloudViewState.SPACING_MIN
                 + Math.round(frac * (PointCloudViewState.SPACING_MAX - PointCloudViewState.SPACING_MIN));
         PointCloudViewState.setDimensionSpacing(v);
+    }
+
+    /** ⑭ GPU detail スライダ: マウス x → 1 層の最大描画点数。 次フレームの gpuGeomChanged で VBO 再構築。 */
+    private void setDetailFromMouse(double mx) {
+        float frac = (float) ((mx - slX) / Math.max(1, slW - 6));
+        frac = Math.max(0f, Math.min(1f, frac));
+        int v = PointCloudViewState.DETAIL_MIN
+                + Math.round(frac * (PointCloudViewState.DETAIL_MAX - PointCloudViewState.DETAIL_MIN));
+        PointCloudViewState.setGpuDetail(v);
     }
 
     @Override

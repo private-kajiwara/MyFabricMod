@@ -25,6 +25,7 @@ public final class GateConfig {
     public boolean pcShowLinks = true;
     public boolean pcDimTint = false; // ⑤ 淡いディメンション色ティント (既定 OFF=純ブロック色)
     public int pcDimensionSpacing = 100;
+    public int pcGpuDetail = 5000; // ⑭ GPU3D 1 層あたり最大描画点数 (品質・中位 GPU 安全既定)
 
     public static GateConfig defaults() {
         return new GateConfig();
