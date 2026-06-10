@@ -118,6 +118,13 @@ public class PointCloudScreen extends Screen {
     private boolean gpu3dActive = false; // 直近フレームが GPU3D 経路だったか (HUD 表示用)
     private String gpu3dReason = "(init)"; // GPU3D 不採用時の理由 (経路ログ用)
     private String loggedRoute = null;     // 直近にログした経路+理由 (一度きりログ用)
+    // ⑬ GPU3D ジオメトリ署名 (カメラ除く: snapshot/spacing/トグル)。 変化時のみ VBO 再構築。
+    private PointCloudSnapshot gSnap;
+    private boolean gShowOw;
+    private boolean gShowN;
+    private boolean gShowLinks;
+    private boolean gDimTint;
+    private int gSpacing = -1;
     private static final Identifier PC_TEX_ID =
             Identifier.fromNamespaceAndPath("visualizegate", "pointcloud_dyn");
     /**
@@ -300,7 +307,7 @@ public class PointCloudScreen extends Screen {
         } else {
             frameIfNeeded(snap);
             gpu3dActive = false;
-            if (USE_GPU3D_SPIKE && tryGpu3d(g)) {
+            if (USE_GPU3D_SPIKE && tryGpu3d(g, snap)) {
                 logRoute("gpu3d", null);
             } else {
                 drawCloud(g, snap);
@@ -370,17 +377,18 @@ public class PointCloudScreen extends Screen {
     }
 
     //? if >=26.1 {
-    private boolean tryGpu3d(GuiGraphicsExtractor g) {
+    private boolean tryGpu3d(GuiGraphicsExtractor g, PointCloudSnapshot snap) {
         if (!PointCloudGpuRenderer.usable()) {
             gpu3dReason = "usable=false err=" + PointCloudGpuRenderer.lastError();
             return false;
         }
         long t0 = System.nanoTime();
+        if (gpuGeomChanged(snap)) {
+            buildGpuGeometry(snap); // データ/トグル/spacing 変化時のみ VBO 再構築 (回転/ズームは行列のみ)
+        }
         int ss = supersample();
-        int w = vpW * ss;
-        int h = vpH * ss;
-        if (!PointCloudGpuRenderer.renderSpike(w, h, yaw, pitch, distance, GateColors.BASE)) {
-            gpu3dReason = "renderSpike=false err=" + PointCloudGpuRenderer.lastError();
+        if (!PointCloudGpuRenderer.render(vpW * ss, vpH * ss, yaw, pitch, distance, GateColors.BASE)) {
+            gpu3dReason = "render=false err=" + PointCloudGpuRenderer.lastError();
             return false;
         }
         GpuTextureView cv = PointCloudGpuRenderer.colorView();
@@ -388,7 +396,6 @@ public class PointCloudScreen extends Screen {
             gpu3dReason = "colorView=null";
             return false;
         }
-        // FBO 色をビューポート矩形へ合成 (GUI_TEXTURED パイプライン・TextureSetup)。
         g.fill(RenderPipelines.GUI_TEXTURED,
                 TextureSetup.singleTexture(cv, PointCloudGpuRenderer.sampler()),
                 vpX, vpY, vpX + vpW, vpY + vpH);
@@ -398,8 +405,107 @@ public class PointCloudScreen extends Screen {
         lastDrawNanos = System.nanoTime() - t0;
         return true;
     }
+
+    /** GPU3D ジオメトリ署名 (カメラを除く: snapshot/spacing/トグル) の変化検出。 */
+    private boolean gpuGeomChanged(PointCloudSnapshot snap) {
+        boolean showOw = PointCloudViewState.isShowOverworld();
+        boolean showN = PointCloudViewState.isShowNether();
+        boolean showLinks = PointCloudViewState.isShowLinks();
+        boolean dimTint = PointCloudViewState.isDimTint();
+        int spacing = PointCloudViewState.getDimensionSpacing();
+        if (snap == gSnap && showOw == gShowOw && showN == gShowN && showLinks == gShowLinks
+                && dimTint == gDimTint && spacing == gSpacing) {
+            return false;
+        }
+        gSnap = snap;
+        gShowOw = showOw;
+        gShowN = showN;
+        gShowLinks = showLinks;
+        gDimTint = dimTint;
+        gSpacing = spacing;
+        return true;
+    }
+
+    /** snapshot からカメラ非依存の 3D 頂点 (点群・線) を組み GPU へアップロード。 */
+    private void buildGpuGeometry(PointCloudSnapshot snap) {
+        float pivotY = PointCloudViewState.getDimensionSpacing() * 0.5f;
+        boolean tint = PointCloudViewState.isDimTint();
+        boolean showOw = PointCloudViewState.isShowOverworld();
+        boolean showN = PointCloudViewState.isShowNether();
+        boolean showLinks = PointCloudViewState.isShowLinks();
+
+        // ── 点群 (OW=+pivot 上層 / ネザー=-pivot 下層・⑤頂点色) ──
+        int owN = showOw ? snap.owX.length : 0;
+        int nN = showN ? snap.nX.length : 0;
+        int pc = owN + nN;
+        float[] pxyz = new float[pc * 3];
+        int[] pcol = new int[pc];
+        int k = 0;
+        for (int i = 0; i < owN; i++) {
+            pxyz[k * 3] = snap.owX[i];
+            pxyz[k * 3 + 1] = snap.owY[i] + pivotY;
+            pxyz[k * 3 + 2] = snap.owZ[i];
+            pcol[k] = tint ? mix(snap.owColor[i], DIM_TINT_OW, DIM_TINT_FRAC) : snap.owColor[i];
+            k++;
+        }
+        for (int i = 0; i < nN; i++) {
+            pxyz[k * 3] = snap.nX[i];
+            pxyz[k * 3 + 1] = snap.nY[i] - pivotY;
+            pxyz[k * 3 + 2] = snap.nZ[i];
+            pcol[k] = tint ? mix(snap.nColor[i], DIM_TINT_NETHER, DIM_TINT_FRAC) : snap.nColor[i];
+            k++;
+        }
+        PointCloudGpuRenderer.uploadPoints(pxyz, pcol, pc);
+
+        // ── 線 (リンク線分 + ゲート/現在地の 3D 十字) ──
+        int links = showLinks ? snap.linkCount() : 0;
+        int gates = showLinks ? snap.gateCount() : 0;
+        int markerVerts = snap.hasMarker ? 6 : 0;
+        int lv = links * 2 + gates * 6 + markerVerts;
+        float[] lxyz = new float[lv * 3];
+        int[] lcol = new int[lv];
+        int j = 0;
+        int linkC = 0xFF000000 | (GateColors.PC_LINK & 0xFFFFFF);
+        for (int i = 0; i < links; i++) {
+            j = seg(lxyz, lcol, j, snap.linkAx[i], snap.linkAy[i] + pivotY, snap.linkAz[i],
+                    snap.linkBx[i], snap.linkBy[i] - pivotY, snap.linkBz[i], linkC);
+        }
+        float cross = Math.max(2f, snap.radius * 0.02f);
+        for (int i = 0; i < gates; i++) {
+            float gy = snap.gateNether[i] ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
+            j = cross3(lxyz, lcol, j, snap.gateX[i], gy, snap.gateZ[i], cross, linkC);
+        }
+        if (snap.hasMarker) {
+            float my = snap.markerNether ? snap.markerY - pivotY : snap.markerY + pivotY;
+            int gold = 0xFF000000 | (GateColors.ACCENT & 0xFFFFFF);
+            j = cross3(lxyz, lcol, j, snap.markerX, my, snap.markerZ, cross * 1.5f, gold);
+        }
+        PointCloudGpuRenderer.uploadLines(lxyz, lcol, j);
+    }
+
+    /** 線分 1 本 (2 頂点) を書き込み次の頂点 index を返す。 */
+    private static int seg(float[] xyz, int[] col, int j, float ax, float ay, float az,
+            float bx, float by, float bz, int c) {
+        xyz[j * 3] = ax;
+        xyz[j * 3 + 1] = ay;
+        xyz[j * 3 + 2] = az;
+        col[j++] = c;
+        xyz[j * 3] = bx;
+        xyz[j * 3 + 1] = by;
+        xyz[j * 3 + 2] = bz;
+        col[j++] = c;
+        return j;
+    }
+
+    /** 3D 十字 (X/Y/Z 各 1 線分=6 頂点)。 ゲート/現在地マーカー用 (カメラ非依存・深度正)。 */
+    private static int cross3(float[] xyz, int[] col, int j, float x, float y, float z, float r, int c) {
+        j = seg(xyz, col, j, x - r, y, z, x + r, y, z, c);
+        j = seg(xyz, col, j, x, y - r, z, x, y + r, z, c);
+        j = seg(xyz, col, j, x, y, z - r, x, y, z + r, c);
+        return j;
+    }
     //?} else {
-    /*private boolean tryGpu3d(GuiGraphicsExtractor g) {
+    /*private boolean tryGpu3d(GuiGraphicsExtractor g, PointCloudSnapshot snap) {
         gpu3dReason = "legacy stub (no GPU3D on this gen)";
         return false; // legacy は GPU3D 未対応 (新パイプライン版差) → texbatch
     }*/

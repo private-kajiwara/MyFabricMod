@@ -1,9 +1,8 @@
 package com.kajiwara.visualizegate.client.render;
 
-// ⑬ 案A スパイク (真の GPU3D 点群)。 sampler/投影バッファ等のヘルパは 26.1 新パイプライン専用で legacy
-// (1.21.10/1.21.11) はクラス/シグネチャが異なる (GpuSampler/SamplerCache/ProjectionMatrixBuffer が無い)。
-// よって本スパイクは <b>>=26.1 限定</b>とし、 legacy はスタブ (usable()=false→Screen が texbatch へ)。
-// legacy 版の sampler/投影ブリッジは次段 (javap 後に //? 追加) で対応する。
+// ⑬ 真の GPU3D 点群レンダラ。 sampler/投影バッファ等は 26.1 新パイプライン専用で legacy(1.21.10/1.21.11)は
+// クラス/シグネチャが異なる (GpuSampler/SamplerCache/ProjectionMatrixBuffer が無い)。 よって <b>>=26.1 限定</b>、
+// legacy はスタブ (usable()=false → Screen が texbatch)。 legacy 版ブリッジは後段。
 //? if >=26.1 {
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
@@ -16,6 +15,7 @@ import com.kajiwara.visualizegate.VisualizeGateMod;
 import com.mojang.blaze3d.ProjectionType;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.GpuDevice;
@@ -33,12 +33,13 @@ import net.minecraft.client.renderer.ProjectionMatrixBuffer;
 import net.minecraft.client.renderer.RenderPipelines;
 
 /**
- * ⑬ 案A スパイク: 点群ポップアップを<b>真の GPU3D</b> で描く最小検証 (Mixin 不使用・<b>>=26.1 限定</b>)。
+ * ⑬ 点群ポップアップを<b>真の GPU3D</b> で描く (Mixin 不使用・<b>>=26.1 限定</b>)。
  *
- * <p>オフスクリーン {@link TextureTarget} (色+<b>深度</b>) へ、 自前オービット投影＋{@code RenderPipelines.WIREFRAME}
- * (深度テスト付き POSITION_COLOR) で 3D を描き、 FBO 色を GUI ビューポートへ合成する。 GUI extract 中に明示
- * {@link RenderPass} を即時発行＝世界イベント/Mixin 不要。 <b>軸+立方体ワイヤ</b>で「FBO→自前投影→GPU 深度→合成」
- * の鎖を検証する (実点群は次段)。 失敗時は {@link #failed} を立て、 呼び出し側が texbatch へフォールバック。
+ * <p>オフスクリーン {@link TextureTarget} (色+<b>深度</b>) へ、 <b>カメラ非依存の頂点バッファ</b> (点=
+ * {@code DEBUG_POINTS} の GL 点、 線={@code WIREFRAME}) を自前オービット投影＋<b>GPU 深度テスト</b>で描き、 FBO 色を
+ * GUI ビューポートへ合成する。 点バッファはデータ/トグル/spacing 変化時だけ {@link #uploadPoints}/{@link #uploadLines}
+ * で再構築し、 <b>回転/ズームは行列更新のみ</b> ({@link #render})＝再ラスタライズ無し。 GPU 深度で同層内も 2 層間も
+ * 正しく遮蔽＝「大きく重なる」「層が貫通」を解消。 失敗時は {@link #failed} を立て、 呼び出し側が texbatch へ戻る。
  */
 public final class PointCloudGpuRenderer {
 
@@ -49,6 +50,11 @@ public final class PointCloudGpuRenderer {
     private static boolean failed = false;
     private static String lastError = "(none)";
 
+    private static GpuBuffer pointsVbo;
+    private static int pointsCount;   // 頂点数 (= 点数)
+    private static GpuBuffer linesVbo;
+    private static int linesCount;    // 頂点数 (= 線分×2)
+
     private PointCloudGpuRenderer() {
     }
 
@@ -56,7 +62,6 @@ public final class PointCloudGpuRenderer {
         return !failed;
     }
 
-    /** 直近の失敗理由 (例外文字列)。 経路ログの自己診断用。 */
     public static String lastError() {
         return lastError;
     }
@@ -69,66 +74,113 @@ public final class PointCloudGpuRenderer {
         return RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
     }
 
-    public static boolean renderSpike(int w, int h, float yaw, float pitch, float distance, int clearArgb) {
+    /** 点群頂点 (xyz の 3 連結 + argb) を DEBUG_POINTS フォーマットで VBO 化 (データ変化時のみ)。 */
+    public static void uploadPoints(float[] xyz, int[] argb, int n) {
+        pointsCount = 0;
+        if (failed || n <= 0) {
+            return;
+        }
+        try {
+            MeshData mesh = buildMesh(RenderPipelines.DEBUG_POINTS, xyz, argb, n);
+            if (mesh == null) {
+                return;
+            }
+            try (mesh) {
+                if (pointsVbo != null) {
+                    pointsVbo.close();
+                }
+                pointsVbo = RenderSystem.getDevice().createBuffer(() -> "visualizegate-pc-points",
+                        GpuBuffer.USAGE_VERTEX, mesh.vertexBuffer());
+                pointsCount = mesh.drawState().vertexCount();
+            }
+        } catch (Throwable t) {
+            fail("uploadPoints", t);
+        }
+    }
+
+    /** 線分頂点 (xyz の 3 連結 + argb・偶数個) を WIREFRAME フォーマットで VBO 化。 */
+    public static void uploadLines(float[] xyz, int[] argb, int n) {
+        linesCount = 0;
+        if (failed || n <= 0) {
+            return;
+        }
+        try {
+            MeshData mesh = buildMesh(RenderPipelines.WIREFRAME, xyz, argb, n);
+            if (mesh == null) {
+                return;
+            }
+            try (mesh) {
+                if (linesVbo != null) {
+                    linesVbo.close();
+                }
+                linesVbo = RenderSystem.getDevice().createBuffer(() -> "visualizegate-pc-lines",
+                        GpuBuffer.USAGE_VERTEX, mesh.vertexBuffer());
+                linesCount = mesh.drawState().vertexCount();
+            }
+        } catch (Throwable t) {
+            fail("uploadLines", t);
+        }
+    }
+
+    private static MeshData buildMesh(RenderPipeline pipeline, float[] xyz, int[] argb, int n) {
+        VertexFormat fmt = pipeline.getVertexFormat();
+        VertexFormat.Mode mode = pipeline.getVertexFormatMode();
+        BufferBuilder bb = Tesselator.getInstance().begin(mode, fmt);
+        for (int i = 0; i < n; i++) {
+            bb.addVertex(xyz[i * 3], xyz[i * 3 + 1], xyz[i * 3 + 2]).setColor(argb[i]);
+        }
+        return bb.build();
+    }
+
+    /**
+     * キャッシュ済み点/線バッファを FBO へ自前オービット投影＋GPU 深度で描く (回転/ズーム=これだけ)。 成功で true。
+     */
+    public static boolean render(int w, int h, float yaw, float pitch, float distance, int clearArgb) {
         if (failed || w <= 0 || h <= 0) {
             return false;
         }
-        GpuBuffer vbo = null;
+        if (pointsCount == 0 && linesCount == 0) {
+            return false; // 描く物が無い
+        }
         boolean projSet = false;
         try {
             ensureFbo(w, h);
             GpuDevice device = RenderSystem.getDevice();
 
             float aspect = (float) w / (float) h;
-            // MC 新パイプラインは深度 [0,1] 規約 (zZeroToOne=true)。 これを外すと深度テストで全消し＝空描画になり得る。
+            // MC 新パイプラインは深度 [0,1] 規約 (zZeroToOne=true)。
             Matrix4f proj = new Matrix4f().perspective((float) Math.toRadians(70.0), aspect, 0.1f, 8000f, true);
             Matrix4f view = new Matrix4f().translation(0f, 0f, -distance).rotateX(pitch).rotateY(yaw);
 
-            VertexFormat fmt = RenderPipelines.WIREFRAME.getVertexFormat();
-            VertexFormat.Mode mode = RenderPipelines.WIREFRAME.getVertexFormatMode();
-            BufferBuilder bb = Tesselator.getInstance().begin(mode, fmt);
-            float s = 60f;
-            line(bb, 0, 0, 0, s, 0, 0, 0xFFFF5555);   // X 赤
-            line(bb, 0, 0, 0, 0, s, 0, 0xFF55FF55);   // Y 緑
-            line(bb, 0, 0, 0, 0, 0, s, 0xFF5599FF);   // Z 青
-            cube(bb, -s, -s, -s, s, s, s, 0xFFB088FF); // 立方体 (深度確認)
-            MeshData mesh = bb.build();
-            if (mesh == null) {
-                return true;
-            }
-            try (mesh) {
-                MeshData.DrawState ds = mesh.drawState();
-                vbo = device.createBuffer(() -> "visualizegate-pc-verts", GpuBuffer.USAGE_VERTEX,
-                        mesh.vertexBuffer());
-                RenderSystem.AutoStorageIndexBuffer seq = RenderSystem.getSequentialBuffer(ds.mode());
-                GpuBuffer ibo = seq.getBuffer(ds.indexCount());
-                VertexFormat.IndexType indexType = seq.type();
+            GpuBufferSlice projSlice = projBuf.getBuffer(proj);
+            RenderSystem.backupProjectionMatrix();
+            RenderSystem.setProjectionMatrix(projSlice, ProjectionType.PERSPECTIVE);
+            projSet = true;
+            GpuBufferSlice dyn = RenderSystem.getDynamicUniforms()
+                    .writeTransform(view, new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
 
-                GpuBufferSlice projSlice = projBuf.getBuffer(proj);
-                RenderSystem.backupProjectionMatrix();
-                RenderSystem.setProjectionMatrix(projSlice, ProjectionType.PERSPECTIVE);
-                projSet = true;
-                GpuBufferSlice dyn = RenderSystem.getDynamicUniforms()
-                        .writeTransform(view, new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
-
-                CommandEncoder enc = device.createCommandEncoder();
-                try (RenderPass pass = enc.createRenderPass(() -> "visualizegate-pointcloud",
-                        fbo.getColorTextureView(), OptionalInt.of(clearArgb),
-                        fbo.getDepthTextureView(), OptionalDouble.of(1.0))) {
+            CommandEncoder enc = device.createCommandEncoder();
+            try (RenderPass pass = enc.createRenderPass(() -> "visualizegate-pointcloud",
+                    fbo.getColorTextureView(), OptionalInt.of(clearArgb),
+                    fbo.getDepthTextureView(), OptionalDouble.of(1.0))) {
+                if (pointsCount > 0 && pointsVbo != null) {
+                    pass.setPipeline(RenderPipelines.DEBUG_POINTS);
+                    RenderSystem.bindDefaultUniforms(pass);
+                    pass.setUniform("DynamicTransforms", dyn);
+                    pass.setVertexBuffer(0, pointsVbo);
+                    pass.draw(0, pointsCount);
+                }
+                if (linesCount > 0 && linesVbo != null) {
                     pass.setPipeline(RenderPipelines.WIREFRAME);
                     RenderSystem.bindDefaultUniforms(pass);
                     pass.setUniform("DynamicTransforms", dyn);
-                    pass.setVertexBuffer(0, vbo);
-                    pass.setIndexBuffer(ibo, indexType);
-                    pass.drawIndexed(0, 0, ds.indexCount(), 1);
+                    pass.setVertexBuffer(0, linesVbo);
+                    pass.draw(0, linesCount);
                 }
             }
             return true;
         } catch (Throwable t) {
-            failed = true;
-            lastError = t.getClass().getSimpleName() + ": " + t.getMessage();
-            VisualizeGateMod.LOGGER.warn(
-                    "[visualizegate] GPU3D point-cloud spike FAILED → texbatch fallback. cause:", t);
+            fail("render", t);
             return false;
         } finally {
             if (projSet) {
@@ -138,14 +190,14 @@ public final class PointCloudGpuRenderer {
                     // 復元失敗は無視。
                 }
             }
-            if (vbo != null) {
-                try {
-                    vbo.close();
-                } catch (Throwable ignored) {
-                    // 解放失敗は無視。
-                }
-            }
         }
+    }
+
+    private static void fail(String where, Throwable t) {
+        failed = true;
+        lastError = where + ": " + t.getClass().getSimpleName() + ": " + t.getMessage();
+        VisualizeGateMod.LOGGER.warn(
+                "[visualizegate] GPU3D point-cloud {} FAILED → texbatch fallback. cause:", where, t);
     }
 
     private static void ensureFbo(int w, int h) {
@@ -162,28 +214,6 @@ public final class PointCloudGpuRenderer {
             fboH = h;
         }
     }
-
-    private static void line(BufferBuilder bb, float x1, float y1, float z1,
-            float x2, float y2, float z2, int argb) {
-        bb.addVertex(x1, y1, z1).setColor(argb);
-        bb.addVertex(x2, y2, z2).setColor(argb);
-    }
-
-    private static void cube(BufferBuilder bb, float x0, float y0, float z0,
-            float x1, float y1, float z1, int c) {
-        line(bb, x0, y0, z0, x1, y0, z0, c);
-        line(bb, x1, y0, z0, x1, y0, z1, c);
-        line(bb, x1, y0, z1, x0, y0, z1, c);
-        line(bb, x0, y0, z1, x0, y0, z0, c);
-        line(bb, x0, y1, z0, x1, y1, z0, c);
-        line(bb, x1, y1, z0, x1, y1, z1, c);
-        line(bb, x1, y1, z1, x0, y1, z1, c);
-        line(bb, x0, y1, z1, x0, y1, z0, c);
-        line(bb, x0, y0, z0, x0, y1, z0, c);
-        line(bb, x1, y0, z0, x1, y1, z0, c);
-        line(bb, x1, y0, z1, x1, y1, z1, c);
-        line(bb, x0, y0, z1, x0, y1, z1, c);
-    }
 }
 //?} else {
 /*public final class PointCloudGpuRenderer {
@@ -191,11 +221,11 @@ public final class PointCloudGpuRenderer {
     }
 
     public static boolean usable() {
-        return false; // legacy は GPU3D スパイク未対応 (新パイプラインAPI差・次段でブリッジ) → texbatch
+        return false; // legacy は GPU3D 未対応 (新パイプラインAPI差・後段でブリッジ) → texbatch
     }
 
-    public static boolean renderSpike(int w, int h, float yaw, float pitch, float distance, int clearArgb) {
-        return false;
+    public static String lastError() {
+        return "legacy stub (no GPU3D on this gen)";
     }
 }*/
 //?}
