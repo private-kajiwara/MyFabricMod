@@ -44,6 +44,7 @@ public final class PointCloudAnalysis {
     private volatile State state = State.IDLE;
     private volatile PointCloudSnapshot snapshot = PointCloudSnapshot.EMPTY;
     private volatile long generation = 0;
+    private volatile long lastBuildNanos = 0; // ⑱ 直近の snapshot 構築所要 (HUD/ログ用)
 
     private PointCloudAnalysis() {
     }
@@ -68,10 +69,17 @@ public final class PointCloudAnalysis {
         state = State.ANALYZING;
         worker.submit(() -> {
             try {
+                long t0 = System.nanoTime();
                 PointCloudSnapshot s = PointCloudAnalyzer.analyze(in);
+                long dt = System.nanoTime() - t0;
                 if (myGen == generation) {
                     snapshot = s;
+                    lastBuildNanos = dt;
                     state = State.READY;
+                    VisualizeGateMod.LOGGER.info(
+                            "[visualizegate] point-cloud built: OW={} Nether={} links={} in {} ms",
+                            s.owDrawn, s.netherDrawn, s.linkCount(),
+                            String.format(java.util.Locale.ROOT, "%.1f", dt / 1.0e6));
                 }
             } catch (Throwable t) {
                 VisualizeGateMod.LOGGER.warn("[visualizegate] point-cloud analyze failed: {}", t.toString());
@@ -131,5 +139,10 @@ public final class PointCloudAnalysis {
 
     public PointCloudSnapshot snapshot() {
         return snapshot;
+    }
+
+    /** ⑱ 直近の snapshot 構築所要 (ナノ秒・HUD 表示用)。 */
+    public long lastBuildNanos() {
+        return lastBuildNanos;
     }
 }

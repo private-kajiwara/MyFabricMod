@@ -21,7 +21,7 @@ public final class PointCloudViewState {
      * GPU3D は Screen 表示中のみ・SP は停止中＝通常プレイ FPS/サーバーに影響しない。
      */
     public static final int DETAIL_MIN = 500;
-    public static final int DETAIL_MAX = 200_000;   // ⑯ GL 点 (1 頂点/点) で数十万点が現実的＝上限を大幅増
+    public static final int DETAIL_MAX = 1_000_000; // ⑱ GL 点 (1 頂点/点) ＝百万点まで上限を開放 (在庫供給があれば)
     public static final int DETAIL_DEFAULT = 20_000; // ⑯ 中位 GPU 安全値 (低スペックはスライダで下げる)
 
     /** ⑯ GL 点サイズ (ピクセル・スライダ範囲)。 小さく＝密で滑らかな高密度クラウド (参照寄せ)。 */
