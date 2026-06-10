@@ -1293,11 +1293,17 @@ public class PointCloudScreen extends Screen {
         String mode = gpu3dActive ? ("gpu3d x" + texSS)
                 : (USE_TEXTURE_BATCH && !texFailed)
                         ? ("tex x" + texSS + (lastBuildMotion ? " motion" : " settled")) : "fill";
-        // ⑭ GPU3D 時は実描画点数 (detail 上限後)、 texbatch 時はスナップショット件数を表示。
+        // ⑭/⑳ GPU3D 時は「表示数 / 在庫数」を表示＝予算(detail)が在庫を超えたら頭打ちと一目で分かる。
         if (gpu3dActive) {
-            y = statLine(g, "OW pts " + gpuOwPts + " (max " + PointCloudViewState.getGpuDetail() + ")",
-                    x, y, maxW, bottom, GateColors.PC_OW_HIGH);
-            y = statLine(g, "Nether pts " + gpuNPts, x, y, maxW, bottom, GateColors.PC_NETHER_HIGH);
+            int owInv = snap.owX.length;
+            int nInv = snap.nX.length;
+            int detail = PointCloudViewState.getGpuDetail();
+            y = statLine(g, "OW pts " + gpuOwPts + " / " + owInv, x, y, maxW, bottom, GateColors.PC_OW_HIGH);
+            y = statLine(g, "Nether pts " + gpuNPts + " / " + nInv, x, y, maxW, bottom,
+                    GateColors.PC_NETHER_HIGH);
+            String cap = (detail >= Math.max(owInv, nInv)) ? " (stock-capped)" : "";
+            y = statLine(g, "Shown " + (gpuOwPts + gpuNPts) + " / stock " + (owInv + nInv)
+                    + " · detail " + detail + cap, x, y, maxW, bottom, GateColors.TEXT);
         } else {
             y = statLine(g, "OW pts " + snap.owDrawn + "/" + snap.owSampled, x, y, maxW, bottom,
                     GateColors.PC_OW_HIGH);

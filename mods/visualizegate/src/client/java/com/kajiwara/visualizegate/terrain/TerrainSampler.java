@@ -3,7 +3,6 @@ package com.kajiwara.visualizegate.terrain;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 
@@ -27,6 +26,12 @@ public final class TerrainSampler {
 
     /** 格納/サンプリングのストライド (ブロック)。 16/STRIDE = 軸あたりサンプル数。 4 → チャンク 16 点。 */
     public static final int STRIDE = 4;
+    /**
+     * ⑳ OW 系の<b>3D 露出サーフェス</b>採取の縦走査深さ (ブロック)。 地表から下へこの分だけ「空気の直下の固体」
+     * (=露出した上面: 地表・洞窟床・オーバーハング上面・段差) を採る＝表層シートより桁違いに点が増え立体的に。
+     * これより深い洞窟は採らない (= カラム当たり読み取りを有界に＝CHUNK_LOAD の負荷を抑える)。
+     */
+    private static final int OW_SCAN_DEPTH = 96;
 
     private TerrainSampler() {
     }
@@ -60,18 +65,27 @@ public final class TerrainSampler {
             for (int dz = 0; dz < 16; dz += STRIDE) {
                 int wx = baseX + dx;
                 int wz = baseZ + dz;
-                int y;
+                // ⑳ 縦走査範囲。 OW=地表から下へ OW_SCAN_DEPTH、 ネザー=与えられた帯 (天井・床ノイズを避ける)。
+                int scanTop;
+                int scanBot;
                 if (hasCeiling) {
-                    y = scanWalkable(level, wx, wz, bandTopY, bandBotY);
-                    if (y == Integer.MIN_VALUE) {
-                        continue; // この帯に歩行可能面が見つからない → スキップ
-                    }
+                    scanTop = bandTopY;
+                    scanBot = bandBotY;
                 } else {
                     // WORLD_SURFACE は「最上の非空気ブロックの 1 つ上」を返す → 面ブロックは y-1。
-                    y = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz) - 1;
+                    int surfY = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz) - 1;
+                    scanTop = surfY;
+                    scanBot = surfY - OW_SCAN_DEPTH;
                 }
-                int color = mapColorAt(level, pos.set(wx, y, wz)); // 表面ブロックの実色 (⑤)
-                sink.accept(wx, wz, y, color);
+                // 上から下へ走査し「空気の直下の固体」(=露出した上面) を全て採る。 prevAir=true (上端の上は空気) から。
+                boolean prevAir = true;
+                for (int y = scanTop; y >= scanBot; y--) {
+                    boolean air = level.getBlockState(pos.set(wx, y, wz)).isAir();
+                    if (!air && prevAir) {
+                        sink.accept(wx, wz, y, mapColorAt(level, pos)); // pos=(wx,y,wz) の露出ブロック実色 (⑤)
+                    }
+                    prevAir = air;
+                }
             }
         }
     }
@@ -94,18 +108,4 @@ public final class TerrainSampler {
         }
     }
 
-    /** 天井次元: bandTopY から下へ「空気の下の最初の固体」を探す。 見つからなければ MIN_VALUE。 */
-    private static int scanWalkable(ClientLevel level, int wx, int wz, int bandTopY, int bandBotY) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        boolean airAbove = false;
-        for (int y = bandTopY; y >= bandBotY; y--) {
-            BlockState state = level.getBlockState(pos.set(wx, y, wz));
-            boolean air = state.isAir();
-            if (!air && airAbove) {
-                return y; // 空気の直下の固体 = 歩行可能面
-            }
-            airAbove = air;
-        }
-        return Integer.MIN_VALUE;
-    }
 }
