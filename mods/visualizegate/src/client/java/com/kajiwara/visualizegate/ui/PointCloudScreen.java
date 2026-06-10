@@ -62,6 +62,14 @@ public class PointCloudScreen extends Screen {
     private static final int POINT_SIZE_EXTRA = 1;
     /** ⑬ GPU3D 経路の点キューブ半辺＝雲半径×この比 (固定ワールド寸・ズーム比例)。 小さくくっきり優先。 */
     private static final float GPU_POINT_HALF_FRAC = 0.003f;
+    /** ⑬ GPU3D リンク角柱の半幅＝雲半径×比 (点より太く＝4K でも見える線)。 太さ調整はここ。 */
+    private static final float GPU_LINK_W_FRAC = 0.004f;
+    /** ⑬ GPU3D ゲートマーカー (紫キューブ) の半辺＝雲半径×比 (点群より明確に大きく・全角度で視認)。 */
+    private static final float GPU_GATE_HALF_FRAC = 0.012f;
+    /** ⑬ GPU3D 現在地マーカー (金の太十字) の腕長＝雲半径×比。 */
+    private static final float GPU_MARKER_ARM_FRAC = 0.03f;
+    /** ⑬ GPU3D 現在地マーカー (金の太十字) の半幅＝雲半径×比 (リンクより太く)。 */
+    private static final float GPU_MARKER_W_FRAC = 0.006f;
     /** 最遠点の明るさ係数 (大気遠近: 遠い点を暗く沈ませる・近点=1.0)。 モック寄せで強めのフェード。 */
     private static final float DEPTH_DIM_MIN = 0.3f;
     /** ⑤ ディメンション色ティント: ブロック色へ混ぜる dim 色とブレンド率 (淡く＝判別補助)。 */
@@ -463,52 +471,132 @@ public class PointCloudScreen extends Screen {
         float pointHalf = Math.max(0.2f, snap.radius * GPU_POINT_HALF_FRAC);
         PointCloudGpuRenderer.uploadPoints(pxyz, pcol, pc, pointHalf);
 
-        // ── 線 (リンク線分 + ゲート/現在地の 3D 十字) ──
+        // ── マーカー類 (太さを持つ 3D ジオメトリ・QUADS): リンク=細角柱 / ゲート=紫キューブ / 現在地=金の太十字 ──
+        // 生 1px GL ライン (旧 DEBUG_LINES) は 4K で細すぎたため全て立体化＝ワールド寸なので透視で解像度比例に
+        // 太く見える (カメラ非依存・回転=行列のみ)。 太さは下記 FRAC 定数 (雲半径×比) で微調整可。
+        float linkW = Math.max(0.15f, snap.radius * GPU_LINK_W_FRAC);     // リンク角柱の半幅
+        float gateHalf = Math.max(0.6f, snap.radius * GPU_GATE_HALF_FRAC); // ゲートキューブ半辺
+        float markArm = Math.max(2f, snap.radius * GPU_MARKER_ARM_FRAC);   // 現在地十字の腕長
+        float markW = Math.max(0.3f, snap.radius * GPU_MARKER_W_FRAC);     // 現在地十字の半幅
+
         int links = showLinks ? snap.linkCount() : 0;
         int gates = showLinks ? snap.gateCount() : 0;
-        int markerVerts = snap.hasMarker ? 6 : 0;
-        int lv = links * 2 + gates * 6 + markerVerts;
-        float[] lxyz = new float[lv * 3];
-        int[] lcol = new int[lv];
+        // 頂点数: リンク角柱=側面4枚×4=16 / ゲートキューブ=6面×4=24 / 現在地十字=3角柱×16=48。
+        int ov = links * 16 + gates * 24 + (snap.hasMarker ? 48 : 0);
+        float[] oxyz = new float[ov * 3];
+        int[] ocol = new int[ov];
         int j = 0;
         int linkC = 0xFF000000 | (GateColors.PC_LINK & 0xFFFFFF);
         for (int i = 0; i < links; i++) {
-            j = seg(lxyz, lcol, j, snap.linkAx[i], snap.linkAy[i] + pivotY, snap.linkAz[i],
-                    snap.linkBx[i], snap.linkBy[i] - pivotY, snap.linkBz[i], linkC);
+            j = emitBox(oxyz, ocol, j, snap.linkAx[i], snap.linkAy[i] + pivotY, snap.linkAz[i],
+                    snap.linkBx[i], snap.linkBy[i] - pivotY, snap.linkBz[i], linkW, linkC);
         }
-        float cross = Math.max(2f, snap.radius * 0.02f);
         for (int i = 0; i < gates; i++) {
             float gy = snap.gateNether[i] ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
-            j = cross3(lxyz, lcol, j, snap.gateX[i], gy, snap.gateZ[i], cross, linkC);
+            j = emitCube(oxyz, ocol, j, snap.gateX[i], gy, snap.gateZ[i], gateHalf, linkC);
         }
         if (snap.hasMarker) {
             float my = snap.markerNether ? snap.markerY - pivotY : snap.markerY + pivotY;
             int gold = 0xFF000000 | (GateColors.ACCENT & 0xFFFFFF);
-            j = cross3(lxyz, lcol, j, snap.markerX, my, snap.markerZ, cross * 1.5f, gold);
+            j = emitCross(oxyz, ocol, j, snap.markerX, my, snap.markerZ, markArm, markW, gold);
         }
-        PointCloudGpuRenderer.uploadLines(lxyz, lcol, j);
+        PointCloudGpuRenderer.uploadOverlay(oxyz, ocol, j);
     }
 
-    /** 線分 1 本 (2 頂点) を書き込み次の頂点 index を返す。 */
-    private static int seg(float[] xyz, int[] col, int j, float ax, float ay, float az,
-            float bx, float by, float bz, int c) {
-        xyz[j * 3] = ax;
-        xyz[j * 3 + 1] = ay;
-        xyz[j * 3 + 2] = az;
-        col[j++] = c;
-        xyz[j * 3] = bx;
-        xyz[j * 3 + 1] = by;
-        xyz[j * 3 + 2] = bz;
-        col[j++] = c;
-        return j;
+    /**
+     * 始点(a)→終点(b) を結ぶ<b>四角断面の角柱</b> (半幅 {@code w}) の側面 4 枚 (=16 頂点) を書き込む。
+     * 線を太く見せる立体 (どの回転角でも厚みが見える・深度正)。 退化 (同一点) なら無書込みで {@code v} を返す。
+     */
+    private static int emitBox(float[] xyz, int[] col, int v, float ax, float ay, float az,
+            float bx, float by, float bz, float w, int c) {
+        float dx = bx - ax;
+        float dy = by - ay;
+        float dz = bz - az;
+        float len = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (len < 1e-4f) {
+            return v;
+        }
+        dx /= len;
+        dy /= len;
+        dz /= len;
+        // dir に直交する基準 up (dir がほぼ縦なら X 基準へ切替して縮退回避)。
+        float ux = 0f;
+        float uy = 1f;
+        float uz = 0f;
+        if (Math.abs(dy) > 0.9f) {
+            ux = 1f;
+            uy = 0f;
+            uz = 0f;
+        }
+        // s1 = normalize(dir × up) * w、 s2 = normalize(dir × s1) * w (= dir に直交する 2 軸)。
+        float s1x = dy * uz - dz * uy;
+        float s1y = dz * ux - dx * uz;
+        float s1z = dx * uy - dy * ux;
+        float s1l = (float) Math.sqrt(s1x * s1x + s1y * s1y + s1z * s1z);
+        s1x = s1x / s1l * w;
+        s1y = s1y / s1l * w;
+        s1z = s1z / s1l * w;
+        float s2x = dy * s1z - dz * s1y;
+        float s2y = dz * s1x - dx * s1z;
+        float s2z = dx * s1y - dy * s1x;
+        float s2l = (float) Math.sqrt(s2x * s2x + s2y * s2y + s2z * s2z);
+        s2x = s2x / s2l * w;
+        s2y = s2y / s2l * w;
+        s2z = s2z / s2l * w;
+        // 4 隅 (始点側 a0..a3、 終点側 b0..b3)、 側面を 4 枚。
+        float a0x = ax - s1x - s2x, a0y = ay - s1y - s2y, a0z = az - s1z - s2z;
+        float a1x = ax + s1x - s2x, a1y = ay + s1y - s2y, a1z = az + s1z - s2z;
+        float a2x = ax + s1x + s2x, a2y = ay + s1y + s2y, a2z = az + s1z + s2z;
+        float a3x = ax - s1x + s2x, a3y = ay - s1y + s2y, a3z = az - s1z + s2z;
+        float b0x = bx - s1x - s2x, b0y = by - s1y - s2y, b0z = bz - s1z - s2z;
+        float b1x = bx + s1x - s2x, b1y = by + s1y - s2y, b1z = bz + s1z - s2z;
+        float b2x = bx + s1x + s2x, b2y = by + s1y + s2y, b2z = bz + s1z + s2z;
+        float b3x = bx - s1x + s2x, b3y = by - s1y + s2y, b3z = bz - s1z + s2z;
+        v = emitQuad(xyz, col, v, a0x, a0y, a0z, a1x, a1y, a1z, b1x, b1y, b1z, b0x, b0y, b0z, c);
+        v = emitQuad(xyz, col, v, a1x, a1y, a1z, a2x, a2y, a2z, b2x, b2y, b2z, b1x, b1y, b1z, c);
+        v = emitQuad(xyz, col, v, a2x, a2y, a2z, a3x, a3y, a3z, b3x, b3y, b3z, b2x, b2y, b2z, c);
+        v = emitQuad(xyz, col, v, a3x, a3y, a3z, a0x, a0y, a0z, b0x, b0y, b0z, b3x, b3y, b3z, c);
+        return v;
     }
 
-    /** 3D 十字 (X/Y/Z 各 1 線分=6 頂点)。 ゲート/現在地マーカー用 (カメラ非依存・深度正)。 */
-    private static int cross3(float[] xyz, int[] col, int j, float x, float y, float z, float r, int c) {
-        j = seg(xyz, col, j, x - r, y, z, x + r, y, z, c);
-        j = seg(xyz, col, j, x, y - r, z, x, y + r, z, c);
-        j = seg(xyz, col, j, x, y, z - r, x, y, z + r, c);
-        return j;
+    /** 中心 (x,y,z)・半辺 {@code h} の軸整列キューブ (6 面=24 頂点)。 ゲートマーカー (紫) 用。 */
+    private static int emitCube(float[] xyz, int[] col, int v, float x, float y, float z, float h, int c) {
+        float x0 = x - h, x1 = x + h, y0 = y - h, y1 = y + h, z0 = z - h, z1 = z + h;
+        v = emitQuad(xyz, col, v, x0, y0, z0, x1, y0, z0, x1, y1, z0, x0, y1, z0, c); // z-
+        v = emitQuad(xyz, col, v, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1, c); // z+
+        v = emitQuad(xyz, col, v, x0, y0, z0, x0, y1, z0, x0, y1, z1, x0, y0, z1, c); // x-
+        v = emitQuad(xyz, col, v, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1, c); // x+
+        v = emitQuad(xyz, col, v, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, c); // y-
+        v = emitQuad(xyz, col, v, x0, y1, z0, x1, y1, z0, x1, y1, z1, x0, y1, z1, c); // y+
+        return v;
+    }
+
+    /** 中心 (x,y,z) の<b>3D 太十字</b> (X/Y/Z 各 1 角柱=48 頂点)。 現在地マーカー (金) 用＝確実に目立つ。 */
+    private static int emitCross(float[] xyz, int[] col, int v, float x, float y, float z,
+            float arm, float w, int c) {
+        v = emitBox(xyz, col, v, x - arm, y, z, x + arm, y, z, w, c);
+        v = emitBox(xyz, col, v, x, y - arm, z, x, y + arm, z, w, c);
+        v = emitBox(xyz, col, v, x, y, z - arm, x, y, z + arm, w, c);
+        return v;
+    }
+
+    /** QUADS 1 枚 (4 頂点・順序 0→1→2→3) を書き込み次の頂点 index を返す。 */
+    private static int emitQuad(float[] xyz, int[] col, int v,
+            float x0, float y0, float z0, float x1, float y1, float z1,
+            float x2, float y2, float z2, float x3, float y3, float z3, int c) {
+        v = putV(xyz, col, v, x0, y0, z0, c);
+        v = putV(xyz, col, v, x1, y1, z1, c);
+        v = putV(xyz, col, v, x2, y2, z2, c);
+        v = putV(xyz, col, v, x3, y3, z3, c);
+        return v;
+    }
+
+    private static int putV(float[] xyz, int[] col, int v, float x, float y, float z, int c) {
+        xyz[v * 3] = x;
+        xyz[v * 3 + 1] = y;
+        xyz[v * 3 + 2] = z;
+        col[v] = c;
+        return v + 1;
     }
     //?} else {
     /*private boolean tryGpu3d(GuiGraphicsExtractor g, PointCloudSnapshot snap) {

@@ -44,12 +44,13 @@ import net.minecraft.client.renderer.ProjectionMatrixBuffer;
  * {@code POSITION_COLOR_LINE_WIDTH} (= {@code LineWidth} 要素必須) で {@code POSITION_COLOR} begin と不一致＝
  * MeshData 検証で落ちる。 {@code DEBUG_QUADS}/{@code DEBUG_FILLED_BOX} は {@code POSITION_COLOR} だが深度<b>書込み
  * OFF</b>＝点同士が遮蔽しない。 そこで {@link RenderPipeline#builder} (public) で <b>{@code POSITION_COLOR} のみ・
- * 深度テスト+書込み ON ({@link DepthStencilState#DEFAULT})</b> の自前パイプラインを 2 本作る (shader は vanilla の
+ * 深度テスト+書込み ON ({@link DepthStencilState#DEFAULT})</b> の自前パイプラインを<b>1 本</b>作る (shader は vanilla の
  * {@code core/position_color}・uniform は {@code DynamicTransforms}/{@code Projection} のみ＝{@code DEBUG_FILLED}
- * と同一・javap 確認)。 点= {@code QUADS} で<b>極小ワールド軸整列キューブ</b> (どの回転角でも見える立体・1点=6面24頂点)、
- * 線= {@code DEBUG_LINES} (生 GL ライン・1px)。
+ * と同一・javap 確認)。 点= <b>極小ワールド軸整列キューブ</b> (どの回転角でも見える立体・1点=6面24頂点)、 リンク線/
+ * ゲート/現在地マーカー= <b>太さを持つ 3D ボックス/キューブ/十字</b> (生 1px GL ラインは 4K で細すぎ＝不採用)。
+ * すべて同じ {@code QUADS}/{@code POSITION_COLOR} パイプラインで描く＝深度も色も一貫。
  *
- * <p>頂点バッファはデータ/トグル/spacing 変化時だけ {@link #uploadPoints}/{@link #uploadLines} で再構築し、
+ * <p>頂点バッファはデータ/トグル/spacing 変化時だけ {@link #uploadPoints}/{@link #uploadOverlay} で再構築し、
  * <b>回転/ズームは行列更新のみ</b> ({@link #render})＝再ラスタライズ無し。 キューブはワールド固定サイズ＝透視投影で
  * <b>ズーム比例</b>に縮む (カメラ非依存を保つため画面 px 下限は持たない)。 GPU 深度で同層内も 2 層間も正しく遮蔽＝
  * 「大きく重なる」「層が貫通」を解消。 失敗時は {@link #failed} を立て、 呼び出し側が texbatch へ戻る。
@@ -63,15 +64,13 @@ public final class PointCloudGpuRenderer {
     private static boolean failed = false;
     private static String lastError = "(none)";
 
-    /** 点= POSITION_COLOR / QUADS / 深度 DEFAULT (test+write) / cull off。 極小キューブを描く。 */
+    /** POSITION_COLOR / QUADS / 深度 DEFAULT (test+write) / cull off。 点キューブもマーカーボックスも全部これで描く。 */
     private static RenderPipeline pointsPipeline;
-    /** 線= POSITION_COLOR / DEBUG_LINES / 深度 DEFAULT。 生 GL ライン。 */
-    private static RenderPipeline linesPipeline;
 
     private static GpuBuffer pointsVbo;
-    private static int pointsIndexCount; // QUADS 索引数 (= 点数×36)
-    private static GpuBuffer linesVbo;
-    private static int linesIndexCount;  // DEBUG_LINES 索引数 (= 頂点数 = 線分×2)
+    private static int pointsIndexCount;   // 点群 (QUADS) 索引数 (= 点数×36)
+    private static GpuBuffer overlayVbo;
+    private static int overlayIndexCount;  // マーカー類 (QUADS) 索引数 (= quad 数×6)
 
     private PointCloudGpuRenderer() {
     }
@@ -88,17 +87,6 @@ public final class PointCloudGpuRenderer {
                     .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS)
                     .withDepthStencilState(DepthStencilState.DEFAULT)
                     .withCull(false)
-                    .build();
-        }
-        if (linesPipeline == null) {
-            linesPipeline = RenderPipeline.builder()
-                    .withLocation("visualizegate/pipeline/pc_lines")
-                    .withVertexShader("core/position_color")
-                    .withFragmentShader("core/position_color")
-                    .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
-                    .withUniform("Projection", UniformType.UNIFORM_BUFFER)
-                    .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.DEBUG_LINES)
-                    .withDepthStencilState(DepthStencilState.DEFAULT)
                     .build();
         }
     }
@@ -152,17 +140,21 @@ public final class PointCloudGpuRenderer {
         }
     }
 
-    /** 線分頂点 (xyz の 3 連結 + argb・偶数個) を DEBUG_LINES (生 GL ライン) フォーマットで VBO 化。 */
-    public static void uploadLines(float[] xyz, int[] argb, int n) {
-        linesIndexCount = 0;
-        if (failed || n <= 0) {
+    /**
+     * マーカー類 (リンク線ボックス + ゲートキューブ + 現在地十字) の<b>展開済み QUADS 頂点</b>
+     * (xyz の 3 連結 + argb・4 頂点=1 quad・{@code vertCount} は 4 の倍数) を VBO 化。 呼び出し側が
+     * 太さを持つ 3D ジオメトリへ展開済み＝ここは点群と同じ QUADS 経路に載せるだけ (深度/色一貫)。
+     */
+    public static void uploadOverlay(float[] xyz, int[] argb, int vertCount) {
+        overlayIndexCount = 0;
+        if (failed || vertCount <= 0) {
             return;
         }
         try {
             ensurePipelines();
             BufferBuilder bb = Tesselator.getInstance()
-                    .begin(VertexFormat.Mode.DEBUG_LINES, linesPipeline.getVertexFormat());
-            for (int i = 0; i < n; i++) {
+                    .begin(VertexFormat.Mode.QUADS, pointsPipeline.getVertexFormat());
+            for (int i = 0; i < vertCount; i++) {
                 bb.addVertex(xyz[i * 3], xyz[i * 3 + 1], xyz[i * 3 + 2]).setColor(argb[i]);
             }
             MeshData mesh = bb.build();
@@ -170,15 +162,15 @@ public final class PointCloudGpuRenderer {
                 return;
             }
             try (mesh) {
-                if (linesVbo != null) {
-                    linesVbo.close();
+                if (overlayVbo != null) {
+                    overlayVbo.close();
                 }
-                linesVbo = RenderSystem.getDevice().createBuffer(() -> "visualizegate-pc-lines",
+                overlayVbo = RenderSystem.getDevice().createBuffer(() -> "visualizegate-pc-overlay",
                         GpuBuffer.USAGE_VERTEX, mesh.vertexBuffer());
-                linesIndexCount = mesh.drawState().indexCount();
+                overlayIndexCount = mesh.drawState().indexCount();
             }
         } catch (Throwable t) {
-            fail("uploadLines", t);
+            fail("uploadOverlay", t);
         }
     }
 
@@ -213,7 +205,7 @@ public final class PointCloudGpuRenderer {
         if (failed || w <= 0 || h <= 0) {
             return false;
         }
-        if (pointsIndexCount == 0 && linesIndexCount == 0) {
+        if (pointsIndexCount == 0 && overlayIndexCount == 0) {
             return false; // 描く物が無い
         }
         boolean projSet = false;
@@ -240,25 +232,20 @@ public final class PointCloudGpuRenderer {
                     fbo.getDepthTextureView(), OptionalDouble.of(1.0))) {
                 // 自前パイプラインは Projection/DynamicTransforms のみ宣言＝この 2 本だけ束ねる
                 // (bindDefaultUniforms は Fog/Globals/Lights も触るので未使用＝最小束縛)。
+                pass.setPipeline(pointsPipeline);
+                pass.setUniform("Projection", projSlice);
+                pass.setUniform("DynamicTransforms", dyn);
+                RenderSystem.AutoStorageIndexBuffer idx =
+                        RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
                 if (pointsIndexCount > 0 && pointsVbo != null) {
-                    pass.setPipeline(pointsPipeline);
-                    pass.setUniform("Projection", projSlice);
-                    pass.setUniform("DynamicTransforms", dyn);
                     pass.setVertexBuffer(0, pointsVbo);
-                    RenderSystem.AutoStorageIndexBuffer idx =
-                            RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
                     pass.setIndexBuffer(idx.getBuffer(pointsIndexCount), idx.type());
                     pass.drawIndexed(0, 0, pointsIndexCount, 1);
                 }
-                if (linesIndexCount > 0 && linesVbo != null) {
-                    pass.setPipeline(linesPipeline);
-                    pass.setUniform("Projection", projSlice);
-                    pass.setUniform("DynamicTransforms", dyn);
-                    pass.setVertexBuffer(0, linesVbo);
-                    RenderSystem.AutoStorageIndexBuffer idx =
-                            RenderSystem.getSequentialBuffer(VertexFormat.Mode.DEBUG_LINES);
-                    pass.setIndexBuffer(idx.getBuffer(linesIndexCount), idx.type());
-                    pass.drawIndexed(0, 0, linesIndexCount, 1);
+                if (overlayIndexCount > 0 && overlayVbo != null) {
+                    pass.setVertexBuffer(0, overlayVbo);
+                    pass.setIndexBuffer(idx.getBuffer(overlayIndexCount), idx.type());
+                    pass.drawIndexed(0, 0, overlayIndexCount, 1);
                 }
             }
             return true;
