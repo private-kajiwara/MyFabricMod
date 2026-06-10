@@ -7,6 +7,7 @@ import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
 import com.kajiwara.visualizegate.pointcloud.PointCloudSnapshot;
 import com.kajiwara.visualizegate.state.PointCloudViewState;
 
+import com.kajiwara.visualizegate.VisualizeGateMod;
 import com.kajiwara.visualizegate.client.render.PointCloudGpuRenderer;
 import com.mojang.blaze3d.platform.NativeImage;
 //? if >=26.1 {
@@ -115,6 +116,8 @@ public class PointCloudScreen extends Screen {
     /** ⑬ 案A スパイク: 真の GPU3D 経路を試す (失敗時は texbatch へ自動フォールバック・非クラッシュ)。 */
     private static final boolean USE_GPU3D_SPIKE = true;
     private boolean gpu3dActive = false; // 直近フレームが GPU3D 経路だったか (HUD 表示用)
+    private String gpu3dReason = "(init)"; // GPU3D 不採用時の理由 (経路ログ用)
+    private String loggedRoute = null;     // 直近にログした経路+理由 (一度きりログ用)
     private static final Identifier PC_TEX_ID =
             Identifier.fromNamespaceAndPath("visualizegate", "pointcloud_dyn");
     /**
@@ -297,8 +300,11 @@ public class PointCloudScreen extends Screen {
         } else {
             frameIfNeeded(snap);
             gpu3dActive = false;
-            if (!(USE_GPU3D_SPIKE && tryGpu3d(g))) {
+            if (USE_GPU3D_SPIKE && tryGpu3d(g)) {
+                logRoute("gpu3d", null);
+            } else {
                 drawCloud(g, snap);
+                logRoute(texFailed ? "fill" : "tex", gpu3dReason);
             }
         }
 
@@ -332,9 +338,23 @@ public class PointCloudScreen extends Screen {
      * ⑬ 案A スパイク: FBO へ真の GPU3D (深度付) で描き、 FBO 色をビューポートへ合成。 成功で true。
      * 失敗 (当該 gen で不可/例外) なら false を返し、 呼び出し側が texbatch へフォールバック。
      */
+    /** 経路を一度きりログ (HUD に依存しない自己診断・経路や理由が変わった時だけ出す)。 */
+    private void logRoute(String route, String reason) {
+        String key = route + "|" + (reason == null ? "" : reason);
+        if (!key.equals(loggedRoute)) {
+            loggedRoute = key;
+            if (reason == null) {
+                VisualizeGateMod.LOGGER.info("[visualizegate] point-cloud render route = {}", route);
+            } else {
+                VisualizeGateMod.LOGGER.info("[visualizegate] point-cloud render route = {} ({})", route, reason);
+            }
+        }
+    }
+
     //? if >=26.1 {
     private boolean tryGpu3d(GuiGraphicsExtractor g) {
         if (!PointCloudGpuRenderer.usable()) {
+            gpu3dReason = "usable=false err=" + PointCloudGpuRenderer.lastError();
             return false;
         }
         long t0 = System.nanoTime();
@@ -342,10 +362,12 @@ public class PointCloudScreen extends Screen {
         int w = vpW * ss;
         int h = vpH * ss;
         if (!PointCloudGpuRenderer.renderSpike(w, h, yaw, pitch, distance, GateColors.BASE)) {
+            gpu3dReason = "renderSpike=false err=" + PointCloudGpuRenderer.lastError();
             return false;
         }
         GpuTextureView cv = PointCloudGpuRenderer.colorView();
         if (cv == null) {
+            gpu3dReason = "colorView=null";
             return false;
         }
         // FBO 色をビューポート矩形へ合成 (GUI_TEXTURED パイプライン・TextureSetup)。
@@ -360,6 +382,7 @@ public class PointCloudScreen extends Screen {
     }
     //?} else {
     /*private boolean tryGpu3d(GuiGraphicsExtractor g) {
+        gpu3dReason = "legacy stub (no GPU3D on this gen)";
         return false; // legacy は GPU3D 未対応 (新パイプライン版差) → texbatch
     }*/
     //?}

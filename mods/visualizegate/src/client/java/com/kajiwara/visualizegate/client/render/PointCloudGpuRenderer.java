@@ -47,12 +47,18 @@ public final class PointCloudGpuRenderer {
     private static int fboH;
     private static ProjectionMatrixBuffer projBuf;
     private static boolean failed = false;
+    private static String lastError = "(none)";
 
     private PointCloudGpuRenderer() {
     }
 
     public static boolean usable() {
         return !failed;
+    }
+
+    /** 直近の失敗理由 (例外文字列)。 経路ログの自己診断用。 */
+    public static String lastError() {
+        return lastError;
     }
 
     public static GpuTextureView colorView() {
@@ -74,7 +80,8 @@ public final class PointCloudGpuRenderer {
             GpuDevice device = RenderSystem.getDevice();
 
             float aspect = (float) w / (float) h;
-            Matrix4f proj = new Matrix4f().perspective((float) Math.toRadians(70.0), aspect, 0.1f, 8000f);
+            // MC 新パイプラインは深度 [0,1] 規約 (zZeroToOne=true)。 これを外すと深度テストで全消し＝空描画になり得る。
+            Matrix4f proj = new Matrix4f().perspective((float) Math.toRadians(70.0), aspect, 0.1f, 8000f, true);
             Matrix4f view = new Matrix4f().translation(0f, 0f, -distance).rotateX(pitch).rotateY(yaw);
 
             VertexFormat fmt = RenderPipelines.WIREFRAME.getVertexFormat();
@@ -119,8 +126,9 @@ public final class PointCloudGpuRenderer {
             return true;
         } catch (Throwable t) {
             failed = true;
+            lastError = t.getClass().getSimpleName() + ": " + t.getMessage();
             VisualizeGateMod.LOGGER.warn(
-                    "[visualizegate] GPU3D point-cloud spike failed, falling back to texbatch: {}", t.toString());
+                    "[visualizegate] GPU3D point-cloud spike FAILED → texbatch fallback. cause:", t);
             return false;
         } finally {
             if (projSet) {
