@@ -60,14 +60,16 @@ public class PointCloudScreen extends Screen {
      * よって「px 基準で極小＋距離フェード＋丸近似」でドットグリッド感を最小化する。
      */
     private static final int POINT_SIZE_EXTRA = 1;
-    /** ⑬ GPU3D リンク角柱の半幅＝雲半径×比 (点より太く＝4K でも見える線)。 太さ調整はここ。 */
-    private static final float GPU_LINK_W_FRAC = 0.004f;
-    /** ⑬ GPU3D ゲートマーカー (紫キューブ) の半辺＝雲半径×比 (点群より明確に大きく・全角度で視認)。 */
-    private static final float GPU_GATE_HALF_FRAC = 0.012f;
-    /** ⑬ GPU3D 現在地マーカー (金の太十字) の腕長＝雲半径×比。 */
+    /** ⑲ GPU3D リンク線 (角柱) の半幅＝雲半径×比。 細く＝点群を邪魔しない (4K でも見える最小限)。 太さ調整はここ。 */
+    private static final float GPU_LINK_W_FRAC = 0.0016f;
+    /** ⑲ GPU3D ゲートマーカー (紫ワイヤーキューブ) の半辺＝雲半径×比 (点群より大きく・全角度で視認)。 */
+    private static final float GPU_GATE_HALF_FRAC = 0.013f;
+    /** ⑲ GPU3D ゲートワイヤーキューブの辺チューブ半幅＝雲半径×比 (中空＝点群が透ける細さ)。 */
+    private static final float GPU_GATE_EDGE_W_FRAC = 0.0016f;
+    /** ⑲ GPU3D 現在地マーカー (金ワイヤー十字) の腕長＝雲半径×比。 */
     private static final float GPU_MARKER_ARM_FRAC = 0.03f;
-    /** ⑬ GPU3D 現在地マーカー (金の太十字) の半幅＝雲半径×比 (リンクより太く)。 */
-    private static final float GPU_MARKER_W_FRAC = 0.006f;
+    /** ⑲ GPU3D 現在地マーカー (金ワイヤー十字) の半幅＝雲半径×比 (細く)。 */
+    private static final float GPU_MARKER_W_FRAC = 0.0022f;
     /** 最遠点の明るさ係数 (大気遠近: 遠い点を暗く沈ませる・近点=1.0)。 モック寄せで強めのフェード。 */
     private static final float DEPTH_DIM_MIN = 0.3f;
     /** ⑤ ディメンション色ティント: ブロック色へ混ぜる dim 色とブレンド率 (淡く＝判別補助)。 */
@@ -487,18 +489,19 @@ public class PointCloudScreen extends Screen {
         // ⑯ GL 点サイズ (px・スライダ)。 小さく＝密で滑らかな高密度クラウド。
         PointCloudGpuRenderer.uploadPoints(pxyz, pcol, k, PointCloudViewState.getPointSize());
 
-        // ── マーカー類 (太さを持つ 3D ジオメトリ・QUADS): リンク=細角柱 / ゲート=紫キューブ / 現在地=金の太十字 ──
-        // 生 1px GL ライン (旧 DEBUG_LINES) は 4K で細すぎたため全て立体化＝ワールド寸なので透視で解像度比例に
-        // 太く見える (カメラ非依存・回転=行列のみ)。 太さは下記 FRAC 定数 (雲半径×比) で微調整可。
-        float linkW = Math.max(0.15f, snap.radius * GPU_LINK_W_FRAC);     // リンク角柱の半幅
-        float gateHalf = Math.max(0.6f, snap.radius * GPU_GATE_HALF_FRAC); // ゲートキューブ半辺
-        float markArm = Math.max(2f, snap.radius * GPU_MARKER_ARM_FRAC);   // 現在地十字の腕長
-        float markW = Math.max(0.3f, snap.radius * GPU_MARKER_W_FRAC);     // 現在地十字の半幅
+        // ── マーカー類 (⑲ 中空ワイヤー＋細線・QUADS): リンク=細角柱 / ゲート=ワイヤーキューブ / 現在地=細ワイヤー十字 ──
+        // 中空ワイヤーで点群を透かし、 点群を隠さずマーカーは明確に。 太さは FRAC 定数 (雲半径×比) で微調整可
+        // (ワールド寸＝透視で解像度比例に見える＝4K でも視認・カメラ非依存)。
+        float linkW = Math.max(0.08f, snap.radius * GPU_LINK_W_FRAC);        // リンク角柱の半幅 (細く)
+        float gateHalf = Math.max(0.6f, snap.radius * GPU_GATE_HALF_FRAC);   // ゲートワイヤーキューブの半辺
+        float gateEdge = Math.max(0.08f, snap.radius * GPU_GATE_EDGE_W_FRAC); // ゲート辺チューブの半幅
+        float markArm = Math.max(2f, snap.radius * GPU_MARKER_ARM_FRAC);     // 現在地十字の腕長
+        float markW = Math.max(0.1f, snap.radius * GPU_MARKER_W_FRAC);       // 現在地十字の半幅 (細く)
 
         int links = showLinks ? snap.linkCount() : 0;
         int gates = showLinks ? snap.gateCount() : 0;
-        // 頂点数: リンク角柱=側面4枚×4=16 / ゲートキューブ=6面×4=24 / 現在地十字=3角柱×16=48。
-        int ov = links * 16 + gates * 24 + (snap.hasMarker ? 48 : 0);
+        // 頂点数: リンク角柱=側面4枚×4=16 / ゲートワイヤーキューブ=12辺×16=192 / 現在地ワイヤー十字=3角柱×16=48。
+        int ov = links * 16 + gates * 192 + (snap.hasMarker ? 48 : 0);
         float[] oxyz = new float[ov * 3];
         int[] ocol = new int[ov];
         int j = 0;
@@ -509,7 +512,7 @@ public class PointCloudScreen extends Screen {
         }
         for (int i = 0; i < gates; i++) {
             float gy = snap.gateNether[i] ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
-            j = emitCube(oxyz, ocol, j, snap.gateX[i], gy, snap.gateZ[i], gateHalf, linkC);
+            j = emitWireCube(oxyz, ocol, j, snap.gateX[i], gy, snap.gateZ[i], gateHalf, gateEdge, linkC);
         }
         if (snap.hasMarker) {
             float my = snap.markerNether ? snap.markerY - pivotY : snap.markerY + pivotY;
@@ -575,15 +578,28 @@ public class PointCloudScreen extends Screen {
         return v;
     }
 
-    /** 中心 (x,y,z)・半辺 {@code h} の軸整列キューブ (6 面=24 頂点)。 ゲートマーカー (紫) 用。 */
-    private static int emitCube(float[] xyz, int[] col, int v, float x, float y, float z, float h, int c) {
+    /**
+     * ⑲ 中心 (x,y,z)・半辺 {@code h} の<b>ワイヤーフレームキューブ</b> (12 辺=各細角柱 {@link #emitBox}・192 頂点)。
+     * 中空＝点群が透けて見える＝ゲートマーカー (紫) を点群を隠さず明示。 {@code w}=辺チューブの半幅。
+     */
+    private static int emitWireCube(float[] xyz, int[] col, int v, float x, float y, float z,
+            float h, float w, int c) {
         float x0 = x - h, x1 = x + h, y0 = y - h, y1 = y + h, z0 = z - h, z1 = z + h;
-        v = emitQuad(xyz, col, v, x0, y0, z0, x1, y0, z0, x1, y1, z0, x0, y1, z0, c); // z-
-        v = emitQuad(xyz, col, v, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1, c); // z+
-        v = emitQuad(xyz, col, v, x0, y0, z0, x0, y1, z0, x0, y1, z1, x0, y0, z1, c); // x-
-        v = emitQuad(xyz, col, v, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1, c); // x+
-        v = emitQuad(xyz, col, v, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, c); // y-
-        v = emitQuad(xyz, col, v, x0, y1, z0, x1, y1, z0, x1, y1, z1, x0, y1, z1, c); // y+
+        // 底面 4 辺。
+        v = emitBox(xyz, col, v, x0, y0, z0, x1, y0, z0, w, c);
+        v = emitBox(xyz, col, v, x1, y0, z0, x1, y0, z1, w, c);
+        v = emitBox(xyz, col, v, x1, y0, z1, x0, y0, z1, w, c);
+        v = emitBox(xyz, col, v, x0, y0, z1, x0, y0, z0, w, c);
+        // 上面 4 辺。
+        v = emitBox(xyz, col, v, x0, y1, z0, x1, y1, z0, w, c);
+        v = emitBox(xyz, col, v, x1, y1, z0, x1, y1, z1, w, c);
+        v = emitBox(xyz, col, v, x1, y1, z1, x0, y1, z1, w, c);
+        v = emitBox(xyz, col, v, x0, y1, z1, x0, y1, z0, w, c);
+        // 垂直 4 辺。
+        v = emitBox(xyz, col, v, x0, y0, z0, x0, y1, z0, w, c);
+        v = emitBox(xyz, col, v, x1, y0, z0, x1, y1, z0, w, c);
+        v = emitBox(xyz, col, v, x1, y0, z1, x1, y1, z1, w, c);
+        v = emitBox(xyz, col, v, x0, y0, z1, x0, y1, z1, w, c);
         return v;
     }
 
@@ -1292,6 +1308,9 @@ public class PointCloudScreen extends Screen {
         if (snap.hasMarker) {
             y = statLine(g, "+ = you (at analysis)", x, y, maxW, bottom, GateColors.ACCENT);
         }
+        // ⑱ snapshot 構築 (解析ワーカー) 所要＝高密度時の構築コスト確認用。
+        y = statLine(g, String.format(java.util.Locale.ROOT, "Snap build %.1f ms",
+                PointCloudAnalysis.get().lastBuildNanos() / 1.0e6), x, y, maxW, bottom, GateColors.LINK_GRAY);
         y = statLine(g, String.format(java.util.Locale.ROOT, "Rebuild %.2f ms (idle cached)",
                 lastBuildNanos / 1.0e6), x, y, maxW, bottom, GateColors.LINK_GRAY);
         y = statLine(g, String.format(java.util.Locale.ROOT, "Draw %.2f ms / %d dc (%s)",
