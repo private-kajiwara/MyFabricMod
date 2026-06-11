@@ -160,7 +160,8 @@ public final class PointCloudAnalyzer {
                 links.ax, links.ay, links.az, links.bx, links.by, links.bz,
                 radius, owN, nN, owDrawn, nk,
                 mk.present(), mk.x(), mk.y(), mk.z(), mk.nether(),
-                gates.x, gates.y, gates.z, gates.nether);
+                gates.x, gates.y, gates.z, gates.nether,
+                owCenterX, owCenterZ, owMeanY, nCenterX, nCenterZ, nMeanY);
     }
 
     /** 地形ゼロ時: ポータルのみで各層の重心を取って組む (⑥ ネザーも 1:1・自分の重心)。 */
@@ -204,7 +205,8 @@ public final class PointCloudAnalyzer {
                 links.ax, links.ay, links.az, links.bx, links.by, links.bz,
                 radius, 0, 0, 0, 0,
                 mk.present(), mk.x(), mk.y(), mk.z(), mk.nether(),
-                gates.x, gates.y, gates.z, gates.nether);
+                gates.x, gates.y, gates.z, gates.nether,
+                owCenterX, owCenterZ, owMeanY, nCenterX, nCenterZ, nMeanY);
     }
 
     private static Links buildLinks(PointCloudInputs in, float owCenterX, float owCenterZ,

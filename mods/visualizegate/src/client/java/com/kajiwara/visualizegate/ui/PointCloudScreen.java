@@ -2,9 +2,13 @@ package com.kajiwara.visualizegate.ui;
 
 import java.util.Arrays;
 
+import java.util.List;
+
 import com.kajiwara.visualizegate.config.GateConfigManager;
+import com.kajiwara.visualizegate.domain.PortalDimension;
 import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
 import com.kajiwara.visualizegate.pointcloud.PointCloudSnapshot;
+import com.kajiwara.visualizegate.state.BackCalcStore;
 import com.kajiwara.visualizegate.state.PointCloudViewState;
 
 import com.kajiwara.visualizegate.VisualizeGateMod;
@@ -149,6 +153,7 @@ public class PointCloudScreen extends Screen {
     private int gPointSize = -1; // ⑯ 点サイズ署名 (lineWidth は頂点に焼くので変化で再構築)
     private float gOwScale = Float.NaN;     // ㉓ OW 表示スケール署名 (変化で VBO 再構築)
     private float gNetherScale = Float.NaN; // ㉓ ネザー表示スケール署名
+    private int gBcVersion = -1; // ㉕ back-calculate 要素の版 (add/clean で変化＝VBO 再構築)
     private int gpuOwPts;     // ⑭ 直近に GPU へ送った OW/ネザー点数 (detail 上限後・HUD 用)
     private int gpuNPts;
     private static final Identifier PC_TEX_ID =
@@ -193,6 +198,11 @@ public class PointCloudScreen extends Screen {
     private float[] gkX = new float[0];   // ⑪ 投影済みゲート位置 (screen・紫リング)
     private float[] gkY = new float[0];
     private int cachedGates = 0;
+    // ㉕ 投影済み back-calculate 要素 (screen・緑/赤の黒曜石枠・dim 問わず全要素を合成表示)。
+    private float[] bcX = new float[0];
+    private float[] bcY = new float[0];
+    private int[] bcCol = new int[0];
+    private int cachedBc = 0;
     private boolean mkVis = false;       // 現在地マーカー
     private float mkX;
     private float mkY;
@@ -213,6 +223,7 @@ public class PointCloudScreen extends Screen {
     private boolean sigDimTint;
     private float sigOwScale = Float.NaN;     // ㉓ OW 表示スケール署名
     private float sigNetherScale = Float.NaN; // ㉓ ネザー表示スケール署名
+    private int sigBcVersion = -1;            // ㉕ back-calculate 要素の版署名
     private int sigVpX;
     private int sigVpY;
     private int sigVpW;
@@ -464,9 +475,11 @@ public class PointCloudScreen extends Screen {
         int pointSize = PointCloudViewState.getPointSize();
         float owScale = PointCloudViewState.getOwDisplayScale();
         float nScale = PointCloudViewState.getNetherDisplayScale();
+        int bcVersion = BackCalcStore.version();
         if (snap == gSnap && showOw == gShowOw && showN == gShowN && showLinks == gShowLinks
                 && dimTint == gDimTint && spacing == gSpacing && detail == gDetail
-                && pointSize == gPointSize && owScale == gOwScale && nScale == gNetherScale) {
+                && pointSize == gPointSize && owScale == gOwScale && nScale == gNetherScale
+                && bcVersion == gBcVersion) {
             return false;
         }
         gSnap = snap;
@@ -479,6 +492,7 @@ public class PointCloudScreen extends Screen {
         gPointSize = pointSize;
         gOwScale = owScale;
         gNetherScale = nScale;
+        gBcVersion = bcVersion;
         return true;
     }
 
@@ -538,8 +552,11 @@ public class PointCloudScreen extends Screen {
 
         int links = showLinks ? snap.linkCount() : 0;
         int gates = showLinks ? snap.gateCount() : 0;
-        // 頂点数: リンク角柱=側面4枚×4=16 / ㉔ゲート枠=4バー×16=64 / 現在地ワイヤー十字=3角柱×16=48。
-        int ov = links * 16 + gates * 64 + (snap.hasMarker ? 48 : 0);
+        // ㉕ back-calculate 要素 (全 dim・Gate links トグルとは独立＝/vg で出したら常に見える)。 枠=64 頂点/件。
+        List<BackCalcStore.Element> bc = BackCalcStore.all();
+        int bcN = bc.size();
+        // 頂点数: リンク角柱=側面4枚×4=16 / ㉔ゲート枠=4バー×16=64 / 現在地ワイヤー十字=3角柱×16=48 / ㉕枠=64。
+        int ov = links * 16 + gates * 64 + (snap.hasMarker ? 48 : 0) + bcN * 64;
         float[] oxyz = new float[ov * 3];
         int[] ocol = new int[ov];
         int j = 0;
@@ -562,6 +579,16 @@ public class PointCloudScreen extends Screen {
             float my = snap.markerNether ? snap.markerY - pivotY : snap.markerY + pivotY;
             int gold = 0xFF000000 | (GateColors.ACCENT & 0xFFFFFF);
             j = emitCross(oxyz, ocol, j, snap.markerX * ms, my, snap.markerZ * ms, markArm, markW, gold);
+        }
+        // ㉕ back-calculate 要素を地形/ゲートと同一アンカー (toViewSpace) ＋同一 ÷8/表示スケール経路で黒曜石枠化。
+        // 現在層の真上/真下に逆 dim の緑/赤が同期表示される (gate と全く同じ変換なのでズレない)。
+        for (BackCalcStore.Element e : bc) {
+            float[] vv = snap.toViewSpace(e.dim, e.x, e.y, e.z);
+            float es = (e.dim == PortalDimension.NETHER) ? nScale : owScale;
+            float ey = (e.dim == PortalDimension.NETHER) ? vv[1] - pivotY : vv[1] + pivotY;
+            int ec = 0xFF000000 | (e.colorArgb & 0xFFFFFF);
+            j = emitPortalFrame(oxyz, ocol, j, vv[0] * es, ey, vv[2] * es,
+                    gateHalfW, gateHalfH, gateBarW, ec);
         }
         PointCloudGpuRenderer.uploadOverlay(oxyz, ocol, j);
     }
@@ -699,14 +726,17 @@ public class PointCloudScreen extends Screen {
         float spacing = PointCloudViewState.getDimensionSpacing();
         float owScale = PointCloudViewState.getOwDisplayScale();
         float nScale = PointCloudViewState.getNetherDisplayScale();
+        int bcVersion = BackCalcStore.version();
         if (snap == sigSnap && yaw == sigYaw && pitch == sigPitch && distance == sigDistance
                 && spacing == sigSpacing && showOw == sigShowOw && showN == sigShowN
                 && showLinks == sigShowLinks && dimTint == sigDimTint
                 && owScale == sigOwScale && nScale == sigNetherScale
+                && bcVersion == sigBcVersion
                 && vpX == sigVpX && vpY == sigVpY
                 && vpW == sigVpW && vpH == sigVpH) {
             return false;
         }
+        sigBcVersion = bcVersion;
         sigSnap = snap;
         sigYaw = yaw;
         sigPitch = pitch;
@@ -840,6 +870,26 @@ public class PointCloudScreen extends Screen {
             }
         }
 
+        // ㉕ back-calculate 要素を投影してキャッシュ (全 dim・gate と同一変換＝ズレない・Gate links と独立)。
+        cachedBc = 0;
+        List<BackCalcStore.Element> bc = BackCalcStore.all();
+        if (!bc.isEmpty()) {
+            ensureBcArrays(bc.size());
+            for (BackCalcStore.Element e : bc) {
+                float[] vv = snap.toViewSpace(e.dim, e.x, e.y, e.z);
+                float es = (e.dim == PortalDimension.NETHER) ? nScale : owScale;
+                float ey = (e.dim == PortalDimension.NETHER) ? vv[1] - pivotY : vv[1] + pivotY;
+                float[] p = projectXY(vv[0] * es, ey, vv[2] * es, cosY, sinY, cosP, sinP, cx, cy);
+                if (p == null || p[0] < vpX || p[0] > vpX + vpW || p[1] < vpY || p[1] > vpY + vpH) {
+                    continue;
+                }
+                bcX[cachedBc] = p[0];
+                bcY[cachedBc] = p[1];
+                bcCol[cachedBc] = e.colorArgb;
+                cachedBc++;
+            }
+        }
+
         // 現在地マーカーを投影してキャッシュ。
         mkVis = false;
         if (snap.hasMarker) {
@@ -937,6 +987,10 @@ public class PointCloudScreen extends Screen {
             for (int i = 0; i < cachedGates; i++) {   // ㉔ ゲート位置の黒曜石ポータル枠 (地形の上・中空矩形)
                 rasterFrame((gkX[i] - vpX) * ss, (gkY[i] - vpY) * ss, GATE_FRAME_HALF_W * ss,
                         GATE_FRAME_HALF_H * ss, GateColors.PC_LINK, ss, w, h);
+            }
+            for (int i = 0; i < cachedBc; i++) {      // ㉕ back-calculate 要素の黒曜石枠 (緑/赤・要素色)
+                rasterFrame((bcX[i] - vpX) * ss, (bcY[i] - vpY) * ss, GATE_FRAME_HALF_W * ss,
+                        GATE_FRAME_HALF_H * ss, bcCol[i], ss, w, h);
             }
             if (mkVis) {
                 rasterMarker((mkX - vpX) * ss, (mkY - vpY) * ss, ss, w, h);
@@ -1300,6 +1354,14 @@ public class PointCloudScreen extends Screen {
         if (gkX.length < n) {
             gkX = new float[n];
             gkY = new float[n];
+        }
+    }
+
+    private void ensureBcArrays(int n) {
+        if (bcX.length < n) {
+            bcX = new float[n];
+            bcY = new float[n];
+            bcCol = new int[n];
         }
     }
 

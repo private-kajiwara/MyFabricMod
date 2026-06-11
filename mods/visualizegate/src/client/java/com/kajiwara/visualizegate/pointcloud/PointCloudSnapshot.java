@@ -1,5 +1,7 @@
 package com.kajiwara.visualizegate.pointcloud;
 
+import com.kajiwara.visualizegate.domain.PortalDimension;
+
 /**
  * 解析結果の<b>不変スナップショット</b> (ワーカーが組み、 ポップアップ Screen が描画する)。
  *
@@ -18,6 +20,9 @@ package com.kajiwara.visualizegate.pointcloud;
  */
 public final class PointCloudSnapshot {
 
+    /** ㉒A ネザー層の水平 1:8 縮尺 (解析時に焼込み済・{@link #toViewSpace} の絶対座標写像にも使う)。 */
+    public static final float NETHER_XZ_SCALE = 1.0f / 8.0f;
+
     public static final PointCloudSnapshot EMPTY = new PointCloudSnapshot(
             new float[0], new float[0], new float[0], new int[0],
             new float[0], new float[0], new float[0], new int[0],
@@ -25,7 +30,8 @@ public final class PointCloudSnapshot {
             new float[0], new float[0], new float[0],
             0f, 0, 0, 0, 0,
             false, 0f, 0f, 0f, false,
-            new float[0], new float[0], new float[0], new boolean[0]);
+            new float[0], new float[0], new float[0], new boolean[0],
+            0f, 0f, 0f, 0f, 0f, 0f);
 
     // OW 層 (青→青緑)。
     public final float[] owX;
@@ -70,13 +76,25 @@ public final class PointCloudSnapshot {
     public final float[] gateZ;
     public final boolean[] gateNether;
 
+    // ㉕ 各層の重心/平均 Y (絶対ブロック座標→ビュー空間写像に必要・{@link #toViewSpace})。
+    // 地形点/リンク/ゲート/現在地マーカーと<b>同一アンカー</b>なので、 ここに通せば back-calculate 要素が
+    // 既存要素とズレずにスタック表示される。
+    public final float owCenterX;
+    public final float owCenterZ;
+    public final float owMeanY;
+    public final float nCenterX;
+    public final float nCenterZ;
+    public final float nMeanY;
+
     public PointCloudSnapshot(float[] owX, float[] owY, float[] owZ, int[] owColor,
             float[] nX, float[] nY, float[] nZ, int[] nColor,
             float[] linkAx, float[] linkAy, float[] linkAz,
             float[] linkBx, float[] linkBy, float[] linkBz,
             float radius, int owSampled, int netherSampled, int owDrawn, int netherDrawn,
             boolean hasMarker, float markerX, float markerY, float markerZ, boolean markerNether,
-            float[] gateX, float[] gateY, float[] gateZ, boolean[] gateNether) {
+            float[] gateX, float[] gateY, float[] gateZ, boolean[] gateNether,
+            float owCenterX, float owCenterZ, float owMeanY,
+            float nCenterX, float nCenterZ, float nMeanY) {
         this.owX = owX;
         this.owY = owY;
         this.owZ = owZ;
@@ -105,6 +123,32 @@ public final class PointCloudSnapshot {
         this.gateY = gateY;
         this.gateZ = gateZ;
         this.gateNether = gateNether;
+        this.owCenterX = owCenterX;
+        this.owCenterZ = owCenterZ;
+        this.owMeanY = owMeanY;
+        this.nCenterX = nCenterX;
+        this.nCenterZ = nCenterZ;
+        this.nMeanY = nMeanY;
+    }
+
+    /**
+     * ㉕ <b>絶対ブロック座標</b> (dim 内) を、 地形点/ゲートと同一の<b>ビュー空間</b> (重心センタリング＋
+     * ネザー ÷8 焼込み済) へ写す。 戻り値の XZ には<b>表示スケール未適用</b>・Y には<b>spacing 未加算</b>
+     * (描画側が gate と同じく XZ へ owScale/nScale を乗算し Y へ ±pivotY を足す＝完全に同経路)。
+     *
+     * @return {@code [vx, vy, vz]} (ビュー空間・表示スケール/spacing 適用前)
+     */
+    public float[] toViewSpace(PortalDimension dim, double wx, double wy, double wz) {
+        if (dim == PortalDimension.NETHER) {
+            return new float[] {
+                    (float) ((wx - nCenterX) * NETHER_XZ_SCALE),
+                    (float) (wy - nMeanY),
+                    (float) ((wz - nCenterZ) * NETHER_XZ_SCALE) };
+        }
+        return new float[] {
+                (float) (wx - owCenterX),
+                (float) (wy - owMeanY),
+                (float) (wz - owCenterZ) };
     }
 
     public int gateCount() {
