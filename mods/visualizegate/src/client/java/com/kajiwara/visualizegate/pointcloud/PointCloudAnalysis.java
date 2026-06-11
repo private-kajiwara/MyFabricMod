@@ -91,8 +91,24 @@ public final class PointCloudAnalysis {
         });
     }
 
+    /** ㉑ Re-analyze 時に現在ロード中のチャンクを現 stride で再採取する半径 (チャンク)。 見ている範囲を即濃くする。 */
+    private static final int RESAMPLE_RADIUS_CHUNKS = 10;
+
     /** メインスレッドで全入力を不変コピーする (= ライブ World をワーカーへ漏らさない)。 */
     private PointCloudInputs capture() {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        // ㉑ snapshotColumns の前に、 見ている範囲を現 stride で再採取＝Re-analyze 直後に表層密度が濃くなる
+        // (stride 変更/解像度変更でも即反映)。 メインスレッド単発・render distance 外は再ロード時に更新。
+        if (player != null && mc.level != null) {
+            long t0 = System.nanoTime();
+            TerrainStore.get().resampleLoaded(mc.level,
+                    (int) Math.floor(player.getX()), (int) Math.floor(player.getZ()),
+                    RESAMPLE_RADIUS_CHUNKS);
+            VisualizeGateMod.LOGGER.info("[visualizegate] resampleLoaded took {} ms",
+                    String.format(java.util.Locale.ROOT, "%.1f", (System.nanoTime() - t0) / 1.0e6));
+        }
+
         int[] owTerrain = TerrainStore.get().snapshotColumns(PortalDimension.OVERWORLD);
         int[] netherTerrain = TerrainStore.get().snapshotColumns(PortalDimension.NETHER);
 
@@ -102,8 +118,6 @@ public final class PointCloudAnalysis {
         double py = 0;
         double pz = 0;
         boolean inNether = false;
-        Minecraft mc = Minecraft.getInstance();
-        LocalPlayer player = mc.player;
         if (player != null && mc.level != null) {
             PortalDimension dim = PortalMemory.dimOf(mc.level.dimension().identifier().toString());
             if (dim == PortalDimension.OVERWORLD || dim == PortalDimension.NETHER) {

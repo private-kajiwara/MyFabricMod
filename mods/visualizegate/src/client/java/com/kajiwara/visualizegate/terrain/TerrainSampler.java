@@ -24,8 +24,13 @@ import net.minecraft.world.level.levelgen.Heightmap;
  */
 public final class TerrainSampler {
 
-    /** 格納/サンプリングのストライド (ブロック)。 16/STRIDE = 軸あたりサンプル数。 4 → チャンク 16 点。 */
-    public static final int STRIDE = 4;
+    /**
+     * 格納/サンプリングの横ストライド (ブロック)。 16/STRIDE = チャンク軸あたりサンプル数。 ㉑ <b>2</b>＝表層点が
+     * stride-4 比 約 4 倍＝「見える」密度を律速する横解像度を上げる (縦は ⑳ で済)。 1 にすれば最大密度だが
+     * JSON/メモリが更に増える。 変更すると格子キー (block/STRIDE) の意味が変わるので {@link TerrainStore} は
+     * 旧 stride のストアを破棄して再構築する。
+     */
+    public static final int STRIDE = 2;
     /**
      * ⑳ OW 系の<b>3D 露出サーフェス</b>採取の縦走査深さ (ブロック)。 地表から下へこの分だけ「空気の直下の固体」
      * (=露出した上面: 地表・洞窟床・オーバーハング上面・段差) を採る＝表層シートより桁違いに点が増え立体的に。

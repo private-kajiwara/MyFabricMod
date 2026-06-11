@@ -40,8 +40,8 @@ import net.minecraft.world.level.chunk.LevelChunk;
 public final class TerrainStore {
 
     private static final String FILE_NAME = "visualizegate-terrain.json";
-    /** ⑳ 3D ボクセル化で 1 カラムが複数セル化＝同じ XZ 面積でセル数が増える。 上限を引き上げ (在庫=密度)。 */
-    private static final int CAP_PER_DIM = 500_000;
+    /** ㉑ stride-2 (横 4 倍) ＋ ⑳ 3D で在庫が増えるので上限を引き上げ (在庫=見える密度)。 超過は drop (有界)。 */
+    private static final int CAP_PER_DIM = 700_000;
     /** ネザー帯走査のプレイヤー Y からの上下幅。 */
     private static final int NETHER_BAND_UP = 24;
     private static final int NETHER_BAND_DOWN = 40;
@@ -79,29 +79,73 @@ public final class TerrainStore {
     private void onChunkLoad(ClientLevel level, LevelChunk chunk) {
         try {
             ensureLoaded();
-            String worldId = PortalMemory.get().currentWorldId();
-            if (worldId == null) {
+            if (PortalMemory.get().currentWorldId() == null) {
                 return; // world-id 未確定 (PortalMemory が JOIN/CHUNK_LOAD で先に確定する)
             }
-            String dimId = level.dimension().identifier().toString();
-            PortalDimension dim = PortalMemory.dimOf(dimId);
-            boolean hasCeiling = dim == PortalDimension.NETHER;
-
-            int bandTop = NETHER_MAX_Y;
-            int bandBot = NETHER_MIN_Y;
-            if (hasCeiling) {
-                LocalPlayer player = Minecraft.getInstance().player;
-                int py = (player != null) ? (int) Math.floor(player.getY()) : 64;
-                bandTop = Math.min(NETHER_MAX_Y, py + NETHER_BAND_UP);
-                bandBot = Math.max(NETHER_MIN_Y, py - NETHER_BAND_DOWN);
-            }
-
-            Map<Long, Long> grid = dimGrid(worldId, dimId);
-            Map<Long, Integer> surfGrid = surfGrid(worldId, dimId);
-            TerrainSampler.sampleChunk(level, chunk, hasCeiling, bandTop, bandBot,
-                    (wx, wz, y, color) -> putVoxel(grid, surfGrid, wx, wz, y, color, dimId));
+            sampleAndStore(level, chunk);
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] terrain sample failed (continuing): {}", t.toString());
+        }
+    }
+
+    /** 1 チャンクを現 stride でサンプルしストアへ反映 (chunk-load と ㉑ Re-analyze 再採取で共用)。 */
+    private void sampleAndStore(ClientLevel level, LevelChunk chunk) {
+        String worldId = PortalMemory.get().currentWorldId();
+        if (worldId == null) {
+            return;
+        }
+        String dimId = level.dimension().identifier().toString();
+        PortalDimension dim = PortalMemory.dimOf(dimId);
+        boolean hasCeiling = dim == PortalDimension.NETHER;
+
+        int bandTop = NETHER_MAX_Y;
+        int bandBot = NETHER_MIN_Y;
+        if (hasCeiling) {
+            LocalPlayer player = Minecraft.getInstance().player;
+            int py = (player != null) ? (int) Math.floor(player.getY()) : 64;
+            bandTop = Math.min(NETHER_MAX_Y, py + NETHER_BAND_UP);
+            bandBot = Math.max(NETHER_MIN_Y, py - NETHER_BAND_DOWN);
+        }
+
+        Map<Long, Long> grid = dimGrid(worldId, dimId);
+        Map<Long, Integer> surfGrid = surfGrid(worldId, dimId);
+        TerrainSampler.sampleChunk(level, chunk, hasCeiling, bandTop, bandBot,
+                (wx, wz, y, color) -> putVoxel(grid, surfGrid, wx, wz, y, color, dimId));
+    }
+
+    /**
+     * ㉑ 現在ロード中のチャンク (中心 ±{@code radiusChunks}) を<b>現 stride で再採取</b>してストアへ反映＝
+     * Re-analyze 直後に見ている範囲がすぐ濃くなる (旧 stride 破棄後/解像度変更後でも即反映)。 メインスレッドで
+     * 呼ぶこと (ライブ World アクセス・解析押下時の単発)。 render distance 外は再ロード時に更新 (正直な挙動)。
+     */
+    public void resampleLoaded(ClientLevel level, int centerBlockX, int centerBlockZ, int radiusChunks) {
+        try {
+            ensureLoaded();
+            if (PortalMemory.get().currentWorldId() == null) {
+                return;
+            }
+            int ccx = centerBlockX >> 4;
+            int ccz = centerBlockZ >> 4;
+            int done = 0;
+            for (int dx = -radiusChunks; dx <= radiusChunks; dx++) {
+                for (int dz = -radiusChunks; dz <= radiusChunks; dz++) {
+                    int cx = ccx + dx;
+                    int cz = ccz + dz;
+                    if (!level.hasChunk(cx, cz)) {
+                        continue;
+                    }
+                    net.minecraft.world.level.chunk.ChunkAccess ca = level.getChunk(cx, cz,
+                            net.minecraft.world.level.chunk.status.ChunkStatus.FULL, false);
+                    if (ca instanceof LevelChunk lc) {
+                        sampleAndStore(level, lc);
+                        done++;
+                    }
+                }
+            }
+            VisualizeGateMod.LOGGER.info("[visualizegate] terrain resampled {} loaded chunks (stride {})",
+                    done, TerrainSampler.STRIDE);
+        } catch (Throwable t) {
+            VisualizeGateMod.LOGGER.warn("[visualizegate] terrain resample failed (continuing): {}", t.toString());
         }
     }
 
@@ -235,8 +279,9 @@ public final class TerrainStore {
         return (int) (v >> 32);
     }
 
-    // ── ⑳ 3D ボクセルキー (gx:24 | gz:24 | gy:16・STRIDE 格子) ─────────────
-    // gx,gz は ±8.4M セル (=±33M ブロック > ワールド境界±30M) を 24bit 符号付きで、 gy は ±32k セルを 16bit で。
+    // ── ⑳/㉑ 3D ボクセルキー (gx:25 | gz:25 | gy:14・STRIDE 格子) ───────────
+    // ㉑ stride-2 では gx=block/2 が ±15M セルに達し 24bit (±8.4M) を超えるため 25bit (±16.7M) に拡張。
+    // gx,gz=25bit 符号付き (±16.7M セル=±33M ブロック > 境界±30M)、 gy=14bit 符号付き (±8191 セル)。
 
     private static long voxelKey(int blockX, int blockZ, int y) {
         long gx = Math.floorDiv(blockX, TerrainSampler.STRIDE);
@@ -246,17 +291,17 @@ public final class TerrainStore {
     }
 
     private static long voxelKeyFromGrid(int gx, int gz, int gy) {
-        return ((gx & 0xFFFFFFL) << 40) | ((gz & 0xFFFFFFL) << 16) | (gy & 0xFFFFL);
+        return ((gx & 0x1FFFFFFL) << 39) | ((gz & 0x1FFFFFFL) << 14) | (gy & 0x3FFFL);
     }
 
-    /** 3D キーから gx (24bit 符号付き)。 */
+    /** 3D キーから gx (25bit 符号付き)。 */
     private static int unpackGx(long key) {
-        return (int) (key >> 40);
+        return (int) (key >> 39);
     }
 
-    /** 3D キーから gz (24bit 符号付き)。 */
+    /** 3D キーから gz (25bit 符号付き)。 */
     private static int unpackGz(long key) {
-        return (int) ((key << 24) >> 40);
+        return (int) ((key << 25) >> 39);
     }
 
     // ── 2D サーフェスキー (packed gx,gz・surfaceYAt 用) ───────────────────
@@ -281,6 +326,13 @@ public final class TerrainStore {
         try (BufferedReader r = Files.newBufferedReader(f, StandardCharsets.UTF_8)) {
             TerrainFile tf = GSON.fromJson(r, TerrainFile.class);
             if (tf == null) {
+                return;
+            }
+            // ㉑ stride が変わったら格子キーの意味が変わり位置が壊れる → 旧データ破棄 (探索/Re-analyze で再構築)。
+            if (tf.samplingStride != TerrainSampler.STRIDE) {
+                VisualizeGateMod.LOGGER.info(
+                        "[visualizegate] terrain stride changed ({}→{}) — discarding old store, will rebuild",
+                        tf.samplingStride, TerrainSampler.STRIDE);
                 return;
             }
             // ⑳ flat (gx,gz,y,color) は 3D ボクセルへ再構成 (gy=floorDiv(y,STRIDE))＋ 2D surface-max を再構築。
@@ -348,6 +400,7 @@ public final class TerrainStore {
             return;
         }
         TerrainFile tf = new TerrainFile();
+        tf.samplingStride = TerrainSampler.STRIDE; // ㉑ 次回ロードで stride 不一致を検出するため記録
         for (Map.Entry<String, Map<String, Map<Long, Long>>> we : mem.entrySet()) {
             Map<String, int[]> outDims = tf.worldColumnsC(we.getKey());
             for (Map.Entry<String, Map<Long, Long>> de : we.getValue().entrySet()) {

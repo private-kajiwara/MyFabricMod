@@ -23,6 +23,13 @@ public final class TerrainFile {
 
     public int schemaVersion = 2;
 
+    /**
+     * ㉑ 保存時のサンプリングストライド (横方向ブロック)。 旧ファイルにこのフィールドは無く GSON が既定 4 を残す
+     * (＝旧データは stride-4)。 ロード時に現 {@link TerrainSampler#STRIDE} と異なれば、 格子座標 (gx=block/STRIDE)
+     * の意味が変わり位置が壊れるため<b>旧グリッドを破棄</b>して空から始める (= 探索/Re-analyze で新 stride 再構築)。
+     */
+    public int samplingStride = 4;
+
     /** 旧: worldId → dimensionId → flat int[] (gx, gz, y の 3 つ組)。 読み込み専用 (色なしフォールバック)。 */
     public Map<String, Map<String, int[]>> columns = new HashMap<>();
 
