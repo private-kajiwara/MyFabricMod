@@ -27,6 +27,8 @@ public final class GateConfig {
     public int pcDimensionSpacing = 100;
     public int pcGpuDetail = 20000; // ⑭/⑯ GPU3D 1 層あたり最大描画点数 (品質・中位 GPU 安全既定)
     public int pcPointSize = 2;     // ⑯ GL 点サイズ (px)
+    public float pcOwDisplayScale = 1.0f;     // ㉓ OW 層の表示スケール (基準 1:1 × これ・既定=現状一致)
+    public float pcNetherDisplayScale = 1.0f; // ㉓ ネザー層の表示スケール (基準 1/8 × これ・既定=現状一致)
 
     public static GateConfig defaults() {
         return new GateConfig();
