@@ -26,6 +26,15 @@
 	"visualizegate.dim.nether": "ネザー",
 	"visualizegate.dim.other": "他次元",
 
+	"visualizegate.cmd.cleared": "逆算ワイヤーフレームを %s 件消去しました",
+	"visualizegate.cmd.no_player": "プレイヤー/ワールドが取得できません",
+	"visualizegate.cmd.wrongdim": "逆算はオーバーワールドかネザーでのみ動作します",
+	"visualizegate.cmd.interp": "ターゲット: %s (%s, %s, %s)  /  建設先: %s",
+	"visualizegate.cmd.existing": "探索半径 %s ブロック内に既存ゲート (赤・吸い込み警告): %s の %s, %s, %s",
+	"visualizegate.cmd.new": "新規生成見込み (緑) — %s の %s, %s, %s に建設",
+	"visualizegate.cmd.unconfirmed": "注: 逆側が未観測のため既存ゲートの有無は断定できません",
+	"visualizegate.cmd.added": "ワイヤーフレームを追加。/vg clean で消去。",
+
 	"visualizegate.card.linked.title": "既存のゲートにつながります",
 	"visualizegate.card.linked.aligned": "ほぼぴったり",
 	"visualizegate.card.linked.offset": "ズレ 約%s ブロック",

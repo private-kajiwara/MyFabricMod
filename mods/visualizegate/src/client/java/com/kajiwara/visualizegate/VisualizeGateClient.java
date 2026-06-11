@@ -1,6 +1,8 @@
 package com.kajiwara.visualizegate;
 
+import com.kajiwara.visualizegate.client.command.VgCommands;
 import com.kajiwara.visualizegate.client.keybind.GateKeyBindings;
+import com.kajiwara.visualizegate.client.render.BackCalcRenderer;
 import com.kajiwara.visualizegate.client.render.CornerIconRenderer;
 import com.kajiwara.visualizegate.client.render.HologramFrameRenderer;
 import com.kajiwara.visualizegate.client.render.LegendOverlayRenderer;
@@ -50,7 +52,11 @@ public class VisualizeGateClient implements ClientModInitializer {
         HologramFrameRenderer.register();
         // 機能3: 探索ドーム v1 (リンク検索範囲のワイヤフレーム＋範囲内の他ゲート混線強調・水後ステージ・Mixin 0)。
         SearchDomeRenderer.register();
+        // 機能㉕: `/vg back-calculate` の予測ワイヤーフレーム (現在ディメンション要素のみ・水後ステージ・Mixin 0)。
+        BackCalcRenderer.register();
         GateKeyBindings.register();
+        // ㉕ クライアント専用 `/vg` コマンド (back-calculate / clean・サーバー非依存)。
+        VgCommands.register();
         CornerIconRenderer.register();
         // UX 層 (純追加・HUD パス): ① 自動インフォカード ② 常設凡例。 いずれも注視/所持トリガで表示。
         PortalInfoCardRenderer.register();
