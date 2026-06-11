@@ -40,6 +40,12 @@ public final class PointCloudAnalyzer {
     public static final int POINT_BUDGET_PER_LAYER = 1_000_000;
     /** OW→ネザーのリンク探索半径 (PortalLinkRenderer と同じ・水平距離)。 */
     private static final double NETHER_SEARCH_RADIUS = 16.0;
+    /**
+     * ㉒A ネザー層の<b>水平 1:8 縮尺</b>。 各層は自分の重心で中心化するため、 重心化だけでは縮尺は
+     * 「探索した範囲の広さ」次第になり (＝territory 比が崩れると 1:1 に見える)。 ヘッダ "Nether 1:8" を
+     * 確実にするため、 ネザーの (X,Z) を重心からこの倍率で縮める (Y は自然＝spacing で縦分離)。 OW は 1:1。
+     */
+    private static final float NETHER_XZ_SCALE = 1.0f / 8.0f;
 
     private PointCloudAnalyzer() {
     }
@@ -132,9 +138,9 @@ public final class PointCloudAnalyzer {
             int z = in.netherTerrain()[i * 4 + 1];
             int y = in.netherTerrain()[i * 4 + 2];
             int color = in.netherTerrain()[i * 4 + 3];
-            nXt[nk] = x - nCenterX;
+            nXt[nk] = (x - nCenterX) * NETHER_XZ_SCALE; // ㉒A 1:8 水平縮尺
             nYt[nk] = y - nMeanY;
-            nZt[nk] = z - nCenterZ;
+            nZt[nk] = (z - nCenterZ) * NETHER_XZ_SCALE;
             nColort[nk] = blockOrDimColor(color, GateColors.PC_NETHER_LOW, GateColors.PC_NETHER_HIGH,
                     norm(y, nYMin, nYMax));
             nk++;
@@ -222,9 +228,9 @@ public final class PointCloudAnalyzer {
             // B 端 (ネザー層・⑥ 1:1・ネザー重心センタリング。 spacing は描画時に加算)。 端点は
             // ネザー terrain と同一変換なのでズレず、 実位置どうしを結んで扇状に開く。
             b.add(new float[] {
-                    n.anchor().x() - nCenterX,
+                    (n.anchor().x() - nCenterX) * NETHER_XZ_SCALE, // ㉒A 1:8 (terrain と同変換で整合)
                     n.anchor().y() - nMeanY,
-                    n.anchor().z() - nCenterZ });
+                    (n.anchor().z() - nCenterZ) * NETHER_XZ_SCALE });
         }
         Links out = new Links(a.size());
         for (int i = 0; i < a.size(); i++) {
@@ -255,9 +261,9 @@ public final class PointCloudAnalyzer {
             k++;
         }
         for (DomainPortal p : in.netherPortals()) {
-            gx[k] = p.anchor().x() - nCenterX;   // ⑥ 1:1 (×8 なし)
+            gx[k] = (p.anchor().x() - nCenterX) * NETHER_XZ_SCALE;   // ㉒A 1:8 水平縮尺
             gy[k] = p.anchor().y() - nMeanY;
-            gz[k] = p.anchor().z() - nCenterZ;
+            gz[k] = (p.anchor().z() - nCenterZ) * NETHER_XZ_SCALE;
             gn[k] = true;
             k++;
         }
@@ -275,9 +281,9 @@ public final class PointCloudAnalyzer {
         }
         if (in.playerInNether()) {
             return new Marker(true,
-                    (float) (in.playerX() - nCenterX),
+                    (float) ((in.playerX() - nCenterX) * NETHER_XZ_SCALE), // ㉒A 1:8 水平縮尺
                     (float) (in.playerY() - nMeanY),
-                    (float) (in.playerZ() - nCenterZ),
+                    (float) ((in.playerZ() - nCenterZ) * NETHER_XZ_SCALE),
                     true);
         }
         return new Marker(true,
