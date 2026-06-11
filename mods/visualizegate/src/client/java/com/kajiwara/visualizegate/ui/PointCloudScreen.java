@@ -95,7 +95,7 @@ public class PointCloudScreen extends Screen {
 
     // ── 入力ドラッグ ──
     private enum Drag {
-        NONE, ROTATE, SLIDER, DETAIL, POINTSIZE
+        NONE, ROTATE, SLIDER, DETAIL, POINTSIZE, SCALE_OW, SCALE_NETHER
     }
 
     private Drag drag = Drag.NONE;
@@ -111,6 +111,11 @@ public class PointCloudScreen extends Screen {
     private int slH;
     private int sl2Y; // ⑭ 2 本目のスライダ (GPU detail) のトラック Y
     private int sl3Y; // ⑯ 3 本目のスライダ (点サイズ) のトラック Y
+    // ㉓ 表示スケール群: OW/ネザーを<b>2 カラム 1 行</b>で並べる (縦を消費せず手狭を解消)。 同一トラック Y・X が左右。
+    private int slScaleY;   // スケール 2 本のトラック Y (共通)
+    private int slScaleOwX; // 左ハーフトラック X (OW)
+    private int slScaleNX;  // 右ハーフトラック X (Nether)
+    private int slScaleHalfW; // ハーフトラック幅
 
     // ── 投影スクラッチ (rebuild 中のみ使用・フレーム毎に再確保しない) ──
     private float[] bSx = new float[0];
@@ -136,6 +141,8 @@ public class PointCloudScreen extends Screen {
     private int gSpacing = -1;
     private int gDetail = -1; // ⑭ GPU detail 署名 (変化で VBO 再構築)
     private int gPointSize = -1; // ⑯ 点サイズ署名 (lineWidth は頂点に焼くので変化で再構築)
+    private float gOwScale = Float.NaN;     // ㉓ OW 表示スケール署名 (変化で VBO 再構築)
+    private float gNetherScale = Float.NaN; // ㉓ ネザー表示スケール署名
     private int gpuOwPts;     // ⑭ 直近に GPU へ送った OW/ネザー点数 (detail 上限後・HUD 用)
     private int gpuNPts;
     private static final Identifier PC_TEX_ID =
@@ -198,6 +205,8 @@ public class PointCloudScreen extends Screen {
     private boolean sigShowN;
     private boolean sigShowLinks;
     private boolean sigDimTint;
+    private float sigOwScale = Float.NaN;     // ㉓ OW 表示スケール署名
+    private float sigNetherScale = Float.NaN; // ㉓ ネザー表示スケール署名
     private int sigVpX;
     private int sigVpY;
     private int sigVpW;
@@ -226,38 +235,48 @@ public class PointCloudScreen extends Screen {
         int sbW = SIDEBAR_W;
         int y = HEADER_H + 8;
 
+        // ㉓ トグル群を 2×2 グリッドへ (ハーフ幅・縦を半分に圧縮＝スケール 2 本の追加分を相殺し、 むしろ全体は
+        // 現状より短く＝GUI スケール 2/3/4 でも崩れない)。 [OW][Nether] / [Gate links][Dim tint]。
+        int colGap = 4;
+        int halfW = (sbW - colGap) / 2;
+        int col2X = sbX + halfW + colGap;
         addRenderableWidget(Button.builder(owLabel(), b -> {
             PointCloudViewState.toggleOverworld();
             b.setMessage(owLabel());
             GateConfigManager.save();
-        }).bounds(sbX, y, sbW, 20).build());
-        y += 24;
+        }).bounds(sbX, y, halfW, 20).build());
         addRenderableWidget(Button.builder(netherLabel(), b -> {
             PointCloudViewState.toggleNether();
             b.setMessage(netherLabel());
             GateConfigManager.save();
-        }).bounds(sbX, y, sbW, 20).build());
+        }).bounds(col2X, y, halfW, 20).build());
         y += 24;
         addRenderableWidget(Button.builder(linksLabel(), b -> {
             PointCloudViewState.toggleLinks();
             b.setMessage(linksLabel());
             GateConfigManager.save();
-        }).bounds(sbX, y, sbW, 20).build());
-        y += 24;
+        }).bounds(sbX, y, halfW, 20).build());
         addRenderableWidget(Button.builder(tintLabel(), b -> {
             PointCloudViewState.toggleDimTint();
             b.setMessage(tintLabel());
             GateConfigManager.save();
-        }).bounds(sbX, y, sbW, 20).build());
-        y += 30;
+        }).bounds(col2X, y, halfW, 20).build());
+        y += 26; // トグル群 → スケール群へのグループ間隔
 
-        // 間隔スライダ (手動描画・手動入力)。 ラベルはこの上、 トラックは slY。 ⑧ パネル内へインセット。
+        // スライダ群 (手動描画・手動入力)。 ラベルはトラックの上、 トラックは各 *Y。 ⑧ パネル内へインセット。
         slX = sbX + SIDE_PAD;
-        slY = y + 10;
         slW = sbW - 2 * SIDE_PAD;
         slH = 10;
-        sl2Y = slY + slH + 22; // ⑭ GPU detail スライダ (ラベル + トラック分の余白を空けて下へ)
-        sl3Y = sl2Y + slH + 22; // ⑯ 点サイズスライダ
+        // ㉓ 表示スケール群: OW/ネザーを 2 カラム 1 行 (ラベルはそれぞれの上)。 縦は 1 行分しか使わない。
+        int trackGap = 8;
+        slScaleHalfW = (slW - trackGap) / 2;
+        slScaleOwX = slX;
+        slScaleNX = slX + slScaleHalfW + trackGap;
+        slScaleY = y + 11;          // ラベル(上)分を空ける
+        // 表示群: 間隔 / GPU detail / 点サイズ (全幅)。
+        slY = slScaleY + slH + 22;  // Dimension spacing
+        sl2Y = slY + slH + 22;      // ⑭ GPU detail
+        sl3Y = sl2Y + slH + 22;     // ⑯ 点サイズ
 
         // フッタ: Re-analyze / Done。
         int fy = this.height - FOOTER_H + 7;
@@ -308,7 +327,10 @@ public class PointCloudScreen extends Screen {
 
         // タイトル + スケール表記。
         g.text(this.font, this.title, MARGIN, 10, GateColors.ACCENT);
-        g.text(this.font, Component.literal("Overworld 1:1   Nether 1:8"),
+        // ㉓ 基準形 (1:1 / 1:8) ＋ 現在の表示スケール倍率を併記。 既定 1/1 では実質「1:1 / 1:8」のまま。
+        String scaleHud = "OW 1:1 ×" + fmtScale(PointCloudViewState.getOwDisplayScale())
+                + "   Nether 1:8 ×" + fmtScale(PointCloudViewState.getNetherDisplayScale());
+        g.text(this.font, Component.literal(fitWidth(scaleHud, SIDEBAR_W + MARGIN)),
                 this.width - SIDEBAR_W - MARGIN, 10, GateColors.TEXT);
 
         PointCloudAnalysis analysis = PointCloudAnalysis.get();
@@ -434,9 +456,11 @@ public class PointCloudScreen extends Screen {
         int spacing = PointCloudViewState.getDimensionSpacing();
         int detail = PointCloudViewState.getGpuDetail();
         int pointSize = PointCloudViewState.getPointSize();
+        float owScale = PointCloudViewState.getOwDisplayScale();
+        float nScale = PointCloudViewState.getNetherDisplayScale();
         if (snap == gSnap && showOw == gShowOw && showN == gShowN && showLinks == gShowLinks
                 && dimTint == gDimTint && spacing == gSpacing && detail == gDetail
-                && pointSize == gPointSize) {
+                && pointSize == gPointSize && owScale == gOwScale && nScale == gNetherScale) {
             return false;
         }
         gSnap = snap;
@@ -447,6 +471,8 @@ public class PointCloudScreen extends Screen {
         gSpacing = spacing;
         gDetail = detail;
         gPointSize = pointSize;
+        gOwScale = owScale;
+        gNetherScale = nScale;
         return true;
     }
 
@@ -457,6 +483,11 @@ public class PointCloudScreen extends Screen {
         boolean showOw = PointCloudViewState.isShowOverworld();
         boolean showN = PointCloudViewState.isShowNether();
         boolean showLinks = PointCloudViewState.isShowLinks();
+        // ㉓ 層ごとの表示スケール (基準形に重ねる XZ 倍率)。 スナップショットの XZ は重心相対なので
+        // 乗算＝重心基準の拡縮。 既定 1.0/1.0 で現状一致 (回帰ゼロ)。 地形点・リンク端・ゲート・現在地マーカー
+        // すべてに同じ層スケールを掛け、 地形と端点がズレないようにする。
+        float owScale = PointCloudViewState.getOwDisplayScale();
+        float nScale = PointCloudViewState.getNetherDisplayScale();
 
         // ── 点群 (OW=+pivot 上層 / ネザー=-pivot 下層・⑤頂点色) ──
         // ⑭ 品質設定: 各層を GPU detail (= 1 層の最大描画点数) へ stride 間引き。 スナップショットは不変
@@ -471,17 +502,17 @@ public class PointCloudScreen extends Screen {
         int[] pcol = new int[pc];
         int k = 0;
         for (int i = 0; i < owN; i += owStride) {
-            pxyz[k * 3] = snap.owX[i];
+            pxyz[k * 3] = snap.owX[i] * owScale;        // ㉓ XZ のみ拡縮 (Y/spacing は不変)
             pxyz[k * 3 + 1] = snap.owY[i] + pivotY;
-            pxyz[k * 3 + 2] = snap.owZ[i];
+            pxyz[k * 3 + 2] = snap.owZ[i] * owScale;
             pcol[k] = tint ? mix(snap.owColor[i], DIM_TINT_OW, DIM_TINT_FRAC) : snap.owColor[i];
             k++;
         }
         gpuOwPts = k;
         for (int i = 0; i < nN; i += nStride) {
-            pxyz[k * 3] = snap.nX[i];
+            pxyz[k * 3] = snap.nX[i] * nScale;          // ㉓ 基準 1/8 に表示スケールを重ねる
             pxyz[k * 3 + 1] = snap.nY[i] - pivotY;
-            pxyz[k * 3 + 2] = snap.nZ[i];
+            pxyz[k * 3 + 2] = snap.nZ[i] * nScale;
             pcol[k] = tint ? mix(snap.nColor[i], DIM_TINT_NETHER, DIM_TINT_FRAC) : snap.nColor[i];
             k++;
         }
@@ -507,17 +538,22 @@ public class PointCloudScreen extends Screen {
         int j = 0;
         int linkC = 0xFF000000 | (GateColors.PC_LINK & 0xFFFFFF);
         for (int i = 0; i < links; i++) {
-            j = emitBox(oxyz, ocol, j, snap.linkAx[i], snap.linkAy[i] + pivotY, snap.linkAz[i],
-                    snap.linkBx[i], snap.linkBy[i] - pivotY, snap.linkBz[i], linkW, linkC);
+            // ㉓ A 端=OW 層スケール / B 端=ネザー層スケール (地形と同じ層変換＝端が追従。 両端のスケール差で線は傾いてよい)。
+            j = emitBox(oxyz, ocol, j,
+                    snap.linkAx[i] * owScale, snap.linkAy[i] + pivotY, snap.linkAz[i] * owScale,
+                    snap.linkBx[i] * nScale, snap.linkBy[i] - pivotY, snap.linkBz[i] * nScale, linkW, linkC);
         }
         for (int i = 0; i < gates; i++) {
+            float gs = snap.gateNether[i] ? nScale : owScale; // ㉓ 当該 dim の層スケール
             float gy = snap.gateNether[i] ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
-            j = emitWireCube(oxyz, ocol, j, snap.gateX[i], gy, snap.gateZ[i], gateHalf, gateEdge, linkC);
+            j = emitWireCube(oxyz, ocol, j, snap.gateX[i] * gs, gy, snap.gateZ[i] * gs,
+                    gateHalf, gateEdge, linkC);
         }
         if (snap.hasMarker) {
+            float ms = snap.markerNether ? nScale : owScale; // ㉓ 当該 dim の層スケール
             float my = snap.markerNether ? snap.markerY - pivotY : snap.markerY + pivotY;
             int gold = 0xFF000000 | (GateColors.ACCENT & 0xFFFFFF);
-            j = emitCross(oxyz, ocol, j, snap.markerX, my, snap.markerZ, markArm, markW, gold);
+            j = emitCross(oxyz, ocol, j, snap.markerX * ms, my, snap.markerZ * ms, markArm, markW, gold);
         }
         PointCloudGpuRenderer.uploadOverlay(oxyz, ocol, j);
     }
@@ -663,9 +699,13 @@ public class PointCloudScreen extends Screen {
         boolean showLinks = PointCloudViewState.isShowLinks();
         boolean dimTint = PointCloudViewState.isDimTint();
         float spacing = PointCloudViewState.getDimensionSpacing();
+        float owScale = PointCloudViewState.getOwDisplayScale();
+        float nScale = PointCloudViewState.getNetherDisplayScale();
         if (snap == sigSnap && yaw == sigYaw && pitch == sigPitch && distance == sigDistance
                 && spacing == sigSpacing && showOw == sigShowOw && showN == sigShowN
-                && showLinks == sigShowLinks && dimTint == sigDimTint && vpX == sigVpX && vpY == sigVpY
+                && showLinks == sigShowLinks && dimTint == sigDimTint
+                && owScale == sigOwScale && nScale == sigNetherScale
+                && vpX == sigVpX && vpY == sigVpY
                 && vpW == sigVpW && vpH == sigVpH) {
             return false;
         }
@@ -678,6 +718,8 @@ public class PointCloudScreen extends Screen {
         sigShowN = showN;
         sigShowLinks = showLinks;
         sigDimTint = dimTint;
+        sigOwScale = owScale;
+        sigNetherScale = nScale;
         sigVpX = vpX;
         sigVpY = vpY;
         sigVpW = vpW;
@@ -702,6 +744,9 @@ public class PointCloudScreen extends Screen {
 
         boolean showOw = PointCloudViewState.isShowOverworld();
         boolean showN = PointCloudViewState.isShowNether();
+        // ㉓ 層ごとの表示スケール (XZ のみ・重心相対座標へ乗算＝重心基準の拡縮)。 GPU 経路と同一適用。
+        float owScale = PointCloudViewState.getOwDisplayScale();
+        float nScale = PointCloudViewState.getNetherDisplayScale();
         int owN = showOw ? snap.owX.length : 0;
         int nN = showN ? snap.nX.length : 0;
         ensureBuffers(owN + nN);
@@ -714,12 +759,12 @@ public class PointCloudScreen extends Screen {
         int total = 0;
         for (int i = 0; i < owN; i += st) {   // OW 層 (上＝広く疎: y += pivot)
             int c = tint ? mix(snap.owColor[i], DIM_TINT_OW, DIM_TINT_FRAC) : snap.owColor[i];
-            total = project(snap.owX[i], snap.owY[i] + pivotY, snap.owZ[i], c,
+            total = project(snap.owX[i] * owScale, snap.owY[i] + pivotY, snap.owZ[i] * owScale, c,
                     cosY, sinY, cosP, sinP, cx, cy, total);
         }
         for (int i = 0; i < nN; i += st) {    // ネザー層 (下＝密なコンパクト塊: y -= pivot)
             int c = tint ? mix(snap.nColor[i], DIM_TINT_NETHER, DIM_TINT_FRAC) : snap.nColor[i];
-            total = project(snap.nX[i], snap.nY[i] - pivotY, snap.nZ[i], c,
+            total = project(snap.nX[i] * nScale, snap.nY[i] - pivotY, snap.nZ[i] * nScale, c,
                     cosY, sinY, cosP, sinP, cx, cy, total);
         }
 
@@ -763,10 +808,11 @@ public class PointCloudScreen extends Screen {
         if (PointCloudViewState.isShowLinks() && snap.linkCount() > 0) {
             ensureLinkArrays(snap.linkCount());
             for (int i = 0; i < snap.linkCount(); i++) {
-                float[] a = projectXY(snap.linkAx[i], snap.linkAy[i] + pivotY, snap.linkAz[i],
-                        cosY, sinY, cosP, sinP, cx, cy);
-                float[] b = projectXY(snap.linkBx[i], snap.linkBy[i] - pivotY, snap.linkBz[i],
-                        cosY, sinY, cosP, sinP, cx, cy);
+                // ㉓ A 端=OW スケール / B 端=ネザースケール (地形と同じ層変換)。
+                float[] a = projectXY(snap.linkAx[i] * owScale, snap.linkAy[i] + pivotY,
+                        snap.linkAz[i] * owScale, cosY, sinY, cosP, sinP, cx, cy);
+                float[] b = projectXY(snap.linkBx[i] * nScale, snap.linkBy[i] - pivotY,
+                        snap.linkBz[i] * nScale, cosY, sinY, cosP, sinP, cx, cy);
                 if (a == null || b == null) {
                     continue;
                 }
@@ -783,8 +829,10 @@ public class PointCloudScreen extends Screen {
         if (PointCloudViewState.isShowLinks() && snap.gateCount() > 0) {
             ensureGateArrays(snap.gateCount());
             for (int i = 0; i < snap.gateCount(); i++) {
+                float gs = snap.gateNether[i] ? nScale : owScale; // ㉓ 当該 dim の層スケール
                 float gy2 = snap.gateNether[i] ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
-                float[] p = projectXY(snap.gateX[i], gy2, snap.gateZ[i], cosY, sinY, cosP, sinP, cx, cy);
+                float[] p = projectXY(snap.gateX[i] * gs, gy2, snap.gateZ[i] * gs,
+                        cosY, sinY, cosP, sinP, cx, cy);
                 if (p == null || p[0] < vpX || p[0] > vpX + vpW || p[1] < vpY || p[1] > vpY + vpH) {
                     continue;
                 }
@@ -797,8 +845,10 @@ public class PointCloudScreen extends Screen {
         // 現在地マーカーを投影してキャッシュ。
         mkVis = false;
         if (snap.hasMarker) {
+            float ms = snap.markerNether ? nScale : owScale; // ㉓ 当該 dim の層スケール
             float my = snap.markerNether ? snap.markerY - pivotY : snap.markerY + pivotY;
-            float[] m = projectXY(snap.markerX, my, snap.markerZ, cosY, sinY, cosP, sinP, cx, cy);
+            float[] m = projectXY(snap.markerX * ms, my, snap.markerZ * ms,
+                    cosY, sinY, cosP, sinP, cx, cy);
             if (m != null && m[0] >= vpX && m[0] <= vpX + vpW && m[1] >= vpY && m[1] <= vpY + vpH) {
                 mkVis = true;
                 mkX = m[0];
@@ -1255,6 +1305,13 @@ public class PointCloudScreen extends Screen {
     // ── サイドバー: スライダ + 件数 ──
 
     private void drawSlider(GuiGraphicsExtractor g) {
+        // ㉓ 表示スケール群 (2 カラム 1 行): OW / Nether。 基準形 (1:1 / 1:8) に重ねる倍率＝既定 1.0/1.0 で現状一致。
+        float ow = PointCloudViewState.getOwDisplayScale();
+        float nether = PointCloudViewState.getNetherDisplayScale();
+        drawHalfTrack(g, "OW ×" + fmtScale(ow), slScaleOwX, slScaleHalfW, slScaleY, scaleToFrac(ow));
+        drawHalfTrack(g, "Nether ×" + fmtScale(nether), slScaleNX, slScaleHalfW, slScaleY,
+                scaleToFrac(nether));
+
         int spacing = PointCloudViewState.getDimensionSpacing();
         drawTrack(g, "Dimension spacing: " + spacing, slY,
                 (float) (spacing - PointCloudViewState.SPACING_MIN)
@@ -1280,6 +1337,43 @@ public class PointCloudScreen extends Screen {
         frac = Math.max(0f, Math.min(1f, frac));
         int hx = slX + Math.round(frac * (slW - 6));
         g.fill(hx, trackY - 2, hx + 6, trackY + slH + 2, GateColors.MAIN);
+    }
+
+    /** ㉓ ハーフ幅スライダ (2 カラム用)。 ラベルは {@code tx} 起点・幅に収める。 {@code frac}=0..1。 */
+    private void drawHalfTrack(GuiGraphicsExtractor g, String label, int tx, int tw, int trackY,
+            float frac) {
+        g.text(this.font, Component.literal(fitWidth(label, tw)), tx, trackY - 11, GateColors.TEXT);
+        g.fill(tx, trackY, tx + tw, trackY + slH, GateColors.PANEL);
+        g.fill(tx, trackY, tx + tw, trackY + 1, GateColors.MAIN_DIM);
+        frac = Math.max(0f, Math.min(1f, frac));
+        int hx = tx + Math.round(frac * (tw - 6));
+        g.fill(hx, trackY - 2, hx + 6, trackY + slH + 2, GateColors.MAIN);
+    }
+
+    /** ㉓ 表示スケール → スライダ frac (対数: 1.0 が中央)。 範囲 [MIN,MAX]。 */
+    private static float scaleToFrac(float scale) {
+        float min = PointCloudViewState.DISPLAY_SCALE_MIN;
+        float max = PointCloudViewState.DISPLAY_SCALE_MAX;
+        scale = Math.max(min, Math.min(max, scale));
+        return (float) (Math.log(scale / min) / Math.log(max / min));
+    }
+
+    /** ㉓ スライダ frac → 表示スケール (対数)。 0.05 刻みへ丸めて値を安定させる。 */
+    private static float fracToScale(float frac) {
+        float min = PointCloudViewState.DISPLAY_SCALE_MIN;
+        float max = PointCloudViewState.DISPLAY_SCALE_MAX;
+        frac = Math.max(0f, Math.min(1f, frac));
+        float s = (float) (min * Math.pow(max / min, frac));
+        s = Math.round(s / 0.05f) * 0.05f; // 0.05 刻みで安定 (×1.00 などを取りやすく)
+        return Math.max(min, Math.min(max, s));
+    }
+
+    /** ㉓ 表示スケールの簡潔表記 (整数なら ×2・小数は 2 桁)。 */
+    private static String fmtScale(float s) {
+        if (Math.abs(s - Math.round(s)) < 0.001f) {
+            return String.valueOf(Math.round(s));
+        }
+        return String.format(java.util.Locale.ROOT, "%.2f", s);
     }
 
     /**
@@ -1376,6 +1470,16 @@ public class PointCloudScreen extends Screen {
             setPointSizeFromMouse(mx);
             return true;
         }
+        if (event.button() == 0 && inScaleOw(mx, my)) {
+            drag = Drag.SCALE_OW;
+            setOwScaleFromMouse(mx);
+            return true;
+        }
+        if (event.button() == 0 && inScaleNether(mx, my)) {
+            drag = Drag.SCALE_NETHER;
+            setNetherScaleFromMouse(mx);
+            return true;
+        }
         if (event.button() == 0 && inViewport(mx, my)) {
             drag = Drag.ROTATE;
             return true;
@@ -1397,6 +1501,14 @@ public class PointCloudScreen extends Screen {
             setPointSizeFromMouse(event.x());
             return true;
         }
+        if (drag == Drag.SCALE_OW) {
+            setOwScaleFromMouse(event.x());
+            return true;
+        }
+        if (drag == Drag.SCALE_NETHER) {
+            setNetherScaleFromMouse(event.x());
+            return true;
+        }
         if (drag == Drag.ROTATE) {
             yaw += (float) (dragX * DRAG_SENS);
             pitch += (float) (dragY * DRAG_SENS);
@@ -1409,7 +1521,8 @@ public class PointCloudScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (drag == Drag.SLIDER || drag == Drag.DETAIL || drag == Drag.POINTSIZE) {
+        if (drag == Drag.SLIDER || drag == Drag.DETAIL || drag == Drag.POINTSIZE
+                || drag == Drag.SCALE_OW || drag == Drag.SCALE_NETHER) {
             GateConfigManager.save();
         }
         drag = Drag.NONE;
@@ -1445,6 +1558,16 @@ public class PointCloudScreen extends Screen {
         return mx >= slX && mx <= slX + slW && my >= sl3Y - 3 && my <= sl3Y + slH + 3;
     }
 
+    private boolean inScaleOw(double mx, double my) {
+        return mx >= slScaleOwX && mx <= slScaleOwX + slScaleHalfW
+                && my >= slScaleY - 3 && my <= slScaleY + slH + 3;
+    }
+
+    private boolean inScaleNether(double mx, double my) {
+        return mx >= slScaleNX && mx <= slScaleNX + slScaleHalfW
+                && my >= slScaleY - 3 && my <= slScaleY + slH + 3;
+    }
+
     private void setSpacingFromMouse(double mx) {
         float frac = (float) ((mx - slX) / Math.max(1, slW - 6));
         frac = Math.max(0f, Math.min(1f, frac));
@@ -1478,6 +1601,18 @@ public class PointCloudScreen extends Screen {
         int v = PointCloudViewState.POINT_SIZE_MIN
                 + Math.round(frac * (PointCloudViewState.POINT_SIZE_MAX - PointCloudViewState.POINT_SIZE_MIN));
         PointCloudViewState.setPointSize(v);
+    }
+
+    /** ㉓ OW 表示スケールスライダ (対数・ハーフトラック): マウス x → スケール。 */
+    private void setOwScaleFromMouse(double mx) {
+        float frac = (float) ((mx - slScaleOwX) / Math.max(1, slScaleHalfW - 6));
+        PointCloudViewState.setOwDisplayScale(fracToScale(frac));
+    }
+
+    /** ㉓ ネザー表示スケールスライダ (対数・ハーフトラック): マウス x → スケール。 */
+    private void setNetherScaleFromMouse(double mx) {
+        float frac = (float) ((mx - slScaleNX) / Math.max(1, slScaleHalfW - 6));
+        PointCloudViewState.setNetherDisplayScale(fracToScale(frac));
     }
 
     @Override
