@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * ㉕ ④ `/vg` シンタックスハイライト (ポータル紫 #8E3BE6)。
+ * ㉕ ④ `/vg` シンタックスハイライト (暗背景で読める明るい紫 #B57BFF・在世界の #8E3BE6 とは別管理)。
  *
  * <p>コマンド入力欄の整形 ({@code CommandSuggestions.formatChat(String,int)→FormattedCharSequence}) の
  * 戻り値を、 入力が {@code /vg} で始まる時だけ<b>ラップして先頭3字 ({@code /vg}) を紫に再着色</b>する。
@@ -26,7 +26,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(CommandSuggestions.class)
 public class CommandSuggestionsMixin {
 
-    private static final int VG_PURPLE = 0x8E3BE6;
+    /**
+     * ハイライト専用の<b>独立色</b> (在世界ジオメトリの #8E3BE6 とは別管理)。 暗いチャット背景で読めるよう
+     * 在世界のポータル紫より<b>明るい</b>紫 (#B57BFF・RGB 181,123,255)。 まだ暗ければ #C9A6FF、 白っぽければ
+     * #A05CFF へここだけで調整可。 {@code GateColors.MAIN}/{@code PC_LINK} 等の在世界紫は不変。
+     */
+    private static final int VG_HIGHLIGHT_ARGB = 0xB57BFF;
     /** 着色する先頭リテラル長 ("/vg" = 3 文字)。 */
     private static final int VG_PREFIX_LEN = 3;
 
@@ -59,7 +64,7 @@ public class CommandSuggestionsMixin {
             return base.accept((position, style, codePoint) -> {
                 int abs = firstCharacterIndex + local[0];
                 local[0]++;
-                Style s = (abs < VG_PREFIX_LEN) ? style.withColor(VG_PURPLE) : style;
+                Style s = (abs < VG_PREFIX_LEN) ? style.withColor(VG_HIGHLIGHT_ARGB) : style;
                 return sink.accept(position, s, codePoint);
             });
         };
