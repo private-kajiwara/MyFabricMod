@@ -62,10 +62,15 @@ public class PointCloudScreen extends Screen {
     private static final int POINT_SIZE_EXTRA = 1;
     /** ⑲ GPU3D リンク線 (角柱) の半幅＝雲半径×比。 細く＝点群を邪魔しない (4K でも見える最小限)。 太さ調整はここ。 */
     private static final float GPU_LINK_W_FRAC = 0.0016f;
-    /** ⑲ GPU3D ゲートマーカー (紫ワイヤーキューブ) の半辺＝雲半径×比 (点群より大きく・全角度で視認)。 */
-    private static final float GPU_GATE_HALF_FRAC = 0.013f;
-    /** ⑲ GPU3D ゲートワイヤーキューブの辺チューブ半幅＝雲半径×比 (中空＝点群が透ける細さ)。 */
-    private static final float GPU_GATE_EDGE_W_FRAC = 0.0016f;
+    // ㉔ ゲートマーカー＝<b>黒曜石ネザーポータルの形</b> (縦長の中空矩形フレーム・X–Y 平面の固定軸既定向き・法線 Z)。
+    // 外形 幅:高さ ≈ 4:5 (黒曜石枠 4×5 のシルエット)。 サイズは<b>雲半径相対の固定マーカーサイズ</b>＝ズーム/÷8 でも
+    // 消えない (位置のみ ÷8＋per-dim 表示スケールに追従)。 後微調整はこの 3 定数で。
+    /** ㉔ GPU3D ゲートフレーム外形の<b>半高</b>＝雲半径×比 (縦長)。 */
+    private static final float GPU_GATE_FRAME_HALF_H_FRAC = 0.016f;
+    /** ㉔ GPU3D ゲートフレーム外形の<b>半幅</b>＝雲半径×比 (= 半高 ×0.8 ＝外形 4:5)。 */
+    private static final float GPU_GATE_FRAME_HALF_W_FRAC = 0.0128f;
+    /** ㉔ GPU3D ゲートフレームの<b>枠バー半幅</b>＝雲半径×比 (黒曜石枠の太さ・中空＝点群が透ける)。 */
+    private static final float GPU_GATE_BAR_W_FRAC = 0.0018f;
     /** ⑲ GPU3D 現在地マーカー (金ワイヤー十字) の腕長＝雲半径×比。 */
     private static final float GPU_MARKER_ARM_FRAC = 0.03f;
     /** ⑲ GPU3D 現在地マーカー (金ワイヤー十字) の半幅＝雲半径×比 (細く)。 */
@@ -76,8 +81,9 @@ public class PointCloudScreen extends Screen {
     private static final int DIM_TINT_OW = GateColors.PC_OW_HIGH;
     private static final int DIM_TINT_NETHER = GateColors.PC_NETHER_HIGH;
     private static final float DIM_TINT_FRAC = 0.15f;
-    /** ⑪ ゲート位置マーカー (紫の中空リング) の半径 (論理px・×SSでネイティブ)。 少し大きめ・地形は隠さない。 */
-    private static final float GATE_RING_R = 3.5f;
+    /** ㉔ ゲートマーカー (黒曜石ポータル枠) の<b>半幅/半高</b> (論理px・×SSでネイティブ)。 縦長 4:5・地形は隠さない中空。 */
+    private static final float GATE_FRAME_HALF_W = 2.5f; // 外形幅 ≈5px
+    private static final float GATE_FRAME_HALF_H = 3.5f; // 外形高 ≈7px (縦長)
     /** ⑫ リンク線の太さ (固定ネイティブpx・SSに乗算しない)。 最細で鮮明＝1。 */
     private static final int LINK_THICK_NATIVE = 1;
     private static final double DRAG_SENS = 0.012;
@@ -520,19 +526,20 @@ public class PointCloudScreen extends Screen {
         // ⑯ GL 点サイズ (px・スライダ)。 小さく＝密で滑らかな高密度クラウド。
         PointCloudGpuRenderer.uploadPoints(pxyz, pcol, k, PointCloudViewState.getPointSize());
 
-        // ── マーカー類 (⑲ 中空ワイヤー＋細線・QUADS): リンク=細角柱 / ゲート=ワイヤーキューブ / 現在地=細ワイヤー十字 ──
+        // ── マーカー類 (⑲ 中空ワイヤー＋細線・QUADS): リンク=細角柱 / ㉔ゲート=黒曜石ポータル枠 / 現在地=細ワイヤー十字 ──
         // 中空ワイヤーで点群を透かし、 点群を隠さずマーカーは明確に。 太さは FRAC 定数 (雲半径×比) で微調整可
         // (ワールド寸＝透視で解像度比例に見える＝4K でも視認・カメラ非依存)。
         float linkW = Math.max(0.08f, snap.radius * GPU_LINK_W_FRAC);        // リンク角柱の半幅 (細く)
-        float gateHalf = Math.max(0.6f, snap.radius * GPU_GATE_HALF_FRAC);   // ゲートワイヤーキューブの半辺
-        float gateEdge = Math.max(0.08f, snap.radius * GPU_GATE_EDGE_W_FRAC); // ゲート辺チューブの半幅
+        float gateHalfH = Math.max(1.2f, snap.radius * GPU_GATE_FRAME_HALF_H_FRAC); // ㉔ ゲート枠の半高 (縦長)
+        float gateHalfW = Math.max(0.9f, snap.radius * GPU_GATE_FRAME_HALF_W_FRAC); // ㉔ ゲート枠の半幅 (4:5)
+        float gateBarW = Math.max(0.08f, snap.radius * GPU_GATE_BAR_W_FRAC);  // ㉔ ゲート枠バーの半幅
         float markArm = Math.max(2f, snap.radius * GPU_MARKER_ARM_FRAC);     // 現在地十字の腕長
         float markW = Math.max(0.1f, snap.radius * GPU_MARKER_W_FRAC);       // 現在地十字の半幅 (細く)
 
         int links = showLinks ? snap.linkCount() : 0;
         int gates = showLinks ? snap.gateCount() : 0;
-        // 頂点数: リンク角柱=側面4枚×4=16 / ゲートワイヤーキューブ=12辺×16=192 / 現在地ワイヤー十字=3角柱×16=48。
-        int ov = links * 16 + gates * 192 + (snap.hasMarker ? 48 : 0);
+        // 頂点数: リンク角柱=側面4枚×4=16 / ㉔ゲート枠=4バー×16=64 / 現在地ワイヤー十字=3角柱×16=48。
+        int ov = links * 16 + gates * 64 + (snap.hasMarker ? 48 : 0);
         float[] oxyz = new float[ov * 3];
         int[] ocol = new int[ov];
         int j = 0;
@@ -544,10 +551,11 @@ public class PointCloudScreen extends Screen {
                     snap.linkBx[i] * nScale, snap.linkBy[i] - pivotY, snap.linkBz[i] * nScale, linkW, linkC);
         }
         for (int i = 0; i < gates; i++) {
-            float gs = snap.gateNether[i] ? nScale : owScale; // ㉓ 当該 dim の層スケール
+            float gs = snap.gateNether[i] ? nScale : owScale; // ㉓ 当該 dim の層スケール (位置のみ)
             float gy = snap.gateNether[i] ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
-            j = emitWireCube(oxyz, ocol, j, snap.gateX[i] * gs, gy, snap.gateZ[i] * gs,
-                    gateHalf, gateEdge, linkC);
+            // ㉔ 黒曜石ポータル枠。 位置は ÷8＋表示スケールに追従、 サイズは固定 (gs 非乗算＝消えない)。
+            j = emitPortalFrame(oxyz, ocol, j, snap.gateX[i] * gs, gy, snap.gateZ[i] * gs,
+                    gateHalfW, gateHalfH, gateBarW, linkC);
         }
         if (snap.hasMarker) {
             float ms = snap.markerNether ? nScale : owScale; // ㉓ 当該 dim の層スケール
@@ -615,27 +623,17 @@ public class PointCloudScreen extends Screen {
     }
 
     /**
-     * ⑲ 中心 (x,y,z)・半辺 {@code h} の<b>ワイヤーフレームキューブ</b> (12 辺=各細角柱 {@link #emitBox}・192 頂点)。
-     * 中空＝点群が透けて見える＝ゲートマーカー (紫) を点群を隠さず明示。 {@code w}=辺チューブの半幅。
+     * ㉔ 中心 (x,y,z)・半幅 {@code halfW}・半高 {@code halfH} の<b>黒曜石ネザーポータル枠</b>
+     * (縦長の中空矩形＝左右の柱 2 本＋上下の桁 2 本・各細角柱 {@link #emitBox}・4×16=64 頂点)。
+     * X–Y 平面 (法線 Z) の<b>固定軸既定向き</b>で直立。 中空＝点群が透ける。 {@code barW}=枠バーの半幅。
      */
-    private static int emitWireCube(float[] xyz, int[] col, int v, float x, float y, float z,
-            float h, float w, int c) {
-        float x0 = x - h, x1 = x + h, y0 = y - h, y1 = y + h, z0 = z - h, z1 = z + h;
-        // 底面 4 辺。
-        v = emitBox(xyz, col, v, x0, y0, z0, x1, y0, z0, w, c);
-        v = emitBox(xyz, col, v, x1, y0, z0, x1, y0, z1, w, c);
-        v = emitBox(xyz, col, v, x1, y0, z1, x0, y0, z1, w, c);
-        v = emitBox(xyz, col, v, x0, y0, z1, x0, y0, z0, w, c);
-        // 上面 4 辺。
-        v = emitBox(xyz, col, v, x0, y1, z0, x1, y1, z0, w, c);
-        v = emitBox(xyz, col, v, x1, y1, z0, x1, y1, z1, w, c);
-        v = emitBox(xyz, col, v, x1, y1, z1, x0, y1, z1, w, c);
-        v = emitBox(xyz, col, v, x0, y1, z1, x0, y1, z0, w, c);
-        // 垂直 4 辺。
-        v = emitBox(xyz, col, v, x0, y0, z0, x0, y1, z0, w, c);
-        v = emitBox(xyz, col, v, x1, y0, z0, x1, y1, z0, w, c);
-        v = emitBox(xyz, col, v, x1, y0, z1, x1, y1, z1, w, c);
-        v = emitBox(xyz, col, v, x0, y0, z1, x0, y1, z1, w, c);
+    private static int emitPortalFrame(float[] xyz, int[] col, int v, float x, float y, float z,
+            float halfW, float halfH, float barW, int c) {
+        float x0 = x - halfW, x1 = x + halfW, y0 = y - halfH, y1 = y + halfH;
+        v = emitBox(xyz, col, v, x0, y0, z, x0, y1, z, barW, c); // 左柱
+        v = emitBox(xyz, col, v, x1, y0, z, x1, y1, z, barW, c); // 右柱
+        v = emitBox(xyz, col, v, x0, y1, z, x1, y1, z, barW, c); // 上桁
+        v = emitBox(xyz, col, v, x0, y0, z, x1, y0, z, barW, c); // 下桁
         return v;
     }
 
@@ -936,9 +934,9 @@ public class PointCloudScreen extends Screen {
                 rasterLine((lkAx[i] - vpX) * ss, (lkAy[i] - vpY) * ss, (lkBx[i] - vpX) * ss,
                         (lkBy[i] - vpY) * ss, GateColors.PC_LINK, LINK_THICK_NATIVE, w, h);
             }
-            for (int i = 0; i < cachedGates; i++) {   // ⑪ ゲート位置の紫リング (地形の上)
-                rasterRing((gkX[i] - vpX) * ss, (gkY[i] - vpY) * ss, GATE_RING_R * ss,
-                        GateColors.PC_LINK, ss, w, h);
+            for (int i = 0; i < cachedGates; i++) {   // ㉔ ゲート位置の黒曜石ポータル枠 (地形の上・中空矩形)
+                rasterFrame((gkX[i] - vpX) * ss, (gkY[i] - vpY) * ss, GATE_FRAME_HALF_W * ss,
+                        GATE_FRAME_HALF_H * ss, GateColors.PC_LINK, ss, w, h);
             }
             if (mkVis) {
                 rasterMarker((mkX - vpX) * ss, (mkY - vpY) * ss, ss, w, h);
@@ -1095,27 +1093,30 @@ public class PointCloudScreen extends Screen {
         }
     }
 
-    /** ⑪ 中空リング (紫ゲートマーカー)。 太さ {@code thick} テクセル・内側は塗らない＝地形を隠さない。 */
-    private void rasterRing(float cxf, float cyf, float rOuter, int color, int thick, int w, int h) {
+    /**
+     * ㉔ 中空の<b>縦長矩形フレーム</b> (黒曜石ポータル枠・紫ゲートマーカー)。 中心 (cxf,cyf)・半幅 {@code halfW}・
+     * 半高 {@code halfH}・枠太さ {@code thick} テクセル (≒1 論理px×ss)。 内側は塗らない＝地形を隠さない。
+     * texbatch (2D) 経路は射影中心のみ持つため、 画面整列の軸平行矩形 (固定軸既定向きの 2D 投影) で描く。
+     */
+    private void rasterFrame(float cxf, float cyf, float halfW, float halfH, int color, int thick,
+            int w, int h) {
         int packed = 0xFF000000 | (color & 0xFFFFFF);
-        float rIn = rOuter - Math.max(1, thick);
-        if (rIn < 0f) {
-            rIn = 0f;
-        }
-        float ro2 = rOuter * rOuter;
-        float ri2 = rIn * rIn;
-        int x0 = Math.max(0, (int) Math.floor(cxf - rOuter));
-        int x1 = Math.min(w - 1, (int) Math.ceil(cxf + rOuter));
-        int y0 = Math.max(0, (int) Math.floor(cyf - rOuter));
-        int y1 = Math.min(h - 1, (int) Math.ceil(cyf + rOuter));
-        for (int y = y0; y <= y1; y++) {
-            float dy = (y + 0.5f) - cyf;
-            for (int x = x0; x <= x1; x++) {
-                float dx = (x + 0.5f) - cxf;
-                float d2 = dx * dx + dy * dy;
-                if (d2 <= ro2 && d2 >= ri2) {
-                    putPix(x, y, packed, w, h);
-                }
+        int t = Math.max(1, thick);
+        int x0 = Math.round(cxf - halfW);
+        int x1 = Math.round(cxf + halfW);
+        int y0 = Math.round(cyf - halfH);
+        int y1 = Math.round(cyf + halfH);
+        fillRectPix(x0, y0, x1 + 1, y0 + t, packed, w, h);     // 上桁
+        fillRectPix(x0, y1 - t + 1, x1 + 1, y1 + 1, packed, w, h); // 下桁
+        fillRectPix(x0, y0, x0 + t, y1 + 1, packed, w, h);     // 左柱
+        fillRectPix(x1 - t + 1, y0, x1 + 1, y1 + 1, packed, w, h); // 右柱
+    }
+
+    /** ㉔ [x0,x1)×[y0,y1) を塗る (枠バー用)。 範囲外は putPix がクリップ。 */
+    private static void fillRectPix(int x0, int y0, int x1, int y1, int c, int w, int h) {
+        for (int y = y0; y < y1; y++) {
+            for (int x = x0; x < x1; x++) {
+                putPix(x, y, c, w, h);
             }
         }
     }
