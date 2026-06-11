@@ -40,8 +40,8 @@ import net.minecraft.world.level.chunk.LevelChunk;
 public final class TerrainStore {
 
     private static final String FILE_NAME = "visualizegate-terrain.json";
-    /** ㉑ stride-2 (横 4 倍) ＋ ⑳ 3D で在庫が増えるので上限を引き上げ (在庫=見える密度)。 超過は drop (有界)。 */
-    private static final int CAP_PER_DIM = 700_000;
+    /** ㉒ stride-1 (横最大解像度) で在庫ピークが伸びるので上限を引き上げ (在庫=見える密度)。 超過は drop (有界)。 */
+    private static final int CAP_PER_DIM = 1_500_000;
     /** ネザー帯走査のプレイヤー Y からの上下幅。 */
     private static final int NETHER_BAND_UP = 24;
     private static final int NETHER_BAND_DOWN = 40;
@@ -195,8 +195,8 @@ public final class TerrainStore {
         for (Map.Entry<Long, Long> e : grid.entrySet()) {
             long key = e.getKey();
             long val = e.getValue();
-            out[i++] = unpackGx(key) * TerrainSampler.STRIDE;
-            out[i++] = unpackGz(key) * TerrainSampler.STRIDE;
+            out[i++] = unpackX(key); // ㉒B 絶対ブロック座標 (×STRIDE 不要)
+            out[i++] = unpackZ(key);
             out[i++] = unpackY(val);
             out[i++] = unpackColor(val);
         }
@@ -279,37 +279,31 @@ public final class TerrainStore {
         return (int) (v >> 32);
     }
 
-    // ── ⑳/㉑ 3D ボクセルキー (gx:25 | gz:25 | gy:14・STRIDE 格子) ───────────
-    // ㉑ stride-2 では gx=block/2 が ±15M セルに達し 24bit (±8.4M) を超えるため 25bit (±16.7M) に拡張。
-    // gx,gz=25bit 符号付き (±16.7M セル=±33M ブロック > 境界±30M)、 gy=14bit 符号付き (±8191 セル)。
+    // ── ㉒B 絶対ブロックキー (x:26 | z:26 | y:9(+64 offset)) ───────────────
+    // 絶対座標なので STRIDE はサンプリング間隔だけ＝stride 変更/再探索でも旧点と足し込める (破棄不要)。
+    // x,z=26bit 符号付き (±33.5M > 境界±30M)、 y=(y+64) を 9bit (OW -64..320→0..384、 ネザー 0..127)。
 
     private static long voxelKey(int blockX, int blockZ, int y) {
-        long gx = Math.floorDiv(blockX, TerrainSampler.STRIDE);
-        long gz = Math.floorDiv(blockZ, TerrainSampler.STRIDE);
-        long gy = Math.floorDiv(y, TerrainSampler.STRIDE);
-        return voxelKeyFromGrid((int) gx, (int) gz, (int) gy);
+        return ((long) (blockX & 0x3FFFFFF) << 38) | ((long) (blockZ & 0x3FFFFFF) << 12)
+                | (((y + 64) & 0x1FFL));
     }
 
-    private static long voxelKeyFromGrid(int gx, int gz, int gy) {
-        return ((gx & 0x1FFFFFFL) << 39) | ((gz & 0x1FFFFFFL) << 14) | (gy & 0x3FFFL);
+    /** キーから絶対 blockX (26bit 符号付き)。 */
+    private static int unpackX(long key) {
+        return (int) (key >> 38);
     }
 
-    /** 3D キーから gx (25bit 符号付き)。 */
-    private static int unpackGx(long key) {
-        return (int) (key >> 39);
+    /** キーから絶対 blockZ (26bit 符号付き)。 */
+    private static int unpackZ(long key) {
+        return (int) ((key << 26) >> 38);
     }
 
-    /** 3D キーから gz (25bit 符号付き)。 */
-    private static int unpackGz(long key) {
-        return (int) ((key << 25) >> 39);
-    }
-
-    // ── 2D サーフェスキー (packed gx,gz・surfaceYAt 用) ───────────────────
+    // ── 2D サーフェスキー (4 ブロックセル・stride 非依存・surfaceYAt 用) ────
 
     private static long surfKey(int blockX, int blockZ) {
-        long gx = Math.floorDiv(blockX, TerrainSampler.STRIDE);
-        long gz = Math.floorDiv(blockZ, TerrainSampler.STRIDE);
-        return (gx & 0xFFFFFFFFL) << 32 | (gz & 0xFFFFFFFFL);
+        long sx = blockX >> 2;
+        long sz = blockZ >> 2;
+        return (sx & 0xFFFFFFFFL) << 32 | (sz & 0xFFFFFFFFL);
     }
 
     // ── 永続化 (GSON atomic・flat int[] 相互変換) ─────────────────────────
@@ -328,16 +322,14 @@ public final class TerrainStore {
             if (tf == null) {
                 return;
             }
-            // ㉑ stride が変わったら格子キーの意味が変わり位置が壊れる → 旧データ破棄 (探索/Re-analyze で再構築)。
-            if (tf.samplingStride != TerrainSampler.STRIDE) {
+            // ㉒B 旧フォーマット (格子座標・絶対座標でない) は座標系が違うため<b>一度だけ</b>破棄 (探索/Re-analyze で
+            // 再構築)。 以降は絶対座標なので stride 変更でも破棄不要。
+            if (!tf.absoluteCoords) {
                 VisualizeGateMod.LOGGER.info(
-                        "[visualizegate] terrain stride changed ({}→{}) — discarding old store, will rebuild",
-                        tf.samplingStride, TerrainSampler.STRIDE);
+                        "[visualizegate] terrain store is legacy grid-coords — discarding once, rebuilding as absolute");
                 return;
             }
-            // ⑳ flat (gx,gz,y,color) は 3D ボクセルへ再構成 (gy=floorDiv(y,STRIDE))＋ 2D surface-max を再構築。
-            // 旧 2D データ (1カラム1点) は 1 ボクセル/カラムとしてそのまま乗る＝<b>マイグレーション不要</b>。
-            // 新: 4 つ組 (色あり)。
+            // columnsC = 絶対 (wx, wz, y, color) の 4 つ組。 キー/2D surface を復元。
             if (tf.columnsC != null) {
                 for (Map.Entry<String, Map<String, int[]>> we : tf.columnsC.entrySet()) {
                     for (Map.Entry<String, int[]> de : we.getValue().entrySet()) {
@@ -348,24 +340,7 @@ public final class TerrainStore {
                             continue;
                         }
                         for (int i = 0; i + 3 < flat.length; i += 4) {
-                            loadVoxel(grid, surfGrid, flat[i], flat[i + 1], flat[i + 2], flat[i + 3], false);
-                        }
-                    }
-                }
-            }
-            // 旧: 3 つ組 (色なし)。 まだ無いセルだけ NO_COLOR で補完 (再訪で色が付く)。
-            if (tf.columns != null) {
-                for (Map.Entry<String, Map<String, int[]>> we : tf.columns.entrySet()) {
-                    for (Map.Entry<String, int[]> de : we.getValue().entrySet()) {
-                        Map<Long, Long> grid = dimGrid(we.getKey(), de.getKey());
-                        Map<Long, Integer> surfGrid = surfGrid(we.getKey(), de.getKey());
-                        int[] flat = de.getValue();
-                        if (flat == null) {
-                            continue;
-                        }
-                        for (int i = 0; i + 2 < flat.length; i += 3) {
-                            loadVoxel(grid, surfGrid, flat[i], flat[i + 1], flat[i + 2],
-                                    TerrainSampler.NO_COLOR, true);
+                            loadVoxel(grid, surfGrid, flat[i], flat[i + 1], flat[i + 2], flat[i + 3]);
                         }
                     }
                 }
@@ -376,19 +351,11 @@ public final class TerrainStore {
         }
     }
 
-    /** ⑳ 永続データ (grid 座標 gx,gz + 絶対 y + color) を 3D ボクセル＋2D surface へ復元。 */
+    /** ㉒B 永続データ (絶対 wx,wz,y,color) を絶対ボクセルキー＋2D surface へ復元。 */
     private void loadVoxel(Map<Long, Long> grid, Map<Long, Integer> surfGrid,
-            int gx, int gz, int y, int color, boolean ifAbsent) {
-        long key = voxelKeyFromGrid(gx, gz, (int) Math.floorDiv(y, TerrainSampler.STRIDE));
-        long val = pack(color, y);
-        if (ifAbsent) {
-            if (grid.putIfAbsent(key, val) != null) {
-                return;
-            }
-        } else {
-            grid.put(key, val);
-        }
-        long s2 = (gx & 0xFFFFFFFFL) << 32 | (gz & 0xFFFFFFFFL);
+            int wx, int wz, int y, int color) {
+        grid.put(voxelKey(wx, wz, y), pack(color, y));
+        long s2 = surfKey(wx, wz);
         Integer cur = surfGrid.get(s2);
         if (cur == null || y > cur) {
             surfGrid.put(s2, y);
@@ -400,7 +367,8 @@ public final class TerrainStore {
             return;
         }
         TerrainFile tf = new TerrainFile();
-        tf.samplingStride = TerrainSampler.STRIDE; // ㉑ 次回ロードで stride 不一致を検出するため記録
+        tf.samplingStride = TerrainSampler.STRIDE; // 情報用
+        tf.absoluteCoords = true; // ㉒B columnsC は絶対ブロック座標 (以降の stride 変更で破棄不要)
         for (Map.Entry<String, Map<String, Map<Long, Long>>> we : mem.entrySet()) {
             Map<String, int[]> outDims = tf.worldColumnsC(we.getKey());
             for (Map.Entry<String, Map<Long, Long>> de : we.getValue().entrySet()) {
@@ -410,8 +378,8 @@ public final class TerrainStore {
                 for (Map.Entry<Long, Long> ge : grid.entrySet()) {
                     long key = ge.getKey();
                     long val = ge.getValue();
-                    flat[i++] = unpackGx(key);
-                    flat[i++] = unpackGz(key);
+                    flat[i++] = unpackX(key); // ㉒B 絶対 blockX
+                    flat[i++] = unpackZ(key); // 絶対 blockZ
                     flat[i++] = unpackY(val);
                     flat[i++] = unpackColor(val);
                 }

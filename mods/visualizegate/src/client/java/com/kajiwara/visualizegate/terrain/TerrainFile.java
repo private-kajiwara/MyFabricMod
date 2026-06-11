@@ -30,6 +30,13 @@ public final class TerrainFile {
      */
     public int samplingStride = 4;
 
+    /**
+     * ㉒B {@link #columnsC} の (a,b) が<b>絶対ブロック座標 (wx,wz)</b> か (true) 旧<b>格子座標 (gx=block/STRIDE)</b>
+     * か (false=旧)。 絶対座標なら STRIDE はサンプリング間隔だけになり、 stride 変更/再探索でも旧点と足し込める
+     * (破棄不要)。 旧 (false) ファイルは座標系が違うため<b>一度だけ</b>破棄して再構築する。
+     */
+    public boolean absoluteCoords = false;
+
     /** 旧: worldId → dimensionId → flat int[] (gx, gz, y の 3 つ組)。 読み込み専用 (色なしフォールバック)。 */
     public Map<String, Map<String, int[]>> columns = new HashMap<>();
 

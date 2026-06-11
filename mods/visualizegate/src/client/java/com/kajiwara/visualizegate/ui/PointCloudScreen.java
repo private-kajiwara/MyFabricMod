@@ -1259,11 +1259,12 @@ public class PointCloudScreen extends Screen {
         drawTrack(g, "Dimension spacing: " + spacing, slY,
                 (float) (spacing - PointCloudViewState.SPACING_MIN)
                         / (PointCloudViewState.SPACING_MAX - PointCloudViewState.SPACING_MIN));
-        // ⑭ GPU detail (1 層の最大描画点数)。 軽くしたい時は左へ。 既定=中位 GPU 安全値。
+        // ⑭/㉒B GPU detail (1 層の最大描画点数)。 スライダ実効上限は現 stock に追従＝全域が密度に効く (死に区間なし)。
         int detail = PointCloudViewState.getGpuDetail();
-        drawTrack(g, "GPU detail: " + detail + " pts/layer", sl2Y,
+        int stockMax = gpuStockMax();
+        drawTrack(g, "GPU detail: " + detail + " / stock " + stockMax, sl2Y,
                 (float) (detail - PointCloudViewState.DETAIL_MIN)
-                        / (PointCloudViewState.DETAIL_MAX - PointCloudViewState.DETAIL_MIN));
+                        / Math.max(1, stockMax - PointCloudViewState.DETAIL_MIN));
         // ⑯ 点サイズ (px)。 小さく＝密で滑らか。
         int ps = PointCloudViewState.getPointSize();
         drawTrack(g, "Point size: " + ps + " px", sl3Y,
@@ -1452,13 +1453,22 @@ public class PointCloudScreen extends Screen {
         PointCloudViewState.setDimensionSpacing(v);
     }
 
-    /** ⑭ GPU detail スライダ: マウス x → 1 層の最大描画点数。 次フレームの gpuGeomChanged で VBO 再構築。 */
+    /** ⑭/㉒B GPU detail スライダ: マウス x → 1 層の最大描画点数。 実効上限は現 stock (死に区間なし)。 */
     private void setDetailFromMouse(double mx) {
         float frac = (float) ((mx - slX) / Math.max(1, slW - 6));
         frac = Math.max(0f, Math.min(1f, frac));
+        int stockMax = gpuStockMax();
         int v = PointCloudViewState.DETAIL_MIN
-                + Math.round(frac * (PointCloudViewState.DETAIL_MAX - PointCloudViewState.DETAIL_MIN));
+                + Math.round(frac * (stockMax - PointCloudViewState.DETAIL_MIN));
         PointCloudViewState.setGpuDetail(v);
+    }
+
+    /** ㉒B スライダ実効上限＝現スナップショットの大きい方の層 stock (DETAIL_MIN+1..DETAIL_MAX にクランプ)。 */
+    private int gpuStockMax() {
+        PointCloudSnapshot s = PointCloudAnalysis.get().snapshot();
+        int stock = Math.max(s.owX.length, s.nX.length);
+        return Math.max(PointCloudViewState.DETAIL_MIN + 1,
+                Math.min(PointCloudViewState.DETAIL_MAX, stock));
     }
 
     /** ⑯ 点サイズスライダ: マウス x → GL 点サイズ (px)。 lineWidth は頂点に焼くので変化で VBO 再構築。 */
