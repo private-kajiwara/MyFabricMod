@@ -152,6 +152,7 @@ public final class PortalMemory {
             markVisited(dimId);
             promoteLiveRecords(level, dimId);
             reconcile(level, dimId);
+            ensureNumbered(); // ㉛ 全 dim の number==0 を一意化 (別 dim の N-0 残りを根治)
             confirmLinks(); // ㉙ 開いて繋がった OW↔ネザーの確定ペアを永続記録
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] portal-memory tick failed (continuing): {}", t.toString());
@@ -159,6 +160,40 @@ public final class PortalMemory {
     }
 
     // ── 蓄積 / 整合 ─────────────────────────────────────────────────────
+
+    /**
+     * ㉛ 現 world の<b>全ディメンションの全ポータル</b>に、 dim 別ユニーク連番を保証する (number==0 のものだけ
+     * 既存 max の続きから割当て・以後リシャッフルしない)。 ㉚ の {@link #promoteLiveRecords} は<b>現 dim の
+     * ライブ確認分のみ</b>遡及採番していたため、 別 dim (例 OW に居る間のネザー) のポータルが number==0 のまま
+     * 残り「N-0」が量産されていた。 ここはロード済み/現在地に依存せず全件を一意化する (= 選択キー衝突の根治)。
+     */
+    private void ensureNumbered() {
+        if (file == null || currentWorldId == null) {
+            return;
+        }
+        for (Map.Entry<String, List<MemoryPortal>> de : file.worldPortals(currentWorldId).entrySet()) {
+            String dimId = de.getKey();
+            List<MemoryPortal> list = de.getValue();
+            int max = 0;
+            for (MemoryPortal mp : list) {
+                max = Math.max(max, mp.number);
+            }
+            boolean changed = false;
+            for (MemoryPortal mp : list) {
+                if (mp.number == 0) {
+                    mp.number = ++max; // 既存 max の続き＝既採番と衝突しない
+                    changed = true;
+                }
+            }
+            // 採番カウンタを max の先へ進める (次の新規が衝突しないように)。
+            Map<String, Integer> byDim = file.nextGateNumber.computeIfAbsent(currentWorldId, k -> new java.util.HashMap<>());
+            byDim.put(dimId, Math.max(byDim.getOrDefault(dimId, 1), max + 1));
+            if (changed) {
+                VisualizeGateMod.LOGGER.info(
+                        "[visualizegate] renumbered zero-numbered gates in dim={} (now unique, max={})", dimId, max);
+            }
+        }
+    }
 
     /** 現ディメンションを「観測済み」に印す (UNKNOWN/WILL_CREATE 区別の被覆)。 */
     private void markVisited(String dimId) {
@@ -326,6 +361,7 @@ public final class PortalMemory {
         if (file == null || currentWorldId == null) {
             return ow;
         }
+        ensureNumbered(); // ㉛ 出力前に全ゲートをユニーク採番 (capture 経路でも N-0 を出さない)
         for (List<MemoryPortal> list : file.worldPortals(currentWorldId).values()) {
             for (MemoryPortal mp : list) {
                 PortalDimension d = dimOf(mp.dimensionId);

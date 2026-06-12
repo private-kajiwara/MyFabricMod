@@ -150,14 +150,20 @@ public class PointCloudScreen extends Screen {
     private int listBottom;   // 一覧の下端 (フッタ手前)
     private int gatesScroll = 0;  // Gates 一覧スクロール (px)
     private int linksScroll = 0;  // Links 一覧スクロール (px)
-    private int selectedGate = 0; // ㉚ 選択中ゲート番号+次元 (0=非選択)。 dim 別連番なので dim も持つ。
-    private boolean selectedNether = false;
+    // ㉛ 選択は<b>一意キー (ワールド anchor 座標+dim)</b> で保持 (番号は表示用＝採番衝突しても 1 クリック 1 ゲート)。
+    private boolean hasSel = false;
+    private int selWx;
+    private int selWy;
+    private int selWz;
+    private boolean selNether;
     private boolean showLabels = true; // ㉚C 3D 番号ラベルの表示トグル
     // View タブのトグルボタン参照 (タブ切替で表示/非表示)。
     private final java.util.List<Button> viewWidgets = new java.util.ArrayList<>();
-    // 一覧の行 hit 矩形 (クリック選択用・描画時に確定)。 {number, dimNether(0/1), y0, y1} を平行配列で。
-    private int[] rowGateNum = new int[0];
-    private int[] rowGateNether = new int[0];
+    // ㉛ 一覧の行 hit 矩形 (クリック選択用・描画時に確定)。 行→ゲートの<b>ワールド anchor</b>+dim+y を平行配列で。
+    private int[] rowWx = new int[0];
+    private int[] rowWy = new int[0];
+    private int[] rowWz = new int[0];
+    private int[] rowNether = new int[0];
     private int[] rowY0 = new int[0];
     private int rowCount = 0;
 
@@ -1679,14 +1685,14 @@ public class PointCloudScreen extends Screen {
         int bottom = listBottom - 12; // 凡例分を残す
         ensureRowArrays(n);
         rowCount = 0;
+        int selIdx = selectedGateIndex(snap); // ㉛ 選択は一意 anchor で 1 件だけ
         int yBase = top - gatesScroll;
         for (int i = 0; i < n; i++) {
             int ry = yBase + i * ROW_H;
             boolean nether = snap.gateNether[i];
             int num = m.gateNumber()[i];
             if (ry + ROW_H >= top && ry <= bottom) { // 可視行のみ描画
-                boolean sel = selectedGate == num && selectedNether == nether;
-                if (sel) {
+                if (i == selIdx) {
                     g.fill(x - 2, ry - 1, x + maxW, ry + ROW_H - 1, GateColors.MAIN_DIM);
                 }
                 int col = stateColor(m.gateState()[i]);
@@ -1695,11 +1701,29 @@ public class PointCloudScreen extends Screen {
                 String s = pre + num + "  " + m.gateWx()[i] + "," + m.gateWy()[i] + "," + m.gateWz()[i];
                 g.text(this.font, Component.literal(fitWidth(s, maxW - 10)), x + 9, ry, GateColors.TEXT);
             }
-            rowGateNum[rowCount] = num;
-            rowGateNether[rowCount] = nether ? 1 : 0;
+            rowWx[rowCount] = m.gateWx()[i];
+            rowWy[rowCount] = m.gateWy()[i];
+            rowWz[rowCount] = m.gateWz()[i];
+            rowNether[rowCount] = nether ? 1 : 0;
             rowY0[rowCount] = ry;
             rowCount++;
         }
+    }
+
+    /** ㉛ 選択中ゲートのスナップショット添字 (一意 anchor+dim で 1 件・無ければ -1)。 */
+    private int selectedGateIndex(PointCloudSnapshot snap) {
+        if (!hasSel) {
+            return -1;
+        }
+        GateMeta m = snap.gateMeta;
+        int n = Math.min(snap.gateCount(), m.gateNumber().length);
+        for (int i = 0; i < n; i++) {
+            if (m.gateWx()[i] == selWx && m.gateWy()[i] == selWy && m.gateWz()[i] == selWz
+                    && snap.gateNether[i] == selNether) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /** ㉚D Links/Conflicts 一覧。 コンフリクトを重大度順に＋接続ペア。 色分け＋素の日本語。 行クリックで選択。 */
@@ -1734,9 +1758,11 @@ public class PointCloudScreen extends Screen {
     }
 
     private void ensureRowArrays(int n) {
-        if (rowGateNum.length < n) {
-            rowGateNum = new int[n];
-            rowGateNether = new int[n];
+        if (rowWx.length < n) {
+            rowWx = new int[n];
+            rowWy = new int[n];
+            rowWz = new int[n];
+            rowNether = new int[n];
             rowY0 = new int[n];
         }
     }
@@ -1782,6 +1808,7 @@ public class PointCloudScreen extends Screen {
     private void drawGateLabels(GuiGraphicsExtractor g, PointCloudSnapshot snap) {
         GateMeta m = snap.gateMeta;
         int n = Math.min(snap.gateCount(), m.gateNumber().length);
+        int selIdx = selectedGateIndex(snap); // ㉛ 選択は一意 anchor で 1 件のみ
         float selSx = Float.NaN;
         float selSy = 0;
         for (int i = 0; i < n; i++) {
@@ -1796,7 +1823,7 @@ public class PointCloudScreen extends Screen {
             }
             int sx = Math.round(s[0]);
             int sy = Math.round(s[1]);
-            boolean sel = selectedGate == m.gateNumber()[i] && selectedNether == nether;
+            boolean sel = i == selIdx;
             int col = stateColor(m.gateState()[i]);
             if (sel) {
                 selSx = s[0];
@@ -1824,24 +1851,29 @@ public class PointCloudScreen extends Screen {
         }
     }
 
-    /** 選択ゲートの接続相手のゲート添字 (確定ペアから)。 無ければ -1。 */
+    /** ㉛ 選択ゲートの接続相手のゲート添字 (確定ペアから・採番ユニーク前提)。 無ければ -1。 */
     private int partnerGateIndex(PointCloudSnapshot snap) {
+        int selIdx = selectedGateIndex(snap);
+        if (selIdx < 0) {
+            return -1;
+        }
         GateMeta m = snap.gateMeta;
+        int selNum = m.gateNumber()[selIdx];
         int partnerNum = -1;
         boolean partnerNether = false;
         for (int i = 0; i < m.linkOwNumber().length; i++) {
-            if (!selectedNether && m.linkOwNumber()[i] == selectedGate) {
+            if (!selNether && m.linkOwNumber()[i] == selNum) {
                 partnerNum = m.linkNNumber()[i];
                 partnerNether = true;
                 break;
             }
-            if (selectedNether && m.linkNNumber()[i] == selectedGate) {
+            if (selNether && m.linkNNumber()[i] == selNum) {
                 partnerNum = m.linkOwNumber()[i];
                 partnerNether = false;
                 break;
             }
         }
-        if (partnerNum < 0) {
+        if (partnerNum <= 0) {
             return -1;
         }
         for (int i = 0; i < snap.gateCount(); i++) {
@@ -1897,8 +1929,11 @@ public class PointCloudScreen extends Screen {
         if (event.button() == 0 && tab == Tab.GATES && inListArea(mx, my)) {
             for (int r = 0; r < rowCount; r++) {
                 if (my >= rowY0[r] && my < rowY0[r] + ROW_H) {
-                    selectedGate = rowGateNum[r];
-                    selectedNether = rowGateNether[r] != 0;
+                    selWx = rowWx[r]; // ㉛ 選択を一意 anchor で保持 (1 クリック 1 ゲート)
+                    selWy = rowWy[r];
+                    selWz = rowWz[r];
+                    selNether = rowNether[r] != 0;
+                    hasSel = true;
                     return true;
                 }
             }
