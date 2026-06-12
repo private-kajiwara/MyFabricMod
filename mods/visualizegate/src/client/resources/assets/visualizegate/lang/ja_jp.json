@@ -18,6 +18,8 @@
 	"visualizegate.menu.done": "閉じる",
 	"visualizegate.menu.status": "%s · ゲート: %s · %s",
 
+	"visualizegate.gates.rename.hint": "ゲート名 (Enter で保存・Esc で取消)",
+
 	"visualizegate.config.tab.display": "表示",
 	"visualizegate.config.tab.about": "情報",
 	"visualizegate.config.about.tagline": "クライアント側ネザーポータル可視化 Mod",

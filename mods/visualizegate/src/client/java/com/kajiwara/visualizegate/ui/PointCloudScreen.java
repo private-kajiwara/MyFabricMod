@@ -6,10 +6,12 @@ import java.util.List;
 
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
+import org.lwjgl.glfw.GLFW;
 
 import com.kajiwara.visualizegate.config.GateConfigManager;
 import com.kajiwara.visualizegate.domain.GateConflict;
 import com.kajiwara.visualizegate.domain.PortalDimension;
+import com.kajiwara.visualizegate.memory.PortalMemory;
 import com.kajiwara.visualizegate.pointcloud.GateMeta;
 import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
 import com.kajiwara.visualizegate.pointcloud.PointCloudSnapshot;
@@ -24,7 +26,9 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 //?}
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -116,10 +120,30 @@ public class PointCloudScreen extends Screen {
 
     // ── 入力ドラッグ ──
     private enum Drag {
-        NONE, ROTATE, SLIDER, DETAIL, POINTSIZE, SCALE_OW, SCALE_NETHER
+        NONE, ROTATE, SLIDER, DETAIL, POINTSIZE, SCALE_OW, SCALE_NETHER, LIST_SCROLL
     }
 
     private Drag drag = Drag.NONE;
+
+    // ── ㉝B 長押しリネーム (短クリック=選択 / 長押し=リネーム / ドラッグ=スクロール) ──
+    /** 長押し判定しきい (ns)。 ~400ms (windows の長押し相当)。 */
+    private static final long LONG_PRESS_NANOS = 400_000_000L;
+    /** クリック/長押しとドラッグの分離しきい (px)。 これ以上動いたらスクロール扱い (選択/リネームしない)。 */
+    private static final int CLICK_SLOP = 4;
+    /** ㉝B リネーム名の最大文字数。 */
+    private static final int NAME_MAX = 24;
+    private int pressRow = -1;       // 押下中の行 (rowY0/rowWx... の添字)・-1=非押下
+    private long pressNanos;         // 押下時刻 (System.nanoTime)
+    private double pressX;
+    private double pressY;
+    private boolean pressMoved;      // CLICK_SLOP 超で true (= ドラッグ＝スクロール確定)
+    private int pressScroll0;        // 押下時の gatesScroll (ドラッグ移動量の基準)
+    // リネーム中の状態 (renameBox != null の間)。 対象は anchor (wx/wy/wz+dim) で保持。
+    private EditBox renameBox;
+    private int renameWx;
+    private int renameWy;
+    private int renameWz;
+    private boolean renameNether;
 
     // ── レイアウト矩形 (init で算出) ──
     private int vpX;
@@ -443,6 +467,17 @@ public class PointCloudScreen extends Screen {
         } else {
             drawLinksList(g, snap);
             drawLegend(g);
+        }
+        maybeStartLongPressRename(); // ㉝B 行を押したまま ~400ms 経過 → リネーム開始
+    }
+
+    /** ㉝B 一覧の行を動かさず LONG_PRESS_NANOS 超え押下したらリネーム開始 (短クリック=選択 / ドラッグ=スクロールと切り分け)。 */
+    private void maybeStartLongPressRename() {
+        if (pressRow >= 0 && !pressMoved && renameBox == null && drag == Drag.LIST_SCROLL
+                && tab == Tab.GATES && pressRow < rowCount
+                && (System.nanoTime() - pressNanos) >= LONG_PRESS_NANOS) {
+            startRename(pressRow);
+            pressRow = -1; // 消費 (release で選択しない)
         }
     }
 
@@ -1647,6 +1682,13 @@ public class PointCloudScreen extends Screen {
         return (i >= 0 && i < st.length) ? stateColor(st[i]) : GATE_FRAME_COLOR;
     }
 
+    /** ㉝B ゲートの表示ラベル: ユーザー命名 (name) があればそれ、 無ければ既定 OW-n/N-n。 */
+    private static String gateLabel(boolean nether, int number, int wx, int wy, int wz) {
+        String name = PortalMemory.get().nameAt(
+                nether ? PortalDimension.NETHER : PortalDimension.OVERWORLD, wx, wy, wz);
+        return (name != null) ? name : ((nether ? "N-" : "OW-") + number);
+    }
+
     private void drawTabBar(GuiGraphicsExtractor g) {
         String[] names = { "View", "Gates", "Links" };
         int tw = SIDEBAR_W / 3;
@@ -1701,8 +1743,8 @@ public class PointCloudScreen extends Screen {
                 }
                 int col = stateColor(m.gateState()[i]);
                 g.fill(x, ry + 1, x + 6, ry + 8, col);
-                String pre = nether ? "N-" : "OW-";
-                String s = pre + num + "  " + m.gateWx()[i] + "," + m.gateWy()[i] + "," + m.gateWz()[i];
+                String label = gateLabel(nether, num, m.gateWx()[i], m.gateWy()[i], m.gateWz()[i]); // ㉝B name 優先
+                String s = label + "  " + m.gateWx()[i] + "," + m.gateWy()[i] + "," + m.gateWz()[i];
                 g.text(this.font, Component.literal(fitWidth(s, maxW - 10)), x + 9, ry, GateColors.TEXT);
             }
             rowWx[rowCount] = m.gateWx()[i];
@@ -1851,7 +1893,8 @@ public class PointCloudScreen extends Screen {
                 g.fill(sx + 5, sy - 6, sx + 6, sy + 6, GateColors.ACCENT); // (右)
             }
             if (showLabels || sel) {
-                String lbl = (nether ? "N-" : "OW-") + m.gateNumber()[i];
+                String lbl = gateLabel(nether, m.gateNumber()[i],
+                        m.gateWx()[i], m.gateWy()[i], m.gateWz()[i]); // ㉝B name 優先
                 g.text(this.font, Component.literal(lbl), sx + 7, sy - 4, sel ? GateColors.ACCENT : col);
             }
         }
@@ -1933,28 +1976,42 @@ public class PointCloudScreen extends Screen {
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         double mx = event.x();
         double my = event.y();
+        // ㉝B リネーム中: EditBox 内クリックは委譲 (カーソル移動)、 外側クリックは確定して閉じ通常処理へ。
+        if (renameBox != null) {
+            if (renameBox.isMouseOver(mx, my)) {
+                return super.mouseClicked(event, doubleClick);
+            }
+            commitRename();
+        }
         // ㉚ タブバークリック → タブ切替。
         if (event.button() == 0 && my >= tabBarY && my <= tabBarY + TABBAR_H
                 && mx >= sbContentX && mx <= sbContentX + SIDEBAR_W) {
+            commitRename(); // ㉝B タブ切替時は編集を確定して閉じる
             int i = (int) ((mx - sbContentX) / (SIDEBAR_W / 3));
             Tab[] tabs = Tab.values();
             tab = tabs[Math.max(0, Math.min(2, i))];
             applyTabVisibility();
             return true;
         }
-        // ㉚ Gates 一覧の行クリック → ゲート選択。
-        if (event.button() == 0 && tab == Tab.GATES && inListArea(mx, my)) {
-            for (int r = 0; r < rowCount; r++) {
-                if (my >= rowY0[r] && my < rowY0[r] + ROW_H) {
-                    selWx = rowWx[r]; // ㉛ 選択を一意 anchor で保持 (1 クリック 1 ゲート)
-                    selWy = rowWy[r];
-                    selWz = rowWz[r];
-                    selNether = rowNether[r] != 0;
-                    hasSel = true;
-                    return true;
+        // ㉝B 一覧の押下: 短クリック=選択 / 長押し=リネーム / ドラッグ=スクロール。 ここでは押下を記録するだけ
+        //     (選択は mouseReleased、 リネームは extractRenderState の長押し判定で確定)。
+        if (event.button() == 0 && (tab == Tab.GATES || tab == Tab.LINKS) && inListArea(mx, my)) {
+            drag = Drag.LIST_SCROLL;
+            pressMoved = false;
+            pressX = mx;
+            pressY = my;
+            pressNanos = System.nanoTime();
+            pressScroll0 = (tab == Tab.GATES) ? gatesScroll : linksScroll;
+            pressRow = -1;
+            if (tab == Tab.GATES) {
+                for (int r = 0; r < rowCount; r++) {
+                    if (my >= rowY0[r] && my < rowY0[r] + ROW_H) {
+                        pressRow = r; // 選択/リネーム対象行
+                        break;
+                    }
                 }
             }
-            return true; // 一覧上の空クリックは吸収
+            return true; // 一覧上の押下は吸収
         }
         // ㉚ スライダ操作は View タブのみ。
         if (tab == Tab.VIEW && event.button() == 0 && inSlider(mx, my)) {
@@ -2018,6 +2075,19 @@ public class PointCloudScreen extends Screen {
             lastInputNanos = System.nanoTime(); // ⑨ 動作中 → SS=1
             return true;
         }
+        // ㉝B 一覧ドラッグ=スクロール (CLICK_SLOP 超で選択/長押しをキャンセル)。 上ドラッグ=下スクロール。
+        if (drag == Drag.LIST_SCROLL) {
+            if (Math.abs(event.x() - pressX) > CLICK_SLOP || Math.abs(event.y() - pressY) > CLICK_SLOP) {
+                pressMoved = true;
+            }
+            int delta = (int) Math.round(pressY - event.y());
+            if (tab == Tab.GATES) {
+                gatesScroll = Math.max(0, pressScroll0 + delta);
+            } else if (tab == Tab.LINKS) {
+                linksScroll = Math.max(0, pressScroll0 + delta);
+            }
+            return true;
+        }
         return super.mouseDragged(event, dragX, dragY);
     }
 
@@ -2026,6 +2096,21 @@ public class PointCloudScreen extends Screen {
         if (drag == Drag.SLIDER || drag == Drag.DETAIL || drag == Drag.POINTSIZE
                 || drag == Drag.SCALE_OW || drag == Drag.SCALE_NETHER) {
             GateConfigManager.save();
+        }
+        // ㉝B 一覧の短クリック (動かず・長押し未満) → ゲート選択。 長押しは extractRenderState で既に消費済。
+        if (drag == Drag.LIST_SCROLL && tab == Tab.GATES && !pressMoved && pressRow >= 0
+                && renameBox == null && (System.nanoTime() - pressNanos) < LONG_PRESS_NANOS
+                && pressRow < rowCount) {
+            selWx = rowWx[pressRow]; // ㉛ 選択を一意 anchor で保持 (1 クリック 1 ゲート)
+            selWy = rowWy[pressRow];
+            selWz = rowWz[pressRow];
+            selNether = rowNether[pressRow] != 0;
+            hasSel = true;
+        }
+        pressRow = -1;
+        if (drag == Drag.LIST_SCROLL) {
+            drag = Drag.NONE;
+            return true;
         }
         drag = Drag.NONE;
         return super.mouseReleased(event);
@@ -2043,6 +2128,7 @@ public class PointCloudScreen extends Screen {
         }
         // ㉚ Gates/Links 一覧上のホイール → スクロール。
         if (inListArea(mouseX, mouseY)) {
+            commitRename(); // ㉝B スクロールしたら編集を確定して閉じる (浮いた EditBox を残さない)
             int step = (int) (-scrollY * ROW_H * 2);
             if (tab == Tab.GATES) {
                 gatesScroll = Math.max(0, gatesScroll + step);
@@ -2052,6 +2138,74 @@ public class PointCloudScreen extends Screen {
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    // ── ㉝B 行リネーム (インライン EditBox・Enter確定/Esc取消・name を anchorKey 永続) ──
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        if (renameBox != null) {
+            int k = event.key();
+            if (k == GLFW.GLFW_KEY_ENTER || k == GLFW.GLFW_KEY_KP_ENTER) {
+                commitRename(); // 確定 (空なら setName が既定名へ戻す)
+                return true;
+            }
+            if (k == GLFW.GLFW_KEY_ESCAPE) {
+                closeRename(); // 取消 (保存しない・画面は閉じない)
+                return true;
+            }
+        }
+        return super.keyPressed(event); // 通常: フォーカス中の EditBox がタイプを受ける
+    }
+
+    private PortalDimension renameDim() {
+        return renameNether ? PortalDimension.NETHER : PortalDimension.OVERWORLD;
+    }
+
+    /** 行 row のインライン EditBox を生成しフォーカス (既存 name を初期値に・最大 NAME_MAX 文字)。 */
+    private void startRename(int row) {
+        commitRename(); // 念のため別編集が残っていれば確定
+        renameNether = rowNether[row] != 0;
+        renameWx = rowWx[row];
+        renameWy = rowWy[row];
+        renameWz = rowWz[row];
+        int x = sbContentX + SIDE_PAD;
+        int maxW = SIDEBAR_W - 2 * SIDE_PAD;
+        int ry = rowY0[row];
+        renameBox = new EditBox(this.font, x + 8, ry, maxW - 8, ROW_H,
+                Component.translatable("visualizegate.gates.rename.hint"));
+        renameBox.setMaxLength(NAME_MAX);
+        renameBox.setHint(Component.translatable("visualizegate.gates.rename.hint"));
+        String cur = PortalMemory.get().nameAt(renameDim(), renameWx, renameWy, renameWz);
+        if (cur != null) {
+            renameBox.setValue(cur);
+        }
+        addRenderableWidget(renameBox);
+        this.setFocused(renameBox);
+        renameBox.setFocused(true);
+    }
+
+    /** 編集中の name を確定保存して閉じる (空＝既定名へ戻す)。 編集中でなければ無処理。 */
+    private void commitRename() {
+        if (renameBox == null) {
+            return;
+        }
+        String v = renameBox.getValue().trim();
+        if (v.length() > NAME_MAX) {
+            v = v.substring(0, NAME_MAX);
+        }
+        PortalMemory.get().setName(renameDim(), renameWx, renameWy, renameWz, v); // 空→null (既定名)
+        closeRename();
+    }
+
+    /** EditBox を除去してフォーカス解除 (保存はしない)。 */
+    private void closeRename() {
+        if (renameBox == null) {
+            return;
+        }
+        this.removeWidget(renameBox);
+        renameBox = null;
+        this.setFocused(null);
     }
 
     private boolean inViewport(double mx, double my) {

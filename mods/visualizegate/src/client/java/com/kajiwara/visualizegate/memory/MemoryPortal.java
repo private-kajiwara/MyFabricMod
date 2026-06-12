@@ -20,6 +20,7 @@ public final class MemoryPortal {
     public double maxZ;
     public String axis;            // "X" / "Z"
     public int number;             // ㉚ 安定採番 (次元別連番・発見時に割当て・以後リシャッフルしない・0=未割当)
+    public String name;            // ㉝B 任意のユーザー命名 (null/空=既定 OW-n/N-n を使う・表示専用)
     public long lastSeenTick;
     public boolean liveConfirmed;
     /**

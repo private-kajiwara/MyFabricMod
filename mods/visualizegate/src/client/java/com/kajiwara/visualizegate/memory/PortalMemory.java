@@ -429,6 +429,46 @@ public final class PortalMemory {
         return currentWorldId;
     }
 
+    // ── ㉝ 表示用メタ (name / hidden)・anchor 単位・即永続 ──────────────────
+
+    private MemoryPortal findAt(PortalDimension dim, int x, int y, int z) {
+        if (file == null || currentWorldId == null) {
+            return null;
+        }
+        for (List<MemoryPortal> list : file.worldPortals(currentWorldId).values()) {
+            for (MemoryPortal mp : list) {
+                if (dimOf(mp.dimensionId) == dim && mp.ax == x && mp.ay == y && mp.az == z) {
+                    return mp;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * ㉝B 指定 anchor のゲートのユーザー命名 (null/空＝既定名に戻す)。 最大長は呼び出し側 (EditBox) でクランプ。
+     * anchorKey 単位で {@code visualizegate-portals.json} へ即永続 (再起動後も残る)。
+     */
+    public void setName(PortalDimension dim, int x, int y, int z, String name) {
+        try {
+            ensureLoaded();
+            MemoryPortal mp = findAt(dim, x, y, z);
+            if (mp == null) {
+                return;
+            }
+            mp.name = (name == null || name.isBlank()) ? null : name.trim();
+            save();
+        } catch (Throwable t) {
+            VisualizeGateMod.LOGGER.warn("[visualizegate] setName failed: {}", t.toString());
+        }
+    }
+
+    /** ㉝B 指定 anchor のゲートのユーザー命名 (無ければ null)。 一覧/3D ラベルが既定名より優先表示する。 */
+    public String nameAt(PortalDimension dim, int x, int y, int z) {
+        MemoryPortal mp = findAt(dim, x, y, z);
+        return (mp == null || mp.name == null || mp.name.isBlank()) ? null : mp.name;
+    }
+
     // ── world-id / dim-id ───────────────────────────────────────────────
 
     /** SP=セーブ名 / MP=サーバアドレス。 取得不能なら null。 */

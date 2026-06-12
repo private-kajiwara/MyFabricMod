@@ -18,6 +18,8 @@
 	"visualizegate.menu.done": "Done",
 	"visualizegate.menu.status": "%s · Gates: %s · %s",
 
+	"visualizegate.gates.rename.hint": "Gate name (Enter to save, Esc to cancel)",
+
 	"visualizegate.config.tab.display": "Display",
 	"visualizegate.config.tab.about": "About",
 	"visualizegate.config.about.tagline": "Client-side Nether portal visualizer",
