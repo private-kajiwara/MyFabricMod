@@ -167,6 +167,7 @@ public class PointCloudScreen extends Screen {
 
     private static final int TABBAR_H = 16;     // タブバー高
     private static final int ROW_H = 13;        // 一覧の 1 行高
+    private static final int EYE_W = 11;        // ㉝C 行右端の表示/非表示トグル (目アイコン) 幅
     private Tab tab = Tab.VIEW;
     private int sbContentX;   // サイドバー左端 (= sbX)
     private int tabBarY;      // タブバー上端
@@ -218,6 +219,7 @@ public class PointCloudScreen extends Screen {
     private float gOwScale = Float.NaN;     // ㉓ OW 表示スケール署名 (変化で VBO 再構築)
     private float gNetherScale = Float.NaN; // ㉓ ネザー表示スケール署名
     private int gBcVersion = -1; // ㉕ back-calculate 要素の版 (add/clean で変化＝VBO 再構築)
+    private int gHiddenVer = -1; // ㉝C 表示版 (hidden トグルで変化＝VBO 再構築・Re-analyze 不要で即反映)
     private int gpuOwPts;     // ⑭ 直近に GPU へ送った OW/ネザー点数 (detail 上限後・HUD 用)
     private int gpuNPts;
     private static final Identifier PC_TEX_ID =
@@ -289,6 +291,7 @@ public class PointCloudScreen extends Screen {
     private float sigOwScale = Float.NaN;     // ㉓ OW 表示スケール署名
     private float sigNetherScale = Float.NaN; // ㉓ ネザー表示スケール署名
     private int sigBcVersion = -1;            // ㉕ back-calculate 要素の版署名
+    private int sigHiddenVer = -1;            // ㉝C 表示版署名 (hidden トグルで再投影＝即反映)
     private int sigVpX;
     private int sigVpY;
     private int sigVpW;
@@ -583,10 +586,11 @@ public class PointCloudScreen extends Screen {
         float owScale = PointCloudViewState.getOwDisplayScale();
         float nScale = PointCloudViewState.getNetherDisplayScale();
         int bcVersion = BackCalcStore.version();
+        int hiddenVer = PortalMemory.displayVersion(); // ㉝C hidden トグルで変化
         if (snap == gSnap && showOw == gShowOw && showN == gShowN && showLinks == gShowLinks
                 && dimTint == gDimTint && spacing == gSpacing && detail == gDetail
                 && pointSize == gPointSize && owScale == gOwScale && nScale == gNetherScale
-                && bcVersion == gBcVersion) {
+                && bcVersion == gBcVersion && hiddenVer == gHiddenVer) {
             return false;
         }
         gSnap = snap;
@@ -600,6 +604,7 @@ public class PointCloudScreen extends Screen {
         gOwScale = owScale;
         gNetherScale = nScale;
         gBcVersion = bcVersion;
+        gHiddenVer = hiddenVer;
         return true;
     }
 
@@ -668,14 +673,35 @@ public class PointCloudScreen extends Screen {
         float[] oxyz = new float[ov * 3];
         int[] ocol = new int[ov];
         int j = 0;
+        // ㉝C 非表示ゲート: per-gate スキップ＋リンク端点番号集合 (over-allocate のまま j で詰める＝余りは無描画)。
+        boolean[] gateHidden = new boolean[gates];
+        java.util.Set<Integer> hidOwNum = new java.util.HashSet<>();
+        java.util.Set<Integer> hidNethNum = new java.util.HashSet<>();
+        for (int i = 0; i < gates && i < snap.gateMeta.gateNumber().length; i++) {
+            boolean h = isGateHidden(snap.gateNether[i], snap.gateMeta.gateWx()[i],
+                    snap.gateMeta.gateWy()[i], snap.gateMeta.gateWz()[i]);
+            gateHidden[i] = h;
+            if (h) {
+                (snap.gateNether[i] ? hidNethNum : hidOwNum).add(snap.gateMeta.gateNumber()[i]);
+            }
+        }
         int linkC = 0xFF000000 | (GateColors.PC_LINK & 0xFFFFFF);
         for (int i = 0; i < links; i++) {
+            // ㉝C 端点どちらかが非表示ならリンク線を描かない。
+            if (i < snap.gateMeta.linkOwNumber().length
+                    && (hidOwNum.contains(snap.gateMeta.linkOwNumber()[i])
+                            || hidNethNum.contains(snap.gateMeta.linkNNumber()[i]))) {
+                continue;
+            }
             // ㉓ A 端=OW 層スケール / B 端=ネザー層スケール (地形と同じ層変換＝端が追従。 両端のスケール差で線は傾いてよい)。
             j = emitBox(oxyz, ocol, j,
                     snap.linkAx[i] * owScale, snap.linkAy[i] + pivotY, snap.linkAz[i] * owScale,
                     snap.linkBx[i] * nScale, snap.linkBy[i] - pivotY, snap.linkBz[i] * nScale, linkW, linkC);
         }
         for (int i = 0; i < gates; i++) {
+            if (gateHidden[i]) {
+                continue; // ㉝C 非表示ゲートは枠を描かない
+            }
             float gs = snap.gateNether[i] ? nScale : owScale; // ㉓ 当該 dim の層スケール (位置のみ)
             float gy = snap.gateNether[i] ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
             // ㉔/㉙/㉚ 黒曜石ポータル枠＋内側格子。 ㉚ 枠色をゲート状態色に (一様紫→状態色)。
@@ -849,16 +875,18 @@ public class PointCloudScreen extends Screen {
         float owScale = PointCloudViewState.getOwDisplayScale();
         float nScale = PointCloudViewState.getNetherDisplayScale();
         int bcVersion = BackCalcStore.version();
+        int hiddenVer = PortalMemory.displayVersion(); // ㉝C hidden トグルで再投影
         if (snap == sigSnap && yaw == sigYaw && pitch == sigPitch && distance == sigDistance
                 && spacing == sigSpacing && showOw == sigShowOw && showN == sigShowN
                 && showLinks == sigShowLinks && dimTint == sigDimTint
                 && owScale == sigOwScale && nScale == sigNetherScale
-                && bcVersion == sigBcVersion
+                && bcVersion == sigBcVersion && hiddenVer == sigHiddenVer
                 && vpX == sigVpX && vpY == sigVpY
                 && vpW == sigVpW && vpH == sigVpH) {
             return false;
         }
         sigBcVersion = bcVersion;
+        sigHiddenVer = hiddenVer;
         sigSnap = snap;
         sigYaw = yaw;
         sigPitch = pitch;
@@ -953,11 +981,22 @@ public class PointCloudScreen extends Screen {
         }
         cachedCount = total;
 
+        // ㉝C 非表示ゲートの番号集合 (リンク端点判定用・PortalMemory を live 参照)。
+        java.util.Set<Integer> hidOwNum = new java.util.HashSet<>();
+        java.util.Set<Integer> hidNethNum = new java.util.HashSet<>();
+        collectHiddenGateNumbers(snap, hidOwNum, hidNethNum);
+
         // リンク端点を投影してキャッシュ (DDA は描画時にキャッシュ端点から)。
         cachedLinks = 0;
         if (PointCloudViewState.isShowLinks() && snap.linkCount() > 0) {
             ensureLinkArrays(snap.linkCount());
             for (int i = 0; i < snap.linkCount(); i++) {
+                // ㉝C 端点どちらかが非表示ならリンク線を描かない。
+                if (i < snap.gateMeta.linkOwNumber().length
+                        && (hidOwNum.contains(snap.gateMeta.linkOwNumber()[i])
+                                || hidNethNum.contains(snap.gateMeta.linkNNumber()[i]))) {
+                    continue;
+                }
                 // ㉓ A 端=OW スケール / B 端=ネザースケール (地形と同じ層変換)。
                 float[] a = projectXY(snap.linkAx[i] * owScale, snap.linkAy[i] + pivotY,
                         snap.linkAz[i] * owScale, cosY, sinY, cosP, sinP, cx, cy);
@@ -979,6 +1018,10 @@ public class PointCloudScreen extends Screen {
         if (PointCloudViewState.isShowLinks() && snap.gateCount() > 0) {
             ensureGateArrays(snap.gateCount());
             for (int i = 0; i < snap.gateCount(); i++) {
+                if (i < snap.gateMeta.gateNumber().length && isGateHidden(snap.gateNether[i],
+                        snap.gateMeta.gateWx()[i], snap.gateMeta.gateWy()[i], snap.gateMeta.gateWz()[i])) {
+                    continue; // ㉝C 非表示ゲートは描かない
+                }
                 float gs = snap.gateNether[i] ? nScale : owScale; // ㉓ 当該 dim の層スケール
                 float gy2 = snap.gateNether[i] ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
                 float[] p = projectXY(snap.gateX[i] * gs, gy2, snap.gateZ[i] * gs,
@@ -1689,6 +1732,50 @@ public class PointCloudScreen extends Screen {
         return (name != null) ? name : ((nether ? "N-" : "OW-") + number);
     }
 
+    /** ㉝C 指定 anchor のゲートが非表示か (PortalMemory を live 参照＝トグル即反映)。 */
+    private static boolean isGateHidden(boolean nether, int wx, int wy, int wz) {
+        return PortalMemory.get().isHidden(
+                nether ? PortalDimension.NETHER : PortalDimension.OVERWORLD, wx, wy, wz);
+    }
+
+    /** ㉝C 非表示ゲートの番号を dim 別集合へ集める (リンク端点が非表示ならリンク線を描かない判定に使う)。 */
+    private static void collectHiddenGateNumbers(PointCloudSnapshot snap,
+            java.util.Set<Integer> owNums, java.util.Set<Integer> nethNums) {
+        GateMeta m = snap.gateMeta;
+        int n = Math.min(snap.gateCount(), m.gateNumber().length);
+        for (int i = 0; i < n; i++) {
+            if (isGateHidden(snap.gateNether[i], m.gateWx()[i], m.gateWy()[i], m.gateWz()[i])) {
+                (snap.gateNether[i] ? nethNums : owNums).add(m.gateNumber()[i]);
+            }
+        }
+    }
+
+    /**
+     * ㉝C 行右端の目アイコン (省スペースの表示/非表示トグル)。 表示中=開いた目 (枠＋瞳)、 非表示=閉じた目 (線)。
+     * 描画域は幅 9×高 6 程度。 クリック判定は {@link #inEyeIcon} と整合。
+     */
+    private void drawEyeIcon(GuiGraphicsExtractor g, int ex, int ey, boolean hidden) {
+        int w = EYE_W - 2; // 9
+        int midY = ey + 3;
+        if (hidden) {
+            // 閉じた目: 中央の横線 (暗色)。
+            g.fill(ex, midY, ex + w, midY + 1, GateColors.LINK_GRAY);
+        } else {
+            // 開いた目: 上下の弧を横線で近似＋中央の瞳。
+            g.fill(ex + 1, ey, ex + w - 1, ey + 1, GateColors.TEXT);          // 上まぶた
+            g.fill(ex + 1, ey + 5, ex + w - 1, ey + 6, GateColors.TEXT);      // 下まぶた
+            g.fill(ex, ey + 1, ex + 1, ey + 5, GateColors.TEXT);             // 左端
+            g.fill(ex + w - 1, ey + 1, ex + w, ey + 5, GateColors.TEXT);     // 右端
+            g.fill(ex + w / 2 - 1, midY - 1, ex + w / 2 + 1, midY + 1, GateColors.ACCENT); // 瞳
+        }
+    }
+
+    /** ㉝C 行 r の目アイコンのクリック矩形か。 行 hit-test と同じ rowY0[r] 基準。 */
+    private boolean inEyeIcon(int r, double mx, double my) {
+        int ex = sbContentX + SIDE_PAD + (SIDEBAR_W - 2 * SIDE_PAD) - EYE_W;
+        return mx >= ex && mx <= ex + EYE_W && my >= rowY0[r] && my < rowY0[r] + ROW_H;
+    }
+
     private void drawTabBar(GuiGraphicsExtractor g) {
         String[] names = { "View", "Gates", "Links" };
         int tw = SIDEBAR_W / 3;
@@ -1738,14 +1825,20 @@ public class PointCloudScreen extends Screen {
             boolean nether = snap.gateNether[i];
             int num = m.gateNumber()[i];
             if (ry + ROW_H >= top && ry <= bottom) { // 可視行のみ描画 (scissor で端はクリップ)
+                int wx = m.gateWx()[i];
+                int wy = m.gateWy()[i];
+                int wz = m.gateWz()[i];
+                boolean hidden = isGateHidden(nether, wx, wy, wz); // ㉝C 非表示ゲートはグレーアウト
                 if (i == selIdx) {
                     g.fill(x - 2, ry - 1, x + maxW, ry + ROW_H - 1, GateColors.MAIN_DIM);
                 }
-                int col = stateColor(m.gateState()[i]);
+                int col = hidden ? GateColors.MAIN_DIM : stateColor(m.gateState()[i]);
                 g.fill(x, ry + 1, x + 6, ry + 8, col);
-                String label = gateLabel(nether, num, m.gateWx()[i], m.gateWy()[i], m.gateWz()[i]); // ㉝B name 優先
-                String s = label + "  " + m.gateWx()[i] + "," + m.gateWy()[i] + "," + m.gateWz()[i];
-                g.text(this.font, Component.literal(fitWidth(s, maxW - 10)), x + 9, ry, GateColors.TEXT);
+                String label = gateLabel(nether, num, wx, wy, wz); // ㉝B name 優先
+                String s = label + "  " + wx + "," + wy + "," + wz;
+                int textCol = hidden ? GateColors.LINK_GRAY : GateColors.TEXT;
+                g.text(this.font, Component.literal(fitWidth(s, maxW - 10 - EYE_W)), x + 9, ry, textCol);
+                drawEyeIcon(g, x + maxW - EYE_W + 1, ry + 2, hidden); // ㉝C 表示/非表示トグル
             }
             rowWx[rowCount] = m.gateWx()[i];
             rowWy[rowCount] = m.gateWy()[i];
@@ -1875,6 +1968,9 @@ public class PointCloudScreen extends Screen {
             if (nether ? !PointCloudViewState.isShowNether() : !PointCloudViewState.isShowOverworld()) {
                 continue;
             }
+            if (isGateHidden(nether, m.gateWx()[i], m.gateWy()[i], m.gateWz()[i])) {
+                continue; // ㉝C 非表示ゲートはラベル/選択ハイライトを描かない
+            }
             float[] v = gateViewPos(snap, i);
             float[] s = projectToScreen(v[0], v[1], v[2]);
             if (s == null || s[0] < vpX || s[0] > vpX + vpW || s[1] < vpY || s[1] > vpY + vpH) {
@@ -1996,6 +2092,18 @@ public class PointCloudScreen extends Screen {
         // ㉝B 一覧の押下: 短クリック=選択 / 長押し=リネーム / ドラッグ=スクロール。 ここでは押下を記録するだけ
         //     (選択は mouseReleased、 リネームは extractRenderState の長押し判定で確定)。
         if (event.button() == 0 && (tab == Tab.GATES || tab == Tab.LINKS) && inListArea(mx, my)) {
+            // ㉝C 目アイコンのクリック → 表示/非表示トグル (選択・長押し・スクロールの対象外)。
+            if (tab == Tab.GATES) {
+                for (int r = 0; r < rowCount; r++) {
+                    if (inEyeIcon(r, mx, my)) {
+                        PortalMemory.get().setHidden(
+                                rowNether[r] != 0 ? PortalDimension.NETHER : PortalDimension.OVERWORLD,
+                                rowWx[r], rowWy[r], rowWz[r],
+                                !isGateHidden(rowNether[r] != 0, rowWx[r], rowWy[r], rowWz[r]));
+                        return true;
+                    }
+                }
+            }
             drag = Drag.LIST_SCROLL;
             pressMoved = false;
             pressX = mx;

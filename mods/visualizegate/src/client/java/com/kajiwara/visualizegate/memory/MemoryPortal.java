@@ -21,6 +21,7 @@ public final class MemoryPortal {
     public String axis;            // "X" / "Z"
     public int number;             // ㉚ 安定採番 (次元別連番・発見時に割当て・以後リシャッフルしない・0=未割当)
     public String name;            // ㉝B 任意のユーザー命名 (null/空=既定 OW-n/N-n を使う・表示専用)
+    public boolean hidden;         // ㉝C 表示フラグ (true=3D マーカー/ラベル/リンクを描かない・採番/解析は不変)
     public long lastSeenTick;
     public boolean liveConfirmed;
     /**

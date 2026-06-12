@@ -469,6 +469,38 @@ public final class PortalMemory {
         return (mp == null || mp.name == null || mp.name.isBlank()) ? null : mp.name;
     }
 
+    /**
+     * ㉝C 表示版カウンタ。 {@link #setHidden} で +1。 描画側 (点群の GPU3D/texbatch ジオメトリ署名) がこれを
+     * 含めることで、 hidden トグルが Re-analyze なしで即座に再構築/反映される (= 表示専用・解析/採番は不変)。
+     */
+    private static int displayVersion = 0;
+
+    public static int displayVersion() {
+        return displayVersion;
+    }
+
+    /** ㉝C 指定 anchor のゲートの表示/非表示を設定 (anchorKey 単位で即永続)。 表示版カウンタを進める。 */
+    public void setHidden(PortalDimension dim, int x, int y, int z, boolean hidden) {
+        try {
+            ensureLoaded();
+            MemoryPortal mp = findAt(dim, x, y, z);
+            if (mp == null || mp.hidden == hidden) {
+                return;
+            }
+            mp.hidden = hidden;
+            displayVersion++;
+            save();
+        } catch (Throwable t) {
+            VisualizeGateMod.LOGGER.warn("[visualizegate] setHidden failed: {}", t.toString());
+        }
+    }
+
+    /** ㉝C 指定 anchor のゲートが非表示か (見つからなければ false)。 3D 描画 (marker/label/link) が skip 判定に使う。 */
+    public boolean isHidden(PortalDimension dim, int x, int y, int z) {
+        MemoryPortal mp = findAt(dim, x, y, z);
+        return mp != null && mp.hidden;
+    }
+
     // ── world-id / dim-id ───────────────────────────────────────────────
 
     /** SP=セーブ名 / MP=サーバアドレス。 取得不能なら null。 */
