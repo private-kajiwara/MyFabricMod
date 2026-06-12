@@ -1683,15 +1683,19 @@ public class PointCloudScreen extends Screen {
         g.text(this.font, Component.literal("Gates: " + n), x, listTop, GateColors.TEXT);
         int top = listTop + 12;
         int bottom = listBottom - 12; // 凡例分を残す
+        // ㉝A スクロール上限クランプ (空スクロール解消): 内容高がビュー高を超えた分だけ可動。
+        gatesScroll = clampScroll(gatesScroll, n * ROW_H, bottom - top);
         ensureRowArrays(n);
         rowCount = 0;
         int selIdx = selectedGateIndex(snap); // ㉛ 選択は一意 anchor で 1 件だけ
         int yBase = top - gatesScroll;
+        // ㉝A 一覧の可動領域に scissor クリップ (上端/下端で半端行が見出し/凡例へはみ出さない)。
+        g.enableScissor(sbContentX, top, sbContentX + SIDEBAR_W, bottom);
         for (int i = 0; i < n; i++) {
             int ry = yBase + i * ROW_H;
             boolean nether = snap.gateNether[i];
             int num = m.gateNumber()[i];
-            if (ry + ROW_H >= top && ry <= bottom) { // 可視行のみ描画
+            if (ry + ROW_H >= top && ry <= bottom) { // 可視行のみ描画 (scissor で端はクリップ)
                 if (i == selIdx) {
                     g.fill(x - 2, ry - 1, x + maxW, ry + ROW_H - 1, GateColors.MAIN_DIM);
                 }
@@ -1708,6 +1712,13 @@ public class PointCloudScreen extends Screen {
             rowY0[rowCount] = ry;
             rowCount++;
         }
+        g.disableScissor();
+    }
+
+    /** ㉝A スクロール量を [0, max(0, 内容高 - ビュー高)] にクランプ。 */
+    private static int clampScroll(int scroll, int contentH, int viewH) {
+        int max = Math.max(0, contentH - viewH);
+        return Math.max(0, Math.min(scroll, max));
     }
 
     /** ㉛ 選択中ゲートのスナップショット添字 (一意 anchor+dim で 1 件・無ければ -1)。 */
@@ -1737,7 +1748,12 @@ public class PointCloudScreen extends Screen {
         int top = listTop + 12;
         int bottom = listBottom - 12;
         rowCount = 0; // Links タブの行クリックは未対応 (選択は Gates タブ)。 スクロールのみ。
+        // ㉝A スクロール上限クランプ (内容高 = コンフリクト + 4px 区切り + 接続ペア)。
+        int contentH = conflicts.size() * ROW_H + 4 + m.linkOwNumber().length * ROW_H;
+        linksScroll = clampScroll(linksScroll, contentH, bottom - top);
         int y = top - linksScroll;
+        // ㉝A 一覧の可動領域に scissor クリップ (見出し/凡例は領域外＝不変)。
+        g.enableScissor(sbContentX, top, sbContentX + SIDEBAR_W, bottom);
         for (GateConflict c : conflicts) { // 重大度順 (解析器で sort 済)
             if (y + ROW_H >= top && y <= bottom) {
                 int col = stateColor(c.state().ordinal());
@@ -1755,6 +1771,7 @@ public class PointCloudScreen extends Screen {
             }
             y += ROW_H;
         }
+        g.disableScissor();
     }
 
     private void ensureRowArrays(int n) {
