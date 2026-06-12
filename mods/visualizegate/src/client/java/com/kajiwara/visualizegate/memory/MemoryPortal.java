@@ -19,6 +19,7 @@ public final class MemoryPortal {
     public double maxY;
     public double maxZ;
     public String axis;            // "X" / "Z"
+    public int number;             // ㉚ 安定採番 (次元別連番・発見時に割当て・以後リシャッフルしない・0=未割当)
     public long lastSeenTick;
     public boolean liveConfirmed;
     /**

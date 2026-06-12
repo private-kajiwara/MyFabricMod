@@ -2,18 +2,17 @@ package com.kajiwara.visualizegate.pointcloud;
 
 import java.util.List;
 
-import com.kajiwara.visualizegate.domain.DomainPortal;
+import com.kajiwara.visualizegate.domain.GateNode;
 
 /**
  * 解析押下時に<b>メインスレッドで取得した不変コピー</b> (ワーカーへ渡す入力)。
  *
- * <p>全フィールドはプリミティブ配列か不変 record ({@link DomainPortal}) のみ＝ライブ World を参照しない。
+ * <p>全フィールドはプリミティブ配列か不変 record ({@link GateNode}) のみ＝ライブ World を参照しない。
  * ワーカーはこのスナップショット入力だけを読んで {@link PointCloudSnapshot} を組む (= スレッド安全)。
  *
  * @param owTerrain     OW 地形カラム flat int[] (wx, wz, y, color の 4 つ組連結。 color=0xRRGGBB / NO_COLOR)
  * @param netherTerrain ネザー地形カラム flat int[] (wx, wz, y, color の 4 つ組連結)
- * @param owPortals     OW の既知ポータル
- * @param netherPortals ネザーの既知ポータル
+ * @param gates         ㉚ 採番済み全ゲート ({@link GateNode}・<b>OW 先・ネザー後</b>)。 点群ゲート列＋コンフリクト解析の素。
  * @param confirmedLinks ㉙ 確定接続ペア {@code int[]{owX,owY,owZ,nX,nY,nZ}} (永続・開いて繋がった LINKED のみ)。
  *                       点群の接続線はこの永続ペアから引く (毎セッション再解決に依存しない)。
  * @param owMinY        OW の Y 下限 (リンク射影の Y クランプ用)
@@ -29,8 +28,7 @@ import com.kajiwara.visualizegate.domain.DomainPortal;
 public record PointCloudInputs(
         int[] owTerrain,
         int[] netherTerrain,
-        List<DomainPortal> owPortals,
-        List<DomainPortal> netherPortals,
+        List<GateNode> gates,
         List<int[]> confirmedLinks,
         int owMinY,
         int owMaxY,

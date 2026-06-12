@@ -3,7 +3,8 @@ package com.kajiwara.visualizegate.pointcloud;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kajiwara.visualizegate.domain.DomainPortal;
+import com.kajiwara.visualizegate.domain.GateConflictAnalyzer;
+import com.kajiwara.visualizegate.domain.GateNode;
 import com.kajiwara.visualizegate.domain.PortalDimension;
 import com.kajiwara.visualizegate.ui.GateColors;
 
@@ -149,6 +150,7 @@ public final class PointCloudAnalyzer {
         Links links = buildLinks(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
         Marker mk = marker(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
         Gates gates = buildGates(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
+        GateMeta gateMeta = buildGateMeta(in, gates.number());
 
         float radius = horizontalRadius(owX, owZ, nX, nZ);
         return new PointCloudSnapshot(owX, owY, owZ, owColor, nX, nY, nZ, nColor,
@@ -156,7 +158,7 @@ public final class PointCloudAnalyzer {
                 radius, owN, nN, owDrawn, nk,
                 mk.present(), mk.x(), mk.y(), mk.z(), mk.nether(),
                 gates.x, gates.y, gates.z, gates.nether,
-                owCenterX, owCenterZ, owMeanY, nCenterX, nCenterZ, nMeanY);
+                owCenterX, owCenterZ, owMeanY, nCenterX, nCenterZ, nMeanY, gateMeta);
     }
 
     /** 地形ゼロ時: ポータルのみで各層の重心を取って組む (⑥ ネザーも 1:1・自分の重心)。 */
@@ -165,26 +167,26 @@ public final class PointCloudAnalyzer {
         double owSumZ = 0;
         double nSumX = 0;
         double nSumZ = 0;
-        long c = 0;
         long owYSum = 0;
         long nYSum = 0;
-        for (DomainPortal p : in.owPortals()) {
-            owSumX += p.anchor().x();
-            owSumZ += p.anchor().z();
-            owYSum += p.anchor().y();
-            c++;
+        int owc = 0;
+        int nc = 0;
+        for (GateNode g : in.gates()) {
+            if (g.dim() == PortalDimension.NETHER) {
+                nSumX += g.x();
+                nSumZ += g.z();
+                nYSum += g.y();
+                nc++;
+            } else if (g.dim() == PortalDimension.OVERWORLD) {
+                owSumX += g.x();
+                owSumZ += g.z();
+                owYSum += g.y();
+                owc++;
+            }
         }
-        for (DomainPortal p : in.netherPortals()) {
-            nSumX += p.anchor().x();       // ⑥ 1:1
-            nSumZ += p.anchor().z();
-            nYSum += p.anchor().y();
-            c++;
-        }
-        if (c == 0) {
+        if (owc + nc == 0) {
             return PointCloudSnapshot.EMPTY;
         }
-        int owc = in.owPortals().size();
-        int nc = in.netherPortals().size();
         float owCenterX = (owc > 0) ? (float) (owSumX / owc) : 0f;
         float owCenterZ = (owc > 0) ? (float) (owSumZ / owc) : 0f;
         float nCenterX = (nc > 0) ? (float) (nSumX / nc) : 0f;
@@ -194,6 +196,7 @@ public final class PointCloudAnalyzer {
         Links links = buildLinks(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
         Marker mk = marker(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
         Gates gates = buildGates(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
+        GateMeta gateMeta = buildGateMeta(in, gates.number());
         float radius = horizontalRadius(links.ax, links.az, links.bx, links.bz);
         return new PointCloudSnapshot(new float[0], new float[0], new float[0], new int[0],
                 new float[0], new float[0], new float[0], new int[0],
@@ -201,7 +204,7 @@ public final class PointCloudAnalyzer {
                 radius, 0, 0, 0, 0,
                 mk.present(), mk.x(), mk.y(), mk.z(), mk.nether(),
                 gates.x, gates.y, gates.z, gates.nether,
-                owCenterX, owCenterZ, owMeanY, nCenterX, nCenterZ, nMeanY);
+                owCenterX, owCenterZ, owMeanY, nCenterX, nCenterZ, nMeanY, gateMeta);
     }
 
     /**
@@ -227,33 +230,70 @@ public final class PointCloudAnalyzer {
         return out;
     }
 
-    /** ⑪ 既知ゲート (OW/ネザー両方) を点群と同じビュー空間へ写す (OW=OW 変換 / ネザー=1:1 ネザー変換)。 */
+    /**
+     * ⑪/㉚ 既知ゲート ({@link GateNode}・OW 先ネザー後) を点群と同じビュー空間へ写す (OW=OW 変換 / ネザー=1:1×1/8)。
+     * 配列添字は {@code in.gates()} の順と一致＝採番/状態 (GateMeta) と添字対応。
+     */
     private static Gates buildGates(PointCloudInputs in, float owCenterX, float owCenterZ,
             float nCenterX, float nCenterZ, float owMeanY, float nMeanY) {
-        int n = in.owPortals().size() + in.netherPortals().size();
+        List<GateNode> nodes = in.gates();
+        int n = nodes.size();
         float[] gx = new float[n];
         float[] gy = new float[n];
         float[] gz = new float[n];
         boolean[] gn = new boolean[n];
-        int k = 0;
-        for (DomainPortal p : in.owPortals()) {
-            gx[k] = p.anchor().x() - owCenterX;
-            gy[k] = p.anchor().y() - owMeanY;
-            gz[k] = p.anchor().z() - owCenterZ;
-            gn[k] = false;
-            k++;
+        int[] num = new int[n];
+        for (int k = 0; k < n; k++) {
+            GateNode g = nodes.get(k);
+            boolean nether = g.dim() == PortalDimension.NETHER;
+            if (nether) {
+                gx[k] = (g.x() - nCenterX) * NETHER_XZ_SCALE;   // ㉒A 1:8 水平縮尺
+                gy[k] = g.y() - nMeanY;
+                gz[k] = (g.z() - nCenterZ) * NETHER_XZ_SCALE;
+            } else {
+                gx[k] = g.x() - owCenterX;
+                gy[k] = g.y() - owMeanY;
+                gz[k] = g.z() - owCenterZ;
+            }
+            gn[k] = nether;
+            num[k] = g.number();
         }
-        for (DomainPortal p : in.netherPortals()) {
-            gx[k] = (p.anchor().x() - nCenterX) * NETHER_XZ_SCALE;   // ㉒A 1:8 水平縮尺
-            gy[k] = p.anchor().y() - nMeanY;
-            gz[k] = (p.anchor().z() - nCenterZ) * NETHER_XZ_SCALE;
-            gn[k] = true;
-            k++;
-        }
-        return new Gates(gx, gy, gz, gn);
+        return new Gates(gx, gy, gz, gn, num);
     }
 
-    private record Gates(float[] x, float[] y, float[] z, boolean[] nether) {
+    private record Gates(float[] x, float[] y, float[] z, boolean[] nether, int[] number) {
+    }
+
+    /**
+     * ㉚ ゲートメタ (採番/状態/コンフリクト/リンク番号) を組む。 状態は {@link GateConflictAnalyzer} (純) で算出し、
+     * {@code in.gates()} の順＝ゲート配列の添字と一致させる。 リンク番号は確定ペアの両端 anchor を採番へ照合。
+     */
+    private static GateMeta buildGateMeta(PointCloudInputs in, int[] gateNumber) {
+        List<GateNode> nodes = in.gates();
+        GateConflictAnalyzer.Result r = GateConflictAnalyzer.analyze(nodes,
+                in.netherMinY(), in.netherMaxY(), in.owMinY(), in.owMaxY());
+        int[] stateOrd = new int[r.states().length];
+        for (int i = 0; i < stateOrd.length; i++) {
+            stateOrd[i] = r.states()[i].ordinal();
+        }
+        List<int[]> pairs = in.confirmedLinks();
+        int[] linkOw = new int[pairs.size()];
+        int[] linkN = new int[pairs.size()];
+        for (int i = 0; i < pairs.size(); i++) {
+            int[] p = pairs.get(i);
+            linkOw[i] = numberAtAnchor(nodes, PortalDimension.OVERWORLD, p[0], p[1], p[2]);
+            linkN[i] = numberAtAnchor(nodes, PortalDimension.NETHER, p[3], p[4], p[5]);
+        }
+        return new GateMeta(gateNumber, stateOrd, linkOw, linkN, r.conflicts());
+    }
+
+    private static int numberAtAnchor(List<GateNode> nodes, PortalDimension dim, int x, int y, int z) {
+        for (GateNode g : nodes) {
+            if (g.dim() == dim && g.x() == x && g.y() == y && g.z() == z) {
+                return g.number();
+            }
+        }
+        return 0;
     }
 
     /** プレイヤー現在地を点群と同じビュー空間 (⑥ ネザーは 1:1・各層は自分の重心と Y 平均) へ写す。 */

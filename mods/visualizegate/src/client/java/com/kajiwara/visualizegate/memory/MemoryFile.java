@@ -56,4 +56,15 @@ public final class MemoryFile {
     public List<MemoryLink> worldLinks(String worldId) {
         return links.computeIfAbsent(worldId, k -> new ArrayList<>());
     }
+
+    /** ㉚ worldId → dimensionId → 次に割り当てる採番 (= 既割当の最大+1)。 採番の安定永続。 */
+    public Map<String, Map<String, Integer>> nextGateNumber = new HashMap<>();
+
+    /** ㉚ 指定 world/dim の次番号を取り 1 進める (1 始まり)。 */
+    public int allocateGateNumber(String worldId, String dimId) {
+        Map<String, Integer> byDim = nextGateNumber.computeIfAbsent(worldId, k -> new HashMap<>());
+        int next = byDim.getOrDefault(dimId, 1);
+        byDim.put(dimId, next + 1);
+        return next;
+    }
 }

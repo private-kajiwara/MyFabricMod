@@ -129,23 +129,20 @@ public final class PointCloudAnalysis {
             }
         }
 
-        java.util.List<com.kajiwara.visualizegate.domain.DomainPortal> owP =
-                PortalMemory.get().knownInDimension(PortalDimension.OVERWORLD);
-        java.util.List<com.kajiwara.visualizegate.domain.DomainPortal> nP =
-                PortalMemory.get().knownInDimension(PortalDimension.NETHER);
         // ㉙ capture 直前に確定接続ペアを最新化し、 永続ペアを読む (線はこの永続ペアから引く＝セッション跨ぎで残る)。
         PortalMemory.get().refreshConfirmedLinks();
         java.util.List<int[]> confirmed = PortalMemory.get().confirmedLinks();
-        // ⑰ 診断: 解析ごとに記憶ポータル数＋確定ペア数を出す。
+        // ㉚ 採番済み全ゲート (OW 先・ネザー後)。 点群ゲート列＋コンフリクト解析の素。
+        java.util.List<com.kajiwara.visualizegate.domain.GateNode> gates = PortalMemory.get().gateNodes();
+        // ⑰/㉚ 診断: 解析ごとにゲート数＋確定ペア数を出す。
         VisualizeGateMod.LOGGER.info(
-                "[visualizegate] point-cloud capture: worldId={} memPortals OW={} Nether={} confirmedLinks={}",
-                PortalMemory.get().currentWorldId(), owP.size(), nP.size(), confirmed.size());
+                "[visualizegate] point-cloud capture: worldId={} gates={} confirmedLinks={}",
+                PortalMemory.get().currentWorldId(), gates.size(), confirmed.size());
 
         return new PointCloudInputs(
                 owTerrain,
                 netherTerrain,
-                owP,
-                nP,
+                gates,
                 confirmed,
                 OW_MIN_Y, OW_MAX_Y, NETHER_MIN_Y, NETHER_MAX_Y,
                 present, px, py, pz, inNether);

@@ -31,7 +31,7 @@ public final class PointCloudSnapshot {
             0f, 0, 0, 0, 0,
             false, 0f, 0f, 0f, false,
             new float[0], new float[0], new float[0], new boolean[0],
-            0f, 0f, 0f, 0f, 0f, 0f);
+            0f, 0f, 0f, 0f, 0f, 0f, GateMeta.EMPTY);
 
     // OW 層 (青→青緑)。
     public final float[] owX;
@@ -86,6 +86,9 @@ public final class PointCloudSnapshot {
     public final float nCenterZ;
     public final float nMeanY;
 
+    /** ㉚ ゲートメタ情報 (採番/状態/コンフリクト・gateX 等と添字一致)。 */
+    public final GateMeta gateMeta;
+
     public PointCloudSnapshot(float[] owX, float[] owY, float[] owZ, int[] owColor,
             float[] nX, float[] nY, float[] nZ, int[] nColor,
             float[] linkAx, float[] linkAy, float[] linkAz,
@@ -94,7 +97,7 @@ public final class PointCloudSnapshot {
             boolean hasMarker, float markerX, float markerY, float markerZ, boolean markerNether,
             float[] gateX, float[] gateY, float[] gateZ, boolean[] gateNether,
             float owCenterX, float owCenterZ, float owMeanY,
-            float nCenterX, float nCenterZ, float nMeanY) {
+            float nCenterX, float nCenterZ, float nMeanY, GateMeta gateMeta) {
         this.owX = owX;
         this.owY = owY;
         this.owZ = owZ;
@@ -129,6 +132,7 @@ public final class PointCloudSnapshot {
         this.nCenterX = nCenterX;
         this.nCenterZ = nCenterZ;
         this.nMeanY = nMeanY;
+        this.gateMeta = gateMeta;
     }
 
     /**

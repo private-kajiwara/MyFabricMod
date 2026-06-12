@@ -17,6 +17,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.kajiwara.visualizegate.VisualizeGateMod;
 import com.kajiwara.visualizegate.domain.DomainPortal;
+import com.kajiwara.visualizegate.domain.GateNode;
 import com.kajiwara.visualizegate.domain.GridPos;
 import com.kajiwara.visualizegate.domain.LinkPrediction;
 import com.kajiwara.visualizegate.domain.PortalDimension;
@@ -179,7 +180,10 @@ public final class PortalMemory {
                 mp.ax = a.getX();
                 mp.ay = a.getY();
                 mp.az = a.getZ();
+                mp.number = file.allocateGateNumber(currentWorldId, dimId); // ㉚ 発見時に安定採番
                 mem.add(mp);
+            } else if (mp.number == 0) {
+                mp.number = file.allocateGateNumber(currentWorldId, dimId); // 旧データ (番号無し) に遡及採番
             }
             mp.minX = r.aabb().minX;
             mp.minY = r.aabb().minY;
@@ -310,6 +314,30 @@ public final class PortalMemory {
             out.add(new int[] { l.owX, l.owY, l.owZ, l.nX, l.nY, l.nZ });
         }
         return out;
+    }
+
+    /**
+     * ㉚ 現 world の全ゲートを採番付き {@link GateNode} で返す (<b>OW 先・ネザー後</b>の順＝点群ゲート配列と一致)。
+     * コンフリクト解析と点群スナップショットのゲート列の素。 capture 用不変コピー。
+     */
+    public List<GateNode> gateNodes() {
+        List<GateNode> ow = new ArrayList<>();
+        List<GateNode> nether = new ArrayList<>();
+        if (file == null || currentWorldId == null) {
+            return ow;
+        }
+        for (List<MemoryPortal> list : file.worldPortals(currentWorldId).values()) {
+            for (MemoryPortal mp : list) {
+                PortalDimension d = dimOf(mp.dimensionId);
+                if (d == PortalDimension.OVERWORLD) {
+                    ow.add(new GateNode(mp.number, d, mp.ax, mp.ay, mp.az));
+                } else if (d == PortalDimension.NETHER) {
+                    nether.add(new GateNode(mp.number, d, mp.ax, mp.ay, mp.az));
+                }
+            }
+        }
+        ow.addAll(nether); // OW 先・ネザー後
+        return ow;
     }
 
     /** ㉙ capture 直前に確定ペアを最新化 (両 dim の記憶が揃っていれば即記録)。 メインスレッドで呼ぶこと。 */
