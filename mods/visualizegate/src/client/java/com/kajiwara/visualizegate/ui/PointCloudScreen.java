@@ -69,12 +69,16 @@ public class PointCloudScreen extends Screen {
     // ㉔ ゲートマーカー＝<b>黒曜石ネザーポータルの形</b> (縦長の中空矩形フレーム・X–Y 平面の固定軸既定向き・法線 Z)。
     // 外形 幅:高さ ≈ 4:5 (黒曜石枠 4×5 のシルエット)。 サイズは<b>雲半径相対の固定マーカーサイズ</b>＝ズーム/÷8 でも
     // 消えない (位置のみ ÷8＋per-dim 表示スケールに追従)。 後微調整はこの 3 定数で。
-    /** ㉔ GPU3D ゲートフレーム外形の<b>半高</b>＝雲半径×比 (縦長)。 */
-    private static final float GPU_GATE_FRAME_HALF_H_FRAC = 0.016f;
-    /** ㉔ GPU3D ゲートフレーム外形の<b>半幅</b>＝雲半径×比 (= 半高 ×0.8 ＝外形 4:5)。 */
-    private static final float GPU_GATE_FRAME_HALF_W_FRAC = 0.0128f;
-    /** ㉔ GPU3D ゲートフレームの<b>枠バー半幅</b>＝雲半径×比 (黒曜石枠の太さ・中空＝点群が透ける)。 */
-    private static final float GPU_GATE_BAR_W_FRAC = 0.0018f;
+    /** ㉔/㉙ GPU3D ゲートフレーム外形の<b>半高</b>＝雲半径×比 (縦長・㉙ 存在感↑ 0.016→0.022)。 */
+    private static final float GPU_GATE_FRAME_HALF_H_FRAC = 0.022f;
+    /** ㉔/㉙ GPU3D ゲートフレーム外形の<b>半幅</b>＝雲半径×比 (= 半高 ×0.8 ＝外形 4:5)。 */
+    private static final float GPU_GATE_FRAME_HALF_W_FRAC = 0.0176f;
+    /** ㉔/㉙ GPU3D ゲートフレームの<b>枠バー半幅</b>＝雲半径×比 (㉙ 太く 0.0018→0.0026)。 */
+    private static final float GPU_GATE_BAR_W_FRAC = 0.0026f;
+    /** ㉙ GPU3D ゲート内側格子バーの半幅＝雲半径×比 (枠より細く・ポータル面の手がかり)。 */
+    private static final float GPU_GATE_GRID_W_FRAC = 0.0014f;
+    /** ㉙ ゲートマーカーの色 (PC_LINK より明るい紫＝一目でゲートと分かる・枠+内側格子に使用)。 */
+    private static final int GATE_FRAME_COLOR = 0xFFB57BFF;
     /** ⑲ GPU3D 現在地マーカー (金ワイヤー十字) の腕長＝雲半径×比。 */
     private static final float GPU_MARKER_ARM_FRAC = 0.03f;
     /** ⑲ GPU3D 現在地マーカー (金ワイヤー十字) の半幅＝雲半径×比 (細く)。 */
@@ -85,9 +89,11 @@ public class PointCloudScreen extends Screen {
     private static final int DIM_TINT_OW = GateColors.PC_OW_HIGH;
     private static final int DIM_TINT_NETHER = GateColors.PC_NETHER_HIGH;
     private static final float DIM_TINT_FRAC = 0.15f;
-    /** ㉔ ゲートマーカー (黒曜石ポータル枠) の<b>半幅/半高</b> (論理px・×SSでネイティブ)。 縦長 4:5・地形は隠さない中空。 */
-    private static final float GATE_FRAME_HALF_W = 2.5f; // 外形幅 ≈5px
-    private static final float GATE_FRAME_HALF_H = 3.5f; // 外形高 ≈7px (縦長)
+    /** ㉔/㉙ ゲートマーカー (黒曜石ポータル枠) の<b>半幅/半高</b> (論理px・×SSでネイティブ・㉙ 存在感↑)。 縦長 4:5。 */
+    private static final float GATE_FRAME_HALF_W = 3.5f; // 外形幅 ≈7px
+    private static final float GATE_FRAME_HALF_H = 5.0f; // 外形高 ≈10px (縦長)
+    /** ㉙ texbatch ゲート内側のポータル面フィルのアルファ (低め＝地形/点を透かす控えめα)。 */
+    private static final int GATE_FILL_ALPHA = 0x4D; // ~30%
     /** ⑫ リンク線の太さ (固定ネイティブpx・SSに乗算しない)。 最細で鮮明＝1。 */
     private static final int LINK_THICK_NATIVE = 1;
     private static final double DRAG_SENS = 0.012;
@@ -547,6 +553,7 @@ public class PointCloudScreen extends Screen {
         float gateHalfH = Math.max(1.2f, snap.radius * GPU_GATE_FRAME_HALF_H_FRAC); // ㉔ ゲート枠の半高 (縦長)
         float gateHalfW = Math.max(0.9f, snap.radius * GPU_GATE_FRAME_HALF_W_FRAC); // ㉔ ゲート枠の半幅 (4:5)
         float gateBarW = Math.max(0.08f, snap.radius * GPU_GATE_BAR_W_FRAC);  // ㉔ ゲート枠バーの半幅
+        float gateGridW = Math.max(0.06f, snap.radius * GPU_GATE_GRID_W_FRAC); // ㉙ ゲート内側格子バーの半幅
         float markArm = Math.max(2f, snap.radius * GPU_MARKER_ARM_FRAC);     // 現在地十字の腕長
         float markW = Math.max(0.1f, snap.radius * GPU_MARKER_W_FRAC);       // 現在地十字の半幅 (細く)
 
@@ -555,8 +562,8 @@ public class PointCloudScreen extends Screen {
         // ㉕ back-calculate 要素 (全 dim・Gate links トグルとは独立＝/vg で出したら常に見える)。 枠=64 頂点/件。
         List<BackCalcStore.Element> bc = BackCalcStore.all();
         int bcN = bc.size();
-        // 頂点数: リンク角柱=側面4枚×4=16 / ㉔ゲート枠=4バー×16=64 / 現在地ワイヤー十字=3角柱×16=48 / ㉕枠=64。
-        int ov = links * 16 + gates * 64 + (snap.hasMarker ? 48 : 0) + bcN * 64;
+        // 頂点数: リンク角柱=16 / ㉙ゲート枠+内側格子=(4+3)バー×16=112 / 現在地十字=48 / ㉕back-calc枠=64。
+        int ov = links * 16 + gates * 112 + (snap.hasMarker ? 48 : 0) + bcN * 64;
         float[] oxyz = new float[ov * 3];
         int[] ocol = new int[ov];
         int j = 0;
@@ -570,9 +577,9 @@ public class PointCloudScreen extends Screen {
         for (int i = 0; i < gates; i++) {
             float gs = snap.gateNether[i] ? nScale : owScale; // ㉓ 当該 dim の層スケール (位置のみ)
             float gy = snap.gateNether[i] ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
-            // ㉔ 黒曜石ポータル枠。 位置は ÷8＋表示スケールに追従、 サイズは固定 (gs 非乗算＝消えない)。
-            j = emitPortalFrame(oxyz, ocol, j, snap.gateX[i] * gs, gy, snap.gateZ[i] * gs,
-                    gateHalfW, gateHalfH, gateBarW, linkC);
+            // ㉔/㉙ 黒曜石ポータル枠＋内側格子 (ポータル面の手がかり)。 位置は ÷8＋表示スケールに追従、 サイズ固定。
+            j = emitGateFrame(oxyz, ocol, j, snap.gateX[i] * gs, gy, snap.gateZ[i] * gs,
+                    gateHalfW, gateHalfH, gateBarW, gateGridW, GATE_FRAME_COLOR);
         }
         if (snap.hasMarker) {
             float ms = snap.markerNether ? nScale : owScale; // ㉓ 当該 dim の層スケール
@@ -661,6 +668,20 @@ public class PointCloudScreen extends Screen {
         v = emitBox(xyz, col, v, x1, y0, z, x1, y1, z, barW, c); // 右柱
         v = emitBox(xyz, col, v, x0, y1, z, x1, y1, z, barW, c); // 上桁
         v = emitBox(xyz, col, v, x0, y0, z, x1, y0, z, barW, c); // 下桁
+        return v;
+    }
+
+    /**
+     * ㉙ ゲート用: 外枠 ({@link #emitPortalFrame}・4 バー) ＋<b>内側格子</b> (縦 2・横 1 バー＝ポータル面の手がかり)。
+     * 計 7 バー×16=112 頂点。 格子は枠より細い {@code gridW} で点群を透かす。 不透明 (blend 不要＝quadPipeline のまま)。
+     */
+    private static int emitGateFrame(float[] xyz, int[] col, int v, float x, float y, float z,
+            float halfW, float halfH, float barW, float gridW, int c) {
+        v = emitPortalFrame(xyz, col, v, x, y, z, halfW, halfH, barW, c);
+        float vx = halfW * 0.34f; // 内側 縦バー 2 本
+        v = emitBox(xyz, col, v, x - vx, y - halfH, z, x - vx, y + halfH, z, gridW, c);
+        v = emitBox(xyz, col, v, x + vx, y - halfH, z, x + vx, y + halfH, z, gridW, c);
+        v = emitBox(xyz, col, v, x - halfW, y, z, x + halfW, y, z, gridW, c); // 内側 横バー 1 本
         return v;
     }
 
@@ -984,9 +1005,13 @@ public class PointCloudScreen extends Screen {
                 rasterLine((lkAx[i] - vpX) * ss, (lkAy[i] - vpY) * ss, (lkBx[i] - vpX) * ss,
                         (lkBy[i] - vpY) * ss, GateColors.PC_LINK, LINK_THICK_NATIVE, w, h);
             }
-            for (int i = 0; i < cachedGates; i++) {   // ㉔ ゲート位置の黒曜石ポータル枠 (地形の上・中空矩形)
-                rasterFrame((gkX[i] - vpX) * ss, (gkY[i] - vpY) * ss, GATE_FRAME_HALF_W * ss,
-                        GATE_FRAME_HALF_H * ss, GateColors.PC_LINK, ss, w, h);
+            for (int i = 0; i < cachedGates; i++) {   // ㉔/㉙ ゲート枠＋内側の半透明ポータル面 (地形/点を透かす控えめα)
+                float gfx = (gkX[i] - vpX) * ss;
+                float gfy = (gkY[i] - vpY) * ss;
+                rasterFrameFill(gfx, gfy, GATE_FRAME_HALF_W * ss, GATE_FRAME_HALF_H * ss,
+                        GATE_FRAME_COLOR, GATE_FILL_ALPHA, w, h);
+                rasterFrame(gfx, gfy, GATE_FRAME_HALF_W * ss, GATE_FRAME_HALF_H * ss,
+                        GATE_FRAME_COLOR, ss, w, h);
             }
             for (int i = 0; i < cachedBc; i++) {      // ㉕ back-calculate 要素の黒曜石枠 (緑/赤・要素色)
                 rasterFrame((bcX[i] - vpX) * ss, (bcY[i] - vpY) * ss, GATE_FRAME_HALF_W * ss,
@@ -1164,6 +1189,28 @@ public class PointCloudScreen extends Screen {
         fillRectPix(x0, y1 - t + 1, x1 + 1, y1 + 1, packed, w, h); // 下桁
         fillRectPix(x0, y0, x0 + t, y1 + 1, packed, w, h);     // 左柱
         fillRectPix(x1 - t + 1, y0, x1 + 1, y1 + 1, packed, w, h); // 右柱
+    }
+
+    /**
+     * ㉙ ゲート内側の<b>半透明ポータル面</b>。 矩形内部を低 alpha 紫で塗る (texbatch はテクスチャ→地形 blit が
+     * α 合成するので「面がある」感が出る)。 既に高 alpha が書かれた画素 (= 点群) は上書きしない＝点を透かす。
+     */
+    private void rasterFrameFill(float cxf, float cyf, float halfW, float halfH, int rgb, int alpha,
+            int w, int h) {
+        int packed = (alpha << 24) | (rgb & 0xFFFFFF);
+        int x0 = Math.max(0, Math.round(cxf - halfW));
+        int x1 = Math.min(w - 1, Math.round(cxf + halfW));
+        int y0 = Math.max(0, Math.round(cyf - halfH));
+        int y1 = Math.min(h - 1, Math.round(cyf + halfH));
+        for (int y = y0; y <= y1; y++) {
+            int row = y * w;
+            for (int x = x0; x <= x1; x++) {
+                int idx = row + x;
+                if (((pix[idx] >>> 24) & 0xFF) < alpha) { // 点群 (高α) は保持・透明部のみ淡く塗る
+                    pix[idx] = packed;
+                }
+            }
+        }
     }
 
     /** ㉔ [x0,x1)×[y0,y1) を塗る (枠バー用)。 範囲外は putPix がクリップ。 */
