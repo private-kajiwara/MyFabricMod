@@ -18,7 +18,10 @@ import com.google.gson.GsonBuilder;
 import com.kajiwara.visualizegate.VisualizeGateMod;
 import com.kajiwara.visualizegate.domain.DomainPortal;
 import com.kajiwara.visualizegate.domain.GridPos;
+import com.kajiwara.visualizegate.domain.LinkPrediction;
 import com.kajiwara.visualizegate.domain.PortalDimension;
+import com.kajiwara.visualizegate.domain.PortalLinkResolver;
+import com.kajiwara.visualizegate.domain.PredictedLinkState;
 import com.kajiwara.visualizegate.scan.PortalIndex;
 import com.kajiwara.visualizegate.scan.PortalRecord;
 
@@ -58,6 +61,10 @@ public final class PortalMemory {
     private static final long RECONCILE_GRACE_TICKS = 100;
     /** 観測リージョンセルのサイズ (チャンク四方)。 4ch=64ブロック。 */
     private static final int CELL_CHUNKS = 4;
+    /** ㉙ 確定接続ペアの解決パラメタ (点群 buildLinks と同値・OW→ネザー 1:8 写像の水平半径/Y境界)。 */
+    private static final double NETHER_SEARCH_RADIUS = 16.0;
+    private static final int NETHER_MIN_Y = 0;
+    private static final int NETHER_MAX_Y = 127;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
     private static final PortalMemory INSTANCE = new PortalMemory();
@@ -144,6 +151,7 @@ public final class PortalMemory {
             markVisited(dimId);
             promoteLiveRecords(level, dimId);
             reconcile(level, dimId);
+            confirmLinks(); // ㉙ 開いて繋がった OW↔ネザーの確定ペアを永続記録
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] portal-memory tick failed (continuing): {}", t.toString());
         }
@@ -207,10 +215,58 @@ public final class PortalMemory {
                 continue; // ⑰ 最近ライブ確認済み → 過渡の誤読とみなし猶予 (除去しない)
             }
             it.remove(); // ロード済み・portal 不在・猶予経過 → 記憶を失効
+            pruneLinksReferencing(mp.ax, mp.ay, mp.az); // ㉙ この端を含む確定ペアも剪定 (線が嘘にならない)
             VisualizeGateMod.LOGGER.info(
                     "[visualizegate] reconcile removed portal dim={} anchor=({},{},{}) (absent, grace passed)",
                     dimId, mp.ax, mp.ay, mp.az);
         }
+    }
+
+    /** ㉙ 指定 anchor をどちらかの端に持つ確定ペアを除去 (ポータル失効に追従)。 */
+    private void pruneLinksReferencing(int x, int y, int z) {
+        List<MemoryLink> ls = file.worldLinks(currentWorldId);
+        ls.removeIf(l -> l.referencesAnchor(x, y, z));
+    }
+
+    /**
+     * ㉙ 現 world の OW ポータルを NETHER へ予測し、 LINKED (半径内一致＝開いて繋がった) ペアを確定記録へ upsert。
+     * 両端は記憶済み (= 検出済み活性) ポータルなので「開いて繋がった」を満たす。 既存は lastConfirmedTick 更新、
+     * 新規は追加。 記録から点群の接続線を再描画＝セッションをまたいで残る。
+     */
+    private void confirmLinks() {
+        List<DomainPortal> ow = knownInDimension(PortalDimension.OVERWORLD);
+        List<DomainPortal> nether = knownInDimension(PortalDimension.NETHER);
+        if (ow.isEmpty() || nether.isEmpty()) {
+            return;
+        }
+        List<MemoryLink> ls = file.worldLinks(currentWorldId);
+        for (DomainPortal o : ow) {
+            LinkPrediction pred = PortalLinkResolver.predict(o.anchor(), PortalDimension.OVERWORLD,
+                    PortalDimension.NETHER, NETHER_MIN_Y, NETHER_MAX_Y, nether,
+                    NETHER_SEARCH_RADIUS, ideal -> false);
+            if (pred.state() != PredictedLinkState.LINKED || pred.matched().isEmpty()) {
+                continue;
+            }
+            GridPos n = pred.matched().get().anchor();
+            MemoryLink link = new MemoryLink(o.anchor().x(), o.anchor().y(), o.anchor().z(),
+                    n.x(), n.y(), n.z(), tickCounter);
+            MemoryLink existing = findLink(ls, link.key());
+            if (existing != null) {
+                existing.lastConfirmedTick = tickCounter;
+            } else {
+                ls.add(link);
+                VisualizeGateMod.LOGGER.info("[visualizegate] confirmed gate link {} (persisted)", link.key());
+            }
+        }
+    }
+
+    private static MemoryLink findLink(List<MemoryLink> ls, String key) {
+        for (MemoryLink l : ls) {
+            if (l.key().equals(key)) {
+                return l;
+            }
+        }
+        return null;
     }
 
     private static MemoryPortal findByAnchor(List<MemoryPortal> mem, int x, int y, int z) {
@@ -239,6 +295,33 @@ public final class PortalMemory {
             }
         }
         return out;
+    }
+
+    /**
+     * ㉙ 現 world の確定接続ペアを {@code int[]{owX,owY,owZ,nX,nY,nZ}} のリストで返す (capture 用不変コピー)。
+     * 点群の接続線はここから引かれ、 セッションをまたいで残る (毎セッションの再解決に依存しない)。
+     */
+    public List<int[]> confirmedLinks() {
+        List<int[]> out = new ArrayList<>();
+        if (file == null || currentWorldId == null) {
+            return out;
+        }
+        for (MemoryLink l : file.worldLinks(currentWorldId)) {
+            out.add(new int[] { l.owX, l.owY, l.owZ, l.nX, l.nY, l.nZ });
+        }
+        return out;
+    }
+
+    /** ㉙ capture 直前に確定ペアを最新化 (両 dim の記憶が揃っていれば即記録)。 メインスレッドで呼ぶこと。 */
+    public void refreshConfirmedLinks() {
+        try {
+            ensureLoaded();
+            if (currentWorldId != null) {
+                confirmLinks();
+            }
+        } catch (Throwable t) {
+            VisualizeGateMod.LOGGER.warn("[visualizegate] confirmLinks refresh failed: {}", t.toString());
+        }
     }
 
     /** ポータル枠の寸法 (ブロック単位の各軸スパン)。 厚み軸は ~1.0、 幅軸=横幅、 dy=高さ。 */

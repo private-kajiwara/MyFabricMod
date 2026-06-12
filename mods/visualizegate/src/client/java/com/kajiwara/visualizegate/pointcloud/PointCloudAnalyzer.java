@@ -4,11 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.kajiwara.visualizegate.domain.DomainPortal;
-import com.kajiwara.visualizegate.domain.GridPos;
-import com.kajiwara.visualizegate.domain.LinkPrediction;
 import com.kajiwara.visualizegate.domain.PortalDimension;
-import com.kajiwara.visualizegate.domain.PortalLinkResolver;
-import com.kajiwara.visualizegate.domain.PredictedLinkState;
 import com.kajiwara.visualizegate.ui.GateColors;
 
 /**
@@ -22,7 +18,8 @@ import com.kajiwara.visualizegate.ui.GateColors;
  *   <li>各層を描画予算 {@link #POINT_BUDGET_PER_LAYER} までストライド間引き (= 決定的・乱数不使用)。</li>
  *   <li>各層 Y センタリング (平均) で<b>ビュー空間</b>へ。 配色は⑤の
  *       <b>実ブロック色 (MapColor)</b>＋高さ明暗 (色なしデータはディメンション色グラデへフォールバック)。</li>
- *   <li>リンク: OW ポータル → ネザー partner ({@link PortalLinkResolver}) の LINKED のみ線分化。</li>
+ *   <li>㉙ リンク: 永続の<b>確定接続ペア</b> ({@link PointCloudInputs#confirmedLinks()}・開いて繋がった
+ *       LINKED のみ) を線分化 (毎解析の再解決はしない＝PortalMemory が記録/剪定)。</li>
  * </ol>
  * <b>垂直分離 (spacing)</b> は織り込まない (描画時に Screen が加算＝ライブスライダ対応)。
  */
@@ -38,8 +35,6 @@ public final class PointCloudAnalyzer {
      * 意味が変わり蓄積済みデータの位置がずれる＋容量 4 倍＝互換破壊のため)。 在庫密度内で予算だけ上げる。
      */
     public static final int POINT_BUDGET_PER_LAYER = 1_000_000;
-    /** OW→ネザーのリンク探索半径 (PortalLinkRenderer と同じ・水平距離)。 */
-    private static final double NETHER_SEARCH_RADIUS = 16.0;
     /**
      * ㉒A ネザー層の<b>水平 1:8 縮尺</b>。 各層は自分の重心で中心化するため、 重心化だけでは縮尺は
      * 「探索した範囲の広さ」次第になり (＝territory 比が崩れると 1:1 に見える)。 ヘッダ "Nether 1:8" を
@@ -209,39 +204,25 @@ public final class PointCloudAnalyzer {
                 owCenterX, owCenterZ, owMeanY, nCenterX, nCenterZ, nMeanY);
     }
 
+    /**
+     * ㉙ 接続線は<b>永続の確定ペア</b> {@link PointCloudInputs#confirmedLinks()} (開いて繋がった LINKED のみ・
+     * セッション跨ぎ) から引く。 もう毎解析の再解決はしない (PortalMemory が tick/capture で確定ペアを記録/剪定)。
+     * 各端 anchor を点群と同一のビュー変換 (OW=OW 重心 / ネザー=ネザー重心 ×{@link #NETHER_XZ_SCALE}) へ写す＝
+     * 地形/ゲートと整合 (spacing は描画時加算)。
+     */
     private static Links buildLinks(PointCloudInputs in, float owCenterX, float owCenterZ,
             float nCenterX, float nCenterZ, float owMeanY, float nMeanY) {
-        List<float[]> a = new ArrayList<>();
-        List<float[]> b = new ArrayList<>();
-        for (DomainPortal ow : in.owPortals()) {
-            GridPos src = ow.anchor();
-            LinkPrediction pred = PortalLinkResolver.predict(src, PortalDimension.OVERWORLD,
-                    PortalDimension.NETHER, in.netherMinY(), in.netherMaxY(), in.netherPortals(),
-                    NETHER_SEARCH_RADIUS, ideal -> false);
-            if (pred.state() != PredictedLinkState.LINKED || pred.matched().isEmpty()) {
-                continue;
-            }
-            DomainPortal n = pred.matched().get();
-            // A 端 (OW 層・OW 重心センタリング)。
-            a.add(new float[] {
-                    src.x() - owCenterX,
-                    src.y() - owMeanY,
-                    src.z() - owCenterZ });
-            // B 端 (ネザー層・⑥ 1:1・ネザー重心センタリング。 spacing は描画時に加算)。 端点は
-            // ネザー terrain と同一変換なのでズレず、 実位置どうしを結んで扇状に開く。
-            b.add(new float[] {
-                    (n.anchor().x() - nCenterX) * NETHER_XZ_SCALE, // ㉒A 1:8 (terrain と同変換で整合)
-                    n.anchor().y() - nMeanY,
-                    (n.anchor().z() - nCenterZ) * NETHER_XZ_SCALE });
-        }
-        Links out = new Links(a.size());
-        for (int i = 0; i < a.size(); i++) {
-            out.ax[i] = a.get(i)[0];
-            out.ay[i] = a.get(i)[1];
-            out.az[i] = a.get(i)[2];
-            out.bx[i] = b.get(i)[0];
-            out.by[i] = b.get(i)[1];
-            out.bz[i] = b.get(i)[2];
+        List<int[]> pairs = in.confirmedLinks();
+        Links out = new Links(pairs.size());
+        int i = 0;
+        for (int[] p : pairs) { // p = {owX,owY,owZ, nX,nY,nZ}
+            out.ax[i] = p[0] - owCenterX;     // A 端 (OW 層・OW 重心センタリング)
+            out.ay[i] = p[1] - owMeanY;
+            out.az[i] = p[2] - owCenterZ;
+            out.bx[i] = (p[3] - nCenterX) * NETHER_XZ_SCALE; // B 端 (ネザー層・1:8・terrain と同変換)
+            out.by[i] = p[4] - nMeanY;
+            out.bz[i] = (p[5] - nCenterZ) * NETHER_XZ_SCALE;
+            i++;
         }
         return out;
     }

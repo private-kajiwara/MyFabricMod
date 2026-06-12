@@ -30,6 +30,12 @@ public final class MemoryFile {
      */
     public Map<String, Map<String, Set<Long>>> observed = new HashMap<>();
 
+    /**
+     * ㉙ worldId → 確定接続ペア一覧 (開いて繋がった OW↔ネザー)。 旧 JSON に欠落していても GSON が空 map を残す
+     * (前方互換)。 点群の接続線はここから再描画され、 セッションをまたいで残る。
+     */
+    public Map<String, List<MemoryLink>> links = new HashMap<>();
+
     public Map<String, List<MemoryPortal>> worldPortals(String worldId) {
         return worlds.computeIfAbsent(worldId, k -> new HashMap<>());
     }
@@ -45,5 +51,9 @@ public final class MemoryFile {
     public Set<Long> observedCells(String worldId, String dimId) {
         return observed.computeIfAbsent(worldId, k -> new HashMap<>())
                 .computeIfAbsent(dimId, k -> new HashSet<>());
+    }
+
+    public List<MemoryLink> worldLinks(String worldId) {
+        return links.computeIfAbsent(worldId, k -> new ArrayList<>());
     }
 }

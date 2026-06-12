@@ -14,6 +14,8 @@ import com.kajiwara.visualizegate.domain.DomainPortal;
  * @param netherTerrain ネザー地形カラム flat int[] (wx, wz, y, color の 4 つ組連結)
  * @param owPortals     OW の既知ポータル
  * @param netherPortals ネザーの既知ポータル
+ * @param confirmedLinks ㉙ 確定接続ペア {@code int[]{owX,owY,owZ,nX,nY,nZ}} (永続・開いて繋がった LINKED のみ)。
+ *                       点群の接続線はこの永続ペアから引く (毎セッション再解決に依存しない)。
  * @param owMinY        OW の Y 下限 (リンク射影の Y クランプ用)
  * @param owMaxY        OW の Y 上限
  * @param netherMinY    ネザーの Y 下限
@@ -29,6 +31,7 @@ public record PointCloudInputs(
         int[] netherTerrain,
         List<DomainPortal> owPortals,
         List<DomainPortal> netherPortals,
+        List<int[]> confirmedLinks,
         int owMinY,
         int owMaxY,
         int netherMinY,

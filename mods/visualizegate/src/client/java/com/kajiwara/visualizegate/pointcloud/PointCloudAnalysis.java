@@ -133,16 +133,20 @@ public final class PointCloudAnalysis {
                 PortalMemory.get().knownInDimension(PortalDimension.OVERWORLD);
         java.util.List<com.kajiwara.visualizegate.domain.DomainPortal> nP =
                 PortalMemory.get().knownInDimension(PortalDimension.NETHER);
-        // ⑰ 診断: 解析ごとに記憶ポータル数を出す (Links が消えたらここで OW/Nether どちらが 0 か分かる)。
+        // ㉙ capture 直前に確定接続ペアを最新化し、 永続ペアを読む (線はこの永続ペアから引く＝セッション跨ぎで残る)。
+        PortalMemory.get().refreshConfirmedLinks();
+        java.util.List<int[]> confirmed = PortalMemory.get().confirmedLinks();
+        // ⑰ 診断: 解析ごとに記憶ポータル数＋確定ペア数を出す。
         VisualizeGateMod.LOGGER.info(
-                "[visualizegate] point-cloud capture: worldId={} memPortals OW={} Nether={}",
-                PortalMemory.get().currentWorldId(), owP.size(), nP.size());
+                "[visualizegate] point-cloud capture: worldId={} memPortals OW={} Nether={} confirmedLinks={}",
+                PortalMemory.get().currentWorldId(), owP.size(), nP.size(), confirmed.size());
 
         return new PointCloudInputs(
                 owTerrain,
                 netherTerrain,
                 owP,
                 nP,
+                confirmed,
                 OW_MIN_Y, OW_MAX_Y, NETHER_MIN_Y, NETHER_MAX_Y,
                 present, px, py, pz, inNether);
     }
