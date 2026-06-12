@@ -33,11 +33,19 @@ public final class PointCloudViewState {
      * ㉓ 層ごとの<b>表示スケール</b> (基準形 OW1:1・ネザー1/8 の<b>上に重ねる</b> XZ 倍率)。 基準形は不変で、
      * 各層を<b>自分の重心基準</b>で「基準スケール × 表示スケール」へ拡縮する (= スナップショットは触らず描画時に
      * 合成＝再解析不要・ライブ)。 既定 1.0/1.0 では現状の 1:8 と完全に同じ見た目 (回帰ゼロ)。 範囲は対数で
-     * 1.0 が中央。 Y/spacing には一切効かない (XZ のみ)。
+     * 1.0 が中央 (min×max=1 の対称範囲)。 Y/spacing には一切効かない (XZ のみ)。
+     *
+     * <p>㉘ <b>層ごとに範囲を分離</b>: OW は ×0.25〜×4 (従来通り)、 ネザーは ×{@code 1/NETHER_SCALE_MAX}〜
+     * ×{@code NETHER_SCALE_MAX} (=×16) へ拡張。 ネザー ×8 で基準÷8 を相殺＝OW と同じ footprint、 ×16 で OW の 2 倍。
+     * 後微調整は {@link #NETHER_SCALE_MAX} 1 定数で (min は 1/max ＝対数中央 1.0 維持)。
      */
-    public static final float DISPLAY_SCALE_MIN = 0.25f;
-    public static final float DISPLAY_SCALE_MAX = 4.0f;
     public static final float DISPLAY_SCALE_DEFAULT = 1.0f;
+    /** OW 表示スケール範囲 (従来通り・1.0 中央)。 */
+    public static final float OW_SCALE_MAX = 4.0f;
+    public static final float OW_SCALE_MIN = 1.0f / OW_SCALE_MAX;
+    /** ㉘ ネザー表示スケール範囲 (拡張・1.0 中央)。 max を上げるだけで両端が対称に広がる。 */
+    public static final float NETHER_SCALE_MAX = 16.0f;
+    public static final float NETHER_SCALE_MIN = 1.0f / NETHER_SCALE_MAX;
 
     private static boolean showOverworld = true;
     private static boolean showNether = true;
@@ -137,7 +145,7 @@ public final class PointCloudViewState {
     }
 
     public static void setOwDisplayScale(float v) {
-        owDisplayScale = clampScale(v);
+        owDisplayScale = clampScale(v, OW_SCALE_MIN, OW_SCALE_MAX);
     }
 
     /** ㉓ ネザー層の表示スケール (基準 1/8 に乗算)。 */
@@ -146,13 +154,14 @@ public final class PointCloudViewState {
     }
 
     public static void setNetherDisplayScale(float v) {
-        netherDisplayScale = clampScale(v);
+        netherDisplayScale = clampScale(v, NETHER_SCALE_MIN, NETHER_SCALE_MAX);
     }
 
-    private static float clampScale(float v) {
+    /** ㉘ 層別範囲でクランプ (旧保存値 ≤4 は新範囲内＝移行不要)。 NaN は既定 1.0。 */
+    private static float clampScale(float v, float min, float max) {
         if (Float.isNaN(v)) {
             return DISPLAY_SCALE_DEFAULT;
         }
-        return Math.max(DISPLAY_SCALE_MIN, Math.min(DISPLAY_SCALE_MAX, v));
+        return Math.max(min, Math.min(max, v));
     }
 }

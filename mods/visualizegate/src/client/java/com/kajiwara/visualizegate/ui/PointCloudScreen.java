@@ -1371,9 +1371,10 @@ public class PointCloudScreen extends Screen {
         // ㉓ 表示スケール群 (2 カラム 1 行): OW / Nether。 基準形 (1:1 / 1:8) に重ねる倍率＝既定 1.0/1.0 で現状一致。
         float ow = PointCloudViewState.getOwDisplayScale();
         float nether = PointCloudViewState.getNetherDisplayScale();
-        drawHalfTrack(g, "OW ×" + fmtScale(ow), slScaleOwX, slScaleHalfW, slScaleY, scaleToFrac(ow));
+        drawHalfTrack(g, "OW ×" + fmtScale(ow), slScaleOwX, slScaleHalfW, slScaleY,
+                scaleToFrac(ow, PointCloudViewState.OW_SCALE_MIN, PointCloudViewState.OW_SCALE_MAX));
         drawHalfTrack(g, "Nether ×" + fmtScale(nether), slScaleNX, slScaleHalfW, slScaleY,
-                scaleToFrac(nether));
+                scaleToFrac(nether, PointCloudViewState.NETHER_SCALE_MIN, PointCloudViewState.NETHER_SCALE_MAX));
 
         int spacing = PointCloudViewState.getDimensionSpacing();
         drawTrack(g, "Dimension spacing: " + spacing, slY,
@@ -1413,18 +1414,14 @@ public class PointCloudScreen extends Screen {
         g.fill(hx, trackY - 2, hx + 6, trackY + slH + 2, GateColors.MAIN);
     }
 
-    /** ㉓ 表示スケール → スライダ frac (対数: 1.0 が中央)。 範囲 [MIN,MAX]。 */
-    private static float scaleToFrac(float scale) {
-        float min = PointCloudViewState.DISPLAY_SCALE_MIN;
-        float max = PointCloudViewState.DISPLAY_SCALE_MAX;
+    /** ㉓/㉘ 表示スケール → スライダ frac (対数: min×max=1 なら 1.0 が中央)。 範囲は層別に渡す。 */
+    private static float scaleToFrac(float scale, float min, float max) {
         scale = Math.max(min, Math.min(max, scale));
         return (float) (Math.log(scale / min) / Math.log(max / min));
     }
 
-    /** ㉓ スライダ frac → 表示スケール (対数)。 0.05 刻みへ丸めて値を安定させる。 */
-    private static float fracToScale(float frac) {
-        float min = PointCloudViewState.DISPLAY_SCALE_MIN;
-        float max = PointCloudViewState.DISPLAY_SCALE_MAX;
+    /** ㉓/㉘ スライダ frac → 表示スケール (対数・層別範囲)。 0.05 刻みへ丸めて値を安定させる。 */
+    private static float fracToScale(float frac, float min, float max) {
         frac = Math.max(0f, Math.min(1f, frac));
         float s = (float) (min * Math.pow(max / min, frac));
         s = Math.round(s / 0.05f) * 0.05f; // 0.05 刻みで安定 (×1.00 などを取りやすく)
@@ -1669,13 +1666,15 @@ public class PointCloudScreen extends Screen {
     /** ㉓ OW 表示スケールスライダ (対数・ハーフトラック): マウス x → スケール。 */
     private void setOwScaleFromMouse(double mx) {
         float frac = (float) ((mx - slScaleOwX) / Math.max(1, slScaleHalfW - 6));
-        PointCloudViewState.setOwDisplayScale(fracToScale(frac));
+        PointCloudViewState.setOwDisplayScale(
+                fracToScale(frac, PointCloudViewState.OW_SCALE_MIN, PointCloudViewState.OW_SCALE_MAX));
     }
 
-    /** ㉓ ネザー表示スケールスライダ (対数・ハーフトラック): マウス x → スケール。 */
+    /** ㉓ ネザー表示スケールスライダ (対数・ハーフトラック): マウス x → スケール。 ㉘ 範囲 ×1/16〜×16。 */
     private void setNetherScaleFromMouse(double mx) {
         float frac = (float) ((mx - slScaleNX) / Math.max(1, slScaleHalfW - 6));
-        PointCloudViewState.setNetherDisplayScale(fracToScale(frac));
+        PointCloudViewState.setNetherDisplayScale(
+                fracToScale(frac, PointCloudViewState.NETHER_SCALE_MIN, PointCloudViewState.NETHER_SCALE_MAX));
     }
 
     @Override
