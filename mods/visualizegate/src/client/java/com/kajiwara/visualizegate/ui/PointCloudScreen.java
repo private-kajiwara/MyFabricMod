@@ -4,8 +4,13 @@ import java.util.Arrays;
 
 import java.util.List;
 
+import org.joml.Matrix4f;
+import org.joml.Vector4f;
+
 import com.kajiwara.visualizegate.config.GateConfigManager;
+import com.kajiwara.visualizegate.domain.GateConflict;
 import com.kajiwara.visualizegate.domain.PortalDimension;
+import com.kajiwara.visualizegate.pointcloud.GateMeta;
 import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
 import com.kajiwara.visualizegate.pointcloud.PointCloudSnapshot;
 import com.kajiwara.visualizegate.state.BackCalcStore;
@@ -133,6 +138,29 @@ public class PointCloudScreen extends Screen {
     private int slScaleNX;  // 右ハーフトラック X (Nether)
     private int slScaleHalfW; // ハーフトラック幅
 
+    // ── ㉚ タブ UI (View / Gates / Links)。 右パネル内で内容を差替え・パネル幅は不変。 ──
+    private enum Tab { VIEW, GATES, LINKS }
+
+    private static final int TABBAR_H = 16;     // タブバー高
+    private static final int ROW_H = 13;        // 一覧の 1 行高
+    private Tab tab = Tab.VIEW;
+    private int sbContentX;   // サイドバー左端 (= sbX)
+    private int tabBarY;      // タブバー上端
+    private int listTop;      // 一覧/View 内容の上端 (タブバー下)
+    private int listBottom;   // 一覧の下端 (フッタ手前)
+    private int gatesScroll = 0;  // Gates 一覧スクロール (px)
+    private int linksScroll = 0;  // Links 一覧スクロール (px)
+    private int selectedGate = 0; // ㉚ 選択中ゲート番号+次元 (0=非選択)。 dim 別連番なので dim も持つ。
+    private boolean selectedNether = false;
+    private boolean showLabels = true; // ㉚C 3D 番号ラベルの表示トグル
+    // View タブのトグルボタン参照 (タブ切替で表示/非表示)。
+    private final java.util.List<Button> viewWidgets = new java.util.ArrayList<>();
+    // 一覧の行 hit 矩形 (クリック選択用・描画時に確定)。 {number, dimNether(0/1), y0, y1} を平行配列で。
+    private int[] rowGateNum = new int[0];
+    private int[] rowGateNether = new int[0];
+    private int[] rowY0 = new int[0];
+    private int rowCount = 0;
+
     // ── 投影スクラッチ (rebuild 中のみ使用・フレーム毎に再確保しない) ──
     private float[] bSx = new float[0];
     private float[] bSy = new float[0];
@@ -201,6 +229,7 @@ public class PointCloudScreen extends Screen {
     private float[] lkBx = new float[0];
     private float[] lkBy = new float[0];
     private int cachedLinks = 0;
+    private int[] gkCol = new int[0];     // ㉚ キャッシュゲート → 状態色 (rasterize 時 snap 非依存)
     private float[] gkX = new float[0];   // ⑪ 投影済みゲート位置 (screen・紫リング)
     private float[] gkY = new float[0];
     private int cachedGates = 0;
@@ -256,34 +285,39 @@ public class PointCloudScreen extends Screen {
 
         int sbX = this.width - SIDEBAR_W - MARGIN;
         int sbW = SIDEBAR_W;
-        int y = HEADER_H + 8;
+        // ㉚ タブバー＋一覧領域の基準。 View 内容はタブバーの下から始める。
+        sbContentX = sbX;
+        tabBarY = HEADER_H + 6;
+        listTop = tabBarY + TABBAR_H + 4;
+        listBottom = this.height - FOOTER_H - 4;
+        int y = listTop;
 
-        // ㉓ トグル群を 2×2 グリッドへ (ハーフ幅・縦を半分に圧縮＝スケール 2 本の追加分を相殺し、 むしろ全体は
-        // 現状より短く＝GUI スケール 2/3/4 でも崩れない)。 [OW][Nether] / [Gate links][Dim tint]。
+        // ㉓ トグル群を 2×2 グリッドへ (ハーフ幅)。 [OW][Nether] / [Gate links][Dim tint]。 ㉚ View タブ専用。
+        viewWidgets.clear();
         int colGap = 4;
         int halfW = (sbW - colGap) / 2;
         int col2X = sbX + halfW + colGap;
-        addRenderableWidget(Button.builder(owLabel(), b -> {
+        viewWidgets.add(addRenderableWidget(Button.builder(owLabel(), b -> {
             PointCloudViewState.toggleOverworld();
             b.setMessage(owLabel());
             GateConfigManager.save();
-        }).bounds(sbX, y, halfW, 20).build());
-        addRenderableWidget(Button.builder(netherLabel(), b -> {
+        }).bounds(sbX, y, halfW, 20).build()));
+        viewWidgets.add(addRenderableWidget(Button.builder(netherLabel(), b -> {
             PointCloudViewState.toggleNether();
             b.setMessage(netherLabel());
             GateConfigManager.save();
-        }).bounds(col2X, y, halfW, 20).build());
+        }).bounds(col2X, y, halfW, 20).build()));
         y += 24;
-        addRenderableWidget(Button.builder(linksLabel(), b -> {
+        viewWidgets.add(addRenderableWidget(Button.builder(linksLabel(), b -> {
             PointCloudViewState.toggleLinks();
             b.setMessage(linksLabel());
             GateConfigManager.save();
-        }).bounds(sbX, y, halfW, 20).build());
-        addRenderableWidget(Button.builder(tintLabel(), b -> {
+        }).bounds(sbX, y, halfW, 20).build()));
+        viewWidgets.add(addRenderableWidget(Button.builder(tintLabel(), b -> {
             PointCloudViewState.toggleDimTint();
             b.setMessage(tintLabel());
             GateConfigManager.save();
-        }).bounds(col2X, y, halfW, 20).build());
+        }).bounds(col2X, y, halfW, 20).build()));
         y += 26; // トグル群 → スケール群へのグループ間隔
 
         // スライダ群 (手動描画・手動入力)。 ラベルはトラックの上、 トラックは各 *Y。 ⑧ パネル内へインセット。
@@ -308,6 +342,17 @@ public class PointCloudScreen extends Screen {
                 .bounds(MARGIN, fy, 120, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Done"), b -> this.onClose())
                 .bounds(this.width - MARGIN - 120, fy, 120, 20).build());
+
+        applyTabVisibility();
+    }
+
+    /** ㉚ View タブのトグルボタンは View 時のみ表示/操作可 (Gates/Links では隠す)。 */
+    private void applyTabVisibility() {
+        boolean view = tab == Tab.VIEW;
+        for (Button b : viewWidgets) {
+            b.visible = view;
+            b.active = view;
+        }
     }
 
     private static Component owLabel() {
@@ -376,8 +421,23 @@ public class PointCloudScreen extends Screen {
             drawRouteBanner(g); // 経路を画面に大きく表示 (ログ不要に)
         }
 
-        drawSlider(g);
-        drawCounts(g, snap);
+        // ㉚C 3D 番号ラベル/選択ハイライト (3D パス後の 2D オーバーレイ・Mixin 不使用)。
+        if (!snap.isEmpty()) {
+            drawGateLabels(g, snap);
+        }
+
+        // ㉚ タブバー＋タブ別サイドバー内容。
+        drawTabBar(g);
+        if (tab == Tab.VIEW) {
+            drawSlider(g);
+            drawCounts(g, snap);
+        } else if (tab == Tab.GATES) {
+            drawGatesList(g, snap);
+            drawLegend(g);
+        } else {
+            drawLinksList(g, snap);
+            drawLegend(g);
+        }
     }
 
     private void centerText(GuiGraphicsExtractor g, String msg, int color) {
@@ -577,9 +637,9 @@ public class PointCloudScreen extends Screen {
         for (int i = 0; i < gates; i++) {
             float gs = snap.gateNether[i] ? nScale : owScale; // ㉓ 当該 dim の層スケール (位置のみ)
             float gy = snap.gateNether[i] ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
-            // ㉔/㉙ 黒曜石ポータル枠＋内側格子 (ポータル面の手がかり)。 位置は ÷8＋表示スケールに追従、 サイズ固定。
+            // ㉔/㉙/㉚ 黒曜石ポータル枠＋内側格子。 ㉚ 枠色をゲート状態色に (一様紫→状態色)。
             j = emitGateFrame(oxyz, ocol, j, snap.gateX[i] * gs, gy, snap.gateZ[i] * gs,
-                    gateHalfW, gateHalfH, gateBarW, gateGridW, GATE_FRAME_COLOR);
+                    gateHalfW, gateHalfH, gateBarW, gateGridW, gateColorAt(snap, i));
         }
         if (snap.hasMarker) {
             float ms = snap.markerNether ? nScale : owScale; // ㉓ 当該 dim の層スケール
@@ -887,6 +947,7 @@ public class PointCloudScreen extends Screen {
                 }
                 gkX[cachedGates] = p[0];
                 gkY[cachedGates] = p[1];
+                gkCol[cachedGates] = gateColorAt(snap, i); // ㉚ 状態色をキャッシュ
                 cachedGates++;
             }
         }
@@ -1008,10 +1069,11 @@ public class PointCloudScreen extends Screen {
             for (int i = 0; i < cachedGates; i++) {   // ㉔/㉙ ゲート枠＋内側の半透明ポータル面 (地形/点を透かす控えめα)
                 float gfx = (gkX[i] - vpX) * ss;
                 float gfy = (gkY[i] - vpY) * ss;
+                int gcol = gkCol[i]; // ㉚ ゲート状態色 (キャッシュ済)
                 rasterFrameFill(gfx, gfy, GATE_FRAME_HALF_W * ss, GATE_FRAME_HALF_H * ss,
-                        GATE_FRAME_COLOR, GATE_FILL_ALPHA, w, h);
+                        gcol, GATE_FILL_ALPHA, w, h);
                 rasterFrame(gfx, gfy, GATE_FRAME_HALF_W * ss, GATE_FRAME_HALF_H * ss,
-                        GATE_FRAME_COLOR, ss, w, h);
+                        gcol, ss, w, h);
             }
             for (int i = 0; i < cachedBc; i++) {      // ㉕ back-calculate 要素の黒曜石枠 (緑/赤・要素色)
                 rasterFrame((bcX[i] - vpX) * ss, (bcY[i] - vpY) * ss, GATE_FRAME_HALF_W * ss,
@@ -1401,6 +1463,7 @@ public class PointCloudScreen extends Screen {
         if (gkX.length < n) {
             gkX = new float[n];
             gkY = new float[n];
+            gkCol = new int[n];
         }
     }
 
@@ -1555,6 +1618,265 @@ public class PointCloudScreen extends Screen {
     }
 
     // ════════════════════════════════════════════════════════════════════
+    // ㉚ タブ UI / Gates・Links 一覧 / 凡例 / 3D 番号ラベル・選択ハイライト
+    // ════════════════════════════════════════════════════════════════════
+
+    /** GateState ordinal (OK,ORPHAN,OFFSET,WILL_CREATE,CONFLICT) → 色。 */
+    private static final int[] STATE_COLOR = {
+            0xFF55E07A, // OK 緑
+            0xFF9AA0A6, // ORPHAN 灰
+            0xFFF5D742, // OFFSET 黄
+            0xFFF59A42, // WILL_CREATE 橙
+            0xFFE0556B, // CONFLICT 赤
+    };
+    private static final String[] STATE_LABEL_JA = { "正常", "片側", "ズレ", "未接続", "競合" };
+
+    private static int stateColor(int ord) {
+        return (ord >= 0 && ord < STATE_COLOR.length) ? STATE_COLOR[ord] : GATE_FRAME_COLOR;
+    }
+
+    /** ゲート添字 i の状態色 (gateMeta 未整列/範囲外は既定の明るい紫)。 */
+    private static int gateColorAt(PointCloudSnapshot snap, int i) {
+        int[] st = snap.gateMeta.gateState();
+        return (i >= 0 && i < st.length) ? stateColor(st[i]) : GATE_FRAME_COLOR;
+    }
+
+    private void drawTabBar(GuiGraphicsExtractor g) {
+        String[] names = { "View", "Gates", "Links" };
+        int tw = SIDEBAR_W / 3;
+        for (int i = 0; i < 3; i++) {
+            int tx = sbContentX + i * tw;
+            int tx2 = (i == 2) ? (sbContentX + SIDEBAR_W) : (tx + tw);
+            boolean active = tab.ordinal() == i;
+            g.fill(tx, tabBarY, tx2, tabBarY + TABBAR_H, active ? GateColors.MAIN_DIM : GateColors.PANEL);
+            g.fill(tx, tabBarY, tx2, tabBarY + 1, active ? GateColors.MAIN : GateColors.MAIN_DIM);
+            Component c = Component.literal(names[i]);
+            g.text(this.font, c, tx + (tx2 - tx) / 2 - this.font.width(c) / 2, tabBarY + 4,
+                    active ? GateColors.ACCENT : GateColors.TEXT);
+        }
+    }
+
+    /** ㉚ 色キー (素の日本語) をサイドバー最下部に 1 行で。 初見向け。 */
+    private void drawLegend(GuiGraphicsExtractor g) {
+        int ly = this.height - FOOTER_H - 10;
+        int x = sbContentX + SIDE_PAD;
+        for (int i = 0; i < STATE_LABEL_JA.length; i++) {
+            g.fill(x, ly + 1, x + 6, ly + 7, STATE_COLOR[i]);
+            Component c = Component.literal(STATE_LABEL_JA[i]);
+            g.text(this.font, c, x + 8, ly, GateColors.TEXT);
+            x += 8 + this.font.width(c) + 6;
+        }
+    }
+
+    /** ㉚B Gates 一覧 (番号・次元・座標・状態色)。 スクロール＋行 hit-test。 行クリックで選択。 */
+    private void drawGatesList(GuiGraphicsExtractor g, PointCloudSnapshot snap) {
+        GateMeta m = snap.gateMeta;
+        int n = m.gateNumber().length;
+        int x = sbContentX + SIDE_PAD;
+        int maxW = SIDEBAR_W - 2 * SIDE_PAD;
+        g.text(this.font, Component.literal("Gates: " + n), x, listTop, GateColors.TEXT);
+        int top = listTop + 12;
+        int bottom = listBottom - 12; // 凡例分を残す
+        ensureRowArrays(n);
+        rowCount = 0;
+        int yBase = top - gatesScroll;
+        for (int i = 0; i < n; i++) {
+            int ry = yBase + i * ROW_H;
+            boolean nether = snap.gateNether[i];
+            int num = m.gateNumber()[i];
+            if (ry + ROW_H >= top && ry <= bottom) { // 可視行のみ描画
+                boolean sel = selectedGate == num && selectedNether == nether;
+                if (sel) {
+                    g.fill(x - 2, ry - 1, x + maxW, ry + ROW_H - 1, GateColors.MAIN_DIM);
+                }
+                int col = stateColor(m.gateState()[i]);
+                g.fill(x, ry + 1, x + 6, ry + 8, col);
+                String pre = nether ? "N-" : "OW-";
+                String s = pre + num + "  " + m.gateWx()[i] + "," + m.gateWy()[i] + "," + m.gateWz()[i];
+                g.text(this.font, Component.literal(fitWidth(s, maxW - 10)), x + 9, ry, GateColors.TEXT);
+            }
+            rowGateNum[rowCount] = num;
+            rowGateNether[rowCount] = nether ? 1 : 0;
+            rowY0[rowCount] = ry;
+            rowCount++;
+        }
+    }
+
+    /** ㉚D Links/Conflicts 一覧。 コンフリクトを重大度順に＋接続ペア。 色分け＋素の日本語。 行クリックで選択。 */
+    private void drawLinksList(GuiGraphicsExtractor g, PointCloudSnapshot snap) {
+        GateMeta m = snap.gateMeta;
+        int x = sbContentX + SIDE_PAD;
+        int maxW = SIDEBAR_W - 2 * SIDE_PAD;
+        List<GateConflict> conflicts = m.conflicts();
+        g.text(this.font, Component.literal("Conflicts: " + conflicts.size()
+                + "  Links: " + m.linkOwNumber().length), x, listTop, GateColors.TEXT);
+        int top = listTop + 12;
+        int bottom = listBottom - 12;
+        rowCount = 0; // Links タブの行クリックは未対応 (選択は Gates タブ)。 スクロールのみ。
+        int y = top - linksScroll;
+        for (GateConflict c : conflicts) { // 重大度順 (解析器で sort 済)
+            if (y + ROW_H >= top && y <= bottom) {
+                int col = stateColor(c.state().ordinal());
+                g.fill(x, y + 1, x + 6, y + 8, col);
+                g.text(this.font, Component.literal(fitWidth(c.reasonJa(), maxW - 10)), x + 9, y, GateColors.TEXT);
+            }
+            y += ROW_H;
+        }
+        y += 4;
+        for (int i = 0; i < m.linkOwNumber().length; i++) {
+            if (y + ROW_H >= top && y <= bottom) {
+                String s = "OW-" + m.linkOwNumber()[i] + " ↔ N-" + m.linkNNumber()[i];
+                g.fill(x, y + 1, x + 6, y + 8, STATE_COLOR[0]);
+                g.text(this.font, Component.literal(fitWidth(s, maxW - 10)), x + 9, y, GateColors.LINK_GRAY);
+            }
+            y += ROW_H;
+        }
+    }
+
+    private void ensureRowArrays(int n) {
+        if (rowGateNum.length < n) {
+            rowGateNum = new int[n];
+            rowGateNether = new int[n];
+            rowY0 = new int[n];
+        }
+    }
+
+    // ── ㉚C 3D 番号ラベル・状態色・選択ハイライト (3D パス後の 2D オーバーレイ) ──
+
+    /** ゲート i の<b>ビュー空間</b>位置 (gate と同一: ÷8＋表示スケール＋spacing)。 */
+    private float[] gateViewPos(PointCloudSnapshot snap, int i) {
+        boolean nether = snap.gateNether[i];
+        float gs = nether ? PointCloudViewState.getNetherDisplayScale()
+                : PointCloudViewState.getOwDisplayScale();
+        float pivotY = PointCloudViewState.getDimensionSpacing() * 0.5f;
+        float vx = snap.gateX[i] * gs;
+        float vy = nether ? snap.gateY[i] - pivotY : snap.gateY[i] + pivotY;
+        float vz = snap.gateZ[i] * gs;
+        return new float[] { vx, vy, vz };
+    }
+
+    /** ビュー空間点 → 画面 px。 GPU3D は joml で render() と同一投影を再現、 texbatch は projectXY を流用。 null=可視外。 */
+    private float[] projectToScreen(float vx, float vy, float vz) {
+        if (gpu3dActive) {
+            float aspect = (float) vpW / (float) vpH;
+            Matrix4f proj = new Matrix4f().perspective((float) Math.toRadians(70.0), aspect, 0.1f, 8000f, true);
+            Matrix4f view = new Matrix4f().translation(0f, 0f, -distance).rotateX(pitch).rotateY(yaw);
+            Vector4f clip = proj.mul(view, new Matrix4f()).transform(new Vector4f(vx, vy, vz, 1f));
+            if (clip.w() <= 1e-4f) {
+                return null;
+            }
+            float ndcX = clip.x() / clip.w();
+            float ndcY = clip.y() / clip.w();
+            float sx = vpX + (ndcX * 0.5f + 0.5f) * vpW;
+            float sy = vpY + (1f - (ndcY * 0.5f + 0.5f)) * vpH;
+            return new float[] { sx, sy };
+        }
+        float cosY = (float) Math.cos(yaw);
+        float sinY = (float) Math.sin(yaw);
+        float cosP = (float) Math.cos(pitch);
+        float sinP = (float) Math.sin(pitch);
+        return projectXY(vx, vy, vz, cosY, sinY, cosP, sinP, vpX + vpW * 0.5f, vpY + vpH * 0.5f);
+    }
+
+    /** 各ゲート脇に採番ラベルを描き、 選択ゲートを 2D ハイライト＋相手への線を強調 (Mixin 不使用)。 */
+    private void drawGateLabels(GuiGraphicsExtractor g, PointCloudSnapshot snap) {
+        GateMeta m = snap.gateMeta;
+        int n = Math.min(snap.gateCount(), m.gateNumber().length);
+        float selSx = Float.NaN;
+        float selSy = 0;
+        for (int i = 0; i < n; i++) {
+            boolean nether = snap.gateNether[i];
+            if (nether ? !PointCloudViewState.isShowNether() : !PointCloudViewState.isShowOverworld()) {
+                continue;
+            }
+            float[] v = gateViewPos(snap, i);
+            float[] s = projectToScreen(v[0], v[1], v[2]);
+            if (s == null || s[0] < vpX || s[0] > vpX + vpW || s[1] < vpY || s[1] > vpY + vpH) {
+                continue;
+            }
+            int sx = Math.round(s[0]);
+            int sy = Math.round(s[1]);
+            boolean sel = selectedGate == m.gateNumber()[i] && selectedNether == nether;
+            int col = stateColor(m.gateState()[i]);
+            if (sel) {
+                selSx = s[0];
+                selSy = s[1];
+                g.fill(sx - 6, sy - 6, sx + 6, sy - 5, GateColors.ACCENT); // 選択枠 (上)
+                g.fill(sx - 6, sy + 5, sx + 6, sy + 6, GateColors.ACCENT); // (下)
+                g.fill(sx - 6, sy - 6, sx - 5, sy + 6, GateColors.ACCENT); // (左)
+                g.fill(sx + 5, sy - 6, sx + 6, sy + 6, GateColors.ACCENT); // (右)
+            }
+            if (showLabels || sel) {
+                String lbl = (nether ? "N-" : "OW-") + m.gateNumber()[i];
+                g.text(this.font, Component.literal(lbl), sx + 7, sy - 4, sel ? GateColors.ACCENT : col);
+            }
+        }
+        // 選択ゲートの相手への線を強調 (2D・両経路共通)。
+        if (!Float.isNaN(selSx)) {
+            int partnerIdx = partnerGateIndex(snap);
+            if (partnerIdx >= 0) {
+                float[] pv = gateViewPos(snap, partnerIdx);
+                float[] ps = projectToScreen(pv[0], pv[1], pv[2]);
+                if (ps != null) {
+                    drawThickLine(g, selSx, selSy, ps[0], ps[1], GateColors.ACCENT);
+                }
+            }
+        }
+    }
+
+    /** 選択ゲートの接続相手のゲート添字 (確定ペアから)。 無ければ -1。 */
+    private int partnerGateIndex(PointCloudSnapshot snap) {
+        GateMeta m = snap.gateMeta;
+        int partnerNum = -1;
+        boolean partnerNether = false;
+        for (int i = 0; i < m.linkOwNumber().length; i++) {
+            if (!selectedNether && m.linkOwNumber()[i] == selectedGate) {
+                partnerNum = m.linkNNumber()[i];
+                partnerNether = true;
+                break;
+            }
+            if (selectedNether && m.linkNNumber()[i] == selectedGate) {
+                partnerNum = m.linkOwNumber()[i];
+                partnerNether = false;
+                break;
+            }
+        }
+        if (partnerNum < 0) {
+            return -1;
+        }
+        for (int i = 0; i < snap.gateCount(); i++) {
+            if (m.gateNumber()[i] == partnerNum && snap.gateNether[i] == partnerNether) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** 2D の太線 (選択リンク強調・DDA で 2px)。 */
+    private void drawThickLine(GuiGraphicsExtractor g, float ax, float ay, float bx, float by, int color) {
+        float dx = bx - ax;
+        float dy = by - ay;
+        float len = Math.max(Math.abs(dx), Math.abs(dy));
+        if (len <= 0f) {
+            return;
+        }
+        int steps = Math.min((int) len, 4096);
+        float sx = dx / steps;
+        float sy = dy / steps;
+        float px = ax;
+        float py = ay;
+        for (int s = 0; s <= steps; s++) {
+            int ix = Math.round(px);
+            int iy = Math.round(py);
+            if (ix >= vpX && ix <= vpX + vpW && iy >= vpY && iy <= vpY + vpH) {
+                g.fill(ix, iy, ix + 2, iy + 2, color);
+            }
+            px += sx;
+            py += sy;
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
     // 入力 (MouseButtonEvent: 26.1.2/1.21.11/1.21.10 同一・javap 確認済)
     // ════════════════════════════════════════════════════════════════════
 
@@ -1562,27 +1884,48 @@ public class PointCloudScreen extends Screen {
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         double mx = event.x();
         double my = event.y();
-        if (event.button() == 0 && inSlider(mx, my)) {
+        // ㉚ タブバークリック → タブ切替。
+        if (event.button() == 0 && my >= tabBarY && my <= tabBarY + TABBAR_H
+                && mx >= sbContentX && mx <= sbContentX + SIDEBAR_W) {
+            int i = (int) ((mx - sbContentX) / (SIDEBAR_W / 3));
+            Tab[] tabs = Tab.values();
+            tab = tabs[Math.max(0, Math.min(2, i))];
+            applyTabVisibility();
+            return true;
+        }
+        // ㉚ Gates 一覧の行クリック → ゲート選択。
+        if (event.button() == 0 && tab == Tab.GATES && inListArea(mx, my)) {
+            for (int r = 0; r < rowCount; r++) {
+                if (my >= rowY0[r] && my < rowY0[r] + ROW_H) {
+                    selectedGate = rowGateNum[r];
+                    selectedNether = rowGateNether[r] != 0;
+                    return true;
+                }
+            }
+            return true; // 一覧上の空クリックは吸収
+        }
+        // ㉚ スライダ操作は View タブのみ。
+        if (tab == Tab.VIEW && event.button() == 0 && inSlider(mx, my)) {
             drag = Drag.SLIDER;
             setSpacingFromMouse(mx);
             return true;
         }
-        if (event.button() == 0 && inSlider2(mx, my)) {
+        if (tab == Tab.VIEW && event.button() == 0 && inSlider2(mx, my)) {
             drag = Drag.DETAIL;
             setDetailFromMouse(mx);
             return true;
         }
-        if (event.button() == 0 && inSlider3(mx, my)) {
+        if (tab == Tab.VIEW && event.button() == 0 && inSlider3(mx, my)) {
             drag = Drag.POINTSIZE;
             setPointSizeFromMouse(mx);
             return true;
         }
-        if (event.button() == 0 && inScaleOw(mx, my)) {
+        if (tab == Tab.VIEW && event.button() == 0 && inScaleOw(mx, my)) {
             drag = Drag.SCALE_OW;
             setOwScaleFromMouse(mx);
             return true;
         }
-        if (event.button() == 0 && inScaleNether(mx, my)) {
+        if (tab == Tab.VIEW && event.button() == 0 && inScaleNether(mx, my)) {
             drag = Drag.SCALE_NETHER;
             setNetherScaleFromMouse(mx);
             return true;
@@ -1646,11 +1989,26 @@ public class PointCloudScreen extends Screen {
             lastInputNanos = System.nanoTime(); // ⑨ ズーム中 → SS=1 (settle で再ネイティブ)
             return true;
         }
+        // ㉚ Gates/Links 一覧上のホイール → スクロール。
+        if (inListArea(mouseX, mouseY)) {
+            int step = (int) (-scrollY * ROW_H * 2);
+            if (tab == Tab.GATES) {
+                gatesScroll = Math.max(0, gatesScroll + step);
+            } else if (tab == Tab.LINKS) {
+                linksScroll = Math.max(0, linksScroll + step);
+            }
+            return true;
+        }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     private boolean inViewport(double mx, double my) {
         return mx >= vpX && mx <= vpX + vpW && my >= vpY && my <= vpY + vpH;
+    }
+
+    /** ㉚ サイドバーの一覧領域 (タブバー下〜フッタ手前)。 */
+    private boolean inListArea(double mx, double my) {
+        return mx >= sbContentX && mx <= sbContentX + SIDEBAR_W && my >= listTop && my <= listBottom;
     }
 
     private boolean inSlider(double mx, double my) {

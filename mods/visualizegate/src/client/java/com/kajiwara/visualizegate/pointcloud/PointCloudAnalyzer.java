@@ -150,7 +150,7 @@ public final class PointCloudAnalyzer {
         Links links = buildLinks(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
         Marker mk = marker(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
         Gates gates = buildGates(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
-        GateMeta gateMeta = buildGateMeta(in, gates.number());
+        GateMeta gateMeta = buildGateMeta(in);
 
         float radius = horizontalRadius(owX, owZ, nX, nZ);
         return new PointCloudSnapshot(owX, owY, owZ, owColor, nX, nY, nZ, nColor,
@@ -196,7 +196,7 @@ public final class PointCloudAnalyzer {
         Links links = buildLinks(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
         Marker mk = marker(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
         Gates gates = buildGates(in, owCenterX, owCenterZ, nCenterX, nCenterZ, owMeanY, nMeanY);
-        GateMeta gateMeta = buildGateMeta(in, gates.number());
+        GateMeta gateMeta = buildGateMeta(in);
         float radius = horizontalRadius(links.ax, links.az, links.bx, links.bz);
         return new PointCloudSnapshot(new float[0], new float[0], new float[0], new int[0],
                 new float[0], new float[0], new float[0], new int[0],
@@ -268,13 +268,23 @@ public final class PointCloudAnalyzer {
      * ㉚ ゲートメタ (採番/状態/コンフリクト/リンク番号) を組む。 状態は {@link GateConflictAnalyzer} (純) で算出し、
      * {@code in.gates()} の順＝ゲート配列の添字と一致させる。 リンク番号は確定ペアの両端 anchor を採番へ照合。
      */
-    private static GateMeta buildGateMeta(PointCloudInputs in, int[] gateNumber) {
+    private static GateMeta buildGateMeta(PointCloudInputs in) {
         List<GateNode> nodes = in.gates();
+        int n = nodes.size();
         GateConflictAnalyzer.Result r = GateConflictAnalyzer.analyze(nodes,
                 in.netherMinY(), in.netherMaxY(), in.owMinY(), in.owMaxY());
-        int[] stateOrd = new int[r.states().length];
-        for (int i = 0; i < stateOrd.length; i++) {
+        int[] num = new int[n];
+        int[] stateOrd = new int[n];
+        int[] wx = new int[n];
+        int[] wy = new int[n];
+        int[] wz = new int[n];
+        for (int i = 0; i < n; i++) {
+            GateNode g = nodes.get(i);
+            num[i] = g.number();
             stateOrd[i] = r.states()[i].ordinal();
+            wx[i] = g.x();
+            wy[i] = g.y();
+            wz[i] = g.z();
         }
         List<int[]> pairs = in.confirmedLinks();
         int[] linkOw = new int[pairs.size()];
@@ -284,7 +294,7 @@ public final class PointCloudAnalyzer {
             linkOw[i] = numberAtAnchor(nodes, PortalDimension.OVERWORLD, p[0], p[1], p[2]);
             linkN[i] = numberAtAnchor(nodes, PortalDimension.NETHER, p[3], p[4], p[5]);
         }
-        return new GateMeta(gateNumber, stateOrd, linkOw, linkN, r.conflicts());
+        return new GateMeta(num, stateOrd, wx, wy, wz, linkOw, linkN, r.conflicts());
     }
 
     private static int numberAtAnchor(List<GateNode> nodes, PortalDimension dim, int x, int y, int z) {
