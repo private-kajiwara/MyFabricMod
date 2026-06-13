@@ -123,10 +123,13 @@ public class PointCloudScreen extends Screen {
 
     // ── 入力ドラッグ ──
     private enum Drag {
-        NONE, ROTATE, SLIDER, DETAIL, POINTSIZE, SCALE_OW, SCALE_NETHER, LIST_SCROLL
+        NONE, ROTATE, SLIDER, DETAIL, POINTSIZE, SCALE_OW, SCALE_NETHER, LIST_SCROLL, SPLITTER
     }
 
     private Drag drag = Drag.NONE;
+
+    /** ㉞ スプリッターの掴み判定の半幅 (vp とサイドバーの MARGIN ギャップ＝±MARGIN/2 を埋める)。 */
+    private static final int SPLITTER_GRAB_HALF = 4;
 
     // ── ㉝B 長押しリネーム (短クリック=選択 / 長押し=リネーム / ドラッグ=スクロール) ──
     /** 長押し判定しきい (ns)。 ~400ms (windows の長押し相当)。 */
@@ -470,6 +473,8 @@ public class PointCloudScreen extends Screen {
         g.fill(vpX - 1, vpY, vpX, vpY + vpH, GateColors.MAIN_DIM);
         g.fill(vpX + vpW, vpY, vpX + vpW + 1, vpY + vpH, GateColors.MAIN_DIM);
 
+        drawSplitter(g, mouseX, mouseY); // ㉞ vp⇔サイドバー境界の可動グリップ
+
         super.extractRenderState(g, mouseX, mouseY, partialTick); // widgets (toggles/footer)
 
         // タイトル + スケール表記。
@@ -596,7 +601,9 @@ public class PointCloudScreen extends Screen {
         if (gpuGeomChanged(snap)) {
             buildGpuGeometry(snap); // データ/トグル/spacing 変化時のみ VBO 再構築 (回転/ズームは行列のみ)
         }
-        int ss = supersample();
+        // ㉞ スプリッタードラッグ中は vp 寸法が毎フレーム変わり FBO を resize するため SS=1 で安価に
+        //    (回転中は vp 不変＝FBO resize 無し＝full SS のまま)。 確定後 settle で full SS に戻る。
+        int ss = (drag == Drag.SPLITTER) ? 1 : supersample();
         if (!PointCloudGpuRenderer.render(vpW * ss, vpH * ss, yaw, pitch, distance, GateColors.BASE)) {
             gpu3dReason = "render=false err=" + PointCloudGpuRenderer.lastError();
             return false;
@@ -896,7 +903,8 @@ public class PointCloudScreen extends Screen {
         // ⑨ 適応 SS: ドラッグ中 or 最終入力から SETTLE 未満は「動作中」→ SS=1+間引きで安く rasterize。
         // 静止したら一度だけ targetSS!=texSS で再 rebuild され、 ネイティブ SS+全点でくっきり (静止品質不変)。
         long now = System.nanoTime();
-        boolean motion = (drag == Drag.ROTATE) || (now - lastInputNanos < SETTLE_NANOS);
+        boolean motion = (drag == Drag.ROTATE) || (drag == Drag.SPLITTER) // ㉞ スプリッター中も SS=1 (安価 resize)
+                || (now - lastInputNanos < SETTLE_NANOS);
         int targetSS = motion ? 1 : supersample();
         // ⑯ texbatch (CPU フォールバック) も品質設定の detail で上限化＝高 budget(20万) でも暴走しない。
         int detail = PointCloudViewState.getGpuDetail();
@@ -2125,6 +2133,13 @@ public class PointCloudScreen extends Screen {
             }
             commitRename();
         }
+        // ㉞ スプリッターの掴み (回転/一覧より先に hit-test)。 リネーム中なら確定して閉じる。
+        if (event.button() == 0 && inSplitter(mx, my)) {
+            commitRename();
+            drag = Drag.SPLITTER;
+            lastInputNanos = System.nanoTime(); // ⑨ ドラッグ中 → SS=1 (安価な FBO リサイズ)
+            return true;
+        }
         // ㉚ タブバークリック → タブ切替。
         if (event.button() == 0 && my >= tabBarY && my <= tabBarY + TABBAR_H
                 && mx >= sbContentX && mx <= sbContentX + sidebarW) {
@@ -2229,6 +2244,14 @@ public class PointCloudScreen extends Screen {
             lastInputNanos = System.nanoTime(); // ⑨ 動作中 → SS=1
             return true;
         }
+        // ㉞ スプリッタードラッグ: サイドバー幅をマウス X 追従でライブ更新＋全レイアウト再計算。
+        if (drag == Drag.SPLITTER) {
+            int desired = clampSidebar((int) Math.round(this.width - event.x() - MARGIN));
+            PointCloudViewState.setSidebarWidth(desired);
+            recomputeLayout();
+            lastInputNanos = System.nanoTime(); // ⑨ ドラッグ中 → SS=1 (安価な FBO リサイズ)
+            return true;
+        }
         // ㉝B 一覧ドラッグ=スクロール (CLICK_SLOP 超で選択/長押しをキャンセル)。 上ドラッグ=下スクロール。
         if (drag == Drag.LIST_SCROLL) {
             if (Math.abs(event.x() - pressX) > CLICK_SLOP || Math.abs(event.y() - pressY) > CLICK_SLOP) {
@@ -2250,6 +2273,12 @@ public class PointCloudScreen extends Screen {
         if (drag == Drag.SLIDER || drag == Drag.DETAIL || drag == Drag.POINTSIZE
                 || drag == Drag.SCALE_OW || drag == Drag.SCALE_NETHER) {
             GateConfigManager.save();
+        }
+        // ㉞ スプリッター確定 → サイドバー幅を永続化。
+        if (drag == Drag.SPLITTER) {
+            GateConfigManager.save();
+            drag = Drag.NONE;
+            return true;
         }
         // ㉝B 一覧の短クリック (動かず・長押し未満) → ゲート選択。 長押しは extractRenderState で既に消費済。
         if (drag == Drag.LIST_SCROLL && tab == Tab.GATES && !pressMoved && pressRow >= 0
@@ -2364,6 +2393,33 @@ public class PointCloudScreen extends Screen {
 
     private boolean inViewport(double mx, double my) {
         return mx >= vpX && mx <= vpX + vpW && my >= vpY && my <= vpY + vpH;
+    }
+
+    /** ㉞ スプリッターのグリップ中心 X (vp 右端とサイドバー左端の MARGIN ギャップ中央)。 */
+    private int splitterCenterX() {
+        return sbContentX - MARGIN / 2;
+    }
+
+    /** ㉞ スプリッターの掴み帯か (vp 高さの縦帯・回転より先に hit-test される)。 */
+    private boolean inSplitter(double mx, double my) {
+        int cx = splitterCenterX();
+        return mx >= cx - SPLITTER_GRAB_HALF && mx <= cx + SPLITTER_GRAB_HALF
+                && my >= vpY && my <= vpY + vpH;
+    }
+
+    /** ㉞ 可動境界の縦グリップ (細線＋中央の掴み目印)。 ホバー/ドラッグ中は明色で強調 (カーソル変更の代替)。 */
+    private void drawSplitter(GuiGraphicsExtractor g, int mouseX, int mouseY) {
+        int cx = splitterCenterX();
+        boolean active = (drag == Drag.SPLITTER) || inSplitter(mouseX, mouseY);
+        int col = active ? GateColors.ACCENT : GateColors.MAIN_DIM;
+        // 縦線 (vp 高さ)。
+        g.fill(cx, vpY, cx + 1, vpY + vpH, col);
+        // 中央の掴み目印 (3 点の短いドット＝ハンドル)。
+        int my = vpY + vpH / 2;
+        for (int d = -1; d <= 1; d++) {
+            int dy = my + d * 4;
+            g.fill(cx - 1, dy - 1, cx + 2, dy + 1, col);
+        }
     }
 
     /** ㉚ サイドバーの一覧領域 (タブバー下〜フッタ手前)。 */
