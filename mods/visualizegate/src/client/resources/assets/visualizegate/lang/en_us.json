@@ -37,6 +37,18 @@
 	"visualizegate.cmd.unconfirmed": "Note: far side unobserved — cannot rule out an existing gate",
 	"visualizegate.cmd.added": "Wireframe added. Use /vg clean to remove.",
 
+	"visualizegate.cmd.cleanall": "Turned off all /vg overlays and cleared %s wireframe(s)",
+	"visualizegate.cmd.pointcloud": "Point-cloud HUD (bottom-right): %s",
+	"visualizegate.cmd.visualize": "Gate-relations wireframe: %s",
+	"visualizegate.cmd.gpu": "GPU graph — render frame time/FPS (not true GPU%%): %s",
+	"visualizegate.cmd.cpu": "CPU graph (process usage): %s",
+	"visualizegate.pc.hud.title": "Point cloud",
+	"visualizegate.pc.hud.empty": "No data — open the hub and Re-analyze",
+	"visualizegate.pc.hud.legacy": "Point cloud: GPU3D N/A on this version",
+	"visualizegate.perf.gpu.title": "Frame %s ms · %s fps",
+	"visualizegate.perf.gpu.note": "* render frame time, not GPU%%",
+	"visualizegate.perf.cpu.title": "CPU %s%% · sys %s%%",
+
 	"visualizegate.card.linked.title": "Links to an existing gate",
 	"visualizegate.card.linked.aligned": "Almost perfectly aligned",
 	"visualizegate.card.linked.offset": "Offset ~%s blocks",

@@ -13,7 +13,8 @@ import net.minecraft.network.chat.Component;
  *
  * <p>初めてハブ (V) を開いたとき自動表示し、 表示時に {@link GateMenuState#setFirstRunDone(boolean)} を
  * 永続化する。 ハブの「使い方」ボタンからはいつでも再表示できる (フラグは既に true)。 スキップ可。
- * 配色は {@link GateColors}。 {@link #isPauseScreen()} は false ＝ 背後の可視化を見ながら読める。
+ * 配色は {@link GateColors}。 ㉟ {@link #isPauseScreen()} は true ＝ SP では表示中にゲーム進行を一時停止
+ * (MP は統合サーバ非搭載のため進行は止まらず描画/入力のみ)。
  */
 public class GuideScreen extends Screen {
 
@@ -135,6 +136,6 @@ public class GuideScreen extends Screen {
 
     @Override
     public boolean isPauseScreen() {
-        return false;
+        return true; // ㉟ メニュー表示中は SP のゲーム進行を一時停止 (MP は統合サーバ非搭載＝進行は止まらない)。
     }
 }

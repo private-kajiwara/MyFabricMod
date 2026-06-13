@@ -37,6 +37,18 @@
 	"visualizegate.cmd.unconfirmed": "注: 逆側が未観測のため既存ゲートの有無は断定できません",
 	"visualizegate.cmd.added": "ワイヤーフレームを追加。/vg clean で消去。",
 
+	"visualizegate.cmd.cleanall": "/vg オーバーレイを全て OFF・逆算ワイヤーフレーム %s 件も消去",
+	"visualizegate.cmd.pointcloud": "点群 HUD (右下): %s",
+	"visualizegate.cmd.visualize": "ゲート関係ワイヤーフレーム: %s",
+	"visualizegate.cmd.gpu": "GPU グラフ — 描画フレーム時間/FPS (真の GPU%% ではない): %s",
+	"visualizegate.cmd.cpu": "CPU グラフ (プロセス使用率): %s",
+	"visualizegate.pc.hud.title": "点群",
+	"visualizegate.pc.hud.empty": "データ無し — ハブを開いて再解析",
+	"visualizegate.pc.hud.legacy": "点群: この版では GPU3D 非対応",
+	"visualizegate.perf.gpu.title": "フレーム %s ms · %s fps",
+	"visualizegate.perf.gpu.note": "※描画フレーム時間・GPU%% ではない",
+	"visualizegate.perf.cpu.title": "CPU %s%% · sys %s%%",
+
 	"visualizegate.card.linked.title": "既存のゲートにつながります",
 	"visualizegate.card.linked.aligned": "ほぼぴったり",
 	"visualizegate.card.linked.offset": "ズレ 約%s ブロック",

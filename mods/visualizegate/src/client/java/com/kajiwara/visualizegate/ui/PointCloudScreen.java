@@ -2493,7 +2493,7 @@ public class PointCloudScreen extends Screen {
 
     @Override
     public boolean isPauseScreen() {
-        return false;
+        return true; // ㉟ メニュー表示中は SP のゲーム進行を一時停止 (MP は統合サーバ非搭載＝進行は止まらない)。
     }
 
     @Override

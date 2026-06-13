@@ -7,7 +7,9 @@ import com.kajiwara.visualizegate.domain.DomainPortal;
 import com.kajiwara.visualizegate.domain.GridPos;
 import com.kajiwara.visualizegate.domain.PortalDimension;
 import com.kajiwara.visualizegate.memory.PortalMemory;
+import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
 import com.kajiwara.visualizegate.state.BackCalcStore;
+import com.kajiwara.visualizegate.state.VgOverlayState;
 import com.kajiwara.visualizegate.ui.GateColors;
 
 import com.mojang.brigadier.CommandDispatcher;
@@ -36,7 +38,12 @@ import net.minecraft.network.chat.Component;
  * <ul>
  *   <li>{@code /vg back-calculate <x> <y> <z> [ow|nether]} — 逆算してワイヤーフレームを積む。</li>
  *   <li>{@code /vg back-calculate here [ow|nether]} — {@code <x y z>} を現在のプレイヤー座標として扱う。</li>
- *   <li>{@code /vg clean} — 描画マネージャを {@link BackCalcStore#clear()} (自動消滅せず意志で消す)。</li>
+ *   <li>{@code /vg point-cloud} — 右下に点群 HUD ウィジェットを常時表示 (トグル・{@link VgOverlayState})。</li>
+ *   <li>{@code /vg visualize} — 全ゲート関係のワイヤーフレーム (枠＋リンク線・5 状態色) を in-world 表示 (トグル)。</li>
+ *   <li>{@code /vg gpu-usage} — 描画フレーム時間(ms)/FPS のグラフ (真の GPU% ではない・Mixin 不要のため) (トグル)。</li>
+ *   <li>{@code /vg cpu-usage} — プロセス CPU 使用率のグラフ (トグル)。</li>
+ *   <li>{@code /vg clean} — 全 {@link VgOverlayState} オーバーレイ OFF ＋ {@link BackCalcStore#clear()}
+ *       (どのモードにも効く一括停止・自動消滅せず意志で消す)。</li>
  * </ul>
  *
  * <p><b>向きの定義</b>: ターゲット {@code (x,y,z)} はプレイヤーがいる次元の<b>逆側</b>に出したいゲートの到達目標。
@@ -69,13 +76,30 @@ public final class VgCommands {
     private static void build(CommandDispatcher<FabricClientCommandSource> dispatcher) {
         LiteralArgumentBuilder<FabricClientCommandSource> root = literal("vg");
 
-        // /vg clean
+        // /vg clean — ㉟ どのモードにも効く一括停止 (全 /vg オーバーレイ OFF ＋ 逆算ワイヤーフレーム消去)。
         root.then(literal("clean").executes(c -> {
             int n = BackCalcStore.size();
+            VgOverlayState.clearAll();
             BackCalcStore.clear();
-            c.getSource().sendFeedback(Component.translatable("visualizegate.cmd.cleared", n));
+            c.getSource().sendFeedback(Component.translatable("visualizegate.cmd.cleanall", n));
             return 1;
         }));
+
+        // ㉟ オーバーレイ トグル (複数同時可・既定 OFF・切断でリセット・永続なし)。 再実行で OFF。
+        root.then(literal("point-cloud").executes(c -> {
+            boolean on = VgOverlayState.togglePointCloud();
+            if (on) {
+                // 点けた瞬間に解析を要求 (まだ無ければ空＝何も出ない状態を避ける)。 既存スナップショットは再利用。
+                PointCloudAnalysis.get().requestAnalysis();
+            }
+            return feedbackToggle(c, "visualizegate.cmd.pointcloud", on);
+        }));
+        root.then(literal("visualize").executes(
+                c -> feedbackToggle(c, "visualizegate.cmd.visualize", VgOverlayState.toggleVisualize())));
+        root.then(literal("gpu-usage").executes(
+                c -> feedbackToggle(c, "visualizegate.cmd.gpu", VgOverlayState.toggleGpuUsage())));
+        root.then(literal("cpu-usage").executes(
+                c -> feedbackToggle(c, "visualizegate.cmd.cpu", VgOverlayState.toggleCpuUsage())));
 
         // /vg back-calculate ...
         LiteralArgumentBuilder<FabricClientCommandSource> back = literal("back-calculate");
@@ -166,6 +190,13 @@ public final class VgCommands {
             }
         }
         c.getSource().sendFeedback(Component.translatable("visualizegate.cmd.added"));
+        return 1;
+    }
+
+    /** ㉟ トグル結果を ON/OFF つきの短いチャットで返す (lang en/ja・key は %s に状態を取る)。 */
+    private static int feedbackToggle(CommandContext<FabricClientCommandSource> c, String key, boolean on) {
+        Component state = Component.translatable(on ? "visualizegate.state.on" : "visualizegate.state.off");
+        c.getSource().sendFeedback(Component.translatable(key, state));
         return 1;
     }
 

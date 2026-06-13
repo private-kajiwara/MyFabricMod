@@ -19,7 +19,8 @@ import net.minecraft.network.chat.Component;
  * <p><b>レイアウト</b>: 固定幅・中央寄せ・グループ分け (将来トグルが増えても崩れない形)。
  * 表示トグル (枠/隅アイコン/ホログラム) は<b>2 列グリッド</b>で縦の伸びを抑える → 表示モード →
  * ツール (点群/使い方) → Done。 上部に状態 1 行 (現次元 / 記憶ゲート数 / モード)。 ボタン外観はバニラ標準のまま。
- * {@link #isPauseScreen()} は false ＝ SP でもゲームを止めず、 背後の可視化を見ながら操作できる。
+ * ㉟ {@link #isPauseScreen()} は true ＝ SP では表示中にゲーム進行を一時停止 (MP は統合サーバ非搭載のため
+ * 進行は止まらず描画/入力のみ)。
  */
 public class GateMenuScreen extends Screen {
 
@@ -165,6 +166,6 @@ public class GateMenuScreen extends Screen {
 
     @Override
     public boolean isPauseScreen() {
-        return false;
+        return true; // ㉟ メニュー表示中は SP のゲーム進行を一時停止 (MP は統合サーバ非搭載＝描画/入力のみ・進行は止まらない)。
     }
 }
