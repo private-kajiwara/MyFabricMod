@@ -157,8 +157,7 @@ public final class VgDockRenderer {
     private static final Component GPU_NOTE = Component.translatable("visualizegate.perf.gpu.note");
 
     private void drawExpanded(GuiGraphicsExtractor g, Minecraft mc, int x, int y) {
-        boolean gpu = VgOverlayState.isGpuUsage();
-        boolean cpu = VgOverlayState.isCpuUsage();
+        boolean perf = VgOverlayState.isPerf();
         boolean viz = VgOverlayState.isVisualize();
         boolean pc = VgOverlayState.isPointCloud();
 
@@ -171,8 +170,8 @@ public final class VgDockRenderer {
         int innerW = dockW - PAD * 2;
         // 高さ算出 (有効セクションのみ積む)。
         int h = PAD + LINE; // top pad + header row
-        if (gpu || cpu) {
-            h += DIV + perfHeight(gpu, cpu);
+        if (perf) {
+            h += DIV + perfHeight();
         }
         if (viz) {
             h += DIV + statusHeight() + GAP + notesHeight();
@@ -193,9 +192,9 @@ public final class VgDockRenderer {
         drawHeaderRow(g, mc, x, y, dockW, header(mc), true);
 
         int cy = y + PAD + LINE;
-        if (gpu || cpu) {
+        if (perf) {
             cy = divider(g, x, cy, dockW);
-            cy = drawPerf(g, mc, innerX, cy, innerW, gpu, cpu);
+            cy = drawPerf(g, mc, innerX, cy, innerW);
         }
         if (viz) {
             cy = divider(g, x, cy, dockW);
@@ -209,18 +208,9 @@ public final class VgDockRenderer {
         }
     }
 
-    private int perfHeight(boolean gpu, boolean cpu) {
-        int h = LINE; // title
-        if (gpu) {
-            h += LINE + SPARK_H + 2; // frame line + sparkline
-        }
-        if (cpu) {
-            h += LINE + SPARK_H + 2; // ㊵A cpu line + cpu sparkline
-        }
-        if (gpu) {
-            h += LINE; // note (※GPU%でない) は末尾
-        }
-        return h;
+    private int perfHeight() {
+        // ㊷A タイトル + フレーム(text+spark) + CPU(text+spark) + 注記 (統合・常時両方)。
+        return LINE + (LINE + SPARK_H + 2) + (LINE + SPARK_H + 2) + LINE;
     }
 
     private int statusHeight() {
@@ -237,28 +227,24 @@ public final class VgDockRenderer {
         return y + DIV;
     }
 
-    // ── パフォーマンス (gpu→フレーム時間/FPS＋スパークライン＋注記 / cpu→CPU%) ──
-    private int drawPerf(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int w, boolean gpu, boolean cpu) {
+    // ── パフォーマンス (㊷A 統合: フレーム時間スパークライン＋CPU スパークライン＋注記を 1 セクションで常時表示) ──
+    private int drawPerf(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int w) {
         g.text(mc.font, T_PERF, x, y, GateColors.TEXT);
         y += LINE;
-        if (gpu) {
-            g.text(mc.font, frameLine(), x, y, GateColors.TEXT);
-            y += LINE;
-            drawSpark(g, x, y, w, SPARK_H, frameMs, frameHead, frameCount, 50f, GateColors.PC_OW_HIGH);
-            y += SPARK_H + 2;
-        }
-        if (cpu) {
-            g.text(mc.font, cpuLine(), x, y, GateColors.TEXT);
-            y += LINE;
-            // ㊵A CPU スパークライン (CpuSampler の 1Hz リング・0..100%・フレームグラフと別 y で非重複)。
-            CpuSampler s = CpuSampler.get();
-            drawSpark(g, x, y, w, SPARK_H, s.historyRef(), s.head(), s.count(), 100f, GateColors.PC_NETHER_HIGH);
-            y += SPARK_H + 2;
-        }
-        if (gpu) {
-            g.text(mc.font, GPU_NOTE, x, y, GateColors.LINK_GRAY);
-            y += LINE;
-        }
+        // フレーム時間 (= 旧 gpu-usage・実体は描画フレーム時間/FPS)。
+        g.text(mc.font, frameLine(), x, y, GateColors.TEXT);
+        y += LINE;
+        drawSpark(g, x, y, w, SPARK_H, frameMs, frameHead, frameCount, 50f, GateColors.PC_OW_HIGH);
+        y += SPARK_H + 2;
+        // CPU (= 旧 cpu-usage・CpuSampler の 1Hz リング・0..100%・別 y で非重複)。
+        g.text(mc.font, cpuLine(), x, y, GateColors.TEXT);
+        y += LINE;
+        CpuSampler s = CpuSampler.get();
+        drawSpark(g, x, y, w, SPARK_H, s.historyRef(), s.head(), s.count(), 100f, GateColors.PC_NETHER_HIGH);
+        y += SPARK_H + 2;
+        // ※描画フレーム時間 (GPU% ではない) 注記。
+        g.text(mc.font, GPU_NOTE, x, y, GateColors.LINK_GRAY);
+        y += LINE;
         return y;
     }
 

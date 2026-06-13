@@ -40,10 +40,12 @@ import net.minecraft.network.chat.Component;
  *   <li>{@code /vg back-calculate here [ow|nether]} — {@code <x y z>} を現在のプレイヤー座標として扱う。</li>
  *   <li>{@code /vg point-cloud} — 右下に点群 HUD ウィジェットを常時表示 (トグル・{@link VgOverlayState})。</li>
  *   <li>{@code /vg visualize} — 全ゲート関係のワイヤーフレーム (枠＋リンク線・5 状態色) を in-world 表示 (トグル)。</li>
- *   <li>{@code /vg gpu-usage} — 描画フレーム時間(ms)/FPS のグラフ (真の GPU% ではない・Mixin 不要のため) (トグル)。</li>
- *   <li>{@code /vg cpu-usage} — プロセス CPU 使用率のグラフ (トグル)。</li>
+ *   <li>{@code /vg perf} — ㊷A パフォーマンス (描画フレーム時間スパークライン＋CPU% スパークライン・1 セクション統合・
+ *       旧 gpu-usage/cpu-usage を置換・実体はフレーム時間で真の GPU% ではない) (トグル)。</li>
+ *   <li>{@code /vg dock} — ドックの展開/畳みトグル (専用キーバインドと同一)。</li>
  *   <li>{@code /vg clean} — 全 {@link VgOverlayState} オーバーレイ OFF ＋ {@link BackCalcStore#clear()}
  *       (どのモードにも効く一括停止・自動消滅せず意志で消す)。</li>
+ *   <li>{@code /vg} (引数なし) / {@code /vg help} — ㊷B サブコマンド一覧＋現在の ON/OFF 状態を表示。</li>
  * </ul>
  *
  * <p><b>向きの定義</b>: ターゲット {@code (x,y,z)} はプレイヤーがいる次元の<b>逆側</b>に出したいゲートの到達目標。
@@ -99,10 +101,9 @@ public final class VgCommands {
         // ㊲ ドック展/畳トグル (専用キーバインドと同一動作)。
         root.then(literal("dock").executes(
                 c -> feedbackToggle(c, "visualizegate.cmd.dock", VgOverlayState.toggleDock())));
-        root.then(literal("gpu-usage").executes(
-                c -> feedbackToggle(c, "visualizegate.cmd.gpu", VgOverlayState.toggleGpuUsage())));
-        root.then(literal("cpu-usage").executes(
-                c -> feedbackToggle(c, "visualizegate.cmd.cpu", VgOverlayState.toggleCpuUsage())));
+        // ㊷A パフォーマンス (旧 gpu-usage + cpu-usage 統合・フレーム時間＋CPU の 2 スパークライン)。
+        root.then(literal("perf").executes(
+                c -> feedbackToggle(c, "visualizegate.cmd.perf", VgOverlayState.togglePerf())));
 
         // /vg back-calculate ...
         LiteralArgumentBuilder<FabricClientCommandSource> back = literal("back-calculate");

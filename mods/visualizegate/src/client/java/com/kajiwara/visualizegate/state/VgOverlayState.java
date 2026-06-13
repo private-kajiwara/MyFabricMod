@@ -16,8 +16,7 @@ public final class VgOverlayState {
 
     private static boolean pointCloud = false; // 点群サムネ (ドック内サブセクション)
     private static boolean visualize = false;  // 全ゲート関係ワイヤーフレーム (in-world) ＋ ドックの状態/注記凡例
-    private static boolean gpuUsage = false;   // 描画フレーム時間(ms)/FPS グラフ (真の GPU% ではない)
-    private static boolean cpuUsage = false;   // プロセス CPU 使用率グラフ
+    private static boolean perf = false;       // ㊷A パフォーマンス (フレーム時間スパークライン＋CPU スパークライン・1 セクション統合)
 
     // ㊲ B-F3 ドックの展開状態 (true=展開フルドック / false=畳スリムバー)。 専用キーバインド + `/vg dock` で切替。
     private static boolean dockExpanded = false;
@@ -50,30 +49,21 @@ public final class VgOverlayState {
         return visualize;
     }
 
-    public static boolean isGpuUsage() {
-        return gpuUsage;
+    /** ㊷A パフォーマンス (フレーム時間＋CPU の 2 スパークライン＝1 セクション)。 旧 gpu-usage/cpu-usage を統合。 */
+    public static boolean isPerf() {
+        return perf;
     }
 
-    public static boolean toggleGpuUsage() {
-        gpuUsage = !gpuUsage;
-        syncDockOnToggle(gpuUsage);
-        return gpuUsage;
-    }
-
-    public static boolean isCpuUsage() {
-        return cpuUsage;
-    }
-
-    public static boolean toggleCpuUsage() {
-        cpuUsage = !cpuUsage;
-        // ㊱A CPU 取得はバックグラウンド・デーモンで 1Hz (描画スレッドで同期呼びしない)。 トグルに連動して起動/停止。
-        if (cpuUsage) {
+    public static boolean togglePerf() {
+        perf = !perf;
+        // ㊱A CPU 取得はバックグラウンド・デーモンで 1Hz (描画スレッドで同期呼びしない)。 perf に連動して起動/停止。
+        if (perf) {
             CpuSampler.get().start();
         } else {
             CpuSampler.get().stop();
         }
-        syncDockOnToggle(cpuUsage);
-        return cpuUsage;
+        syncDockOnToggle(perf);
+        return perf;
     }
 
     /**
@@ -101,7 +91,7 @@ public final class VgOverlayState {
 
     /** いずれかの `/vg` セクションが有効か (ドックの表示可否＝何か点いていれば畳バーを出す)。 */
     public static boolean anyActive() {
-        return pointCloud || visualize || gpuUsage || cpuUsage;
+        return pointCloud || visualize || perf;
     }
 
     /** ドックを描くか (何か有効 or 明示的に展開済み)。 全 OFF かつ未展開＝何も出ない (既定で静か)。 */
@@ -111,11 +101,10 @@ public final class VgOverlayState {
 
     /** 全 `/vg` オーバーレイを OFF (`/vg clean`・切断で呼ぶ)。 1 つでも点いていたら true。 ㊲E ドックも畳んで非表示化。 */
     public static boolean clearAll() {
-        boolean any = pointCloud || visualize || gpuUsage || cpuUsage || dockExpanded;
+        boolean any = pointCloud || visualize || perf || dockExpanded;
         pointCloud = false;
         visualize = false; // ㊲E in-world visualize も停止 (GateGraphRenderer がこのフラグで即 early-return)
-        gpuUsage = false;
-        cpuUsage = false;
+        perf = false;
         dockExpanded = false; // ㊲E clean でドックを畳む＝全 OFF なら dockVisible() が false ＝ドック非表示
         CpuSampler.get().stop(); // ㊱A デーモンを放置しない (clean/切断で確実に停止)。
         return any;
