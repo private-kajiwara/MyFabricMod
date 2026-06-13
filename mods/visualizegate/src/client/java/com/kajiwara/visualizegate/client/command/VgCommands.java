@@ -105,6 +105,10 @@ public final class VgCommands {
         root.then(literal("perf").executes(
                 c -> feedbackToggle(c, "visualizegate.cmd.perf", VgOverlayState.togglePerf())));
 
+        // ㊷B 一覧/状態: `/vg` (引数なし) と `/vg help` でサブコマンド一覧＋現在の ON/OFF＋dock 状態を表示。
+        root.executes(VgCommands::showHelp);
+        root.then(literal("help").executes(VgCommands::showHelp));
+
         // /vg back-calculate ...
         LiteralArgumentBuilder<FabricClientCommandSource> back = literal("back-calculate");
 
@@ -195,6 +199,25 @@ public final class VgCommands {
         }
         c.getSource().sendFeedback(Component.translatable("visualizegate.cmd.added"));
         return 1;
+    }
+
+    /** ㊷B サブコマンド一覧＋現在の ON/OFF 状態 (perf/point-cloud/visualize) ＋dock 展開/畳みをチャット表示。 */
+    private static int showHelp(CommandContext<FabricClientCommandSource> c) {
+        FabricClientCommandSource src = c.getSource();
+        src.sendFeedback(Component.translatable("visualizegate.help.header"));
+        src.sendFeedback(Component.translatable("visualizegate.help.perf", onOff(VgOverlayState.isPerf())));
+        src.sendFeedback(Component.translatable("visualizegate.help.pointcloud", onOff(VgOverlayState.isPointCloud())));
+        src.sendFeedback(Component.translatable("visualizegate.help.visualize", onOff(VgOverlayState.isVisualize())));
+        src.sendFeedback(Component.translatable("visualizegate.help.dock", Component.translatable(
+                VgOverlayState.isDockExpanded() ? "visualizegate.help.expanded" : "visualizegate.help.collapsed")));
+        src.sendFeedback(Component.translatable("visualizegate.help.clean"));
+        src.sendFeedback(Component.translatable("visualizegate.help.backcalc"));
+        return 1;
+    }
+
+    /** 状態 ON/OFF の翻訳コンポーネント (state.on/off を再利用)。 */
+    private static Component onOff(boolean on) {
+        return Component.translatable(on ? "visualizegate.state.on" : "visualizegate.state.off");
     }
 
     /** ㉟ トグル結果を ON/OFF つきの短いチャットで返す (lang en/ja・key は %s に状態を取る)。 */

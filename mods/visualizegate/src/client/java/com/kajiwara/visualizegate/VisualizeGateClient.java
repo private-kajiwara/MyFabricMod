@@ -60,8 +60,8 @@ public class VisualizeGateClient implements ClientModInitializer {
         GateKeyBindings.register();
         // ㉟ `/vg` オーバーレイ状態 (既定 OFF・切断で全リセット・永続なし)。 コマンド/HUD/in-world が参照。
         VgOverlayState.register();
-        // ㉕/㉟ クライアント専用 `/vg` コマンド (back-calculate / clean / point-cloud / visualize /
-        //      gpu-usage / cpu-usage・サーバー非依存)。
+        // ㉕/㉟/㊷ クライアント専用 `/vg` コマンド (back-calculate / clean / point-cloud / visualize /
+        //      perf / dock / help・サーバー非依存)。
         VgCommands.register();
         CornerIconRenderer.register();
         // UX 層 (純追加・HUD パス): ① 自動インフォカード ② 常設凡例。 いずれも注視/所持トリガで表示。
