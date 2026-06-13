@@ -37,16 +37,22 @@ public final class LegendOverlayRenderer {
     private record Row(SwatchKind kind, int color, String key) {
     }
 
-    // 凡例行 (配色は GateColors のスウォッチ)。
-    private static final Row[] ROWS = {
-            new Row(SwatchKind.FILL, GateColors.LINK_GREEN, "visualizegate.legend.linked"),
-            new Row(SwatchKind.FILL, GateColors.LINK_RED, "visualizegate.legend.will_create"),
-            new Row(SwatchKind.FILL, GateColors.LINK_GRAY, "visualizegate.legend.unknown"),
+    // ㉜ 状態群 (5 状態・点群画面と同一の色・state5.* ラベル)。 GateColors に一本化。
+    private static final Row[] STATE_ROWS = {
+            new Row(SwatchKind.FILL, GateColors.STATE_OK, "visualizegate.state5.ok"),
+            new Row(SwatchKind.FILL, GateColors.STATE_ORPHAN, "visualizegate.state5.orphan"),
+            new Row(SwatchKind.FILL, GateColors.STATE_OFFSET, "visualizegate.state5.offset"),
+            new Row(SwatchKind.FILL, GateColors.STATE_WILL_CREATE, "visualizegate.state5.will_create"),
+            new Row(SwatchKind.FILL, GateColors.STATE_CONFLICT, "visualizegate.state5.conflict"),
+    };
+    // ㉜ 注記群 (状態ではない補助記号)。 状態群と<b>区切り線で視覚分離</b>＝金が 6 つ目の状態に見えないように。
+    private static final Row[] NOTE_ROWS = {
             new Row(SwatchKind.LINE, GateColors.MAIN, "visualizegate.legend.link_line"),
             new Row(SwatchKind.FRAME, GateColors.ACCENT, "visualizegate.legend.ghost"),
             new Row(SwatchKind.LINE, GateColors.DOME, "visualizegate.legend.dome"),
             new Row(SwatchKind.FRAME, GateColors.CROSSTALK, "visualizegate.legend.crosstalk"),
     };
+    private static final int DIV_GAP = 6; // 状態群↔注記群の区切り高
 
     private LegendOverlayRenderer() {
     }
@@ -83,14 +89,15 @@ public final class LegendOverlayRenderer {
         }
 
         // ─── レイアウト (左下・上方向に積む) ───
-        Component[] labels = new Component[ROWS.length];
         int contentW = 0;
-        for (int i = 0; i < ROWS.length; i++) {
-            labels[i] = Component.translatable(ROWS[i].key());
-            contentW = Math.max(contentW, SW + 5 + mc.font.width(labels[i]));
+        for (Row row : STATE_ROWS) {
+            contentW = Math.max(contentW, SW + 5 + mc.font.width(Component.translatable(row.key())));
+        }
+        for (Row row : NOTE_ROWS) {
+            contentW = Math.max(contentW, SW + 5 + mc.font.width(Component.translatable(row.key())));
         }
         int panelW = contentW + PAD * 2;
-        int panelH = ROWS.length * ROW_H + PAD * 2 - 2;
+        int panelH = (STATE_ROWS.length + NOTE_ROWS.length) * ROW_H + DIV_GAP + PAD * 2 - 2;
 
         int sh = mc.getWindow().getGuiScaledHeight();
         int x0 = MARGIN;
@@ -106,11 +113,22 @@ public final class LegendOverlayRenderer {
 
         int tx = x0 + PAD;
         int ty = y0 + PAD;
-        for (int i = 0; i < ROWS.length; i++) {
-            drawSwatch(g, ROWS[i], tx, ty + 1);
-            g.text(mc.font, labels[i], tx + SW + 5, ty, GateColors.TEXT);
+        ty = drawRows(g, mc, STATE_ROWS, tx, ty);
+        // 状態群と注記群の区切り線 (金枠=注記が 6 つ目の状態に見えないように)。
+        int divY = ty + DIV_GAP / 2;
+        g.fill(tx, divY, x0 + panelW - PAD, divY + 1, GateColors.MAIN_DIM);
+        ty += DIV_GAP;
+        drawRows(g, mc, NOTE_ROWS, tx, ty);
+    }
+
+    /** 行群を上から描き次の ty を返す。 */
+    private int drawRows(GuiGraphicsExtractor g, Minecraft mc, Row[] rows, int tx, int ty) {
+        for (Row row : rows) {
+            drawSwatch(g, row, tx, ty + 1);
+            g.text(mc.font, Component.translatable(row.key()), tx + SW + 5, ty, GateColors.TEXT);
             ty += ROW_H;
         }
+        return ty;
     }
 
     private static void drawSwatch(GuiGraphicsExtractor g, Row row, int x, int y) {
