@@ -47,6 +47,15 @@ public final class PointCloudViewState {
     public static final float NETHER_SCALE_MAX = 16.0f;
     public static final float NETHER_SCALE_MIN = 1.0f / NETHER_SCALE_MAX;
 
+    /**
+     * ㉞ サイドバー (右パネル) 幅。 スプリッターのドラッグで可変・config 永続。 ここでは生値を保持し、
+     * ウィンドウ幅依存のクランプ (= MIN_VP を潰さない) は {@link com.kajiwara.visualizegate.ui.PointCloudScreen}
+     * 側で現在の {@code width} に対して行う (state はウィンドウ寸を知らないため)。
+     */
+    public static final int SIDEBAR_W_DEFAULT = 200;
+    /** ㉞ サイドバー最小幅 (タブ「View/Gates/Links」と主要操作が収まる下限)。 */
+    public static final int SIDEBAR_W_MIN = 150;
+
     private static boolean showOverworld = true;
     private static boolean showNether = true;
     private static boolean showLinks = true;
@@ -57,8 +66,19 @@ public final class PointCloudViewState {
     private static int pointSize = POINT_SIZE_DEFAULT;
     private static float owDisplayScale = DISPLAY_SCALE_DEFAULT;     // ㉓ OW 層の表示スケール (基準 1:1 × これ)
     private static float netherDisplayScale = DISPLAY_SCALE_DEFAULT; // ㉓ ネザー層の表示スケール (基準 1/8 × これ)
+    private static int sidebarWidth = SIDEBAR_W_DEFAULT;             // ㉞ サイドバー幅 (生値・画面側でウィンドウクランプ)
 
     private PointCloudViewState() {
+    }
+
+    /** ㉞ サイドバー幅 (生値)。 画面側がウィンドウ幅で再クランプして使う。 */
+    public static int getSidebarWidth() {
+        return sidebarWidth;
+    }
+
+    /** ㉞ サイドバー幅を設定 (下限のみ適用・上限はウィンドウ依存で画面側がクランプ)。 */
+    public static void setSidebarWidth(int v) {
+        sidebarWidth = Math.max(SIDEBAR_W_MIN, v);
     }
 
     public static boolean isShowOverworld() {

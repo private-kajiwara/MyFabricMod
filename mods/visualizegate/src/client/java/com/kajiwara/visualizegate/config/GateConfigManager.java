@@ -70,6 +70,7 @@ public final class GateConfigManager {
             PointCloudViewState.setPointSize(cfg.pcPointSize);
             PointCloudViewState.setOwDisplayScale(cfg.pcOwDisplayScale);
             PointCloudViewState.setNetherDisplayScale(cfg.pcNetherDisplayScale);
+            PointCloudViewState.setSidebarWidth(cfg.pcSidebarW); // ㉞ 生値 (画面 init で現ウィンドウへ再クランプ)
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn(
                     "[visualizegate] config load failed (defaults kept): {}", t.toString());
@@ -96,6 +97,7 @@ public final class GateConfigManager {
             cfg.pcPointSize = PointCloudViewState.getPointSize();
             cfg.pcOwDisplayScale = PointCloudViewState.getOwDisplayScale();
             cfg.pcNetherDisplayScale = PointCloudViewState.getNetherDisplayScale();
+            cfg.pcSidebarW = PointCloudViewState.getSidebarWidth(); // ㉞ サイドバー幅
             writeAtomic(file(), GSON.toJson(cfg));
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] config save failed: {}", t.toString());

@@ -59,7 +59,10 @@ public class PointCloudScreen extends Screen {
 
     private static final int HEADER_H = 28;
     private static final int FOOTER_H = 34;
-    private static final int SIDEBAR_W = 200; // ⑧ 長い stats 文字が収まる幅へ (旧 168 で右見切れ)
+    /** ㉞ ビューポートの最小幅 (スプリッターで詰めても確保＝GPU3D アスペクト破綻防止)。 */
+    private static final int MIN_VP = 220;
+    /** ㉞ サイドバー幅 (右パネル)。 スプリッターのドラッグで可変・config 永続 (旧 SIDEBAR_W=200 定数を可変化)。 */
+    private int sidebarW = PointCloudViewState.SIDEBAR_W_DEFAULT;
     private static final int MARGIN = 8;
     private static final int SIDE_PAD = 4;     // ⑧ サイドバー内テキスト/スライダの左右インセット
 
@@ -304,9 +307,52 @@ public class PointCloudScreen extends Screen {
 
     @Override
     protected void init() {
+        // ㉓ トグル群 2×2 [OW][Nether] / [Gate links][Dim tint] (㉚ View タブ専用)。 位置/幅は recomputeLayout が設定。
+        viewWidgets.clear();
+        viewWidgets.add(addRenderableWidget(Button.builder(owLabel(), b -> {
+            PointCloudViewState.toggleOverworld();
+            b.setMessage(owLabel());
+            GateConfigManager.save();
+        }).bounds(0, 0, 10, 20).build()));
+        viewWidgets.add(addRenderableWidget(Button.builder(netherLabel(), b -> {
+            PointCloudViewState.toggleNether();
+            b.setMessage(netherLabel());
+            GateConfigManager.save();
+        }).bounds(0, 0, 10, 20).build()));
+        viewWidgets.add(addRenderableWidget(Button.builder(linksLabel(), b -> {
+            PointCloudViewState.toggleLinks();
+            b.setMessage(linksLabel());
+            GateConfigManager.save();
+        }).bounds(0, 0, 10, 20).build()));
+        viewWidgets.add(addRenderableWidget(Button.builder(tintLabel(), b -> {
+            PointCloudViewState.toggleDimTint();
+            b.setMessage(tintLabel());
+            GateConfigManager.save();
+        }).bounds(0, 0, 10, 20).build()));
+
+        // フッタ: Re-analyze / Done (width 基準・サイドバー幅に非依存)。
+        int fy = this.height - FOOTER_H + 7;
+        addRenderableWidget(Button.builder(Component.literal("Re-analyze"),
+                b -> PointCloudAnalysis.get().requestAnalysis())
+                .bounds(MARGIN, fy, 120, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Done"), b -> this.onClose())
+                .bounds(this.width - MARGIN - 120, fy, 120, 20).build());
+
+        recomputeLayout(); // ㉞ 全レイアウトを sidebarW から算出 (init / スプリッタードラッグ / リサイズ 共通)
+        applyTabVisibility();
+    }
+
+    /**
+     * ㉞ サイドバー幅 {@link #sidebarW} を現在のウィンドウへクランプし、 ビューポート/タブ/スライダ/一覧/
+     * scissor/凡例 と View トグル 4 ボタンの位置・幅を<b>全て再計算</b>する (init・スプリッタードラッグ・リサイズ
+     * から呼ぶ＝単一の真実)。 フッタ (Re-analyze/Done) は width 基準で非依存。
+     */
+    private void recomputeLayout() {
+        sidebarW = clampSidebar(PointCloudViewState.getSidebarWidth());
+
         vpX = MARGIN;
         vpY = HEADER_H + 6;
-        vpW = this.width - SIDEBAR_W - MARGIN * 3;
+        vpW = this.width - sidebarW - MARGIN * 3;
         vpH = this.height - HEADER_H - FOOTER_H - 12;
         if (vpW < 40) {
             vpW = 40;
@@ -316,67 +362,67 @@ public class PointCloudScreen extends Screen {
         }
         focal = Math.min(vpW, vpH);
 
-        int sbX = this.width - SIDEBAR_W - MARGIN;
-        int sbW = SIDEBAR_W;
-        // ㉚ タブバー＋一覧領域の基準。 View 内容はタブバーの下から始める。
+        int sbX = this.width - sidebarW - MARGIN;
+        int sbW = sidebarW;
         sbContentX = sbX;
         tabBarY = HEADER_H + 6;
         listTop = tabBarY + TABBAR_H + 4;
         listBottom = this.height - FOOTER_H - 4;
         int y = listTop;
 
-        // ㉓ トグル群を 2×2 グリッドへ (ハーフ幅)。 [OW][Nether] / [Gate links][Dim tint]。 ㉚ View タブ専用。
-        viewWidgets.clear();
+        // View トグル 4 ボタンを 2×2 で再配置 (sidebarW 依存)。
         int colGap = 4;
         int halfW = (sbW - colGap) / 2;
         int col2X = sbX + halfW + colGap;
-        viewWidgets.add(addRenderableWidget(Button.builder(owLabel(), b -> {
-            PointCloudViewState.toggleOverworld();
-            b.setMessage(owLabel());
-            GateConfigManager.save();
-        }).bounds(sbX, y, halfW, 20).build()));
-        viewWidgets.add(addRenderableWidget(Button.builder(netherLabel(), b -> {
-            PointCloudViewState.toggleNether();
-            b.setMessage(netherLabel());
-            GateConfigManager.save();
-        }).bounds(col2X, y, halfW, 20).build()));
-        y += 24;
-        viewWidgets.add(addRenderableWidget(Button.builder(linksLabel(), b -> {
-            PointCloudViewState.toggleLinks();
-            b.setMessage(linksLabel());
-            GateConfigManager.save();
-        }).bounds(sbX, y, halfW, 20).build()));
-        viewWidgets.add(addRenderableWidget(Button.builder(tintLabel(), b -> {
-            PointCloudViewState.toggleDimTint();
-            b.setMessage(tintLabel());
-            GateConfigManager.save();
-        }).bounds(col2X, y, halfW, 20).build()));
-        y += 26; // トグル群 → スケール群へのグループ間隔
+        if (viewWidgets.size() == 4) {
+            positionBtn(viewWidgets.get(0), sbX, y, halfW);
+            positionBtn(viewWidgets.get(1), col2X, y, halfW);
+            y += 24;
+            positionBtn(viewWidgets.get(2), sbX, y, halfW);
+            positionBtn(viewWidgets.get(3), col2X, y, halfW);
+            y += 26;
+        } else {
+            y += 24 + 26; // ボタン未生成でもスライダ基準 Y を一致
+        }
 
-        // スライダ群 (手動描画・手動入力)。 ラベルはトラックの上、 トラックは各 *Y。 ⑧ パネル内へインセット。
+        // スライダ群 (手動描画・手動入力)。 ⑧ パネル内へインセット。
         slX = sbX + SIDE_PAD;
         slW = sbW - 2 * SIDE_PAD;
         slH = 10;
-        // ㉓ 表示スケール群: OW/ネザーを 2 カラム 1 行 (ラベルはそれぞれの上)。 縦は 1 行分しか使わない。
         int trackGap = 8;
         slScaleHalfW = (slW - trackGap) / 2;
         slScaleOwX = slX;
         slScaleNX = slX + slScaleHalfW + trackGap;
         slScaleY = y + 11;          // ラベル(上)分を空ける
-        // 表示群: 間隔 / GPU detail / 点サイズ (全幅)。
         slY = slScaleY + slH + 22;  // Dimension spacing
         sl2Y = slY + slH + 22;      // ⑭ GPU detail
         sl3Y = sl2Y + slH + 22;     // ⑯ 点サイズ
 
-        // フッタ: Re-analyze / Done。
-        int fy = this.height - FOOTER_H + 7;
-        addRenderableWidget(Button.builder(Component.literal("Re-analyze"),
-                b -> PointCloudAnalysis.get().requestAnalysis())
-                .bounds(MARGIN, fy, 120, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Done"), b -> this.onClose())
-                .bounds(this.width - MARGIN - 120, fy, 120, 20).build());
+        // リネーム中なら EditBox 幅も追従 (㉝B のインライン入力)。
+        if (renameBox != null) {
+            renameBox.setX(sbContentX + SIDE_PAD + 8);
+            renameBox.setWidth(sbW - 2 * SIDE_PAD - 8);
+        }
+    }
 
-        applyTabVisibility();
+    /**
+     * ㉞ サイドバー幅を [SIDEBAR_W_MIN, width - MIN_VP - MARGIN*3] にクランプ。 退化 (低解像度/高 GUI スケールで
+     * min &gt; max) では破綻させず、 利用可能幅の 60% をサイドバーへ (= ビューポートに 40% を残す比例分配)。
+     */
+    private int clampSidebar(int v) {
+        int min = PointCloudViewState.SIDEBAR_W_MIN;
+        int max = this.width - MIN_VP - MARGIN * 3;
+        if (max < min) {
+            int avail = Math.max(0, this.width - MARGIN * 3);
+            return Math.max(40, Math.min(min, (int) (avail * 0.6)));
+        }
+        return Math.max(min, Math.min(max, v));
+    }
+
+    private static void positionBtn(Button b, int x, int y, int w) {
+        b.setX(x);
+        b.setY(y);
+        b.setWidth(w);
     }
 
     /** ㉚ View タブのトグルボタンは View 時のみ表示/操作可 (Gates/Links では隠す)。 */
@@ -431,8 +477,8 @@ public class PointCloudScreen extends Screen {
         // ㉓ 基準形 (1:1 / 1:8) ＋ 現在の表示スケール倍率を併記。 既定 1/1 では実質「1:1 / 1:8」のまま。
         String scaleHud = "OW 1:1 ×" + fmtScale(PointCloudViewState.getOwDisplayScale())
                 + "   Nether 1:8 ×" + fmtScale(PointCloudViewState.getNetherDisplayScale());
-        g.text(this.font, Component.literal(fitWidth(scaleHud, SIDEBAR_W + MARGIN)),
-                this.width - SIDEBAR_W - MARGIN, 10, GateColors.TEXT);
+        g.text(this.font, Component.literal(fitWidth(scaleHud, sidebarW + MARGIN)),
+                this.width - sidebarW - MARGIN, 10, GateColors.TEXT);
 
         PointCloudAnalysis analysis = PointCloudAnalysis.get();
         PointCloudAnalysis.State st = analysis.state();
@@ -1772,16 +1818,16 @@ public class PointCloudScreen extends Screen {
 
     /** ㉝C 行 r の目アイコンのクリック矩形か。 行 hit-test と同じ rowY0[r] 基準。 */
     private boolean inEyeIcon(int r, double mx, double my) {
-        int ex = sbContentX + SIDE_PAD + (SIDEBAR_W - 2 * SIDE_PAD) - EYE_W;
+        int ex = sbContentX + SIDE_PAD + (sidebarW - 2 * SIDE_PAD) - EYE_W;
         return mx >= ex && mx <= ex + EYE_W && my >= rowY0[r] && my < rowY0[r] + ROW_H;
     }
 
     private void drawTabBar(GuiGraphicsExtractor g) {
         String[] names = { "View", "Gates", "Links" };
-        int tw = SIDEBAR_W / 3;
+        int tw = sidebarW / 3;
         for (int i = 0; i < 3; i++) {
             int tx = sbContentX + i * tw;
-            int tx2 = (i == 2) ? (sbContentX + SIDEBAR_W) : (tx + tw);
+            int tx2 = (i == 2) ? (sbContentX + sidebarW) : (tx + tw);
             boolean active = tab.ordinal() == i;
             g.fill(tx, tabBarY, tx2, tabBarY + TABBAR_H, active ? GateColors.MAIN_DIM : GateColors.PANEL);
             g.fill(tx, tabBarY, tx2, tabBarY + 1, active ? GateColors.MAIN : GateColors.MAIN_DIM);
@@ -1808,7 +1854,7 @@ public class PointCloudScreen extends Screen {
         GateMeta m = snap.gateMeta;
         int n = m.gateNumber().length;
         int x = sbContentX + SIDE_PAD;
-        int maxW = SIDEBAR_W - 2 * SIDE_PAD;
+        int maxW = sidebarW - 2 * SIDE_PAD;
         g.text(this.font, Component.literal("Gates: " + n), x, listTop, GateColors.TEXT);
         int top = listTop + 12;
         int bottom = listBottom - 12; // 凡例分を残す
@@ -1819,7 +1865,7 @@ public class PointCloudScreen extends Screen {
         int selIdx = selectedGateIndex(snap); // ㉛ 選択は一意 anchor で 1 件だけ
         int yBase = top - gatesScroll;
         // ㉝A 一覧の可動領域に scissor クリップ (上端/下端で半端行が見出し/凡例へはみ出さない)。
-        g.enableScissor(sbContentX, top, sbContentX + SIDEBAR_W, bottom);
+        g.enableScissor(sbContentX, top, sbContentX + sidebarW, bottom);
         for (int i = 0; i < n; i++) {
             int ry = yBase + i * ROW_H;
             boolean nether = snap.gateNether[i];
@@ -1876,7 +1922,7 @@ public class PointCloudScreen extends Screen {
     private void drawLinksList(GuiGraphicsExtractor g, PointCloudSnapshot snap) {
         GateMeta m = snap.gateMeta;
         int x = sbContentX + SIDE_PAD;
-        int maxW = SIDEBAR_W - 2 * SIDE_PAD;
+        int maxW = sidebarW - 2 * SIDE_PAD;
         List<GateConflict> conflicts = m.conflicts();
         g.text(this.font, Component.literal("Conflicts: " + conflicts.size()
                 + "  Links: " + m.linkOwNumber().length), x, listTop, GateColors.TEXT);
@@ -1888,7 +1934,7 @@ public class PointCloudScreen extends Screen {
         linksScroll = clampScroll(linksScroll, contentH, bottom - top);
         int y = top - linksScroll;
         // ㉝A 一覧の可動領域に scissor クリップ (見出し/凡例は領域外＝不変)。
-        g.enableScissor(sbContentX, top, sbContentX + SIDEBAR_W, bottom);
+        g.enableScissor(sbContentX, top, sbContentX + sidebarW, bottom);
         for (GateConflict c : conflicts) { // 重大度順 (解析器で sort 済)
             if (y + ROW_H >= top && y <= bottom) {
                 int col = stateColor(c.state().ordinal());
@@ -2081,9 +2127,9 @@ public class PointCloudScreen extends Screen {
         }
         // ㉚ タブバークリック → タブ切替。
         if (event.button() == 0 && my >= tabBarY && my <= tabBarY + TABBAR_H
-                && mx >= sbContentX && mx <= sbContentX + SIDEBAR_W) {
+                && mx >= sbContentX && mx <= sbContentX + sidebarW) {
             commitRename(); // ㉝B タブ切替時は編集を確定して閉じる
-            int i = (int) ((mx - sbContentX) / (SIDEBAR_W / 3));
+            int i = (int) ((mx - sbContentX) / (sidebarW / 3));
             Tab[] tabs = Tab.values();
             tab = tabs[Math.max(0, Math.min(2, i))];
             applyTabVisibility();
@@ -2278,7 +2324,7 @@ public class PointCloudScreen extends Screen {
         renameWy = rowWy[row];
         renameWz = rowWz[row];
         int x = sbContentX + SIDE_PAD;
-        int maxW = SIDEBAR_W - 2 * SIDE_PAD;
+        int maxW = sidebarW - 2 * SIDE_PAD;
         int ry = rowY0[row];
         renameBox = new EditBox(this.font, x + 8, ry, maxW - 8, ROW_H,
                 Component.translatable("visualizegate.gates.rename.hint"));
@@ -2322,7 +2368,7 @@ public class PointCloudScreen extends Screen {
 
     /** ㉚ サイドバーの一覧領域 (タブバー下〜フッタ手前)。 */
     private boolean inListArea(double mx, double my) {
-        return mx >= sbContentX && mx <= sbContentX + SIDEBAR_W && my >= listTop && my <= listBottom;
+        return mx >= sbContentX && mx <= sbContentX + sidebarW && my >= listTop && my <= listBottom;
     }
 
     private boolean inSlider(double mx, double my) {
