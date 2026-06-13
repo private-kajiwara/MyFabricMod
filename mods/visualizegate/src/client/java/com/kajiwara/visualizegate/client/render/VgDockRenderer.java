@@ -521,8 +521,8 @@ public final class VgDockRenderer {
     // ㊵B ドック点群サムネ: Vメニュー (PointCloudScreen.buildGpuGeometry) と<b>同式</b>＝両層・密度(gpuDetail)・
     //   スケール・spacing・dimTint・pointSize・表示トグル・hidden を {@link PointCloudViewState}/{@link PortalMemory}
     //   から参照 (品質 parity)。 向きはプレイヤー yaw 追従 (㊵C)。 共有 FBO/VBO は Vメニュー画面と排他 (画面表示中は HUD 非表示)。
-    private static final float PITCH = 0.32f; // Vメニュー既定 pitch に合わせる
-    private static final float YAW = 0.6f;     // ㊵B 既定方位角 (㊵C でプレイヤー追従に置換)
+    private static final float PITCH = 0.32f; // Vメニュー既定 pitch に合わせる (固定)
+    private static final float YAW_EPS = 0.02f; // ㊵C yaw 変化の再描画しきい値 (~1.1°・微小ジッタで再ラスタしない)
     private static final int DIM_TINT_OW = GateColors.PC_OW_HIGH;
     private static final int DIM_TINT_NETHER = GateColors.PC_NETHER_HIGH;
     private static final float DIM_TINT_FRAC = 0.15f;
@@ -530,6 +530,10 @@ public final class VgDockRenderer {
     private boolean pcWasVisible = false;
     private final float[] pcEmpty = new float[0];
     private final int[] pcEmptyI = new int[0];
+    // ㊵C 直近に FBO へ描いた yaw/寸法 (これらが変わった時だけ再ラスタ＝アイドル時は前フレームを blit)。
+    private float pcRenderYaw = Float.NaN;
+    private int pcRenderW = -1;
+    private int pcRenderH = -1;
     // 幾何署名 (Vメニューと同じトグル/設定群・変化時のみ VBO 再構築)。
     private PointCloudSnapshot gSnap;
     private boolean gShowOw;
@@ -556,14 +560,24 @@ public final class VgDockRenderer {
         }
         try {
             boolean takeover = !pcWasVisible; // 再表示時は共有 VBO/FBO が画面のものかもしれない＝必ず組み直す
+            boolean geomDirty = false;
             if (takeover || gpuGeomChanged(snap)) {
                 pcUpload(snap);
+                geomDirty = true;
             }
-            if (PointCloudGpuRenderer.render(w, h, YAW, PITCH, pcDistance, GateColors.BASE)) {
-                GpuTextureView cv = PointCloudGpuRenderer.colorView();
-                if (cv != null) {
-                    g.blit(cv, PointCloudGpuRenderer.sampler(), x, y, x + w, y + h, 0f, 1f, 1f, 0f);
-                }
+            // ㊵C 向き＝プレイヤーの yaw (x,z) に追従 (アイドルスピンはしない)。 yaw/寸法/幾何が変わった時だけ
+            //     FBO を再ラスタし、 不変なら前フレーム FBO を blit するだけ＝常時フル密度の再描画を避ける (性能予算)。
+            float yaw = (float) Math.toRadians(mc.player != null ? mc.player.getYRot(1.0f) : 0f);
+            boolean rerender = takeover || geomDirty || w != pcRenderW || h != pcRenderH
+                    || Float.isNaN(pcRenderYaw) || Math.abs(yaw - pcRenderYaw) > YAW_EPS;
+            if (rerender && PointCloudGpuRenderer.render(w, h, yaw, PITCH, pcDistance, GateColors.BASE)) {
+                pcRenderYaw = yaw;
+                pcRenderW = w;
+                pcRenderH = h;
+            }
+            GpuTextureView cv = PointCloudGpuRenderer.colorView();
+            if (cv != null) {
+                g.blit(cv, PointCloudGpuRenderer.sampler(), x, y, x + w, y + h, 0f, 1f, 1f, 0f);
             }
             pcWasVisible = true;
         } catch (Throwable t) {
