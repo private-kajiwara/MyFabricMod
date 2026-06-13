@@ -6,6 +6,7 @@ import com.kajiwara.visualizegate.client.render.BackCalcRenderer;
 import com.kajiwara.visualizegate.client.render.CornerIconRenderer;
 import com.kajiwara.visualizegate.client.render.HologramFrameRenderer;
 import com.kajiwara.visualizegate.client.render.LegendOverlayRenderer;
+import com.kajiwara.visualizegate.client.render.PointCloudHudRenderer;
 import com.kajiwara.visualizegate.client.render.PortalBoxRenderer;
 import com.kajiwara.visualizegate.client.render.PortalInfoCardRenderer;
 import com.kajiwara.visualizegate.client.render.PortalLinkRenderer;
@@ -65,6 +66,8 @@ public class VisualizeGateClient implements ClientModInitializer {
         // UX 層 (純追加・HUD パス): ① 自動インフォカード ② 常設凡例。 いずれも注視/所持トリガで表示。
         PortalInfoCardRenderer.register();
         LegendOverlayRenderer.register();
+        // ㉟B `/vg point-cloud` 右下点群 HUD ウィジェット (既定 OFF・GPU3D FBO 流用・小型/点数キャップ)。
+        PointCloudHudRenderer.register();
         VisualizeGateMod.LOGGER.info("VisualizeGate client initialized (portal scan + box renderer + menu UI).");
     }
 }
