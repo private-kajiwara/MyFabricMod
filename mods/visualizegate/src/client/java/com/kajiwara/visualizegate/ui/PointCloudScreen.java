@@ -1643,7 +1643,7 @@ public class PointCloudScreen extends Screen {
 
     /** スライダ 1 本 (ラベル上・トラック・ハンドル) を {@code trackY} に描く。 {@code frac}=0..1。 */
     private void drawTrack(GuiGraphicsExtractor g, String label, int trackY, float frac) {
-        g.text(this.font, Component.literal(label), slX, trackY - 11, GateColors.TEXT);
+        g.text(this.font, Component.literal(fitWidth(label, slW)), slX, trackY - 11, GateColors.TEXT); // ㉞ 幅追従省略
         g.fill(slX, trackY, slX + slW, trackY + slH, GateColors.PANEL);
         g.fill(slX, trackY, slX + slW, trackY + 1, GateColors.MAIN_DIM);
         frac = Math.max(0f, Math.min(1f, frac));
@@ -1863,7 +1863,7 @@ public class PointCloudScreen extends Screen {
         int n = m.gateNumber().length;
         int x = sbContentX + SIDE_PAD;
         int maxW = sidebarW - 2 * SIDE_PAD;
-        g.text(this.font, Component.literal("Gates: " + n), x, listTop, GateColors.TEXT);
+        g.text(this.font, Component.literal(fitWidth("Gates: " + n, maxW)), x, listTop, GateColors.TEXT); // ㉞ 幅追従省略
         int top = listTop + 12;
         int bottom = listBottom - 12; // 凡例分を残す
         // ㉝A スクロール上限クランプ (空スクロール解消): 内容高がビュー高を超えた分だけ可動。
@@ -1932,8 +1932,8 @@ public class PointCloudScreen extends Screen {
         int x = sbContentX + SIDE_PAD;
         int maxW = sidebarW - 2 * SIDE_PAD;
         List<GateConflict> conflicts = m.conflicts();
-        g.text(this.font, Component.literal("Conflicts: " + conflicts.size()
-                + "  Links: " + m.linkOwNumber().length), x, listTop, GateColors.TEXT);
+        g.text(this.font, Component.literal(fitWidth("Conflicts: " + conflicts.size()
+                + "  Links: " + m.linkOwNumber().length, maxW)), x, listTop, GateColors.TEXT); // ㉞ 幅追従省略
         int top = listTop + 12;
         int bottom = listBottom - 12;
         rowCount = 0; // Links タブの行クリックは未対応 (選択は Gates タブ)。 スクロールのみ。
