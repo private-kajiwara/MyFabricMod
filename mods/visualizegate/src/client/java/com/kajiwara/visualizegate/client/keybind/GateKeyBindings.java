@@ -1,8 +1,6 @@
 package com.kajiwara.visualizegate.client.keybind;
 
-import com.kajiwara.visualizegate.state.GateMenuState;
 import com.kajiwara.visualizegate.ui.GateMenuScreen;
-import com.kajiwara.visualizegate.ui.GuideScreen;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -47,12 +45,9 @@ public final class GateKeyBindings {
         while (openMenu.consumeClick()) {
             // 他の Screen が開いている時は抑止 (誤発火防止)。
             if (mc.screen == null) {
-                // 初めてハブを開くときは先に初回ガイド (閉じると GateMenuScreen へ)。
-                if (!GateMenuState.isFirstRunDone()) {
-                    mc.setScreen(new GuideScreen(new GateMenuScreen()));
-                } else {
-                    mc.setScreen(new GateMenuScreen());
-                }
+                // ㉜C 初回の自動ガイド (4 枚カード) を撤去＝強制ポップアップ無し。 使い方はハブの「使い方」pull のみ。
+                // 学習は「一貫した言語＋その場のカード＋常設凡例」に委ねる (過剰なチュートリアル禁止)。
+                mc.setScreen(new GateMenuScreen());
             }
         }
     }
