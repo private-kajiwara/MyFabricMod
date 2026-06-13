@@ -36,6 +36,9 @@ public final class VgOverlayState {
 
     public static boolean togglePointCloud() {
         pointCloud = !pointCloud;
+        if (pointCloud) {
+            dockExpanded = true; // ㊴A 有効化＝内容を即表示 (自動展開・"▶に格納" しない)
+        }
         return pointCloud;
     }
 
@@ -45,6 +48,9 @@ public final class VgOverlayState {
 
     public static boolean toggleVisualize() {
         visualize = !visualize;
+        if (visualize) {
+            dockExpanded = true; // ㊴A 有効化＝状態+注記凡例を即表示 (自動展開)
+        }
         return visualize;
     }
 
@@ -54,6 +60,9 @@ public final class VgOverlayState {
 
     public static boolean toggleGpuUsage() {
         gpuUsage = !gpuUsage;
+        if (gpuUsage) {
+            dockExpanded = true; // ㊴A 有効化＝パフォーマンスを即表示 (自動展開)
+        }
         return gpuUsage;
     }
 
@@ -66,6 +75,7 @@ public final class VgOverlayState {
         // ㊱A CPU 取得はバックグラウンド・デーモンで 1Hz (描画スレッドで同期呼びしない)。 トグルに連動して起動/停止。
         if (cpuUsage) {
             CpuSampler.get().start();
+            dockExpanded = true; // ㊴A 有効化＝CPU 行を即表示 (自動展開)
         } else {
             CpuSampler.get().stop();
         }
