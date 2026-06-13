@@ -176,8 +176,15 @@ public final class VgDockRenderer {
         if (viz) {
             h += DIV + statusHeight() + GAP + notesHeight();
         }
+        // ㊳C 点群サムネ: spec 420×176 を上限に、 アスペクト維持で innerW へ収め、 高さは画面 1/3 を超えない
+        //     (中央/ホットバーに侵入しない・GUI スケール非依存)。
+        int pcTw = 0;
+        int pcTh = 0;
         if (pc) {
-            h += DIV + pointCloudHeight();
+            pcTw = Math.min(innerW, PC_W);
+            int sh = mc.getWindow().getGuiScaledHeight();
+            pcTh = Math.min(Math.round(pcTw * (float) PC_H / PC_W), sh / 3);
+            h += DIV + LINE + pcTh + 2;
         }
         h += PAD;
 
@@ -197,12 +204,8 @@ public final class VgDockRenderer {
         }
         if (pc) {
             cy = divider(g, x, cy, dockW);
-            cy = drawPointCloud(g, mc, innerX, cy, innerW);
+            cy = drawPointCloud(g, mc, innerX, cy, pcTw, pcTh);
         }
-    }
-
-    private int pointCloudHeight() {
-        return LINE + PC_H + 2; // title + サムネ
     }
 
     private int perfHeight(boolean gpu, boolean cpu) {
@@ -486,12 +489,10 @@ public final class VgDockRenderer {
     private static final int PC_H = 176;
     private static final Component T_POINTCLOUD = Component.translatable("visualizegate.dock.pointcloud");
 
-    /** 点群セクション (見出し＋サムネ枠)。 サムネ本体は GPU3D (>=26.1) / legacy は注記。 */
-    private int drawPointCloud(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int w) {
+    /** 点群セクション (見出し＋サムネ枠・寸法は drawExpanded で算出済)。 サムネ本体は GPU3D (>=26.1) / legacy は注記。 */
+    private int drawPointCloud(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int tw, int th) {
         g.text(mc.font, T_POINTCLOUD, x, y, GateColors.TEXT);
         y += LINE;
-        int tw = Math.min(w, PC_W);
-        int th = PC_H;
         g.fill(x, y, x + tw, y + th, GateColors.BASE); // FBO 背景枠
         //? if >=26.1 {
         drawThumb(g, mc, x, y, tw, th);
