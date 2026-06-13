@@ -157,6 +157,7 @@ public final class VgDockRenderer {
     private static final int GAP = 3;
     private static final int SPARK_H = 18;   // スパークライン高
     private static final int SW = 7;         // スウォッチ一辺
+    private static final int MIN_PC_TH = 40;  // ㊹C 点群サムネの最低高 (これ未満なら出さない)
 
     // セクション見出し (定数・グリフ非依存テキスト)。
     private static final Component T_PERF = Component.translatable("visualizegate.dock.perf");
@@ -174,21 +175,32 @@ public final class VgDockRenderer {
         dockW = Math.min(dockW, sw - MARGIN * 2); // 極小画面の安全側クランプ
         int innerX = x + PAD;
         int innerW = dockW - PAD * 2;
-        // 高さ算出: ヘッダ + perf + 状態 + 注記 (常時) + 点群 (pointCloud 時のみ)。
-        int h = PAD + LINE; // top pad + header row
-        h += DIV + perfHeight();
-        h += DIV + statusHeight() + GAP + notesHeight();
-        // ㊳C 点群サムネ: spec 420×176 を上限に、 アスペクト維持で innerW へ収め、 高さは画面 1/3 を超えない
-        //     (中央/ホットバーに侵入しない・GUI スケール非依存)。
+        // 固定セクション高 (最終 PAD 前まで): ヘッダ + perf + 状態 + 注記 (常時)。
+        int hSections = PAD + LINE; // top pad + header row
+        hSections += DIV + perfHeight();
+        hSections += DIV + statusHeight() + GAP + notesHeight();
+
+        // ㊹C ドック全体を画面内 (上下 MARGIN) に収める。 点群サムネは残り高に合わせて縮小し、 最低高未満なら出さない。
+        int sh = mc.getWindow().getGuiScaledHeight();
+        int maxDockH = sh - MARGIN * 2;
         int pcTw = 0;
         int pcTh = 0;
+        boolean showPc = false;
         if (pc) {
             pcTw = Math.min(innerW, PC_W);
-            int sh = mc.getWindow().getGuiScaledHeight();
-            pcTh = Math.min(Math.round(pcTw * (float) PC_H / PC_W), sh / 3);
-            h += DIV + LINE + pcTh + 2;
+            int aspectTh = Math.round(pcTw * (float) PC_H / PC_W);
+            int pcChrome = DIV + LINE + 2;                       // 区切り＋見出し行＋下余白
+            int avail = maxDockH - (hSections + PAD) - pcChrome; // サムネ本体に使える残り高
+            // ㊳C アスペクト維持・画面 1/3 上限 (中央/ホットバー非侵入) ＋ ㊹C 残り高クランプ。
+            pcTh = Math.min(Math.min(aspectTh, sh / 3), avail);
+            if (pcTh >= MIN_PC_TH) {
+                showPc = true;
+            } else {
+                pcTh = 0;
+                pcTw = 0;
+            }
         }
-        h += PAD;
+        int h = hSections + (showPc ? (DIV + LINE + pcTh + 2) : 0) + PAD;
 
         g.fill(x, y, x + dockW, y + h, BG_EXPANDED);
         drawHeaderRow(g, mc, x, y, dockW, header(mc), true);
@@ -200,7 +212,7 @@ public final class VgDockRenderer {
         cy = drawStatus(g, mc, innerX, cy, innerW);
         cy += GAP;
         cy = drawNotes(g, mc, innerX, cy, innerW);
-        if (pc) {
+        if (showPc) {
             cy = divider(g, x, cy, dockW);
             cy = drawPointCloud(g, mc, innerX, cy, pcTw, pcTh);
         }
