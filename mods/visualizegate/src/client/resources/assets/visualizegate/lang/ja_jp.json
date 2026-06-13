@@ -59,8 +59,6 @@
 	"visualizegate.pc.hud.title": "点群",
 	"visualizegate.pc.hud.empty": "データ無し — ハブを開いて再解析",
 	"visualizegate.pc.hud.legacy": "点群: この版では GPU3D 非対応",
-	"visualizegate.perf.gpu.title": "フレーム %s ms · %s fps",
-	"visualizegate.perf.gpu.note": "※描画フレーム時間・GPU%% ではない",
 	"visualizegate.perf.cpu.title": "CPU %s%% · sys %s%%",
 
 	"visualizegate.card.linked.title": "既存のゲートにつながります",

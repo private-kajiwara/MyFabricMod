@@ -59,8 +59,6 @@
 	"visualizegate.pc.hud.title": "Point cloud",
 	"visualizegate.pc.hud.empty": "No data — open the hub and Re-analyze",
 	"visualizegate.pc.hud.legacy": "Point cloud: GPU3D N/A on this version",
-	"visualizegate.perf.gpu.title": "Frame %s ms · %s fps",
-	"visualizegate.perf.gpu.note": "* render frame time, not GPU%%",
 	"visualizegate.perf.cpu.title": "CPU %s%% · sys %s%%",
 
 	"visualizegate.card.linked.title": "Links to an existing gate",

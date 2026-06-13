@@ -162,7 +162,6 @@ public final class VgDockRenderer {
     private static final Component T_PERF = Component.translatable("visualizegate.dock.perf");
     private static final Component T_STATUS = Component.translatable("visualizegate.dock.status");
     private static final Component T_NOTES = Component.translatable("visualizegate.dock.notes");
-    private static final Component GPU_NOTE = Component.translatable("visualizegate.perf.gpu.note");
 
     private void drawExpanded(GuiGraphicsExtractor g, Minecraft mc, int x, int y) {
         // ㊸A 展開＝常にフルメニュー: perf＋ゲート状態＋注記をフラグ非依存で常時表示。 点群のみ pointCloud 連動で追加。
@@ -208,8 +207,8 @@ public final class VgDockRenderer {
     }
 
     private int perfHeight() {
-        // ㊷A タイトル + フレーム(text+spark) + CPU(text+spark) + 注記 (統合・常時両方)。
-        return LINE + (LINE + SPARK_H + 2) + (LINE + SPARK_H + 2) + LINE;
+        // ㊹B タイトル + CPU(text+spark) のみ。 フレーム時間スパークライン/GPU% 注記は撤去 (fps はスリムバーに表示)。
+        return LINE + LINE + SPARK_H + 2;
     }
 
     private int statusHeight() {
@@ -226,24 +225,16 @@ public final class VgDockRenderer {
         return y + DIV;
     }
 
-    // ── パフォーマンス (㊷A 統合: フレーム時間スパークライン＋CPU スパークライン＋注記を 1 セクションで常時表示) ──
+    // ── パフォーマンス (㊹B CPU 使用率のみ: text＋スパークライン。 フレーム時間/GPU% 代理表示は撤去) ──
     private int drawPerf(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int w) {
         g.text(mc.font, T_PERF, x, y, GateColors.TEXT);
         y += LINE;
-        // フレーム時間 (= 旧 gpu-usage・実体は描画フレーム時間/FPS)。
-        g.text(mc.font, frameLine(), x, y, GateColors.TEXT);
-        y += LINE;
-        drawSpark(g, x, y, w, SPARK_H, frameMs, frameHead, frameCount, 50f, GateColors.PC_OW_HIGH);
-        y += SPARK_H + 2;
-        // CPU (= 旧 cpu-usage・CpuSampler の 1Hz リング・0..100%・別 y で非重複)。
+        // CPU (CpuSampler の 1Hz リング・0..100%)。 fps はスリムバーのヘッダに常時あるためフレーム行は持たない。
         g.text(mc.font, cpuLine(), x, y, GateColors.TEXT);
         y += LINE;
         CpuSampler s = CpuSampler.get();
         drawSpark(g, x, y, w, SPARK_H, s.historyRef(), s.head(), s.count(), 100f, GateColors.PC_NETHER_HIGH);
         y += SPARK_H + 2;
-        // ※描画フレーム時間 (GPU% ではない) 注記。
-        g.text(mc.font, GPU_NOTE, x, y, GateColors.LINK_GRAY);
-        y += LINE;
         return y;
     }
 
@@ -430,26 +421,10 @@ public final class VgDockRenderer {
         return (ms > 0.01f) ? (1000f / ms) : 0f;
     }
 
-    // ㊲C パフォーマンス行キャッシュ (表示値 0.1 刻み変化時のみ再生成＝毎フレームの translatable/format 排除)。
-    private int flMs10 = Integer.MIN_VALUE;
-    private int flFps10 = Integer.MIN_VALUE;
-    private Component frameLineC = Component.empty();
+    // ㊲C CPU 行キャッシュ (表示値 0.1 刻み変化時のみ再生成＝毎フレームの translatable/format 排除)。
     private int clP10 = Integer.MIN_VALUE;
     private int clS10 = Integer.MIN_VALUE;
     private Component cpuLineC = Component.empty();
-
-    private Component frameLine() {
-        float ms = avgFrameMs();
-        float fps = fpsNow();
-        int ms10 = Math.round(ms * 10f);
-        int fps10 = Math.round(fps * 10f);
-        if (ms10 != flMs10 || fps10 != flFps10) {
-            flMs10 = ms10;
-            flFps10 = fps10;
-            frameLineC = Component.translatable("visualizegate.perf.gpu.title", fmt(ms), fmt(fps));
-        }
-        return frameLineC;
-    }
 
     private Component cpuLine() {
         CpuSampler s = CpuSampler.get();
