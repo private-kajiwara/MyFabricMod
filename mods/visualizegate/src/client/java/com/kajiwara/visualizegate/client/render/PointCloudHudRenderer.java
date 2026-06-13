@@ -23,10 +23,9 @@ import net.minecraft.network.chat.Component;
  *
  * <p>{@link PointCloudGpuRenderer} を<b>小型 FBO</b> へ流用し、 解析済みスナップショット
  * ({@link PointCloudAnalysis#snapshot()}) の<b>プレイヤー現在次元</b>の地形点＋ゲート点を<b>点数キャップ</b>付きで
- * 自前オービット回転表示する。 ㊱B 現次元のデータが無ければ OW へフォールバックせず「データなし」。
+ * ㊱C <b>固定角で静止</b>描画する (自動回転なし)。 ㊱B 現次元のデータが無ければ OW へフォールバックせず「データなし」。
  * 次元切替は検出して再解析を要求し追従する。 性能予算: 小 FBO (≈92px)・点数 {@value #POINT_CAP} 上限・VBO 再構築は
- * スナップショット変化/次元切替/再表示時のみ (回転は行列のみ＝再ラスタライズ無し)。 共有 overlay VBO は毎回 0 で
- * クリア＝点群画面のゲート枠が混ざらない。
+ * スナップショット変化/次元切替/再表示時のみ。 共有 overlay VBO は毎回 0 でクリア＝点群画面のゲート枠が混ざらない。
  *
  * <p><b>絶対条件</b>: 既定 OFF ({@link VgOverlayState})・F1(hideGui)/他 Screen 表示中/F3 で非表示・入力非干渉・
  * 半透明枠。 右下の隅アイコン ({@link CornerIconRenderer}) の<b>上に積み</b>、 右辺のスコアボードとは
@@ -48,8 +47,7 @@ public final class PointCloudHudRenderer {
 
     //? if >=26.1 {
     private static final float PITCH = 0.55f;   // 俯角 (固定)
-    private static final float YAW_PER_FRAME = 0.012f; // 自動オービット (フレーム毎・決定的)
-    private float yaw = 0f;
+    private static final float YAW = 0.6f;      // ㊱C 固定方位角 (自動回転を撤去＝静止・軽い俯瞰寄り)
     private float distance = 60f;
     private PointCloudSnapshot lastSnap;
     private PortalDimension lastDim;            // ㊱B 直近に描いた次元 (変化検出＝再解析要求＋再構築)
@@ -149,14 +147,13 @@ public final class PointCloudHudRenderer {
                 lastSnap = snap;
             }
             lastDim = dim;
-            yaw += YAW_PER_FRAME; // 自動オービット (回転は行列のみ＝再ラスタライズ無し)
 
             int vpW = (x1 - x0) - PAD * 2;
             int vpH = (y1 - y0) - PAD * 2 - 8; // タイトル行ぶん下げる
             int vpX = x0 + PAD;
             int vpY = y0 + PAD + 8;
-            // 小ウィジェット＝supersample 1 (常時描画コストを抑える)。
-            if (PointCloudGpuRenderer.render(vpW, vpH, yaw, PITCH, distance, GateColors.BASE)) {
+            // ㊱C 固定角で静止描画 (回転角の毎フレーム更新を撤去)。 小ウィジェット＝supersample 1。
+            if (PointCloudGpuRenderer.render(vpW, vpH, YAW, PITCH, distance, GateColors.BASE)) {
                 GpuTextureView cv = PointCloudGpuRenderer.colorView();
                 if (cv != null) {
                     // FBO は下原点なので V 反転 (画面合成と同じ流儀)。
