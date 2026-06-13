@@ -57,6 +57,22 @@
 	"visualizegate.card.cave.nether_enclosed": "Nether side is generated enclosed (low cave risk)",
 	"visualizegate.card.cave.detail": "Target Y %s vs est. surface Y %s",
 
+	"visualizegate.state5.ok": "Normal",
+	"visualizegate.state5.orphan": "One-sided",
+	"visualizegate.state5.offset": "Offset",
+	"visualizegate.state5.will_create": "Unlinked",
+	"visualizegate.state5.conflict": "Conflict",
+
+	"visualizegate.card5.headline": "%s — %s",
+	"visualizegate.card5.here": "If you build here",
+	"visualizegate.card5.connect": "→ links to %s",
+	"visualizegate.card5.connect_offset": "→ links to %s · offset ~%s",
+	"visualizegate.card5.conflict": "→ conflicts with %s",
+	"visualizegate.card5.conflict_generic": "→ conflicts with another gate",
+	"visualizegate.card5.will_create": "→ creates a new gate",
+	"visualizegate.card5.orphan": "no counterpart gate",
+	"visualizegate.card5.unobserved": "Link unconfirmed (far side unexplored)",
+
 	"visualizegate.legend.linked": "Links to existing",
 	"visualizegate.legend.will_create": "New gate",
 	"visualizegate.legend.unknown": "Unconfirmed",

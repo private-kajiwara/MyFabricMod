@@ -1759,18 +1759,11 @@ public class PointCloudScreen extends Screen {
     // ㉚ タブ UI / Gates・Links 一覧 / 凡例 / 3D 番号ラベル・選択ハイライト
     // ════════════════════════════════════════════════════════════════════
 
-    /** GateState ordinal (OK,ORPHAN,OFFSET,WILL_CREATE,CONFLICT) → 色。 */
-    private static final int[] STATE_COLOR = {
-            0xFF55E07A, // OK 緑
-            0xFF9AA0A6, // ORPHAN 灰
-            0xFFF5D742, // OFFSET 黄
-            0xFFF59A42, // WILL_CREATE 橙
-            0xFFE0556B, // CONFLICT 赤
-    };
+    /** ㉜ GateState ordinal → 色は {@link GateColors} に一本化 (世界 UX と共有)。 ラベルは画面凡例用に保持。 */
     private static final String[] STATE_LABEL_JA = { "正常", "片側", "ズレ", "未接続", "競合" };
 
     private static int stateColor(int ord) {
-        return (ord >= 0 && ord < STATE_COLOR.length) ? STATE_COLOR[ord] : GATE_FRAME_COLOR;
+        return GateColors.forStateOrdinal(ord);
     }
 
     /** ゲート添字 i の状態色 (gateMeta 未整列/範囲外は既定の明るい紫)。 */
@@ -1850,7 +1843,7 @@ public class PointCloudScreen extends Screen {
         int ly = this.height - FOOTER_H - 10;
         int x = sbContentX + SIDE_PAD;
         for (int i = 0; i < STATE_LABEL_JA.length; i++) {
-            g.fill(x, ly + 1, x + 6, ly + 7, STATE_COLOR[i]);
+            g.fill(x, ly + 1, x + 6, ly + 7, GateColors.forStateOrdinal(i));
             Component c = Component.literal(STATE_LABEL_JA[i]);
             g.text(this.font, c, x + 8, ly, GateColors.TEXT);
             x += 8 + this.font.width(c) + 6;
@@ -1955,7 +1948,7 @@ public class PointCloudScreen extends Screen {
         for (int i = 0; i < m.linkOwNumber().length; i++) {
             if (y + ROW_H >= top && y <= bottom) {
                 String s = "OW-" + m.linkOwNumber()[i] + " ↔ N-" + m.linkNNumber()[i];
-                g.fill(x, y + 1, x + 6, y + 8, STATE_COLOR[0]);
+                g.fill(x, y + 1, x + 6, y + 8, GateColors.STATE_OK);
                 g.text(this.font, Component.literal(fitWidth(s, maxW - 10)), x + 9, y, GateColors.LINK_GRAY);
             }
             y += ROW_H;

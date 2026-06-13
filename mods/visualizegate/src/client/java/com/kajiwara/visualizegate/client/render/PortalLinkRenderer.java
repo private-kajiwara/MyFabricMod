@@ -1,17 +1,11 @@
 package com.kajiwara.visualizegate.client.render;
 
-import java.util.List;
-
 import com.kajiwara.visualizegate.VisualizeGateMod;
-import com.kajiwara.visualizegate.domain.DomainPortal;
+import com.kajiwara.visualizegate.domain.GateState;
 import com.kajiwara.visualizegate.domain.GridPos;
 import com.kajiwara.visualizegate.domain.LinkPrediction;
 import com.kajiwara.visualizegate.domain.PortalCoordinateMapper;
 import com.kajiwara.visualizegate.domain.PortalDimension;
-import com.kajiwara.visualizegate.domain.PortalLinkResolver;
-import com.kajiwara.visualizegate.memory.PortalMemory;
-import com.kajiwara.visualizegate.scan.PortalIndex;
-import com.kajiwara.visualizegate.scan.PortalRecord;
 import com.kajiwara.visualizegate.ui.GateColors;
 
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
@@ -28,49 +22,29 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
-import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * 機能2: リンク状態ベクターライン (水後ステージ・<b>Mixin 不使用</b>・バニラ {@code RenderTypes.lines()})。
+ * ㉜ 機能2: リンク状態ベクターライン (水後ステージ・<b>Mixin 不使用</b>・バニラ {@code RenderTypes.lines()})＝
+ * <b>点群画面と同じ 5 状態色</b>。
  *
- * <p>トリガ＝火打石と打金 (F&S) 所持 or 既知ポータルの黒曜石 frame 注視。 source = 注視ポータル、
- * 非注視で F&S 所持ならプレイヤー位置を仮想 source。 {@link PortalLinkResolver} の三値で描き分ける:
+ * <p>トリガ/source/予測/状態は {@link PortalGaze#resolvePlanning} で一元化 (カード/凡例と同一)。 状態色は
+ * {@link GateColors#forState} で 5 状態に統一:
  * <ul>
- *   <li><b>LINKED (緑)</b>: source → {@code project(一致ポータル)} に 3D ライン。 <b>線の長さ＝現次元で見たズレ量</b>
- *       (本機能の主 signal; 長い緑＝大きなズレ＝混線リスク)。</li>
- *   <li><b>WILL_CREATE (赤)</b>: 範囲内に既存無し → 新規が理想スポット(≈source)に生成。 <b>長い線は引かず</b>
- *       理想スポットに短マーカー (赤は優劣ではなく状態; 新規はむしろズレ無し)。</li>
- *   <li><b>UNKNOWN (灰)</b>: 対象領域未観測 → 灰マーカー (緑/赤を主張しない)。</li>
+ *   <li><b>正常/ズレ</b>: source → {@code project(接続先)} に 3D ライン (長さ＝ズレ量) ＋端マーカー。</li>
+ *   <li><b>競合/未接続/片側</b>: source に状態色の短マーカー (長い線は引かない)。</li>
  * </ul>
- * 全描画は現次元座標に落とす。 OW↔Nether のみ (それ以外の次元では何もしない)。
+ * 全描画は現次元座標に落とす。 OW↔Nether のみ。
  */
 public final class PortalLinkRenderer {
 
     private static final PortalLinkRenderer INSTANCE = new PortalLinkRenderer();
 
-    // 対象次元の Y クランプ用バニラ標準境界 (datapack で異なり得る点は v0 既知の前提)。
-    private static final int OW_MIN_Y = -64;
-    private static final int OW_MAX_Y = 319;
-    private static final int NETHER_MIN_Y = 0;
-    private static final int NETHER_MAX_Y = 127;
-
     private static final float LINE_WIDTH = 2.5f;
     private static final double MARKER_HALF = 0.35;
 
     private MultiBufferSource.BufferSource afterWaterBuffer;
-
-    // ─── 予測キャッシュ (境界 strobe 防止: 毎フレームでなく source ブロック移動時のみ再計算) ───
-    private GridPos cachedSource;
-    private PortalDimension cachedDim;
-    private LinkPrediction cachedPrediction;
 
     private PortalLinkRenderer() {
     }
@@ -91,52 +65,19 @@ public final class PortalLinkRenderer {
             if (level == null || player == null) {
                 return;
             }
-            PortalDimension cur = PortalMemory.dimOf(level.dimension().identifier().toString());
-            if (cur != PortalDimension.OVERWORLD && cur != PortalDimension.NETHER) {
-                return; // OW↔Nether のみ
+            // ㉜ 注視/火打石の source・予測・5 状態を PortalGaze で一元解決 (カード/凡例と同一・色は5状態統一)。
+            PortalGaze.Result r = PortalGaze.resolvePlanning(mc);
+            if (r == null || r.status() == null) {
+                return; // トリガ無し or OW↔Nether 以外
             }
-            PortalDimension other = (cur == PortalDimension.OVERWORLD)
-                    ? PortalDimension.NETHER : PortalDimension.OVERWORLD;
-
-            // ─── トリガ + source 中心 (描画用は現次元の連続座標) ───
-            boolean holdingFlint = isHoldingFlint(player);
-            BlockPos lookedObsidian = lookedObsidian(mc, level);
-            PortalRecord srcPortal = (lookedObsidian != null)
-                    ? findPortalNear(level.dimension(), lookedObsidian) : null;
-
-            double srcX;
-            double srcY;
-            double srcZ;
-            if (srcPortal != null) {
-                // 注視ポータル = 静的ブロックアンカー (補間不要・従来どおり)。
-                AABB bb = srcPortal.aabb();
-                srcX = (bb.minX + bb.maxX) * 0.5;
-                srcY = (bb.minY + bb.maxY) * 0.5;
-                srcZ = (bb.minZ + bb.maxZ) * 0.5;
-            } else if (holdingFlint) {
-                // 動的プレイヤー端点: partial-tick 補間位置でアンカー (カメラと同じ補間基準＝ちらつき解消)。
-                float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
-                Vec3 p = player.getPosition(partialTick);
-                srcX = p.x;
-                srcY = p.y + 1.0; // 足元 → 胴中心あたりへ
-                srcZ = p.z;
-            } else {
-                return; // トリガ無し
-            }
-
-            // ─── 予測 (ブロック移動しきい値でキャッシュ: 同ブロック&同次元なら再利用＝境界 strobe 防止) ───
-            GridPos source = new GridPos((int) Math.floor(srcX), (int) Math.floor(srcY), (int) Math.floor(srcZ));
-            if (cachedPrediction == null || !source.equals(cachedSource) || cur != cachedDim) {
-                int otherMinY = (other == PortalDimension.NETHER) ? NETHER_MIN_Y : OW_MIN_Y;
-                int otherMaxY = (other == PortalDimension.NETHER) ? NETHER_MAX_Y : OW_MAX_Y;
-                double radius = (other == PortalDimension.NETHER) ? 16.0 : 128.0;
-                List<DomainPortal> known = PortalMemory.get().knownInDimension(other);
-                cachedPrediction = PortalLinkResolver.predict(source, cur, other, otherMinY, otherMaxY,
-                        known, radius, ideal -> PortalMemory.get().isRegionObserved(other, ideal.x(), ideal.z()));
-                cachedSource = source;
-                cachedDim = cur;
-            }
-            LinkPrediction pred = cachedPrediction;
+            PortalDimension cur = r.current();
+            PortalDimension other = r.other();
+            LinkPrediction pred = r.prediction();
+            GateState state = r.status().state();
+            int color = GateColors.forState(state); // 5 状態色 (画面/カード/凡例と一本化)
+            double srcX = r.sourceX();
+            double srcY = r.sourceY();
+            double srcZ = r.sourceZ();
 
             // ─── 描画準備 (camera-relative) ───
             CameraRenderState camState = ctx.levelState().cameraRenderState;
@@ -150,66 +91,25 @@ public final class PortalLinkRenderer {
             }
             MultiBufferSource.BufferSource bufferSource = afterWaterBuffer;
 
-            switch (pred.state()) {
-                case LINKED -> {
-                    DomainPortal m = pred.matched().orElseThrow();
-                    GridPos endC = PortalCoordinateMapper.project(m.anchor(), other, cur,
-                            level.getMinY(), level.getMaxY());
-                    double ex = endC.x() + 0.5;
-                    double ey = endC.y() + 0.5;
-                    double ez = endC.z() + 0.5;
-                    // 主 signal: source → project(P_other) のライン。長さ＝ズレ量。 描画は共有ヘルパ
-                    // (非シェーダ=lines / Iris シェーダ時=細クアッド)。
-                    OverlayDraw.segment(bufferSource, matrices, camPos,
-                            srcX, srcY, srcZ, ex, ey, ez, GateColors.LINK_GREEN, LINE_WIDTH);
-                    drawMarker(bufferSource, matrices, ex, ey, ez, camPos, GateColors.LINK_GREEN);
-                }
-                case WILL_CREATE ->
-                    // 長い線を引かない: 理想スポット(≈source)に短い赤マーカー。
-                    drawMarker(bufferSource, matrices, srcX, srcY, srcZ, camPos, GateColors.LINK_RED);
-                case UNKNOWN ->
-                    // 対象領域未観測: 灰マーカーのみ (緑/赤を主張しない)。
-                    drawMarker(bufferSource, matrices, srcX, srcY, srcZ, camPos, GateColors.LINK_GRAY);
-                default -> {
-                    // no-op
-                }
+            // 正常/ズレ＝接続先へライン (長さ＝ズレ量) ＋端マーカー。 競合/未接続/片側＝source に状態色マーカーのみ。
+            if ((state == GateState.OK || state == GateState.OFFSET)
+                    && pred != null && pred.matched().isPresent()) {
+                GridPos endC = PortalCoordinateMapper.project(pred.matched().get().anchor(), other, cur,
+                        level.getMinY(), level.getMaxY());
+                double ex = endC.x() + 0.5;
+                double ey = endC.y() + 0.5;
+                double ez = endC.z() + 0.5;
+                OverlayDraw.segment(bufferSource, matrices, camPos,
+                        srcX, srcY, srcZ, ex, ey, ez, color, LINE_WIDTH);
+                drawMarker(bufferSource, matrices, ex, ey, ez, camPos, color);
+            } else {
+                drawMarker(bufferSource, matrices, srcX, srcY, srcZ, camPos, color);
             }
 
             bufferSource.endBatch();
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] link render failed (continuing): {}", t.toString());
         }
-    }
-
-    // ── トリガ判定 ──────────────────────────────────────────────────────
-
-    private static boolean isHoldingFlint(LocalPlayer player) {
-        return player.getMainHandItem().getItem() == Items.FLINT_AND_STEEL
-                || player.getOffhandItem().getItem() == Items.FLINT_AND_STEEL;
-    }
-
-    private static BlockPos lookedObsidian(Minecraft mc, ClientLevel level) {
-        HitResult hr = mc.hitResult;
-        if (hr != null && hr.getType() == HitResult.Type.BLOCK && hr instanceof BlockHitResult bhr) {
-            BlockPos bp = bhr.getBlockPos();
-            if (level.getBlockState(bp).getBlock() == Blocks.OBSIDIAN) {
-                return bp;
-            }
-        }
-        return null;
-    }
-
-    /** 黒曜石 pos を frame に含む既知ポータルを探す (AABB を 1 膨張して frame 近傍を許容)。 */
-    private static PortalRecord findPortalNear(ResourceKey<Level> dim, BlockPos obs) {
-        double x = obs.getX() + 0.5;
-        double y = obs.getY() + 0.5;
-        double z = obs.getZ() + 0.5;
-        for (PortalRecord r : PortalIndex.get().recordsFor(dim)) {
-            if (r.aabb().inflate(1.0).contains(x, y, z)) {
-                return r;
-            }
-        }
-        return null;
     }
 
     // ── 描画ヘルパ ──────────────────────────────────────────────────────

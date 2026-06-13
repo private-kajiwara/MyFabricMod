@@ -57,6 +57,22 @@
 	"visualizegate.card.cave.nether_enclosed": "ネザー側は囲って生成 (洞窟リスク低)",
 	"visualizegate.card.cave.detail": "対象Y %s / 推定サーフェスY %s",
 
+	"visualizegate.state5.ok": "正常",
+	"visualizegate.state5.orphan": "片側",
+	"visualizegate.state5.offset": "ズレ",
+	"visualizegate.state5.will_create": "未接続",
+	"visualizegate.state5.conflict": "競合",
+
+	"visualizegate.card5.headline": "%s ― %s",
+	"visualizegate.card5.here": "ここに置くと",
+	"visualizegate.card5.connect": "→ %s に接続",
+	"visualizegate.card5.connect_offset": "→ %s に接続・約%sズレ",
+	"visualizegate.card5.conflict": "→ %s と競合",
+	"visualizegate.card5.conflict_generic": "→ 別のゲートと競合",
+	"visualizegate.card5.will_create": "→ 新しいゲートを生成",
+	"visualizegate.card5.orphan": "対応するゲートが無い",
+	"visualizegate.card5.unobserved": "リンク先未確認（向こう未探索）",
+
 	"visualizegate.legend.linked": "既存にリンク",
 	"visualizegate.legend.will_create": "新規生成",
 	"visualizegate.legend.unknown": "未確認",
