@@ -14,10 +14,13 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
  */
 public final class VgOverlayState {
 
-    private static boolean pointCloud = false; // 右下点群 HUD ウィジェット
-    private static boolean visualize = false;  // 全ゲート関係ワイヤーフレーム (in-world)
+    private static boolean pointCloud = false; // 点群サムネ (ドック内サブセクション)
+    private static boolean visualize = false;  // 全ゲート関係ワイヤーフレーム (in-world) ＋ ドックの状態/注記凡例
     private static boolean gpuUsage = false;   // 描画フレーム時間(ms)/FPS グラフ (真の GPU% ではない)
     private static boolean cpuUsage = false;   // プロセス CPU 使用率グラフ
+
+    // ㊲ B-F3 ドックの展開状態 (true=展開フルドック / false=畳スリムバー)。 専用キーバインド + `/vg dock` で切替。
+    private static boolean dockExpanded = false;
 
     private VgOverlayState() {
     }
@@ -67,6 +70,26 @@ public final class VgOverlayState {
             CpuSampler.get().stop();
         }
         return cpuUsage;
+    }
+
+    // ── ㊲ ドック展開状態 ──
+    public static boolean isDockExpanded() {
+        return dockExpanded;
+    }
+
+    public static boolean toggleDock() {
+        dockExpanded = !dockExpanded;
+        return dockExpanded;
+    }
+
+    /** いずれかの `/vg` セクションが有効か (ドックの表示可否＝何か点いていれば畳バーを出す)。 */
+    public static boolean anyActive() {
+        return pointCloud || visualize || gpuUsage || cpuUsage;
+    }
+
+    /** ドックを描くか (何か有効 or 明示的に展開済み)。 全 OFF かつ未展開＝何も出ない (既定で静か)。 */
+    public static boolean dockVisible() {
+        return dockExpanded || anyActive();
     }
 
     /** 全 `/vg` オーバーレイを OFF (`/vg clean`・切断で呼ぶ)。 1 つでも点いていたら true。 */

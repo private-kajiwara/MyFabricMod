@@ -7,12 +7,11 @@ import com.kajiwara.visualizegate.client.render.CornerIconRenderer;
 import com.kajiwara.visualizegate.client.render.GateGraphRenderer;
 import com.kajiwara.visualizegate.client.render.HologramFrameRenderer;
 import com.kajiwara.visualizegate.client.render.LegendOverlayRenderer;
-import com.kajiwara.visualizegate.client.render.PerfGraphHudRenderer;
-import com.kajiwara.visualizegate.client.render.PointCloudHudRenderer;
 import com.kajiwara.visualizegate.client.render.PortalBoxRenderer;
 import com.kajiwara.visualizegate.client.render.PortalInfoCardRenderer;
 import com.kajiwara.visualizegate.client.render.PortalLinkRenderer;
 import com.kajiwara.visualizegate.client.render.SearchDomeRenderer;
+import com.kajiwara.visualizegate.client.render.VgDockRenderer;
 import com.kajiwara.visualizegate.config.GateConfigManager;
 import com.kajiwara.visualizegate.memory.PortalMemory;
 import com.kajiwara.visualizegate.scan.PortalIndex;
@@ -68,12 +67,10 @@ public class VisualizeGateClient implements ClientModInitializer {
         // UX 層 (純追加・HUD パス): ① 自動インフォカード ② 常設凡例。 いずれも注視/所持トリガで表示。
         PortalInfoCardRenderer.register();
         LegendOverlayRenderer.register();
-        // ㉟B `/vg point-cloud` 右下点群 HUD ウィジェット (既定 OFF・GPU3D FBO 流用・小型/点数キャップ)。
-        PointCloudHudRenderer.register();
-        // ㉟C `/vg visualize` 全ゲート関係 in-world ワイヤーフレーム (既定 OFF・5 状態色・距離カリング)。
+        // ㉟C `/vg visualize` 全ゲート関係 in-world ワイヤーフレーム (既定 OFF・5 状態色・距離カリング・据置)。
         GateGraphRenderer.register();
-        // ㉟D `/vg gpu-usage`・`/vg cpu-usage` グラフ (既定 OFF・GPU は描画フレーム時間/FPS＝真の GPU% ではない)。
-        PerfGraphHudRenderer.register();
+        // ㊲ B-F3 集約ドック (左上・畳/展・パフォ/状態/注記/点群を集約)。 ㉟の散在 HUD (PerfGraph/PointCloud) を統合。
+        VgDockRenderer.register();
         VisualizeGateMod.LOGGER.info("VisualizeGate client initialized (portal scan + box renderer + menu UI).");
     }
 }

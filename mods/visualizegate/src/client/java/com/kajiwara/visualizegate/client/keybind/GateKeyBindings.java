@@ -1,5 +1,6 @@
 package com.kajiwara.visualizegate.client.keybind;
 
+import com.kajiwara.visualizegate.state.VgOverlayState;
 import com.kajiwara.visualizegate.ui.GateMenuScreen;
 
 import com.mojang.blaze3d.platform.InputConstants;
@@ -20,12 +21,15 @@ import org.lwjgl.glfw.GLFW;
 public final class GateKeyBindings {
 
     public static final String OPEN_MENU_KEY = "key.visualizegate.open_menu";
+    // ㊲ ドック展/畳トグル (V はハブで使用中＝再利用しない)。 既定<b>未割当</b>＝Controls から任意割当。
+    public static final String DOCK_KEY = "key.visualizegate.dock";
 
     // 独自カテゴリを Identifier 版 register で登録 (String 版は 1.21.11+ で package-private)。
     private static final KeyMapping.Category CATEGORY =
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath("visualizegate", "main"));
 
     private static KeyMapping openMenu;
+    private static KeyMapping toggleDock;
 
     private GateKeyBindings() {
     }
@@ -36,20 +40,39 @@ public final class GateKeyBindings {
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_V,
                 CATEGORY));
+        // ㊲ 既定未割当 (GLFW_KEY_UNKNOWN=-1)＝Controls で割り当てるまで発火しない (V 等と非衝突)。
+        toggleDock = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                DOCK_KEY,
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                CATEGORY));
         ClientTickEvents.END_CLIENT_TICK.register(GateKeyBindings::onTick);
     }
 
     private static void onTick(Minecraft mc) {
-        if (openMenu == null)
-            return;
-        while (openMenu.consumeClick()) {
-            // 他の Screen が開いている時は抑止 (誤発火防止)。
-            if (mc.screen == null) {
-                // ㉜C 初回の自動ガイド (4 枚カード) を撤去＝強制ポップアップ無し。 使い方はハブの「使い方」pull のみ。
-                // 学習は「一貫した言語＋その場のカード＋常設凡例」に委ねる (過剰なチュートリアル禁止)。
-                mc.setScreen(new GateMenuScreen());
+        if (openMenu != null) {
+            while (openMenu.consumeClick()) {
+                // 他の Screen が開いている時は抑止 (誤発火防止)。
+                if (mc.screen == null) {
+                    // ㉜C 初回の自動ガイド (4 枚カード) を撤去＝強制ポップアップ無し。 使い方はハブの「使い方」pull のみ。
+                    // 学習は「一貫した言語＋その場のカード＋常設凡例」に委ねる (過剰なチュートリアル禁止)。
+                    mc.setScreen(new GateMenuScreen());
+                }
             }
         }
+        // ㊲ ドック展/畳トグル (ゲーム画面中のみ＝Screen 表示中は抑止・入力非干渉)。
+        if (toggleDock != null) {
+            while (toggleDock.consumeClick()) {
+                if (mc.screen == null) {
+                    VgOverlayState.toggleDock();
+                }
+            }
+        }
+    }
+
+    /** ㊲ ドックのキーヒント用: 現在割当キーの表示名 (未割当なら "Not bound" 相当)。 */
+    public static String dockKeyDisplay() {
+        return toggleDock == null ? "?" : toggleDock.getTranslatedKeyMessage().getString();
     }
 
     /** HUD のキーヒント用: 現在割当キーの表示名 (再割当に追従)。 未登録時は "?"。 */

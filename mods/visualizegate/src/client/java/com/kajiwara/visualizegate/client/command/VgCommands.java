@@ -96,6 +96,9 @@ public final class VgCommands {
         }));
         root.then(literal("visualize").executes(
                 c -> feedbackToggle(c, "visualizegate.cmd.visualize", VgOverlayState.toggleVisualize())));
+        // ㊲ ドック展/畳トグル (専用キーバインドと同一動作)。
+        root.then(literal("dock").executes(
+                c -> feedbackToggle(c, "visualizegate.cmd.dock", VgOverlayState.toggleDock())));
         root.then(literal("gpu-usage").executes(
                 c -> feedbackToggle(c, "visualizegate.cmd.gpu", VgOverlayState.toggleGpuUsage())));
         root.then(literal("cpu-usage").executes(

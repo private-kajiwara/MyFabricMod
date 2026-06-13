@@ -1,6 +1,7 @@
 {
 	"key.visualizegate.main": "VisualizeGate",
 	"key.visualizegate.open_menu": "Open VisualizeGate menu",
+	"key.visualizegate.dock": "Toggle VisualizeGate dock (expand/collapse)",
 
 	"visualizegate.state.on": "ON",
 	"visualizegate.state.off": "OFF",
@@ -38,6 +39,7 @@
 	"visualizegate.cmd.added": "Wireframe added. Use /vg clean to remove.",
 
 	"visualizegate.cmd.cleanall": "Turned off all /vg overlays and cleared %s wireframe(s)",
+	"visualizegate.cmd.dock": "Dock expanded: %s",
 	"visualizegate.cmd.pointcloud": "Point-cloud HUD (bottom-right): %s",
 	"visualizegate.cmd.visualize": "Gate-relations wireframe: %s",
 	"visualizegate.cmd.gpu": "GPU graph — render frame time/FPS (not true GPU%%): %s",
