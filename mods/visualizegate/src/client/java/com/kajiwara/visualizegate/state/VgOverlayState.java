@@ -36,9 +36,7 @@ public final class VgOverlayState {
 
     public static boolean togglePointCloud() {
         pointCloud = !pointCloud;
-        if (pointCloud) {
-            dockExpanded = true; // ㊴A 有効化＝内容を即表示 (自動展開・"▶に格納" しない)
-        }
+        syncDockOnToggle(pointCloud);
         return pointCloud;
     }
 
@@ -48,9 +46,7 @@ public final class VgOverlayState {
 
     public static boolean toggleVisualize() {
         visualize = !visualize;
-        if (visualize) {
-            dockExpanded = true; // ㊴A 有効化＝状態+注記凡例を即表示 (自動展開)
-        }
+        syncDockOnToggle(visualize);
         return visualize;
     }
 
@@ -60,9 +56,7 @@ public final class VgOverlayState {
 
     public static boolean toggleGpuUsage() {
         gpuUsage = !gpuUsage;
-        if (gpuUsage) {
-            dockExpanded = true; // ㊴A 有効化＝パフォーマンスを即表示 (自動展開)
-        }
+        syncDockOnToggle(gpuUsage);
         return gpuUsage;
     }
 
@@ -75,11 +69,24 @@ public final class VgOverlayState {
         // ㊱A CPU 取得はバックグラウンド・デーモンで 1Hz (描画スレッドで同期呼びしない)。 トグルに連動して起動/停止。
         if (cpuUsage) {
             CpuSampler.get().start();
-            dockExpanded = true; // ㊴A 有効化＝CPU 行を即表示 (自動展開)
         } else {
             CpuSampler.get().stop();
         }
+        syncDockOnToggle(cpuUsage);
         return cpuUsage;
+    }
+
+    /**
+     * ㊴ コンテンツトグルとドック展開状態を同期する。 ON 化＝即表示 (自動展開・"▶に格納" しない・㊴A)、
+     * OFF 化で残フラグ無し＝畳む (空の展開ヘッダを残さず、 dockVisible() を false にして非表示・㊴B)。
+     * 残フラグがある OFF 化は展開状態を維持 (他セクションを見続けられる)。
+     */
+    private static void syncDockOnToggle(boolean turnedOn) {
+        if (turnedOn) {
+            dockExpanded = true;
+        } else if (!anyActive()) {
+            dockExpanded = false;
+        }
     }
 
     // ── ㊲ ドック展開状態 ──
