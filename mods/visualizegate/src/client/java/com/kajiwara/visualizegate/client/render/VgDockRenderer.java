@@ -15,6 +15,7 @@ import com.kajiwara.visualizegate.ui.GateColors;
 import com.kajiwara.visualizegate.domain.PortalDimension;
 import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
 import com.kajiwara.visualizegate.pointcloud.PointCloudSnapshot;
+import com.kajiwara.visualizegate.state.PointCloudViewState;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.resources.Identifier;
@@ -517,16 +518,29 @@ public final class VgDockRenderer {
     }
 
     //? if >=26.1 {
-    // ㊲D/㊱ 静止・現次元の点群サムネ (PointCloudGpuRenderer FBO 流用・自動回転なし・点数キャップ)。
-    private static final float PITCH = 0.55f;
-    private static final float YAW = 0.6f;
-    private static final int POINT_CAP = 16000;
-    private float pcDistance = 60f;
-    private PointCloudSnapshot pcLastSnap;
-    private PortalDimension pcLastDim;
+    // ㊵B ドック点群サムネ: Vメニュー (PointCloudScreen.buildGpuGeometry) と<b>同式</b>＝両層・密度(gpuDetail)・
+    //   スケール・spacing・dimTint・pointSize・表示トグル・hidden を {@link PointCloudViewState}/{@link PortalMemory}
+    //   から参照 (品質 parity)。 向きはプレイヤー yaw 追従 (㊵C)。 共有 FBO/VBO は Vメニュー画面と排他 (画面表示中は HUD 非表示)。
+    private static final float PITCH = 0.32f; // Vメニュー既定 pitch に合わせる
+    private static final float YAW = 0.6f;     // ㊵B 既定方位角 (㊵C でプレイヤー追従に置換)
+    private static final int DIM_TINT_OW = GateColors.PC_OW_HIGH;
+    private static final int DIM_TINT_NETHER = GateColors.PC_NETHER_HIGH;
+    private static final float DIM_TINT_FRAC = 0.15f;
+    private float pcDistance = 200f;
     private boolean pcWasVisible = false;
     private final float[] pcEmpty = new float[0];
     private final int[] pcEmptyI = new int[0];
+    // 幾何署名 (Vメニューと同じトグル/設定群・変化時のみ VBO 再構築)。
+    private PointCloudSnapshot gSnap;
+    private boolean gShowOw;
+    private boolean gShowN;
+    private boolean gDimTint;
+    private int gSpacing;
+    private int gDetail;
+    private int gPointSize;
+    private float gOwScale = Float.NaN;
+    private float gNetherScale = Float.NaN;
+    private int gHiddenVer = -1;
 
     private void drawThumb(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int w, int h) {
         if (!PointCloudGpuRenderer.usable()) {
@@ -534,31 +548,17 @@ public final class VgDockRenderer {
             pcWasVisible = false;
             return;
         }
-        PortalDimension dim = pcCurrentDim(mc); // ㊱B 現次元のみ・OW へフォールバックしない
-        if (dim == null) {
-            note(g, mc, x, y, w, h, "visualizegate.pc.hud.empty");
-            pcWasVisible = false;
-            return;
-        }
-        boolean dimChanged = dim != pcLastDim;
-        if (dimChanged) {
-            PointCloudAnalysis.get().requestAnalysis(); // 次元切替に追従 (非同期)
-        }
         PointCloudSnapshot snap = PointCloudAnalysis.get().snapshot();
-        if (snap == null || !pcDimHasData(snap, dim == PortalDimension.NETHER)) {
+        if (snap == null || snap.isEmpty()) {
             note(g, mc, x, y, w, h, "visualizegate.pc.hud.empty");
             pcWasVisible = false;
-            pcLastDim = dim;
             return;
         }
         try {
-            boolean takeover = !pcWasVisible || dimChanged; // 再表示/次元切替で組み直す (共有 VBO 対策)
-            if (takeover || snap != pcLastSnap) {
-                pcUpload(snap, dim);
-                pcLastSnap = snap;
+            boolean takeover = !pcWasVisible; // 再表示時は共有 VBO/FBO が画面のものかもしれない＝必ず組み直す
+            if (takeover || gpuGeomChanged(snap)) {
+                pcUpload(snap);
             }
-            pcLastDim = dim;
-            // ㊱C 固定角で静止描画。
             if (PointCloudGpuRenderer.render(w, h, YAW, PITCH, pcDistance, GateColors.BASE)) {
                 GpuTextureView cv = PointCloudGpuRenderer.colorView();
                 if (cv != null) {
@@ -572,70 +572,114 @@ public final class VgDockRenderer {
         }
     }
 
-    private PortalDimension pcCurrentDim(Minecraft mc) {
-        if (mc.level == null) {
-            return null;
+    /** Vメニューと同じ署名 (snapshot/トグル/スケール/detail/pointSize/spacing/hidden版) の変化検出。 */
+    private boolean gpuGeomChanged(PointCloudSnapshot snap) {
+        boolean showOw = PointCloudViewState.isShowOverworld();
+        boolean showN = PointCloudViewState.isShowNether();
+        boolean tint = PointCloudViewState.isDimTint();
+        int spacing = PointCloudViewState.getDimensionSpacing();
+        int detail = PointCloudViewState.getGpuDetail();
+        int pointSize = PointCloudViewState.getPointSize();
+        float owScale = PointCloudViewState.getOwDisplayScale();
+        float nScale = PointCloudViewState.getNetherDisplayScale();
+        int hiddenVer = PortalMemory.displayVersion();
+        if (snap == gSnap && showOw == gShowOw && showN == gShowN && tint == gDimTint
+                && spacing == gSpacing && detail == gDetail && pointSize == gPointSize
+                && owScale == gOwScale && nScale == gNetherScale && hiddenVer == gHiddenVer) {
+            return false;
         }
-        PortalDimension d = PortalMemory.dimOf(mc.level.dimension().identifier().toString());
-        return (d == PortalDimension.OVERWORLD || d == PortalDimension.NETHER) ? d : null;
+        gSnap = snap;
+        gShowOw = showOw;
+        gShowN = showN;
+        gDimTint = tint;
+        gSpacing = spacing;
+        gDetail = detail;
+        gPointSize = pointSize;
+        gOwScale = owScale;
+        gNetherScale = nScale;
+        gHiddenVer = hiddenVer;
+        return true;
     }
 
-    private boolean pcDimHasData(PointCloudSnapshot snap, boolean nether) {
-        int pN = (nether ? snap.nX : snap.owX).length;
-        if (pN > 0) {
-            return true;
-        }
-        for (int i = 0; i < snap.gateNether.length; i++) {
-            if (snap.gateNether[i] == nether) {
-                return true;
+    /** Vメニュー (buildGpuGeometry) と同式: 両層を detail/scale/spacing/tint/pointSize で組み、 表示ゲートを状態色の点で。 */
+    private void pcUpload(PointCloudSnapshot snap) {
+        float pivotY = PointCloudViewState.getDimensionSpacing() * 0.5f;
+        boolean tint = PointCloudViewState.isDimTint();
+        boolean showOw = PointCloudViewState.isShowOverworld();
+        boolean showN = PointCloudViewState.isShowNether();
+        float owScale = PointCloudViewState.getOwDisplayScale();
+        float nScale = PointCloudViewState.getNetherDisplayScale();
+        int detail = PointCloudViewState.getGpuDetail();
+        int owN = showOw ? snap.owX.length : 0;
+        int nN = showN ? snap.nX.length : 0;
+        int owStride = (owN > detail) ? (owN + detail - 1) / detail : 1;
+        int nStride = (nN > detail) ? (nN + detail - 1) / detail : 1;
+        int gShown = 0;
+        for (int i = 0; i < snap.gateX.length; i++) {
+            boolean neth = snap.gateNether[i];
+            if ((neth ? showN : showOw) && !gateHidden(snap, i)) {
+                gShown++;
             }
         }
-        return false;
-    }
-
-    /** 現在次元の単層 (地形点＋当該次元ゲート点) を点数キャップ付きで VBO 化。 共有 overlay は 0 でクリア。 */
-    private void pcUpload(PointCloudSnapshot snap, PortalDimension dim) {
-        boolean nether = dim == PortalDimension.NETHER;
-        float[] px = nether ? snap.nX : snap.owX;
-        float[] py = nether ? snap.nY : snap.owY;
-        float[] pz = nether ? snap.nZ : snap.owZ;
-        int[] pcol = nether ? snap.nColor : snap.owColor;
-        int pN = px.length;
-        int dimGates = 0;
-        for (int i = 0; i < snap.gateNether.length; i++) {
-            if (snap.gateNether[i] == nether) {
-                dimGates++;
-            }
-        }
-        int cap = Math.max(1, POINT_CAP - dimGates);
-        int stride = (pN > cap) ? (pN + cap - 1) / cap : 1;
-        int pK = (pN + stride - 1) / stride;
-        int total = pK + dimGates;
+        int total = (owN + owStride - 1) / owStride + (nN + nStride - 1) / nStride + gShown;
         float[] xyz = new float[total * 3];
         int[] col = new int[total];
         int k = 0;
-        for (int i = 0; i < pN; i += stride) {
-            xyz[k * 3] = px[i];
-            xyz[k * 3 + 1] = py[i];
-            xyz[k * 3 + 2] = pz[i];
-            col[k] = pcol[i];
+        for (int i = 0; i < owN; i += owStride) {
+            xyz[k * 3] = snap.owX[i] * owScale;
+            xyz[k * 3 + 1] = snap.owY[i] + pivotY;
+            xyz[k * 3 + 2] = snap.owZ[i] * owScale;
+            col[k] = tint ? mix(snap.owColor[i], DIM_TINT_OW, DIM_TINT_FRAC) : snap.owColor[i];
+            k++;
+        }
+        for (int i = 0; i < nN; i += nStride) {
+            xyz[k * 3] = snap.nX[i] * nScale;
+            xyz[k * 3 + 1] = snap.nY[i] - pivotY;
+            xyz[k * 3 + 2] = snap.nZ[i] * nScale;
+            col[k] = tint ? mix(snap.nColor[i], DIM_TINT_NETHER, DIM_TINT_FRAC) : snap.nColor[i];
             k++;
         }
         int[] gateState = snap.gateMeta != null ? snap.gateMeta.gateState() : null;
         for (int i = 0; i < snap.gateX.length; i++) {
-            if (snap.gateNether[i] != nether) {
+            boolean neth = snap.gateNether[i];
+            if (!(neth ? showN : showOw) || gateHidden(snap, i)) {
                 continue;
             }
-            xyz[k * 3] = snap.gateX[i];
-            xyz[k * 3 + 1] = snap.gateY[i];
-            xyz[k * 3 + 2] = snap.gateZ[i];
+            float gs = neth ? nScale : owScale;
+            xyz[k * 3] = snap.gateX[i] * gs;
+            xyz[k * 3 + 1] = snap.gateY[i] + (neth ? -pivotY : pivotY);
+            xyz[k * 3 + 2] = snap.gateZ[i] * gs;
             int st = (gateState != null && i < gateState.length) ? gateState[i] : 0;
             col[k] = GateColors.forStateOrdinal(st);
             k++;
         }
-        PointCloudGpuRenderer.uploadPoints(xyz, col, k, 2.5f);
-        PointCloudGpuRenderer.uploadOverlay(pcEmpty, pcEmptyI, 0);
-        pcDistance = Math.max(30f, snap.radius * 2.4f);
+        PointCloudGpuRenderer.uploadPoints(xyz, col, k, PointCloudViewState.getPointSize());
+        PointCloudGpuRenderer.uploadOverlay(pcEmpty, pcEmptyI, 0); // 共有 overlay をクリア (画面のゲート枠を混ぜない)
+        // Vメニューと同じ枠合わせ距離。
+        pcDistance = Math.max(snap.radius * 2.2f,
+                Math.max(PointCloudViewState.getDimensionSpacing() * 1.5f, 40f));
+    }
+
+    /** ㉝C 非表示ゲート判定 (Vメニューの isGateHidden と同一・{@link PortalMemory#isHidden})。 */
+    private boolean gateHidden(PointCloudSnapshot snap, int i) {
+        if (snap.gateMeta == null || i >= snap.gateMeta.gateWx().length) {
+            return false;
+        }
+        return PortalMemory.get().isHidden(
+                snap.gateNether[i] ? PortalDimension.NETHER : PortalDimension.OVERWORLD,
+                snap.gateMeta.gateWx()[i], snap.gateMeta.gateWy()[i], snap.gateMeta.gateWz()[i]);
+    }
+
+    /** ARGB 線形ブレンド (Vメニューの mix と同一・dimTint 用)。 */
+    private static int mix(int a, int b, float t) {
+        int al = (a >>> 24) & 0xFF;
+        int ar = (a >> 16) & 0xFF;
+        int ag = (a >> 8) & 0xFF;
+        int ab = a & 0xFF;
+        int r = Math.round(ar + (((b >> 16) & 0xFF) - ar) * t);
+        int gg = Math.round(ag + (((b >> 8) & 0xFF) - ag) * t);
+        int bl = Math.round(ab + ((b & 0xFF) - ab) * t);
+        return (al << 24) | (r << 16) | (gg << 8) | bl;
     }
     //?}
 
