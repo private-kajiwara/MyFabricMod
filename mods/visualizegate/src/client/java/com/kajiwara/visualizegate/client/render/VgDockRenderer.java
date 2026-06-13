@@ -509,6 +509,7 @@ public final class VgDockRenderer {
     //   から参照 (品質 parity)。 向きはプレイヤー yaw 追従 (㊵C)。 共有 FBO/VBO は Vメニュー画面と排他 (画面表示中は HUD 非表示)。
     private static final float PITCH = 0.32f; // Vメニュー既定 pitch に合わせる (固定)
     private static final float YAW_EPS = 0.02f; // ㊵C yaw 変化の再描画しきい値 (~1.1°・微小ジッタで再ラスタしない)
+    private static final int PC_MAX_DIM = 2048; // ㊶A SS FBO の各辺上限 (テクスチャ寸の安全側)
     private static final int DIM_TINT_OW = GateColors.PC_OW_HIGH;
     private static final int DIM_TINT_NETHER = GateColors.PC_NETHER_HIGH;
     private static final float DIM_TINT_FRAC = 0.15f;
@@ -551,18 +552,27 @@ public final class VgDockRenderer {
                 pcUpload(snap);
                 geomDirty = true;
             }
-            // ㊵C 向き＝プレイヤーの yaw (x,z) に追従 (アイドルスピンはしない)。 yaw/寸法/幾何が変わった時だけ
-            //     FBO を再ラスタし、 不変なら前フレーム FBO を blit するだけ＝常時フル密度の再描画を避ける (性能予算)。
+            // ㊶A FBO を<b>実デバイス解像度</b> (サムネ GUI px × GUI スケール SS) で描き、 サムネ矩形へ縮小 blit
+            //     ＝鮮鋭化 (Vメニューと同等 SS)。 GUI px をそのまま FBO テクセル数にすると拡大されてブロック状になる。
+            int ss = Math.max(1, mc.getWindow().getGuiScale());
+            while (ss > 1 && (w * ss > PC_MAX_DIM || h * ss > PC_MAX_DIM)) {
+                ss--;
+            }
+            int rw = w * ss;
+            int rh = h * ss;
+            // ㊵C 向き＝プレイヤーの yaw (x,z) に追従 (アイドルスピンはしない)。 yaw/FBO 寸法/幾何が変わった時だけ
+            //     再ラスタし、 不変なら前フレーム FBO を blit するだけ＝常時フル密度の再描画を避ける (性能予算)。
             float yaw = (float) Math.toRadians(mc.player != null ? mc.player.getYRot(1.0f) : 0f);
-            boolean rerender = takeover || geomDirty || w != pcRenderW || h != pcRenderH
+            boolean rerender = takeover || geomDirty || rw != pcRenderW || rh != pcRenderH
                     || Float.isNaN(pcRenderYaw) || Math.abs(yaw - pcRenderYaw) > YAW_EPS;
-            if (rerender && PointCloudGpuRenderer.render(w, h, yaw, PITCH, pcDistance, GateColors.BASE)) {
+            if (rerender && PointCloudGpuRenderer.render(rw, rh, yaw, PITCH, pcDistance, GateColors.BASE)) {
                 pcRenderYaw = yaw;
-                pcRenderW = w;
-                pcRenderH = h;
+                pcRenderW = rw;
+                pcRenderH = rh;
             }
             GpuTextureView cv = PointCloudGpuRenderer.colorView();
             if (cv != null) {
+                // FBO 全域 (UV 0..1) を w×h GUI 矩形へ縮小合成 (V 反転)。 SS 倍テクスチャ→1:1 でくっきり。
                 g.blit(cv, PointCloudGpuRenderer.sampler(), x, y, x + w, y + h, 0f, 1f, 1f, 0f);
             }
             pcWasVisible = true;
