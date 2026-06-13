@@ -1,7 +1,12 @@
 package com.kajiwara.visualizegate.client.render;
 
+import java.util.List;
 import java.util.Locale;
 
+import com.kajiwara.visualizegate.domain.GateConflictAnalyzer;
+import com.kajiwara.visualizegate.domain.GateNode;
+import com.kajiwara.visualizegate.domain.GateState;
+import com.kajiwara.visualizegate.memory.PortalMemory;
 import com.kajiwara.visualizegate.state.VgOverlayState;
 import com.kajiwara.visualizegate.ui.GateColors;
 
@@ -41,6 +46,13 @@ public final class VgDockRenderer {
     private static final int LINE = 11;      // 行高
     private static final int FRAME_CAP = 90; // フレーム時間ローリング長
 
+    // バニラ標準の次元境界 (GateConflictAnalyzer 入力・他レンダラと同一前提)。
+    private static final int OW_MIN_Y = -64;
+    private static final int OW_MAX_Y = 319;
+    private static final int NETHER_MIN_Y = 0;
+    private static final int NETHER_MAX_Y = 127;
+    private static final long COUNT_PERIOD_NANO = 1_000_000_000L; // 件数再計算は 1Hz (毎フレームの O(n^2)+alloc を回避)
+
     // F3 フラット・低不透明 (枠なし)。 畳=~0.48 / 展=~0.50。 ドロップシャドウ (g.text) で可読性。
     private static final int BG_COLLAPSED = 0x7A0F0A17; // alpha 0x7A≒0.48
     private static final int BG_EXPANDED = 0x800F0A17;  // alpha 0x80≒0.50
@@ -51,10 +63,19 @@ public final class VgDockRenderer {
     private int frameCount = 0;
     private long lastFrameNano = 0;
 
-    // ㊲ ヘッダ文字列キャッシュ (fps 整数/次元が変わった時だけ作り直す＝毎フレームの String.format/translatable 排除)。
+    // ㊲ ヘッダ本文キャッシュ (fps 整数/次元が変わった時だけ作り直す＝毎フレームの String 連結を排除)。
     private int hdrFps = Integer.MIN_VALUE;
     private String hdrDim = "";
     private Component hdrText = Component.empty();
+
+    // ㊲B 競合/ズレ件数 (1Hz スロットル・キャッシュ)。 平時 0＝スリムバーは静か、 >0 のときだけ色付きで追記。
+    private long lastCountNano = 0;
+    private int conflictCount = 0;
+    private int offsetCount = 0;
+    private int cntConf = Integer.MIN_VALUE;
+    private int cntOff = Integer.MIN_VALUE;
+    private Component confText = Component.empty();
+    private Component offText = Component.empty();
 
     private VgDockRenderer() {
     }
@@ -78,7 +99,9 @@ public final class VgDockRenderer {
             lastFrameNano = 0;
             return;
         }
-        sampleFrame(System.nanoTime());
+        long now = System.nanoTime();
+        sampleFrame(now);
+        updateCounts(now);
 
         int x = MARGIN;
         int y = MARGIN;
@@ -93,11 +116,23 @@ public final class VgDockRenderer {
 
     private void drawCollapsed(GuiGraphicsExtractor g, Minecraft mc, int x, int y) {
         Component text = header(mc);
-        int textW = mc.font.width(text);
-        int w = PAD + 8 + textW + 10 + PAD; // 角四角(8)+gap + text + インジケータ域(10)
+        int textW = mc.font.width(text) + countsWidth(mc);
+        int w = PAD + 8 + textW + 12 + PAD; // 角四角(8)+gap + text(+件数) + インジケータ域(12)
         int h = LINE + PAD * 2 - 2;
         g.fill(x, y, x + w, y + h, BG_COLLAPSED);
         drawHeaderRow(g, mc, x, y, w, text, false);
+    }
+
+    /** スリムバーに追記する件数群の合計幅 (件数が無ければ 0)。 */
+    private int countsWidth(Minecraft mc) {
+        int w = 0;
+        if (conflictCount > 0) {
+            w += mc.font.width(confText);
+        }
+        if (offsetCount > 0) {
+            w += mc.font.width(offText);
+        }
+        return w;
     }
 
     // ── 展 (フルドック) ヘッダのみ (セクションは ㊲C/D で追加) ──────────────
@@ -110,14 +145,25 @@ public final class VgDockRenderer {
         drawHeaderRow(g, mc, x, y, w, text, true);
     }
 
-    /** ヘッダ行 (角四角＋テキスト＋展開インジケータ)。 */
+    /** ヘッダ行 (角四角＋本文＋色付き件数＋展開インジケータ)。 */
     private void drawHeaderRow(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int w,
             Component text, boolean expanded) {
         int sq = 7;
         int sy = y + PAD - 1;
         // 角四角 (■ の代用・グリフ非依存)。
         g.fill(x + PAD, sy, x + PAD + sq, sy + sq, GateColors.MAIN);
-        g.text(mc.font, text, x + PAD + sq + 4, y + PAD, GateColors.TEXT);
+        int tx = x + PAD + sq + 4;
+        int ty = y + PAD;
+        g.text(mc.font, text, tx, ty, GateColors.TEXT);
+        // ㊲B 競合/ズレが存在する時だけ色付きで追記 (平時は何も足さない)。 色は g.text 引数 (版安全)。
+        tx += mc.font.width(text);
+        if (conflictCount > 0) {
+            g.text(mc.font, confText, tx, ty, GateColors.STATE_CONFLICT);
+            tx += mc.font.width(confText);
+        }
+        if (offsetCount > 0) {
+            g.text(mc.font, offText, tx, ty, GateColors.STATE_OFFSET);
+        }
         // 展開インジケータ (右端・表示のみ＝入力非干渉)。 畳=▸ / 展=▾。
         drawIndicator(g, x + w - PAD - 6, y + PAD, expanded);
     }
@@ -151,6 +197,42 @@ public final class VgDockRenderer {
     }
 
     // ── データ ─────────────────────────────────────────────────────────────
+
+    /** ㊲B 競合/ズレ件数を 1Hz で再計算し、 表示文言をキャッシュ (件数変化時のみ作り直す)。 */
+    private void updateCounts(long now) {
+        if (lastCountNano != 0 && (now - lastCountNano) < COUNT_PERIOD_NANO) {
+            return;
+        }
+        lastCountNano = now;
+        int cf = 0;
+        int of = 0;
+        try {
+            List<GateNode> nodes = PortalMemory.get().gateNodes();
+            if (!nodes.isEmpty()) {
+                GateState[] st = GateConflictAnalyzer
+                        .analyze(nodes, NETHER_MIN_Y, NETHER_MAX_Y, OW_MIN_Y, OW_MAX_Y).states();
+                for (GateState s : st) {
+                    if (s == GateState.CONFLICT) {
+                        cf++;
+                    } else if (s == GateState.OFFSET) {
+                        of++;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+            // 解析失敗時は件数を出さない (誤情報を出すより静かに)。
+        }
+        conflictCount = cf;
+        offsetCount = of;
+        if (cf != cntConf) {
+            cntConf = cf;
+            confText = Component.translatable("visualizegate.dock.conflict", cf);
+        }
+        if (of != cntOff) {
+            cntOff = of;
+            offText = Component.translatable("visualizegate.dock.offset", of);
+        }
+    }
 
     private void sampleFrame(long now) {
         if (lastFrameNano != 0) {

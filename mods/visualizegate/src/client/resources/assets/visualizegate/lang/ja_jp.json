@@ -40,6 +40,8 @@
 
 	"visualizegate.cmd.cleanall": "/vg オーバーレイを全て OFF・逆算ワイヤーフレーム %s 件も消去",
 	"visualizegate.cmd.dock": "ドック展開: %s",
+	"visualizegate.dock.conflict": " · 競合 %s",
+	"visualizegate.dock.offset": " · ズレ %s",
 	"visualizegate.cmd.pointcloud": "点群 HUD (右下): %s",
 	"visualizegate.cmd.visualize": "ゲート関係ワイヤーフレーム: %s",
 	"visualizegate.cmd.gpu": "GPU グラフ — 描画フレーム時間/FPS (真の GPU%% ではない): %s",
