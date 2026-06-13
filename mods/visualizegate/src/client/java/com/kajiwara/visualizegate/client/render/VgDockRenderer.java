@@ -50,7 +50,13 @@ public final class VgDockRenderer {
     private static final int MARGIN = 6;     // 画面端からの余白 (左上)
     private static final int PAD = 6;        // ドック内パディング
     private static final int LINE = 11;      // 行高
-    private static final int FRAME_CAP = 90; // フレーム時間ローリング長
+    private static final int FRAME_CAP = 90; // フレーム時間ローリング長 (fps 算出用・スリムバー表示)
+
+    // ㊹A ヘッダ寸法 (角四角 / インジケータ)。 件数を測ってから余白を挟んでインジケータを右端へ置く＝重ならない。
+    private static final int SQ = 7;        // ヘッダ角四角 (■ 代用) の一辺
+    private static final int SQ_GAP = 4;    // 角四角↔本文の隙間
+    private static final int IND_W = 7;     // 展開インジケータの幅
+    private static final int IND_GAP = 6;   // 本文+件数の末尾↔インジケータの余白 (重なり防止)
 
     // バニラ標準の次元境界 (GateConflictAnalyzer 入力・他レンダラと同一前提)。
     private static final int OW_MIN_Y = -64;
@@ -122,8 +128,10 @@ public final class VgDockRenderer {
 
     private void drawCollapsed(GuiGraphicsExtractor g, Minecraft mc, int x, int y) {
         Component text = header(mc);
-        int textW = mc.font.width(text) + countsWidth(mc);
-        int w = PAD + 8 + textW + 12 + PAD; // 角四角(8)+gap + text(+件数) + インジケータ域(12)
+        // ㊹A 本文域 = 角四角＋隙間＋本文(+色付き件数)。 これにインジケータ余白＋幅を足して箱幅を決める
+        //     ＝drawHeaderRow が同じ式でインジケータを右端へ置くので件数と重ならない。
+        int contentW = SQ + SQ_GAP + mc.font.width(text) + countsWidth(mc);
+        int w = PAD + contentW + IND_GAP + IND_W + PAD;
         int h = LINE + PAD * 2 - 2;
         g.fill(x, y, x + w, y + h, BG_COLLAPSED);
         drawHeaderRow(g, mc, x, y, w, text, false);
@@ -307,11 +315,10 @@ public final class VgDockRenderer {
     /** ヘッダ行 (角四角＋本文＋色付き件数＋展開インジケータ)。 */
     private void drawHeaderRow(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int w,
             Component text, boolean expanded) {
-        int sq = 7;
         int sy = y + PAD - 1;
         // 角四角 (■ の代用・グリフ非依存)。
-        g.fill(x + PAD, sy, x + PAD + sq, sy + sq, GateColors.MAIN);
-        int tx = x + PAD + sq + 4;
+        g.fill(x + PAD, sy, x + PAD + SQ, sy + SQ, GateColors.MAIN);
+        int tx = x + PAD + SQ + SQ_GAP;
         int ty = y + PAD;
         g.text(mc.font, text, tx, ty, GateColors.TEXT);
         // ㊲B 競合/ズレが存在する時だけ色付きで追記 (平時は何も足さない)。 色は g.text 引数 (版安全)。
@@ -323,8 +330,8 @@ public final class VgDockRenderer {
         if (offsetCount > 0) {
             g.text(mc.font, offText, tx, ty, GateColors.STATE_OFFSET);
         }
-        // 展開インジケータ (右端・表示のみ＝入力非干渉)。 畳=▸ / 展=▾。
-        drawIndicator(g, x + w - PAD - 6, y + PAD, expanded);
+        // ㊹A 展開インジケータ (バー右端・余白 IND_GAP を保証＝件数と重ならない・表示のみで入力非干渉)。 畳=▸ / 展=▾。
+        drawIndicator(g, x + w - PAD - IND_W, y + PAD, expanded);
     }
 
     /** 小三角インジケータ (グリフ非依存・g.fill)。 collapsed=右向き▸ / expanded=下向き▾。 */
