@@ -4,6 +4,8 @@ import com.kajiwara.visualizegate.state.VgOverlayState;
 import com.kajiwara.visualizegate.ui.GateColors;
 
 //? if >=26.1 {
+import com.kajiwara.visualizegate.domain.PortalDimension;
+import com.kajiwara.visualizegate.memory.PortalMemory;
 import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
 import com.kajiwara.visualizegate.pointcloud.PointCloudSnapshot;
 import com.mojang.blaze3d.textures.GpuTextureView;
@@ -20,9 +22,11 @@ import net.minecraft.network.chat.Component;
  * ㉟ `/vg point-cloud` の<b>右下小型 HUD ウィジェット</b> (常時表示・<b>Mixin 不使用</b>)。
  *
  * <p>{@link PointCloudGpuRenderer} を<b>小型 FBO</b> へ流用し、 解析済みスナップショット
- * ({@link PointCloudAnalysis#snapshot()}) の地形点＋ゲート点を<b>点数キャップ</b>付きで自前オービット回転表示する。
- * 性能予算: 小 FBO (≈92px)・点数 {@value #POINT_CAP} 上限・VBO 再構築はスナップショット変化/再表示時のみ
- * (回転は行列のみ＝再ラスタライズ無し)。 共有 overlay VBO は毎回 0 でクリア＝点群画面のゲート枠が混ざらない。
+ * ({@link PointCloudAnalysis#snapshot()}) の<b>プレイヤー現在次元</b>の地形点＋ゲート点を<b>点数キャップ</b>付きで
+ * 自前オービット回転表示する。 ㊱B 現次元のデータが無ければ OW へフォールバックせず「データなし」。
+ * 次元切替は検出して再解析を要求し追従する。 性能予算: 小 FBO (≈92px)・点数 {@value #POINT_CAP} 上限・VBO 再構築は
+ * スナップショット変化/次元切替/再表示時のみ (回転は行列のみ＝再ラスタライズ無し)。 共有 overlay VBO は毎回 0 で
+ * クリア＝点群画面のゲート枠が混ざらない。
  *
  * <p><b>絶対条件</b>: 既定 OFF ({@link VgOverlayState})・F1(hideGui)/他 Screen 表示中/F3 で非表示・入力非干渉・
  * 半透明枠。 右下の隅アイコン ({@link CornerIconRenderer}) の<b>上に積み</b>、 右辺のスコアボードとは
@@ -45,10 +49,10 @@ public final class PointCloudHudRenderer {
     //? if >=26.1 {
     private static final float PITCH = 0.55f;   // 俯角 (固定)
     private static final float YAW_PER_FRAME = 0.012f; // 自動オービット (フレーム毎・決定的)
-    private static final int SPACING = 48;      // 2 層 (OW/ネザー) の垂直分離
     private float yaw = 0f;
     private float distance = 60f;
     private PointCloudSnapshot lastSnap;
+    private PortalDimension lastDim;            // ㊱B 直近に描いた次元 (変化検出＝再解析要求＋再構築)
     private boolean wasVisible = false;
     private final float[] empty = new float[0];
     private final int[] emptyI = new int[0];
@@ -119,18 +123,32 @@ public final class PointCloudHudRenderer {
             wasVisible = false;
             return;
         }
-        PointCloudSnapshot snap = PointCloudAnalysis.get().snapshot();
-        if (snap == null || snap.isEmpty()) {
+        // ㊱B プレイヤーの現在次元のみ描く (OW へフォールバックしない)。 OW/ネザー以外は「データなし」。
+        PortalDimension dim = currentDim(mc);
+        if (dim == null) {
             label(g, mc, x0, y0, x1, y1, "visualizegate.pc.hud.empty");
             wasVisible = false;
             return;
         }
+        boolean dimChanged = dim != lastDim;
+        if (dimChanged) {
+            // 次元切替に追従＝新次元のデータで作り直す (非同期・このフレームは既存スナップショットの現次元層を使う)。
+            PointCloudAnalysis.get().requestAnalysis();
+        }
+        PointCloudSnapshot snap = PointCloudAnalysis.get().snapshot();
+        if (snap == null || !dimHasData(snap, dim == PortalDimension.NETHER)) {
+            label(g, mc, x0, y0, x1, y1, "visualizegate.pc.hud.empty"); // 現次元のデータが無い＝誤次元を出さない
+            wasVisible = false;
+            lastDim = dim;
+            return;
+        }
         try {
-            boolean takeover = !wasVisible;            // 再表示直後は VBO が画面のものかもしれない＝必ず組み直す
+            boolean takeover = !wasVisible || dimChanged; // 再表示/次元切替直後は必ず組み直す (共有 VBO 対策)
             if (takeover || snap != lastSnap) {
-                uploadGeometry(snap);
+                uploadGeometry(snap, dim);
                 lastSnap = snap;
             }
+            lastDim = dim;
             yaw += YAW_PER_FRAME; // 自動オービット (回転は行列のみ＝再ラスタライズ無し)
 
             int vpW = (x1 - x0) - PAD * 2;
@@ -158,43 +176,70 @@ public final class PointCloudHudRenderer {
     }
 
     //? if >=26.1 {
+    /** プレイヤーの現在次元 (OW/ネザーのみ・それ以外は null)。 PortalMemory と同じ dim 解決経路。 */
+    private PortalDimension currentDim(Minecraft mc) {
+        if (mc.level == null) {
+            return null;
+        }
+        PortalDimension d = PortalMemory.dimOf(mc.level.dimension().identifier().toString());
+        return (d == PortalDimension.OVERWORLD || d == PortalDimension.NETHER) ? d : null;
+    }
+
+    /** 指定次元の層に描く点 (地形 or 当該次元ゲート) があるか。 無ければ誤次元を出さず「データなし」。 */
+    private boolean dimHasData(PointCloudSnapshot snap, boolean nether) {
+        int pN = (nether ? snap.nX : snap.owX).length;
+        if (pN > 0) {
+            return true;
+        }
+        for (int i = 0; i < snap.gateNether.length; i++) {
+            if (snap.gateNether[i] == nether) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
-     * スナップショットの地形点＋ゲート点を点数キャップ付きでインターリーブし VBO 化 (画面の buildGpuGeometry と
-     * 同じ層変換: OW=+pivot / ネザー=-pivot)。 共有 overlay VBO は 0 でクリア＝画面のゲート枠/リンクが混ざらない。
+     * ㊱B <b>現在次元の単層のみ</b>をインターリーブし VBO 化 (地形点＋当該次元ゲート点・点数キャップ付き)。
+     * スナップショットの Y は層ごとにセンタリング済なので単層は pivot 加算不要。 共有 overlay VBO は 0 でクリア
+     * ＝画面のゲート枠/リンクが混ざらない。
      */
-    private void uploadGeometry(PointCloudSnapshot snap) {
-        int pivotY = SPACING / 2;
-        int owN = snap.owX.length;
-        int nN = snap.nX.length;
-        int gN = snap.gateX.length;
-        int half = Math.max(1, (POINT_CAP - gN) / 2);
-        int owStride = (owN > half) ? (owN + half - 1) / half : 1;
-        int nStride = (nN > half) ? (nN + half - 1) / half : 1;
-        int owK = (owN + owStride - 1) / owStride;
-        int nK = (nN + nStride - 1) / nStride;
-        int total = owK + nK + gN;
+    private void uploadGeometry(PointCloudSnapshot snap, PortalDimension dim) {
+        boolean nether = dim == PortalDimension.NETHER;
+        float[] px = nether ? snap.nX : snap.owX;
+        float[] py = nether ? snap.nY : snap.owY;
+        float[] pz = nether ? snap.nZ : snap.owZ;
+        int[] pcol = nether ? snap.nColor : snap.owColor;
+        int pN = px.length;
+        // 当該次元のゲート数を先に数える (キャップ配分用)。
+        int dimGates = 0;
+        for (int i = 0; i < snap.gateNether.length; i++) {
+            if (snap.gateNether[i] == nether) {
+                dimGates++;
+            }
+        }
+        int cap = Math.max(1, POINT_CAP - dimGates);
+        int stride = (pN > cap) ? (pN + cap - 1) / cap : 1;
+        int pK = (pN + stride - 1) / stride;
+        int total = pK + dimGates;
         float[] xyz = new float[total * 3];
         int[] col = new int[total];
         int k = 0;
-        for (int i = 0; i < owN; i += owStride) {
-            xyz[k * 3] = snap.owX[i];
-            xyz[k * 3 + 1] = snap.owY[i] + pivotY;
-            xyz[k * 3 + 2] = snap.owZ[i];
-            col[k] = snap.owColor[i];
+        for (int i = 0; i < pN; i += stride) {
+            xyz[k * 3] = px[i];
+            xyz[k * 3 + 1] = py[i];
+            xyz[k * 3 + 2] = pz[i];
+            col[k] = pcol[i];
             k++;
         }
-        for (int i = 0; i < nN; i += nStride) {
-            xyz[k * 3] = snap.nX[i];
-            xyz[k * 3 + 1] = snap.nY[i] - pivotY;
-            xyz[k * 3 + 2] = snap.nZ[i];
-            col[k] = snap.nColor[i];
-            k++;
-        }
-        // ゲート点 (5 状態色・明るめ＝地形に埋もれない目印)。 番号/枠は省略 (小ウィジェット＝点で十分)。
+        // 当該次元のゲート点 (5 状態色・明るめ＝地形に埋もれない目印)。
         int[] gateState = snap.gateMeta != null ? snap.gateMeta.gateState() : null;
-        for (int i = 0; i < gN; i++) {
+        for (int i = 0; i < snap.gateX.length; i++) {
+            if (snap.gateNether[i] != nether) {
+                continue;
+            }
             xyz[k * 3] = snap.gateX[i];
-            xyz[k * 3 + 1] = snap.gateY[i] + (snap.gateNether[i] ? -pivotY : pivotY);
+            xyz[k * 3 + 1] = snap.gateY[i];
             xyz[k * 3 + 2] = snap.gateZ[i];
             int st = (gateState != null && i < gateState.length) ? gateState[i] : 0;
             col[k] = GateColors.forStateOrdinal(st);
@@ -202,7 +247,7 @@ public final class PointCloudHudRenderer {
         }
         PointCloudGpuRenderer.uploadPoints(xyz, col, k, 2.5f);
         PointCloudGpuRenderer.uploadOverlay(empty, emptyI, 0); // 共有 overlay をクリア (画面のゲート枠を混ぜない)
-        distance = Math.max(30f, snap.radius * 2.4f + SPACING);
+        distance = Math.max(30f, snap.radius * 2.4f);
     }
     //?}
 }
