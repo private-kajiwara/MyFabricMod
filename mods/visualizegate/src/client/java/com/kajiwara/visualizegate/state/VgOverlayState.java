@@ -14,11 +14,12 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
  */
 public final class VgOverlayState {
 
-    private static boolean pointCloud = false; // 点群サムネ (ドック内サブセクション)
-    private static boolean visualize = false;  // 全ゲート関係ワイヤーフレーム (in-world) ＋ ドックの状態/注記凡例
-    private static boolean perf = false;       // ㊷A パフォーマンス (フレーム時間スパークライン＋CPU スパークライン・1 セクション統合)
+    private static boolean pointCloud = false; // 点群サムネ (ドック内サブセクション・/vg point-cloud)
+    private static boolean visualize = false;  // 全ゲート関係ワイヤーフレーム (in-world・凡例はドック展開で)
 
-    // ㊲ B-F3 ドックの展開状態 (true=展開フルドック / false=畳スリムバー)。 専用キーバインド + `/vg dock` で切替。
+    // ㊲ B-F3 ドックの展開状態 (true=展開フルメニュー / false=畳スリムバー)。 専用キーバインド + `/vg dock` で切替。
+    // ㊸A 展開＝常にフルメニュー (perf [フレーム+CPU 両グラフ+注記] ＋ ゲート状態 5 色 ＋ 注記 4・フラグ非依存)。
+    //     点群サムネのみ pointCloud 連動で追加。 CpuSampler はこの展開中 (perf 表示中) だけ稼働する。
     private static boolean dockExpanded = false;
 
     private VgOverlayState() {
@@ -35,7 +36,10 @@ public final class VgOverlayState {
 
     public static boolean togglePointCloud() {
         pointCloud = !pointCloud;
-        syncDockOnToggle(pointCloud);
+        // ㊸A 点群はドック内サブセクション＝有効化したら展開して見せる (自動展開)。 OFF はフルメニューを残す (畳まない)。
+        if (pointCloud) {
+            setDockExpanded(true);
+        }
         return pointCloud;
     }
 
@@ -44,69 +48,54 @@ public final class VgOverlayState {
     }
 
     public static boolean toggleVisualize() {
+        // ㊸A visualize はワイヤーフレーム＝in-world。 ドックは可視 (anyActive) でスリムバー、 凡例は手動展開で。 自動展開しない。
         visualize = !visualize;
-        syncDockOnToggle(visualize);
         return visualize;
     }
 
-    /** ㊷A パフォーマンス (フレーム時間＋CPU の 2 スパークライン＝1 セクション)。 旧 gpu-usage/cpu-usage を統合。 */
-    public static boolean isPerf() {
-        return perf;
-    }
-
-    public static boolean togglePerf() {
-        perf = !perf;
-        // ㊱A CPU 取得はバックグラウンド・デーモンで 1Hz (描画スレッドで同期呼びしない)。 perf に連動して起動/停止。
-        if (perf) {
-            CpuSampler.get().start();
-        } else {
-            CpuSampler.get().stop();
-        }
-        syncDockOnToggle(perf);
-        return perf;
-    }
-
-    /**
-     * ㊴ コンテンツトグルとドック展開状態を同期する。 ON 化＝即表示 (自動展開・"▶に格納" しない・㊴A)、
-     * OFF 化で残フラグ無し＝畳む (空の展開ヘッダを残さず、 dockVisible() を false にして非表示・㊴B)。
-     * 残フラグがある OFF 化は展開状態を維持 (他セクションを見続けられる)。
-     */
-    private static void syncDockOnToggle(boolean turnedOn) {
-        if (turnedOn) {
-            dockExpanded = true;
-        } else if (!anyActive()) {
-            dockExpanded = false;
-        }
-    }
-
-    // ── ㊲ ドック展開状態 ──
+    // ── ㊲/㊸ ドック展開状態 (展開＝フルメニュー)。 CpuSampler は展開中だけ稼働。 ──
     public static boolean isDockExpanded() {
         return dockExpanded;
     }
 
     public static boolean toggleDock() {
-        dockExpanded = !dockExpanded;
+        setDockExpanded(!dockExpanded);
         return dockExpanded;
     }
 
-    /** いずれかの `/vg` セクションが有効か (ドックの表示可否＝何か点いていれば畳バーを出す)。 */
-    public static boolean anyActive() {
-        return pointCloud || visualize || perf;
+    /**
+     * ㊸A 展開状態を設定し、 CpuSampler を連動させる (展開中＝perf 表示中だけ 1Hz 稼働・畳み/clean で停止)。
+     * フレームグラフは描画ループ由来で軽いので常時 (展開時のみ描画)。 描画スレッドでは CPU を同期取得しない (㊱A)。
+     */
+    private static void setDockExpanded(boolean v) {
+        if (dockExpanded == v) {
+            return;
+        }
+        dockExpanded = v;
+        if (v) {
+            CpuSampler.get().start();
+        } else {
+            CpuSampler.get().stop();
+        }
     }
 
-    /** ドックを描くか (何か有効 or 明示的に展開済み)。 全 OFF かつ未展開＝何も出ない (既定で静か)。 */
+    /** いずれかの `/vg` セクションが有効か (ドックの表示可否＝何か点いていれば畳バーを出す)。 ㊸A perf は廃止。 */
+    public static boolean anyActive() {
+        return pointCloud || visualize;
+    }
+
+    /** ドックを描くか (展開済み or 何か有効)。 全 OFF かつ未展開＝何も出ない (既定で静か)。 */
     public static boolean dockVisible() {
         return dockExpanded || anyActive();
     }
 
     /** 全 `/vg` オーバーレイを OFF (`/vg clean`・切断で呼ぶ)。 1 つでも点いていたら true。 ㊲E ドックも畳んで非表示化。 */
     public static boolean clearAll() {
-        boolean any = pointCloud || visualize || perf || dockExpanded;
+        boolean any = pointCloud || visualize || dockExpanded;
         pointCloud = false;
         visualize = false; // ㊲E in-world visualize も停止 (GateGraphRenderer がこのフラグで即 early-return)
-        perf = false;
-        dockExpanded = false; // ㊲E clean でドックを畳む＝全 OFF なら dockVisible() が false ＝ドック非表示
-        CpuSampler.get().stop(); // ㊱A デーモンを放置しない (clean/切断で確実に停止)。
+        setDockExpanded(false); // ㊸A 畳む＝CpuSampler 停止 ＋ 全 OFF なら dockVisible() が false ＝ドック非表示
+        CpuSampler.get().stop(); // ㊱A 念のため確実に停止 (idempotent)。
         return any;
     }
 }

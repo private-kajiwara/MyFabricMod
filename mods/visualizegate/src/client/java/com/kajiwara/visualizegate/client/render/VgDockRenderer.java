@@ -157,8 +157,7 @@ public final class VgDockRenderer {
     private static final Component GPU_NOTE = Component.translatable("visualizegate.perf.gpu.note");
 
     private void drawExpanded(GuiGraphicsExtractor g, Minecraft mc, int x, int y) {
-        boolean perf = VgOverlayState.isPerf();
-        boolean viz = VgOverlayState.isVisualize();
+        // ㊸A 展開＝常にフルメニュー: perf＋ゲート状態＋注記をフラグ非依存で常時表示。 点群のみ pointCloud 連動で追加。
         boolean pc = VgOverlayState.isPointCloud();
 
         // ㊳A 実幅は GUI スケール画面に収まるよう制約: 中央 (クロスヘア) を越えない (≤ 画面半分)、 上限 spec 452。
@@ -168,14 +167,10 @@ public final class VgDockRenderer {
         dockW = Math.min(dockW, sw - MARGIN * 2); // 極小画面の安全側クランプ
         int innerX = x + PAD;
         int innerW = dockW - PAD * 2;
-        // 高さ算出 (有効セクションのみ積む)。
+        // 高さ算出: ヘッダ + perf + 状態 + 注記 (常時) + 点群 (pointCloud 時のみ)。
         int h = PAD + LINE; // top pad + header row
-        if (perf) {
-            h += DIV + perfHeight();
-        }
-        if (viz) {
-            h += DIV + statusHeight() + GAP + notesHeight();
-        }
+        h += DIV + perfHeight();
+        h += DIV + statusHeight() + GAP + notesHeight();
         // ㊳C 点群サムネ: spec 420×176 を上限に、 アスペクト維持で innerW へ収め、 高さは画面 1/3 を超えない
         //     (中央/ホットバーに侵入しない・GUI スケール非依存)。
         int pcTw = 0;
@@ -192,16 +187,12 @@ public final class VgDockRenderer {
         drawHeaderRow(g, mc, x, y, dockW, header(mc), true);
 
         int cy = y + PAD + LINE;
-        if (perf) {
-            cy = divider(g, x, cy, dockW);
-            cy = drawPerf(g, mc, innerX, cy, innerW);
-        }
-        if (viz) {
-            cy = divider(g, x, cy, dockW);
-            cy = drawStatus(g, mc, innerX, cy, innerW);
-            cy += GAP;
-            cy = drawNotes(g, mc, innerX, cy, innerW);
-        }
+        cy = divider(g, x, cy, dockW);
+        cy = drawPerf(g, mc, innerX, cy, innerW);
+        cy = divider(g, x, cy, dockW);
+        cy = drawStatus(g, mc, innerX, cy, innerW);
+        cy += GAP;
+        cy = drawNotes(g, mc, innerX, cy, innerW);
         if (pc) {
             cy = divider(g, x, cy, dockW);
             cy = drawPointCloud(g, mc, innerX, cy, pcTw, pcTh);
