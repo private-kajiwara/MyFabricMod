@@ -142,7 +142,8 @@ public final class VgDockRenderer {
 
     // ── 展 (フルドック): ヘッダ → [パフォ] → [状態+注記] → [点群(㊲D)] ──────
 
-    private static final int DOCK_W = 452;   // spec 準拠の固定幅
+    private static final int DOCK_W = 452;   // spec 設計幅 (上限)。 実幅は GUI スケール画面に収まるよう制約。
+    private static final int MIN_DOCK_W = 180; // 極小画面でも本文が収まる下限
     private static final int DIV = 6;        // セクション区切り (ヘアライン＋余白)
     private static final int GAP = 3;
     private static final int SPARK_H = 18;   // スパークライン高
@@ -160,8 +161,13 @@ public final class VgDockRenderer {
         boolean viz = VgOverlayState.isVisualize();
         boolean pc = VgOverlayState.isPointCloud();
 
+        // ㊳A 実幅は GUI スケール画面に収まるよう制約: 中央 (クロスヘア) を越えない (≤ 画面半分)、 上限 spec 452。
+        int sw = mc.getWindow().getGuiScaledWidth();
+        int dockW = Math.min(DOCK_W, sw / 2 - MARGIN * 2);
+        dockW = Math.max(MIN_DOCK_W, dockW);
+        dockW = Math.min(dockW, sw - MARGIN * 2); // 極小画面の安全側クランプ
         int innerX = x + PAD;
-        int innerW = DOCK_W - PAD * 2;
+        int innerW = dockW - PAD * 2;
         // 高さ算出 (有効セクションのみ積む)。
         int h = PAD + LINE; // top pad + header row
         if (gpu || cpu) {
@@ -175,22 +181,22 @@ public final class VgDockRenderer {
         }
         h += PAD;
 
-        g.fill(x, y, x + DOCK_W, y + h, BG_EXPANDED);
-        drawHeaderRow(g, mc, x, y, DOCK_W, header(mc), true);
+        g.fill(x, y, x + dockW, y + h, BG_EXPANDED);
+        drawHeaderRow(g, mc, x, y, dockW, header(mc), true);
 
         int cy = y + PAD + LINE;
         if (gpu || cpu) {
-            cy = divider(g, x, cy);
+            cy = divider(g, x, cy, dockW);
             cy = drawPerf(g, mc, innerX, cy, innerW, gpu, cpu);
         }
         if (viz) {
-            cy = divider(g, x, cy);
+            cy = divider(g, x, cy, dockW);
             cy = drawStatus(g, mc, innerX, cy, innerW);
             cy += GAP;
             cy = drawNotes(g, mc, innerX, cy, innerW);
         }
         if (pc) {
-            cy = divider(g, x, cy);
+            cy = divider(g, x, cy, dockW);
             cy = drawPointCloud(g, mc, innerX, cy, innerW);
         }
     }
@@ -218,9 +224,9 @@ public final class VgDockRenderer {
         return LINE + 2 * LINE; // title + 4 entries in 2 cols (2 rows)
     }
 
-    /** ヘアライン区切りを描き、 次の Y を返す。 */
-    private int divider(GuiGraphicsExtractor g, int x, int y) {
-        g.fill(x + PAD, y + 2, x + DOCK_W - PAD, y + 3, GateColors.MAIN_DIM);
+    /** ヘアライン区切りを描き、 次の Y を返す。 ドック実幅 {@code dockW} 内に収める。 */
+    private int divider(GuiGraphicsExtractor g, int x, int y, int dockW) {
+        g.fill(x + PAD, y + 2, x + dockW - PAD, y + 3, GateColors.MAIN_DIM);
         return y + DIV;
     }
 
