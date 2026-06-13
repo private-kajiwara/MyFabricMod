@@ -1,8 +1,8 @@
 package com.kajiwara.visualizegate.client.render;
 
-import java.lang.management.ManagementFactory;
 import java.util.Locale;
 
+import com.kajiwara.visualizegate.state.CpuSampler;
 import com.kajiwara.visualizegate.state.VgOverlayState;
 import com.kajiwara.visualizegate.ui.GateColors;
 
@@ -26,8 +26,12 @@ import net.minecraft.network.chat.Component;
  *       HUD コールバック間の {@code System.nanoTime()} 差分で<b>描画フレーム時間(ms)＋FPS</b>を出す。
  *       ラベルに「※描画フレーム時間・GPU% ではない」を明記する。</li>
  *   <li><b>cpu-usage</b>: {@code com.sun.management.OperatingSystemMXBean#getProcessCpuLoad()} の<b>実プロセス
- *       使用率%</b> (＋system%)。 取得コストを考え ~{@value #CPU_SAMPLE_MS}ms 間隔でサンプリング。</li>
+ *       使用率%</b> (＋system%)。 ㊱A これは周期的にブロックし得るため<b>描画スレッドで呼ばず</b>、
+ *       {@link CpuSampler} (バックグラウンド・デーモン・1Hz) が volatile に公開した値を読むだけ。</li>
  * </ul>
+ *
+ * <p>㊱A 描画スレッドではアロケーションを起こさない: フレーム時間は事前確保リング、 タイトルは表示値が
+ * 変わった時だけ作り直す ({@code String.format}/translatable を毎フレーム呼ばない)。
  *
  * <p>配置: <b>左上</b>に縦スタック (要回避域＝右=スコアボード/右上=ポーション/上=ボスバー/下中央=ホットバー等を
  * すべて避ける)。 有効なグラフだけを上から詰めて<b>重ならない</b>。 既定 OFF ({@link VgOverlayState})・
@@ -42,40 +46,28 @@ public final class PerfGraphHudRenderer {
     private static final int PANEL_H = 40;
     private static final int GAP = 4;
     private static final int PAD = 4;
-    private static final int CAP = 90;            // ローリングバッファ長
-    private static final long CPU_SAMPLE_MS = 500; // CPU サンプリング間隔
+    private static final int CAP = 90;            // フレーム時間ローリング長
     private static final int PANEL_BG = GateColors.HUD_BG;
 
-    // フレーム時間 (ms) ローリング。
+    // GPU 注記 (定数文字列・1 度だけ確保＝毎フレーム translatable しない)。
+    private static final Component GPU_NOTE = Component.translatable("visualizegate.perf.gpu.note");
+
+    // フレーム時間 (ms) ローリング (描画スレッド由来・軽い)。 CPU は別スレッド ({@link CpuSampler})。
     private final float[] frameMs = new float[CAP];
     private int frameHead = 0;
     private int frameCount = 0;
     private long lastFrameNano = 0;
 
-    // CPU (プロセス% / system%) ローリング。
-    private final float[] cpuPct = new float[CAP];
-    private int cpuHead = 0;
-    private int cpuCount = 0;
-    private long lastCpuSampleNano = 0;
-    private float lastCpuPct = 0f;
-    private float lastSysPct = 0f;
-
-    // OperatingSystemMXBean (com.sun) — JDK ランタイムで実使用率を返す。 取得不可なら null フォールバック。
-    private final com.sun.management.OperatingSystemMXBean osBean = resolveOsBean();
+    // ㊱A タイトルキャッシュ: 表示値 (0.1 刻みに丸めた int) が変わった時だけ Component を作り直す
+    //     (毎フレームの String.format / translatable アロケーションを排除)。
+    private int gpuMs10 = Integer.MIN_VALUE;
+    private int gpuFps10 = Integer.MIN_VALUE;
+    private Component gpuTitle = Component.empty();
+    private int cpuP10 = Integer.MIN_VALUE;
+    private int cpuS10 = Integer.MIN_VALUE;
+    private Component cpuTitle = Component.empty();
 
     private PerfGraphHudRenderer() {
-    }
-
-    private static com.sun.management.OperatingSystemMXBean resolveOsBean() {
-        try {
-            java.lang.management.OperatingSystemMXBean b = ManagementFactory.getOperatingSystemMXBean();
-            if (b instanceof com.sun.management.OperatingSystemMXBean sun) {
-                return sun;
-            }
-        } catch (Throwable ignored) {
-            // 取得不可 (非 HotSpot 等) → null。
-        }
-        return null;
     }
 
     public static void register() {
@@ -102,9 +94,7 @@ public final class PerfGraphHudRenderer {
 
         long now = System.nanoTime();
         sampleFrame(now, gpu);
-        if (cpu) {
-            sampleCpu(now);
-        }
+        // CPU サンプリングは描画スレッドで行わない (CpuSampler が 1Hz・別スレッドで volatile 公開)。
 
         // 左上に有効なグラフだけ縦スタック。
         int x = MARGIN;
@@ -134,45 +124,42 @@ public final class PerfGraphHudRenderer {
         lastFrameNano = now;
     }
 
-    private void sampleCpu(long now) {
-        if (osBean == null) {
-            return;
-        }
-        if (lastCpuSampleNano != 0 && (now - lastCpuSampleNano) < CPU_SAMPLE_MS * 1_000_000L) {
-            return; // 間隔未満はスキップ (前回値を保持)
-        }
-        lastCpuSampleNano = now;
-        double proc = osBean.getProcessCpuLoad();
-        double sys = osBean.getCpuLoad();
-        lastCpuPct = (proc < 0) ? lastCpuPct : (float) (proc * 100.0);
-        lastSysPct = (sys < 0) ? lastSysPct : (float) (sys * 100.0);
-        cpuPct[cpuHead] = lastCpuPct;
-        cpuHead = (cpuHead + 1) % CAP;
-        if (cpuCount < CAP) {
-            cpuCount++;
-        }
-    }
-
     // ── 描画 ─────────────────────────────────────────────────────────────
 
     private void drawGpuPanel(GuiGraphicsExtractor g, Minecraft mc, int x, int y) {
         float avgMs = avg(frameMs, frameCount);
         float fps = (avgMs > 0.01f) ? (1000f / avgMs) : 0f;
-        Component title = Component.translatable("visualizegate.perf.gpu.title", fmt(avgMs), fmt(fps));
-        drawPanel(g, mc, x, y, title, GateColors.PC_OW_HIGH);
-        // ※注記 (真の GPU% ではない) を最下行に小さく。
-        g.text(mc.font, Component.translatable("visualizegate.perf.gpu.note"),
-                x + PAD, y + PANEL_H - 9, GateColors.LINK_GRAY);
+        // ㊱A 0.1 刻みで値が変わった時だけタイトルを作り直す (毎フレームのアロケーションを排除)。
+        int ms10 = Math.round(avgMs * 10f);
+        int fps10 = Math.round(fps * 10f);
+        if (ms10 != gpuMs10 || fps10 != gpuFps10) {
+            gpuMs10 = ms10;
+            gpuFps10 = fps10;
+            gpuTitle = Component.translatable("visualizegate.perf.gpu.title", fmt(avgMs), fmt(fps));
+        }
+        drawPanel(g, mc, x, y, gpuTitle, GateColors.PC_OW_HIGH);
+        // ※注記 (真の GPU% ではない) を最下行に小さく (定数・再確保なし)。
+        g.text(mc.font, GPU_NOTE, x + PAD, y + PANEL_H - 9, GateColors.LINK_GRAY);
         // スパークライン (フレーム時間・上限 50ms スケール)。
         drawSpark(g, x + PAD, y + 12, PANEL_W - PAD * 2, PANEL_H - 23, frameMs, frameHead, frameCount,
                 50f, GateColors.PC_OW_HIGH);
     }
 
     private void drawCpuPanel(GuiGraphicsExtractor g, Minecraft mc, int x, int y) {
-        Component title = Component.translatable("visualizegate.perf.cpu.title", fmt(lastCpuPct), fmt(lastSysPct));
-        drawPanel(g, mc, x, y, title, GateColors.STATE_WILL_CREATE);
-        drawSpark(g, x + PAD, y + 12, PANEL_W - PAD * 2, PANEL_H - 16, cpuPct, cpuHead, cpuCount,
-                100f, GateColors.STATE_WILL_CREATE);
+        CpuSampler s = CpuSampler.get();
+        float proc = s.processPct();
+        float sys = s.systemPct();
+        int p10 = Math.round(proc * 10f);
+        int s10 = Math.round(sys * 10f);
+        if (p10 != cpuP10 || s10 != cpuS10) {
+            cpuP10 = p10;
+            cpuS10 = s10;
+            cpuTitle = Component.translatable("visualizegate.perf.cpu.title", fmt(proc), fmt(sys));
+        }
+        drawPanel(g, mc, x, y, cpuTitle, GateColors.STATE_WILL_CREATE);
+        // スパークラインは CpuSampler の事前確保リング (別スレッドが書く・ここは読むだけ)。
+        drawSpark(g, x + PAD, y + 12, PANEL_W - PAD * 2, PANEL_H - 16,
+                s.historyRef(), s.head(), s.count(), 100f, GateColors.STATE_WILL_CREATE);
     }
 
     /** パネル背景＋紫枠＋タイトル行。 */

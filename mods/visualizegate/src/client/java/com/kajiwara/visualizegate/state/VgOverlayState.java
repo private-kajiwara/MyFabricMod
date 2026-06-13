@@ -60,6 +60,12 @@ public final class VgOverlayState {
 
     public static boolean toggleCpuUsage() {
         cpuUsage = !cpuUsage;
+        // ㊱A CPU 取得はバックグラウンド・デーモンで 1Hz (描画スレッドで同期呼びしない)。 トグルに連動して起動/停止。
+        if (cpuUsage) {
+            CpuSampler.get().start();
+        } else {
+            CpuSampler.get().stop();
+        }
         return cpuUsage;
     }
 
@@ -70,6 +76,7 @@ public final class VgOverlayState {
         visualize = false;
         gpuUsage = false;
         cpuUsage = false;
+        CpuSampler.get().stop(); // ㊱A デーモンを放置しない (clean/切断で確実に停止)。
         return any;
     }
 }
