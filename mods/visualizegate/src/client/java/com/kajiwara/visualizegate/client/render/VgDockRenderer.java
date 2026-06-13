@@ -7,6 +7,7 @@ import com.kajiwara.visualizegate.domain.GateConflictAnalyzer;
 import com.kajiwara.visualizegate.domain.GateNode;
 import com.kajiwara.visualizegate.domain.GateState;
 import com.kajiwara.visualizegate.memory.PortalMemory;
+import com.kajiwara.visualizegate.state.CpuSampler;
 import com.kajiwara.visualizegate.state.VgOverlayState;
 import com.kajiwara.visualizegate.ui.GateColors;
 
@@ -135,14 +136,162 @@ public final class VgDockRenderer {
         return w;
     }
 
-    // ── 展 (フルドック) ヘッダのみ (セクションは ㊲C/D で追加) ──────────────
+    // ── 展 (フルドック): ヘッダ → [パフォ] → [状態+注記] → [点群(㊲D)] ──────
+
+    private static final int DOCK_W = 452;   // spec 準拠の固定幅
+    private static final int DIV = 6;        // セクション区切り (ヘアライン＋余白)
+    private static final int GAP = 3;
+    private static final int SPARK_H = 18;   // スパークライン高
+    private static final int SW = 7;         // スウォッチ一辺
+
+    // セクション見出し (定数・グリフ非依存テキスト)。
+    private static final Component T_PERF = Component.translatable("visualizegate.dock.perf");
+    private static final Component T_STATUS = Component.translatable("visualizegate.dock.status");
+    private static final Component T_NOTES = Component.translatable("visualizegate.dock.notes");
+    private static final Component GPU_NOTE = Component.translatable("visualizegate.perf.gpu.note");
 
     private void drawExpanded(GuiGraphicsExtractor g, Minecraft mc, int x, int y) {
-        Component text = header(mc);
-        int w = 452; // spec 準拠の固定幅
-        int h = LINE + PAD * 2 - 2;
-        g.fill(x, y, x + w, y + h, BG_EXPANDED);
-        drawHeaderRow(g, mc, x, y, w, text, true);
+        boolean gpu = VgOverlayState.isGpuUsage();
+        boolean cpu = VgOverlayState.isCpuUsage();
+        boolean viz = VgOverlayState.isVisualize();
+
+        int innerX = x + PAD;
+        int innerW = DOCK_W - PAD * 2;
+        // 高さ算出 (有効セクションのみ積む)。
+        int h = PAD + LINE; // top pad + header row
+        if (gpu || cpu) {
+            h += DIV + perfHeight(gpu, cpu);
+        }
+        if (viz) {
+            h += DIV + statusHeight() + GAP + notesHeight();
+        }
+        h += PAD;
+
+        g.fill(x, y, x + DOCK_W, y + h, BG_EXPANDED);
+        drawHeaderRow(g, mc, x, y, DOCK_W, header(mc), true);
+
+        int cy = y + PAD + LINE;
+        if (gpu || cpu) {
+            cy = divider(g, x, cy);
+            cy = drawPerf(g, mc, innerX, cy, innerW, gpu, cpu);
+        }
+        if (viz) {
+            cy = divider(g, x, cy);
+            cy = drawStatus(g, mc, innerX, cy, innerW);
+            cy += GAP;
+            cy = drawNotes(g, mc, innerX, cy, innerW);
+        }
+    }
+
+    private int perfHeight(boolean gpu, boolean cpu) {
+        int h = LINE; // title
+        if (gpu) {
+            h += LINE + SPARK_H + 2 + LINE; // frame line + sparkline + note
+        }
+        if (cpu) {
+            h += LINE; // cpu line
+        }
+        return h;
+    }
+
+    private int statusHeight() {
+        return LINE + 3 * LINE; // title + 5 entries in 2 cols (3 rows)
+    }
+
+    private int notesHeight() {
+        return LINE + 2 * LINE; // title + 4 entries in 2 cols (2 rows)
+    }
+
+    /** ヘアライン区切りを描き、 次の Y を返す。 */
+    private int divider(GuiGraphicsExtractor g, int x, int y) {
+        g.fill(x + PAD, y + 2, x + DOCK_W - PAD, y + 3, GateColors.MAIN_DIM);
+        return y + DIV;
+    }
+
+    // ── パフォーマンス (gpu→フレーム時間/FPS＋スパークライン＋注記 / cpu→CPU%) ──
+    private int drawPerf(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int w, boolean gpu, boolean cpu) {
+        g.text(mc.font, T_PERF, x, y, GateColors.TEXT);
+        y += LINE;
+        if (gpu) {
+            g.text(mc.font, frameLine(), x, y, GateColors.TEXT);
+            y += LINE;
+            drawSpark(g, x, y, w, SPARK_H, frameMs, frameHead, frameCount, 50f, GateColors.PC_OW_HIGH);
+            y += SPARK_H + 2;
+        }
+        if (cpu) {
+            g.text(mc.font, cpuLine(), x, y, GateColors.TEXT);
+            y += LINE;
+        }
+        if (gpu) {
+            g.text(mc.font, GPU_NOTE, x, y, GateColors.LINK_GRAY);
+            y += LINE;
+        }
+        return y;
+    }
+
+    // ── ゲート状態 (5 色・2 列) ──
+    private static final int[] STATE_COLORS = {
+            GateColors.STATE_OK, GateColors.STATE_ORPHAN, GateColors.STATE_OFFSET,
+            GateColors.STATE_WILL_CREATE, GateColors.STATE_CONFLICT };
+    private static final String[] STATE_KEYS = {
+            "visualizegate.state5.ok", "visualizegate.state5.orphan", "visualizegate.state5.offset",
+            "visualizegate.state5.will_create", "visualizegate.state5.conflict" };
+
+    private int drawStatus(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int w) {
+        g.text(mc.font, T_STATUS, x, y, GateColors.TEXT);
+        y += LINE;
+        int colW = w / 2;
+        for (int i = 0; i < STATE_KEYS.length; i++) {
+            int sx = x + (i % 2) * colW;
+            int sy = y + (i / 2) * LINE;
+            g.fill(sx, sy + 1, sx + SW, sy + 1 + SW, STATE_COLORS[i]); // FILL スウォッチ
+            g.text(mc.font, Component.translatable(STATE_KEYS[i]), sx + SW + 4, sy, GateColors.TEXT);
+        }
+        return y + 3 * LINE;
+    }
+
+    // ── 注記 (4 種・線/枠スウォッチ・2 列) ──
+    private int drawNotes(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int w) {
+        g.text(mc.font, T_NOTES, x, y, GateColors.TEXT);
+        y += LINE;
+        int colW = w / 2;
+        // row1: リンク(線/MAIN) | ズレ無し設置位置(枠/ACCENT) ; row2: 検索範囲(線/DOME) | 混線ゲート(枠/CROSSTALK)
+        drawNote(g, mc, x, y, false, GateColors.MAIN, "visualizegate.legend.link_line");
+        drawNote(g, mc, x + colW, y, true, GateColors.ACCENT, "visualizegate.legend.ghost");
+        drawNote(g, mc, x, y + LINE, false, GateColors.DOME, "visualizegate.legend.dome");
+        drawNote(g, mc, x + colW, y + LINE, true, GateColors.CROSSTALK, "visualizegate.legend.crosstalk");
+        return y + 2 * LINE;
+    }
+
+    /** 注記 1 行 (frame=true→枠スウォッチ / false→線スウォッチ ＋ ラベル)。 */
+    private void drawNote(GuiGraphicsExtractor g, Minecraft mc, int x, int y, boolean frame, int color, String key) {
+        if (frame) {
+            g.fill(x, y + 1, x + SW, y + 2, color);
+            g.fill(x, y + SW, x + SW, y + SW + 1, color);
+            g.fill(x, y + 1, x + 1, y + SW + 1, color);
+            g.fill(x + SW - 1, y + 1, x + SW, y + SW + 1, color);
+        } else {
+            int cy = y + 1 + SW / 2;
+            g.fill(x, cy, x + SW, cy + 1, color);
+        }
+        g.text(mc.font, Component.translatable(key), x + SW + 4, y, GateColors.TEXT);
+    }
+
+    /** ローリングバッファをスパークライン (縦バー) で描く。 head は次に書く位置 (= 最古)。 */
+    private void drawSpark(GuiGraphicsExtractor g, int x, int y, int w, int h,
+            float[] buf, int head, int count, float maxVal, int color) {
+        if (count <= 0 || w <= 0 || h <= 0) {
+            return;
+        }
+        g.fill(x, y + h, x + w, y + h + 1, GateColors.MAIN_DIM); // ベースライン
+        int n = Math.min(count, w);
+        for (int i = 0; i < n; i++) {
+            int idx = ((head - 1 - i) % count + count) % count;
+            float v = buf[idx];
+            int bh = (int) Math.max(0, Math.min(h, (v / maxVal) * h));
+            int bx = x + w - 1 - i;
+            g.fill(bx, y + h - bh, bx + 1, y + h, color);
+        }
     }
 
     /** ヘッダ行 (角四角＋本文＋色付き件数＋展開インジケータ)。 */
@@ -262,6 +411,41 @@ public final class VgDockRenderer {
     private float fpsNow() {
         float ms = avgFrameMs();
         return (ms > 0.01f) ? (1000f / ms) : 0f;
+    }
+
+    // ㊲C パフォーマンス行キャッシュ (表示値 0.1 刻み変化時のみ再生成＝毎フレームの translatable/format 排除)。
+    private int flMs10 = Integer.MIN_VALUE;
+    private int flFps10 = Integer.MIN_VALUE;
+    private Component frameLineC = Component.empty();
+    private int clP10 = Integer.MIN_VALUE;
+    private int clS10 = Integer.MIN_VALUE;
+    private Component cpuLineC = Component.empty();
+
+    private Component frameLine() {
+        float ms = avgFrameMs();
+        float fps = fpsNow();
+        int ms10 = Math.round(ms * 10f);
+        int fps10 = Math.round(fps * 10f);
+        if (ms10 != flMs10 || fps10 != flFps10) {
+            flMs10 = ms10;
+            flFps10 = fps10;
+            frameLineC = Component.translatable("visualizegate.perf.gpu.title", fmt(ms), fmt(fps));
+        }
+        return frameLineC;
+    }
+
+    private Component cpuLine() {
+        CpuSampler s = CpuSampler.get();
+        float p = s.processPct();
+        float sys = s.systemPct();
+        int p10 = Math.round(p * 10f);
+        int s10 = Math.round(sys * 10f);
+        if (p10 != clP10 || s10 != clS10) {
+            clP10 = p10;
+            clS10 = s10;
+            cpuLineC = Component.translatable("visualizegate.perf.cpu.title", fmt(p), fmt(sys));
+        }
+        return cpuLineC;
     }
 
     /** 現在次元の path (例 {@code the_nether} / {@code overworld})。 取得不可なら空。 */
