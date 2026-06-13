@@ -663,11 +663,14 @@ public final class VgDockRenderer {
             col[k] = GateColors.forStateOrdinal(st);
             k++;
         }
-        PointCloudGpuRenderer.uploadPoints(xyz, col, k, PointCloudViewState.getPointSize());
+        // ㊶B 点サイズはサムネ寸法に縮小 (小ビューポートでは密で点が潰れる＝構造が見える細さに・最大 2px)。
+        //     SS FBO (㊶A) と相まって、 高密度 (gpuDetail) でも塊にならず構造が判別できる。
+        int pointSize = Math.max(1, Math.min(2, PointCloudViewState.getPointSize()));
+        PointCloudGpuRenderer.uploadPoints(xyz, col, k, pointSize);
         PointCloudGpuRenderer.uploadOverlay(pcEmpty, pcEmptyI, 0); // 共有 overlay をクリア (画面のゲート枠を混ぜない)
-        // Vメニューと同じ枠合わせ距離。
-        pcDistance = Math.max(snap.radius * 2.2f,
-                Math.max(PointCloudViewState.getDimensionSpacing() * 1.5f, 40f));
+        // ㊶B 横長サムネに雲が埋まるよう Vメニューより気持ち寄せる (radius*1.8/spacing*1.3)。
+        pcDistance = Math.max(snap.radius * 1.8f,
+                Math.max(PointCloudViewState.getDimensionSpacing() * 1.3f, 30f));
     }
 
     /** ㉝C 非表示ゲート判定 (Vメニューの isGateHidden と同一・{@link PortalMemory#isHidden})。 */
