@@ -92,13 +92,14 @@ public final class VgOverlayState {
         return dockExpanded || anyActive();
     }
 
-    /** 全 `/vg` オーバーレイを OFF (`/vg clean`・切断で呼ぶ)。 1 つでも点いていたら true。 */
+    /** 全 `/vg` オーバーレイを OFF (`/vg clean`・切断で呼ぶ)。 1 つでも点いていたら true。 ㊲E ドックも畳んで非表示化。 */
     public static boolean clearAll() {
-        boolean any = pointCloud || visualize || gpuUsage || cpuUsage;
+        boolean any = pointCloud || visualize || gpuUsage || cpuUsage || dockExpanded;
         pointCloud = false;
-        visualize = false;
+        visualize = false; // ㊲E in-world visualize も停止 (GateGraphRenderer がこのフラグで即 early-return)
         gpuUsage = false;
         cpuUsage = false;
+        dockExpanded = false; // ㊲E clean でドックを畳む＝全 OFF なら dockVisible() が false ＝ドック非表示
         CpuSampler.get().stop(); // ㊱A デーモンを放置しない (clean/切断で確実に停止)。
         return any;
     }
