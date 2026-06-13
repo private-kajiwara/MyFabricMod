@@ -51,7 +51,7 @@
 	"visualizegate.help.header": "VisualizeGate — /vg subcommands (current state):",
 	"visualizegate.help.pointcloud": "  /vg point-cloud — point-cloud thumbnail [%s]",
 	"visualizegate.help.visualize": "  /vg visualize — gate-relation wireframe [%s]",
-	"visualizegate.help.dock": "  /vg dock — expand/collapse the dock [%s]",
+	"visualizegate.help.dock": "  /vg dock — expand/collapse the full menu (perf + gate state + notes) [%s]",
 	"visualizegate.help.clean": "  /vg clean — turn everything off",
 	"visualizegate.help.backcalc": "  /vg back-calculate <x y z | here> [ow|nether]",
 	"visualizegate.help.expanded": "expanded",
