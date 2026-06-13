@@ -6,7 +6,6 @@ import com.kajiwara.visualizegate.client.render.BackCalcRenderer;
 import com.kajiwara.visualizegate.client.render.CornerIconRenderer;
 import com.kajiwara.visualizegate.client.render.GateGraphRenderer;
 import com.kajiwara.visualizegate.client.render.HologramFrameRenderer;
-import com.kajiwara.visualizegate.client.render.LegendOverlayRenderer;
 import com.kajiwara.visualizegate.client.render.PortalBoxRenderer;
 import com.kajiwara.visualizegate.client.render.PortalInfoCardRenderer;
 import com.kajiwara.visualizegate.client.render.PortalLinkRenderer;
@@ -64,9 +63,9 @@ public class VisualizeGateClient implements ClientModInitializer {
         //      perf / dock / help・サーバー非依存)。
         VgCommands.register();
         CornerIconRenderer.register();
-        // UX 層 (純追加・HUD パス): ① 自動インフォカード ② 常設凡例。 いずれも注視/所持トリガで表示。
+        // UX 層 (純追加・HUD パス): 自動インフォカード (注視/所持トリガで表示)。
+        // ㊸B 枠付き凡例ボックス (LegendOverlayRenderer) は撤去＝凡例はドック展開 (フルメニュー) に一本化。
         PortalInfoCardRenderer.register();
-        LegendOverlayRenderer.register();
         // ㉟C `/vg visualize` 全ゲート関係 in-world ワイヤーフレーム (既定 OFF・5 状態色・距離カリング・据置)。
         GateGraphRenderer.register();
         // ㊲ B-F3 集約ドック (左上・畳/展・パフォ/状態/注記/点群を集約)。 ㉟の散在 HUD (PerfGraph/PointCloud) を統合。
