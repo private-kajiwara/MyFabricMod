@@ -211,10 +211,13 @@ public final class VgDockRenderer {
     private int perfHeight(boolean gpu, boolean cpu) {
         int h = LINE; // title
         if (gpu) {
-            h += LINE + SPARK_H + 2 + LINE; // frame line + sparkline + note
+            h += LINE + SPARK_H + 2; // frame line + sparkline
         }
         if (cpu) {
-            h += LINE; // cpu line
+            h += LINE + SPARK_H + 2; // ㊵A cpu line + cpu sparkline
+        }
+        if (gpu) {
+            h += LINE; // note (※GPU%でない) は末尾
         }
         return h;
     }
@@ -246,6 +249,10 @@ public final class VgDockRenderer {
         if (cpu) {
             g.text(mc.font, cpuLine(), x, y, GateColors.TEXT);
             y += LINE;
+            // ㊵A CPU スパークライン (CpuSampler の 1Hz リング・0..100%・フレームグラフと別 y で非重複)。
+            CpuSampler s = CpuSampler.get();
+            drawSpark(g, x, y, w, SPARK_H, s.historyRef(), s.head(), s.count(), 100f, GateColors.PC_NETHER_HIGH);
+            y += SPARK_H + 2;
         }
         if (gpu) {
             g.text(mc.font, GPU_NOTE, x, y, GateColors.LINK_GRAY);
