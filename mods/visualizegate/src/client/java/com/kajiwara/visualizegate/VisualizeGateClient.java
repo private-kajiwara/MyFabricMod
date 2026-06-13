@@ -7,6 +7,7 @@ import com.kajiwara.visualizegate.client.render.CornerIconRenderer;
 import com.kajiwara.visualizegate.client.render.GateGraphRenderer;
 import com.kajiwara.visualizegate.client.render.HologramFrameRenderer;
 import com.kajiwara.visualizegate.client.render.LegendOverlayRenderer;
+import com.kajiwara.visualizegate.client.render.PerfGraphHudRenderer;
 import com.kajiwara.visualizegate.client.render.PointCloudHudRenderer;
 import com.kajiwara.visualizegate.client.render.PortalBoxRenderer;
 import com.kajiwara.visualizegate.client.render.PortalInfoCardRenderer;
@@ -71,6 +72,8 @@ public class VisualizeGateClient implements ClientModInitializer {
         PointCloudHudRenderer.register();
         // ㉟C `/vg visualize` 全ゲート関係 in-world ワイヤーフレーム (既定 OFF・5 状態色・距離カリング)。
         GateGraphRenderer.register();
+        // ㉟D `/vg gpu-usage`・`/vg cpu-usage` グラフ (既定 OFF・GPU は描画フレーム時間/FPS＝真の GPU% ではない)。
+        PerfGraphHudRenderer.register();
         VisualizeGateMod.LOGGER.info("VisualizeGate client initialized (portal scan + box renderer + menu UI).");
     }
 }
