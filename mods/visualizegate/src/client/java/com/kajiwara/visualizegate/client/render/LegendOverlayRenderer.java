@@ -1,6 +1,7 @@
 package com.kajiwara.visualizegate.client.render;
 
 import com.kajiwara.visualizegate.state.GateMenuState;
+import com.kajiwara.visualizegate.state.VgOverlayState;
 import com.kajiwara.visualizegate.ui.GateColors;
 
 //? if >=26.1 {
@@ -68,6 +69,10 @@ public final class LegendOverlayRenderer {
 
     private void onHudRender(GuiGraphicsExtractor g) {
         if (!GateMenuState.isLegendEnabled())
+            return;
+        // ㊳F 二重表示抑制: B-F3 ドックが状態+注記凡例を出している間 (展開中 ＋ /vg visualize) は、 同一凡例を
+        //     左下にも出さない (ドック側に一本化)。 注視/火打石の世界 UX 自体は不変 (㉜ OPEN の範囲)。
+        if (VgOverlayState.isDockExpanded() && VgOverlayState.isVisualize())
             return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.options.hideGui)                       // F1

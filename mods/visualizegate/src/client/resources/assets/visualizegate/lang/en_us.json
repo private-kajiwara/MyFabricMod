@@ -46,7 +46,7 @@
 	"visualizegate.dock.status": "Gate state",
 	"visualizegate.dock.notes": "Notes",
 	"visualizegate.dock.pointcloud": "Point cloud",
-	"visualizegate.cmd.pointcloud": "Point-cloud HUD (bottom-right): %s",
+	"visualizegate.cmd.pointcloud": "Point cloud (dock): %s",
 	"visualizegate.cmd.visualize": "Gate-relations wireframe: %s",
 	"visualizegate.cmd.gpu": "GPU graph — render frame time/FPS (not true GPU%%): %s",
 	"visualizegate.cmd.cpu": "CPU graph (process usage): %s",
