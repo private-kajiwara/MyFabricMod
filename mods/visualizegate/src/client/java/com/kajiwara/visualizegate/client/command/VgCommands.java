@@ -172,8 +172,8 @@ public final class VgCommands {
         boolean observed = PortalMemory.get().isRegionObserved(target, t.x(), t.z());
         BackCalc.Result r = BackCalc.compute(t, target, cur, curMinY, curMaxY, known, radius, observed);
 
-        // 採用解釈 (HUD/チャット): target=<dim>(x,y,z) / build in <dim>。
-        c.getSource().sendFeedback(Component.translatable("visualizegate.cmd.interp",
+        // 採用解釈 (HUD/チャット): target=<dim>(x,y,z) / build in <dim>。 ㊺E 金=解釈ヘッダ。
+        c.getSource().sendFeedback(colored(GateColors.ACCENT, "visualizegate.cmd.interp",
                 dimName(target), t.x(), t.y(), t.z(), dimName(cur)));
 
         if (r.kind() == BackCalc.Kind.EXISTING_IN_TARGET) {
@@ -181,22 +181,33 @@ public final class VgCommands {
             GridPos a = r.existing().get().anchor();
             BackCalcStore.add(new BackCalcStore.Element(target,
                     a.x() + 0.5, a.y(), a.z() + 0.5, GateColors.LINK_RED, true));
-            c.getSource().sendFeedback(Component.translatable("visualizegate.cmd.existing",
+            // ㊺E 文も赤 (吸い込み警告)＝ワイヤーフレームと同色。
+            c.getSource().sendFeedback(colored(GateColors.LINK_RED, "visualizegate.cmd.existing",
                     String.format("%.0f", r.existingDistance()), dimName(target), a.x(), a.y(), a.z()));
         } else {
             // 既存なし → 新規生成見込みの緑を<b>現在次元側</b>の建設推奨ボックスに出す。
             GridPos b = r.buildPos();
             BackCalcStore.add(new BackCalcStore.Element(cur,
                     b.x() + 0.5, b.y(), b.z() + 0.5, GateColors.LINK_GREEN, false));
-            c.getSource().sendFeedback(Component.translatable("visualizegate.cmd.new",
+            // ㊺E 文も緑 (新規生成見込み)＝ワイヤーフレームと同色。 ドックの 5 状態色 (STATE_*) とは別系統の
+            //     back-calculate 専用色 (LINK_GREEN) を使い、 「正常=緑」の状態語と混同させない。
+            c.getSource().sendFeedback(colored(GateColors.LINK_GREEN, "visualizegate.cmd.new",
                     dimName(cur), b.x(), b.y(), b.z()));
             if (!observed) {
-                // クライアント観測範囲外の既存は判定不能 → 誤断定しない注記。
-                c.getSource().sendFeedback(Component.translatable("visualizegate.cmd.unconfirmed"));
+                // クライアント観測範囲外の既存は判定不能 → 誤断定しない注記 (㊺E 淡色)。
+                c.getSource().sendFeedback(colored(GateColors.LINK_GRAY, "visualizegate.cmd.unconfirmed"));
             }
         }
-        c.getSource().sendFeedback(Component.translatable("visualizegate.cmd.added"));
+        c.getSource().sendFeedback(colored(GateColors.LINK_GRAY, "visualizegate.cmd.added")); // ㊺E 淡色ヒント
         return 1;
+    }
+
+    /**
+     * ㊺E 意味で色分けしたチャットフィードバック。 色は ARGB 下位 24bit を {@code Style.withColor(int)} へ
+     * (mixin で全ノード同一を確認済の API)。 文字列は lang・色は意味 (赤=警告/緑=新規/金=ヘッダ/淡=注記)。
+     */
+    private static Component colored(int argb, String key, Object... args) {
+        return Component.translatable(key, args).withStyle(s -> s.withColor(argb & 0xFFFFFF));
     }
 
     /** ㊷B/㊸ サブコマンド一覧＋現在の ON/OFF 状態 (point-cloud/visualize) ＋dock 展開/畳みをチャット表示。 */
