@@ -94,6 +94,11 @@ public final class PortalMemory {
     private String reconcileLastDim = null;
     private boolean joinSeedPending = false;
 
+    // ⑤⑦C デバウンス定期保存 (unclean exit 対策・別コミット)。 構造変化時に dirty を立て、 在ワールド中に間引いて保存。
+    private static final long SAVE_DEBOUNCE_TICKS = 600; // 30s (= I/O スラッシュ回避・小ファイル)
+    private boolean dirty = false;
+    private long lastSaveTick = 0;
+
     private PortalMemory() {
     }
 
@@ -219,6 +224,7 @@ public final class PortalMemory {
             ensureNumbered(); // ㉛ 全 dim の number==0 を一意化 (別 dim の N-0 残りを根治)
             confirmLinks(); // ㉙ 開いて繋がった OW↔ネザーの確定ペアを永続記録
             diagTick(dimId); // ⑤⑦A チェックポイント(iii)＋dim往復追跡 (reconcile 後の件数・ログのみ)
+            maybePeriodicSave(); // ⑤⑦C 構造変化があればデバウンス保存 (unclean exit 対策)
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] portal-memory tick failed (continuing): {}", t.toString());
         }
@@ -268,6 +274,7 @@ public final class PortalMemory {
             Map<String, Integer> byDim = file.nextGateNumber.computeIfAbsent(currentWorldId, k -> new java.util.HashMap<>());
             byDim.put(dimId, Math.max(byDim.getOrDefault(dimId, 1), max + 1));
             if (changed) {
+                markDirty(); // ⑤⑦C 採番変化＝構造変化
                 VisualizeGateMod.LOGGER.info(
                         "[visualizegate] renumbered zero-numbered gates in dim={} (now unique, max={})", dimId, max);
             }
@@ -296,8 +303,10 @@ public final class PortalMemory {
                 mp.az = a.getZ();
                 mp.number = file.allocateGateNumber(currentWorldId, dimId); // ㉚ 発見時に安定採番
                 mem.add(mp);
+                markDirty(); // ⑤⑦C 新規ゲート＝構造変化
             } else if (mp.number == 0) {
                 mp.number = file.allocateGateNumber(currentWorldId, dimId); // 旧データ (番号無し) に遡及採番
+                markDirty();
             }
             mp.minX = r.aabb().minX;
             mp.minY = r.aabb().minY;
@@ -310,6 +319,25 @@ public final class PortalMemory {
             mp.lastConfirmedGameTime = gameTime; // ⑤⑦B reconcile grace の基準 (game-time・永続)
             mp.absentStreak = 0;                 // ⑤⑦B ライブ確認＝不在連続をリセット
             mp.liveConfirmed = true;
+        }
+    }
+
+    /** ⑤⑦C 構造変化 (ゲート/リンクの追加・失効・採番) を記録＝次のデバウンス窓で保存。 */
+    private void markDirty() {
+        dirty = true;
+    }
+
+    /** ⑤⑦C 在ワールド中、 構造変化があり前回保存から {@link #SAVE_DEBOUNCE_TICKS} 経過していれば保存 (I/O 間引き)。 */
+    private void maybePeriodicSave() {
+        if (!dirty || tickCounter - lastSaveTick < SAVE_DEBOUNCE_TICKS) {
+            return;
+        }
+        try {
+            save(); // 成功で dirty=false (save 内)
+            lastSaveTick = tickCounter;
+            VisualizeGateMod.LOGGER.info("[visualizegate] portal-memory periodic save (debounced)");
+        } catch (Throwable t) {
+            VisualizeGateMod.LOGGER.warn("[visualizegate] portal-memory periodic save failed: {}", t.toString());
         }
     }
 
@@ -359,6 +387,7 @@ public final class PortalMemory {
             }
             it.remove(); // FULL ロード済み・成分不在・grace 超過・N 連続 → 記憶を失効 (★B-1 維持)
             pruneLinksReferencing(mp.ax, mp.ay, mp.az); // ㉙ この端を含む確定ペアも剪定 (線が嘘にならない)
+            markDirty(); // ⑤⑦C 失効＝構造変化
             VisualizeGateMod.LOGGER.info(
                     "[visualizegate] reconcile removed portal dim={} anchor=({},{},{}) (absent x{} + grace passed)",
                     dimId, mp.ax, mp.ay, mp.az, ABSENT_STREAK_REQUIRED);
@@ -440,6 +469,7 @@ public final class PortalMemory {
                 existing.lastConfirmedTick = tickCounter;
             } else {
                 ls.add(link);
+                markDirty(); // ⑤⑦C 新規確定リンク＝構造変化
                 VisualizeGateMod.LOGGER.info("[visualizegate] confirmed gate link {} (persisted)", link.key());
             }
         }
@@ -761,6 +791,7 @@ public final class PortalMemory {
         } catch (java.nio.file.AtomicMoveNotSupportedException amns) {
             Files.move(tmp, f, StandardCopyOption.REPLACE_EXISTING);
         }
+        dirty = false; // ⑤⑦C 保存成功＝未保存変更なし (定期保存/leave/setName/setHidden 全経路で共通)
     }
 
     private static Path path() {
