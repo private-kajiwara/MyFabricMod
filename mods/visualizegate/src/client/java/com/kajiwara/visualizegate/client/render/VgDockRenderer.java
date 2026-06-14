@@ -505,9 +505,11 @@ public final class VgDockRenderer {
     private static final int DIM_TINT_OW = GateColors.PC_OW_HIGH;
     private static final int DIM_TINT_NETHER = GateColors.PC_NETHER_HIGH;
     private static final float DIM_TINT_FRAC = 0.15f;
-    // ㊺A プレイヤー中心の局所ズーム: マーカー周辺 ~PC_LOCAL_R ブロックがサムネに収まる距離 (全データ枠合わせをしない)。
-    private static final float PC_LOCAL_R = 60f;     // プレイヤー周辺の表示半径 (ブロック)
-    private static final float TAN_HALF_FOV = 0.70f; // tan(35°) ≒ render() の縦 fov 70° の半分
+    // ㊻A データ基準のタイトフィット係数 (重心中心)。 ㊺ の「プレイヤー原点＋固定局所ズーム」は、 データが
+    //     現在地から離れると画面外＝空になる回帰のため撤回。 全データを枠内に収めつつ従来 (radius*1.8/spacing*1.3)
+    //     より詰めてサムネを埋める (= ㊺ の "拡大" 目的)。
+    private static final float PC_FIT_K = 1.2f;      // 雲半径フィット係数 (旧 1.8 より詰める)
+    private static final float PC_SPACING_K = 0.85f; // 層間 spacing フィット係数 (旧 1.3 より詰める)
     // ㊺A 現在地マーカー (金十字) の寸法比 (V-menu と同式・雲半径×比)。
     private static final float GPU_MARKER_ARM_FRAC = 0.03f;
     private static final float GPU_MARKER_W_FRAC = 0.0022f;
@@ -615,10 +617,11 @@ public final class VgDockRenderer {
     }
 
     /**
-     * Vメニュー (buildGpuGeometry) の品質設定を流用しつつ<b>プレイヤー中心の局所ビュー</b>に組む (㊺):
-     * 地形点 (両層)＋ゲート枠 (5状態色 wireframe・㊺B)＋現在地マーカー (金十字・㊺A) を、 全頂点から
-     * マーカー座標を引いて<b>プレイヤーを原点</b>に置き、 距離を局所ズームにする (㊺A)。 マーカーが無い次元では
-     * 従来どおり重心中心＋全データ枠合わせにフォールバック。
+     * Vメニュー (buildGpuGeometry) の品質設定を流用し、 dock サムネを<b>データ基準のタイトフィット</b>で組む (㊻A):
+     * 地形点 (両層)＋ゲート枠 (5状態色 wireframe・㊺B)＋現在地マーカー (金十字・㊺A) を<b>重心中心</b>のまま置き、
+     * 距離を全データが枠内に収まる範囲で詰める＝<b>常に非空</b>でサムネを埋める。 現在地マーカーは実位置 (データ外なら
+     * 雲の縁へクランプ＋方向)。 ㊺ の「プレイヤー原点＋固定局所ズーム」は、 解析データが現在地から離れると画面外＝
+     * 空になる回帰のため撤回 (㊻A)。 yaw 追従/再ラスタ間引き (㊵C)・両層/密度/scale/hidden parity (㊵B) は維持。
      */
     private void pcUpload(PointCloudSnapshot snap) {
         float pivotY = PointCloudViewState.getDimensionSpacing() * 0.5f;
@@ -629,20 +632,7 @@ public final class VgDockRenderer {
         float nScale = PointCloudViewState.getNetherDisplayScale();
         int detail = PointCloudViewState.getGpuDetail();
 
-        // ㊺A プレイヤー (現在地マーカー) を視点中心に: 全頂点からマーカー座標を引き、 局所ズームで周辺を見せる。
-        //     マーカーが無い (他次元等) ときは重心中心 (cx=cy=cz=0)＋全データ枠合わせにフォールバック。
-        float ms = owScale;
-        float cx = 0f;
-        float cy = 0f;
-        float cz = 0f;
-        if (snap.hasMarker) {
-            ms = snap.markerNether ? nScale : owScale;
-            cx = snap.markerX * ms;
-            cy = snap.markerNether ? snap.markerY - pivotY : snap.markerY + pivotY;
-            cz = snap.markerZ * ms;
-        }
-
-        // ── 地形点 (両層・⑤頂点色)。 ゲートは点でなく枠 (㊺B) で描く。 ──
+        // ── 地形点 (両層・⑤頂点色・重心センタリングの生座標)。 ゲートは点でなく枠 (㊺B) で描く。 ──
         int owN = showOw ? snap.owX.length : 0;
         int nN = showN ? snap.nX.length : 0;
         int owStride = (owN > detail) ? (owN + detail - 1) / detail : 1;
@@ -652,16 +642,16 @@ public final class VgDockRenderer {
         int[] col = new int[total];
         int k = 0;
         for (int i = 0; i < owN; i += owStride) {
-            xyz[k * 3] = snap.owX[i] * owScale - cx;
-            xyz[k * 3 + 1] = snap.owY[i] + pivotY - cy;
-            xyz[k * 3 + 2] = snap.owZ[i] * owScale - cz;
+            xyz[k * 3] = snap.owX[i] * owScale;
+            xyz[k * 3 + 1] = snap.owY[i] + pivotY;
+            xyz[k * 3 + 2] = snap.owZ[i] * owScale;
             col[k] = tint ? mix(snap.owColor[i], DIM_TINT_OW, DIM_TINT_FRAC) : snap.owColor[i];
             k++;
         }
         for (int i = 0; i < nN; i += nStride) {
-            xyz[k * 3] = snap.nX[i] * nScale - cx;
-            xyz[k * 3 + 1] = snap.nY[i] - pivotY - cy;
-            xyz[k * 3 + 2] = snap.nZ[i] * nScale - cz;
+            xyz[k * 3] = snap.nX[i] * nScale;
+            xyz[k * 3 + 1] = snap.nY[i] - pivotY;
+            xyz[k * 3 + 2] = snap.nZ[i] * nScale;
             col[k] = tint ? mix(snap.nColor[i], DIM_TINT_NETHER, DIM_TINT_FRAC) : snap.nColor[i];
             k++;
         }
@@ -669,7 +659,7 @@ public final class VgDockRenderer {
         int pointSize = Math.max(1, Math.min(2, PointCloudViewState.getPointSize()));
         PointCloudGpuRenderer.uploadPoints(xyz, col, k, pointSize);
 
-        // ── overlay: ゲート枠 (㊺B) ＋ 現在地マーカー (㊺A・原点)。 ──
+        // ── overlay: ゲート枠 (㊺B・5状態色) ＋ 現在地マーカー (㊺A・金十字・実位置)。 ──
         int[] gateState = snap.gateMeta != null ? snap.gateMeta.gateState() : null;
         int visGates = 0;
         for (int i = 0; i < snap.gateX.length; i++) {
@@ -693,31 +683,38 @@ public final class VgDockRenderer {
                     continue;
                 }
                 float gs = neth ? nScale : owScale;
-                float gx = snap.gateX[i] * gs - cx;
-                float gy = snap.gateY[i] + (neth ? -pivotY : pivotY) - cy;
-                float gz = snap.gateZ[i] * gs - cz;
+                float gx = snap.gateX[i] * gs;
+                float gy = snap.gateY[i] + (neth ? -pivotY : pivotY);
+                float gz = snap.gateZ[i] * gs;
                 int st = (gateState != null && i < gateState.length) ? gateState[i] : 0;
                 j = emitGateFrame(oxyz, ocol, j, gx, gy, gz,
                         gateHalfW, gateHalfH, gateBarW, gateGridW, GateColors.forStateOrdinal(st));
             }
             if (snap.hasMarker) {
+                float ms = snap.markerNether ? nScale : owScale; // 当該層スケール (terrain と同変換)
+                float mxw = snap.markerX * ms;
+                float myw = snap.markerNether ? snap.markerY - pivotY : snap.markerY + pivotY;
+                float mzw = snap.markerZ * ms;
+                // ㊻A プレイヤーがデータ範囲外なら雲の縁へクランプ (方向は保つ)＝雲は枠フィットで常に見え、 現在地も分かる。
+                float mh = (float) Math.sqrt(mxw * mxw + mzw * mzw);
+                if (snap.radius > 0f && mh > snap.radius) {
+                    float s = snap.radius / mh;
+                    mxw *= s;
+                    mzw *= s;
+                }
                 float markArm = Math.max(2f, snap.radius * GPU_MARKER_ARM_FRAC);
                 float markW = Math.max(0.1f, snap.radius * GPU_MARKER_W_FRAC);
                 int gold = 0xFF000000 | (GateColors.ACCENT & 0xFFFFFF);
-                j = emitCross(oxyz, ocol, j, 0f, 0f, 0f, markArm, markW, gold); // マーカー＝原点 (中心)
+                j = emitCross(oxyz, ocol, j, mxw, myw, mzw, markArm, markW, gold);
             }
             PointCloudGpuRenderer.uploadOverlay(oxyz, ocol, j);
         } else {
             PointCloudGpuRenderer.uploadOverlay(pcEmpty, pcEmptyI, 0);
         }
 
-        // ㊺A 距離: マーカーありは局所ズーム (周辺 ~PC_LOCAL_R ブロックを縦に収める)、 無ければ従来の全データ枠合わせ。
-        if (snap.hasMarker) {
-            pcDistance = Math.max(PC_LOCAL_R * ms / TAN_HALF_FOV, 30f);
-        } else {
-            pcDistance = Math.max(snap.radius * 1.8f,
-                    Math.max(PointCloudViewState.getDimensionSpacing() * 1.3f, 30f));
-        }
+        // ㊻A データ基準のタイトフィット (重心中心)＝全データを枠内に収めつつ詰めてサムネを埋める＝常に非空。
+        pcDistance = Math.max(snap.radius * PC_FIT_K,
+                Math.max(PointCloudViewState.getDimensionSpacing() * PC_SPACING_K, 30f));
     }
 
     /** ㉝C 非表示ゲート判定 (Vメニューの isGateHidden と同一・{@link PortalMemory#isHidden})。 */
