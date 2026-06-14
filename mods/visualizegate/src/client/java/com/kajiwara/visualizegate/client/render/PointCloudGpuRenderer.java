@@ -180,8 +180,19 @@ public final class PointCloudGpuRenderer {
 
     /**
      * キャッシュ済み点/線バッファを FBO へ自前オービット投影＋GPU 深度で描く (回転/ズーム=これだけ)。 成功で true。
+     * オービット中心は原点 (= 頂点バッファの重心)。 フル画面 PointCloudScreen はこの版を使う (中心オフセット 0)。
      */
     public static boolean render(int w, int h, float yaw, float pitch, float distance, int clearArgb) {
+        return render(w, h, yaw, pitch, distance, 0f, 0f, 0f, clearArgb);
+    }
+
+    /**
+     * ㊽A 中心オフセット ({@code cx,cy,cz}・頂点バッファ空間) を指定してオービット＝<b>任意点を画面中心</b>にできる。
+     * ドックのライブ局所レーダーが「プレイヤー現在地」を中心に毎フレーム追従させるために使う (geometry は 3Hz・
+     * カメラ中心は毎フレーム＝滑らかに寄る)。 フル画面は 6 引数版 (中心 0) ＝挙動不変。
+     */
+    public static boolean render(int w, int h, float yaw, float pitch, float distance,
+            float cx, float cy, float cz, int clearArgb) {
         if (failed || w <= 0 || h <= 0) {
             return false;
         }
@@ -197,7 +208,9 @@ public final class PointCloudGpuRenderer {
             float aspect = (float) w / (float) h;
             // MC 新パイプラインは深度 [0,1] 規約 (zZeroToOne=true)。
             Matrix4f proj = new Matrix4f().perspective((float) Math.toRadians(70.0), aspect, 0.1f, 8000f, true);
-            Matrix4f view = new Matrix4f().translation(0f, 0f, -distance).rotateX(pitch).rotateY(yaw);
+            // ㊽A view = T(0,0,-d)·Rx·Ry·T(-center)＝center を原点へ寄せてからオービット (center=0 で従来と同一)。
+            Matrix4f view = new Matrix4f().translation(0f, 0f, -distance).rotateX(pitch).rotateY(yaw)
+                    .translate(-cx, -cy, -cz);
 
             GpuBufferSlice projSlice = projBuf.getBuffer(proj);
             RenderSystem.backupProjectionMatrix();
