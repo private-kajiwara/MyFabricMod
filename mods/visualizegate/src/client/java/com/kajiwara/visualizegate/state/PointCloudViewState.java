@@ -76,8 +76,23 @@ public final class PointCloudViewState {
     private static Boolean overlayDetail = null;
     /** ⑤⑤ 点群ソロ表示 (cloud-only): ON で点群パネル以外の VG HUD を抑止。 config 永続・既定 OFF。 */
     private static boolean cloudOnly = false;
+    /**
+     * ⑤⑥ 右下点群パネルの可視 (永続ミラー・既定 false=従来どおり非表示)。 セッションの実描画ゲートは
+     * {@code VgOverlayState.pointCloud} で、 起動時に load がこの永続値から seed する。 deliberate コマンド
+     * (only/show/clean) だけがこれを set＆save する (切断のセッションリセットでは書かない＝設定を消さない)。
+     */
+    private static boolean panelVisible = false;
 
     private PointCloudViewState() {
+    }
+
+    /** ⑤⑥ 点群パネル可視の永続ミラー (実描画ゲートは VgOverlayState.isPointCloud)。 */
+    public static boolean isPanelVisible() {
+        return panelVisible;
+    }
+
+    public static void setPanelVisible(boolean v) {
+        panelVisible = v;
     }
 
     /** ⑤⑤ 点群ソロ表示 (cloud-only) の生フラグ。 実効 solo は {@code VgOverlayState.isCloudSolo()} (パネルON時のみ)。 */
