@@ -307,10 +307,9 @@ public class GuideScreen extends Screen {
         seg(g, pcx, pcy, gfx, gfy, GateColors.PC_LINK);        // リンク線 (紫)
         frame(g, gfx - 4, gfy - 5, 9, 11, GateColors.ACCENT);  // ズレ無し位置 (金枠)
         arrowUp(g, pcx, pcy, GateColors.DOME);                 // あなた (シアン矢印)
+        // 図中ラベルは「あなた」のみ (矢印直下)。 金枠=ズレ無し位置は下段凡例で識別＝重複ラベル省略で衝突回避。
         centerText(g, Component.translatable("visualizegate.guide.flint.you"),
                 pcx - 16, pcx + 16, pcy + 7, GateColors.DOME);
-        centerText(g, Component.translatable("visualizegate.guide.flint.zero"),
-                gfx - 22, gfx + 22, gfy + 9, GateColors.ACCENT);
         // 右: 混線ゲート (橙枠) → 下の橙枠へ紫リンク線。
         int rcx = ix + iw * 74 / 100;
         int tFy = pcy - 8;
