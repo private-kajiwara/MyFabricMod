@@ -158,6 +158,9 @@ public final class VgDockRenderer {
     private static final int SPARK_H = 18;   // スパークライン高
     private static final int SW = 7;         // スウォッチ一辺
     private static final int MIN_PC_TH = 40;  // ㊹C 点群サムネの最低高 (これ未満なら出さない)
+    // ㊺C 下部中央 HUD (ホットバー 182px＋体力/空腹/XP) の安全帯。 ドックがこの x 帯に掛かる時だけ下端を上に止める。
+    private static final int HOTBAR_HALF_W = 100; // ホットバー半幅 91px ＋ 余裕
+    private static final int BOTTOM_SAFE = 44;    // ホットバー＋体力/空腹/XP 帯の高さ (下端マージン)
 
     // セクション見出し (定数・グリフ非依存テキスト)。
     private static final Component T_PERF = Component.translatable("visualizegate.dock.perf");
@@ -180,9 +183,12 @@ public final class VgDockRenderer {
         hSections += DIV + perfHeight();
         hSections += DIV + statusHeight() + GAP + notesHeight();
 
-        // ㊹C ドック全体を画面内 (上下 MARGIN) に収める。 点群サムネは残り高に合わせて縮小し、 最低高未満なら出さない。
+        // ㊹C/㊺C ドック全体を画面内に収める。 ㊺C ドックの x 帯が下部中央 HUD (ホットバー/体力/空腹/XP) に掛かる時は
+        //     下端を安全帯ぶん上で止める (被り防止)。 掛からない (狭い/極小画面) 時は下端 MARGIN まで使う。
         int sh = mc.getWindow().getGuiScaledHeight();
-        int maxDockH = sh - MARGIN * 2;
+        boolean overlapsBottomHud = (x + dockW) > (sw / 2 - HOTBAR_HALF_W);
+        int bottomReserve = overlapsBottomHud ? BOTTOM_SAFE : MARGIN;
+        int maxDockH = sh - MARGIN - bottomReserve;
         int pcTw = 0;
         int pcTh = 0;
         boolean showPc = false;
