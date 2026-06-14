@@ -157,10 +157,11 @@ public final class VgDockRenderer {
     private static final int GAP = 3;
     private static final int SPARK_H = 18;   // スパークライン高
     private static final int SW = 7;         // スウォッチ一辺
-    private static final int MIN_PC_TH = 40;  // ㊹C 点群サムネの最低高 (これ未満なら出さない)
-    // ㊺C 下部中央 HUD (ホットバー 182px＋体力/空腹/XP) の安全帯。 ドックがこの x 帯に掛かる時だけ下端を上に止める。
-    private static final int HOTBAR_HALF_W = 100; // ホットバー半幅 91px ＋ 余裕
-    private static final int BOTTOM_SAFE = 44;    // ホットバー＋体力/空腹/XP 帯の高さ (下端マージン)
+    private static final int PC_ABS_MIN = 12; // ㊼A 点群サムネの絶対最低高 (これ未満になる極小画面でのみ非表示・通常は縮小して必ず表示)
+    // ㊺C/㊼A 下部中央 HUD (ホットバー 182px＋体力/空腹/XP) の安全帯。 ドックがこの x 帯に掛かる時だけ下端を上に止める。
+    private static final int HOTBAR_HALF_W = 100;  // ホットバー半幅 91px ＋ 余裕
+    private static final int BOTTOM_SAFE = 44;     // 通常確保: ホットバー＋体力/空腹/XP 帯の高さ (下端マージン)
+    private static final int BOTTOM_SAFE_MIN = 24; // ㊼A 余裕ゼロの極小画面でだけ詰める最小確保 (ホットバーだけは死守)
 
     // セクション見出し (定数・グリフ非依存テキスト)。
     private static final Component T_PERF = Component.translatable("visualizegate.dock.perf");
@@ -188,20 +189,25 @@ public final class VgDockRenderer {
         int sh = mc.getWindow().getGuiScaledHeight();
         boolean overlapsBottomHud = (x + dockW) > (sw / 2 - HOTBAR_HALF_W);
         int bottomReserve = overlapsBottomHud ? BOTTOM_SAFE : MARGIN;
-        int maxDockH = sh - MARGIN - bottomReserve;
         int pcTw = 0;
         int pcTh = 0;
         boolean showPc = false;
         if (pc) {
+            // ㊼A 点群は ON なら丸ごと drop せず必ず描く: 残り高にサムネを縮小 (shrink-to-fit)。 通常はフル下部安全帯
+            //     (BOTTOM_SAFE) を維持して HUD 非侵、 余裕ゼロの極小画面でだけ安全帯をホットバー最小まで詰めて雲を死守。
             pcTw = Math.min(innerW, PC_W);
             int aspectTh = Math.round(pcTw * (float) PC_H / PC_W);
-            int pcChrome = DIV + LINE + 2;                       // 区切り＋見出し行＋下余白
-            int avail = maxDockH - (hSections + PAD) - pcChrome; // サムネ本体に使える残り高
-            // ㊳C アスペクト維持・画面 1/3 上限 (中央/ホットバー非侵入) ＋ ㊹C 残り高クランプ。
-            pcTh = Math.min(Math.min(aspectTh, sh / 3), avail);
-            if (pcTh >= MIN_PC_TH) {
-                showPc = true;
-            } else {
+            int pcChrome = DIV + LINE + 2;                  // 区切り＋見出し行＋下余白
+            int fixed = (hSections + PAD) + pcChrome;       // 点群以外で確実に要る高さ
+            int want = Math.min(aspectTh, sh / 3);          // 望ましいサムネ高 (アスペクト維持・画面 1/3 上限)
+            int avail = (sh - MARGIN - bottomReserve) - fixed; // 下部 HUD 安全帯を確保した残り高
+            if (avail < PC_ABS_MIN && overlapsBottomHud) {
+                // フル安全帯では雲が消える極小画面のみ: ホットバー最小まで詰めて雲を残す (体力/空腹/XP 帯は一部諦める)。
+                avail = (sh - MARGIN - BOTTOM_SAFE_MIN) - fixed;
+            }
+            pcTh = Math.min(want, avail);
+            showPc = pcTh >= PC_ABS_MIN;                    // 絶対最低高未満 (真に余地が無い時) のみ非表示
+            if (!showPc) {
                 pcTh = 0;
                 pcTw = 0;
             }
