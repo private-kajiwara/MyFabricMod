@@ -176,6 +176,23 @@ public final class TerrainStore {
     }
 
     /**
+     * ㊽ 中心 (px,pz) ±{@code radius} ブロックの局所カラムだけを flat int[] で返す (ドックのライブ局所レーダー用)。
+     * 半径を覆うタイルのみ走査＝有界・低コスト (~3Hz で呼んでよい)。 メイン (レンダー) スレッドで呼ぶこと。
+     */
+    public int[] snapshotColumnsLocal(PortalDimension dim, int px, int pz, int radius) {
+        String worldId = PortalMemory.get().currentWorldId();
+        if (worldId == null) {
+            return new int[0];
+        }
+        ensureLoaded(worldId);
+        String dimId = PortalMemory.canonicalDimId(dim);
+        if (dimId == null) {
+            return new int[0];
+        }
+        return store(worldId).snapshotLocal(dimId, px, pz, radius);
+    }
+
+    /**
      * 指定ディメンションの blockX/blockZ が属する 4 ブロックセルの観測サーフェス代表 Y を返す (現 world)。
      * 未観測なら空 (=「向こう未探索」判定に使う)。 HUD/カード用の軽量クエリ。
      */

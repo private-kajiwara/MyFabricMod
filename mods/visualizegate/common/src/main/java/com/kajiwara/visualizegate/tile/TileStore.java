@@ -78,6 +78,56 @@ public final class TileStore {
         return out;
     }
 
+    /**
+     * ㊽ 中心 (cx,cz) ±{@code radius} ブロックの局所ボクセルだけを flat {@code int[]{wx,wz,y,color}} で返す
+     * (ドックのライブ局所レーダー用)。 半径を覆うタイル (高々 数枚) のみ走査し、 矩形半径でフィルタ＝有界・低コスト。
+     */
+    public int[] snapshotLocal(String dimId, int cx, int cz, int radius) {
+        int tx0 = Math.floorDiv(cx - radius, TileKey.TILE_BLOCKS);
+        int tx1 = Math.floorDiv(cx + radius, TileKey.TILE_BLOCKS);
+        int tz0 = Math.floorDiv(cz - radius, TileKey.TILE_BLOCKS);
+        int tz1 = Math.floorDiv(cz + radius, TileKey.TILE_BLOCKS);
+        int count = 0;
+        for (int tx = tx0; tx <= tx1; tx++) {
+            for (int tz = tz0; tz <= tz1; tz++) {
+                Tile t = tiles.get(new TileKey(dimId, tx, tz));
+                if (t == null) {
+                    continue;
+                }
+                for (long key : t.voxels().keySet()) {
+                    int wx = VoxelKey.x(key);
+                    int wz = VoxelKey.z(key);
+                    if (Math.abs(wx - cx) <= radius && Math.abs(wz - cz) <= radius) {
+                        count++;
+                    }
+                }
+            }
+        }
+        int[] out = new int[count * 4];
+        int i = 0;
+        for (int tx = tx0; tx <= tx1; tx++) {
+            for (int tz = tz0; tz <= tz1; tz++) {
+                Tile t = tiles.get(new TileKey(dimId, tx, tz));
+                if (t == null) {
+                    continue;
+                }
+                for (Map.Entry<Long, Long> ve : t.voxels().entrySet()) {
+                    long key = ve.getKey();
+                    int wx = VoxelKey.x(key);
+                    int wz = VoxelKey.z(key);
+                    if (Math.abs(wx - cx) > radius || Math.abs(wz - cz) > radius) {
+                        continue;
+                    }
+                    out[i++] = wx;
+                    out[i++] = wz;
+                    out[i++] = VoxelKey.valY(ve.getValue());
+                    out[i++] = VoxelKey.valColor(ve.getValue());
+                }
+            }
+        }
+        return out;
+    }
+
     /** 変更タイルのキー (コピー)。 */
     public List<TileKey> dirtyTiles() {
         return new ArrayList<>(dirty);

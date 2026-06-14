@@ -13,7 +13,7 @@ import com.kajiwara.visualizegate.ui.GateColors;
 
 //? if >=26.1 {
 import com.kajiwara.visualizegate.domain.PortalDimension;
-import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
+import com.kajiwara.visualizegate.pointcloud.DockRadar;
 import com.kajiwara.visualizegate.pointcloud.PointCloudSnapshot;
 import com.kajiwara.visualizegate.state.PointCloudViewState;
 import com.mojang.blaze3d.textures.GpuTextureView;
@@ -586,7 +586,9 @@ public final class VgDockRenderer {
             pcWasVisible = false;
             return;
         }
-        PointCloudSnapshot snap = PointCloudAnalysis.get().snapshot();
+        // ㊽B ライブ局所レーダー: ~3Hz でプレイヤー周辺を再生成 (オフスレッド)。 dock 専用＝フル画面は不変。
+        DockRadar.get().maybeCapture(System.nanoTime());
+        PointCloudSnapshot snap = DockRadar.get().snapshot();
         if (snap == null || snap.isEmpty()) {
             note(g, mc, x, y, w, h, "visualizegate.pc.hud.empty");
             pcWasVisible = false;

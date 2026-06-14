@@ -7,7 +7,6 @@ import com.kajiwara.visualizegate.domain.DomainPortal;
 import com.kajiwara.visualizegate.domain.GridPos;
 import com.kajiwara.visualizegate.domain.PortalDimension;
 import com.kajiwara.visualizegate.memory.PortalMemory;
-import com.kajiwara.visualizegate.pointcloud.PointCloudAnalysis;
 import com.kajiwara.visualizegate.state.BackCalcStore;
 import com.kajiwara.visualizegate.state.VgOverlayState;
 import com.kajiwara.visualizegate.ui.GateColors;
@@ -89,11 +88,8 @@ public final class VgCommands {
 
         // ㉟ オーバーレイ トグル (複数同時可・既定 OFF・切断でリセット・永続なし)。 再実行で OFF。
         root.then(literal("point-cloud").executes(c -> {
+            // ㊽B ドックの点群は DockRadar (ライブ局所レーダー) が自走で生成＝ここで whole-world 解析は不要。
             boolean on = VgOverlayState.togglePointCloud();
-            if (on) {
-                // 点けた瞬間に解析を要求 (まだ無ければ空＝何も出ない状態を避ける)。 既存スナップショットは再利用。
-                PointCloudAnalysis.get().requestAnalysis();
-            }
             return feedbackToggle(c, "visualizegate.cmd.pointcloud", on);
         }));
         root.then(literal("visualize").executes(
