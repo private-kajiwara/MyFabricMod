@@ -7,7 +7,9 @@ import com.kajiwara.visualizegate.domain.DomainPortal;
 import com.kajiwara.visualizegate.domain.GridPos;
 import com.kajiwara.visualizegate.domain.PortalDimension;
 import com.kajiwara.visualizegate.memory.PortalMemory;
+import com.kajiwara.visualizegate.config.GateConfigManager;
 import com.kajiwara.visualizegate.state.BackCalcStore;
+import com.kajiwara.visualizegate.state.PointCloudViewState;
 import com.kajiwara.visualizegate.state.VgOverlayState;
 import com.kajiwara.visualizegate.ui.GateColors;
 
@@ -97,6 +99,12 @@ public final class VgCommands {
         // ㊲ ドック展/畳トグル (専用キーバインドと同一動作)。
         root.then(literal("dock").executes(
                 c -> feedbackToggle(c, "visualizegate.cmd.dock", VgOverlayState.toggleDock())));
+        // ⑤④ 右下点群パネルのオーバーレイ詳細度トグル (簡略↔詳細・GateConfig 永続・既定=簡略)。
+        root.then(literal("detail").executes(c -> {
+            boolean on = PointCloudViewState.toggleOverlayDetail();
+            GateConfigManager.save();
+            return feedbackToggle(c, "visualizegate.cmd.detail", on);
+        }));
         // ㊸A `/vg perf` は廃止 (perf はドック展開＝フルメニューで常時表示)。
 
         // ㊷B 一覧/状態: `/vg` (引数なし) と `/vg help` でサブコマンド一覧＋現在の ON/OFF＋dock 状態を表示。
@@ -214,6 +222,7 @@ public final class VgCommands {
         src.sendFeedback(Component.translatable("visualizegate.help.visualize", onOff(VgOverlayState.isVisualize())));
         src.sendFeedback(Component.translatable("visualizegate.help.dock", Component.translatable(
                 VgOverlayState.isDockExpanded() ? "visualizegate.help.expanded" : "visualizegate.help.collapsed")));
+        src.sendFeedback(Component.translatable("visualizegate.help.detail", onOff(PointCloudViewState.isOverlayDetail())));
         src.sendFeedback(Component.translatable("visualizegate.help.clean"));
         src.sendFeedback(Component.translatable("visualizegate.help.backcalc"));
         return 1;

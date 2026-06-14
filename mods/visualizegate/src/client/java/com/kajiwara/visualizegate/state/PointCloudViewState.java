@@ -67,8 +67,24 @@ public final class PointCloudViewState {
     private static float owDisplayScale = DISPLAY_SCALE_DEFAULT;     // ㉓ OW 層の表示スケール (基準 1:1 × これ)
     private static float netherDisplayScale = DISPLAY_SCALE_DEFAULT; // ㉓ ネザー層の表示スケール (基準 1/8 × これ)
     private static int sidebarWidth = SIDEBAR_W_DEFAULT;             // ㉞ サイドバー幅 (生値・画面側でウィンドウクランプ)
+    /** ⑤④ 右下点群パネルのオーバーレイ詳細度 (false=簡略 / true=詳細)。 既定=簡略・config 永続。 */
+    private static boolean overlayDetail = false;
 
     private PointCloudViewState() {
+    }
+
+    /** ⑤④ 点群パネルのオーバーレイ詳細度 (簡略/詳細)。 */
+    public static boolean isOverlayDetail() {
+        return overlayDetail;
+    }
+
+    public static void setOverlayDetail(boolean v) {
+        overlayDetail = v;
+    }
+
+    public static boolean toggleOverlayDetail() {
+        overlayDetail = !overlayDetail;
+        return overlayDetail;
     }
 
     /** ㉞ サイドバー幅 (生値)。 画面側がウィンドウ幅で再クランプして使う。 */

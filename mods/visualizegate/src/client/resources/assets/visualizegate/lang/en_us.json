@@ -40,6 +40,7 @@
 
 	"visualizegate.cmd.cleanall": "Turned off all /vg overlays and cleared %s wireframe(s)",
 	"visualizegate.cmd.dock": "Dock expanded: %s",
+	"visualizegate.cmd.detail": "Panel overlay detail: %s",
 	"visualizegate.dock.conflict": " · conflict %s",
 	"visualizegate.dock.offset": " · offset %s",
 	"visualizegate.dock.perf": "Performance",
@@ -52,6 +53,7 @@
 	"visualizegate.help.pointcloud": "  /vg point-cloud — point-cloud thumbnail [%s]",
 	"visualizegate.help.visualize": "  /vg visualize — gate-relation wireframe [%s]",
 	"visualizegate.help.dock": "  /vg dock — expand/collapse the full menu (perf + gate state + notes) [%s]",
+	"visualizegate.help.detail": "  /vg detail — toggle the point-cloud panel overlay detail [%s]",
 	"visualizegate.help.clean": "  /vg clean — turn everything off",
 	"visualizegate.help.backcalc": "  /vg back-calculate <x y z | here> [ow|nether]",
 	"visualizegate.help.expanded": "expanded",
@@ -59,6 +61,11 @@
 	"visualizegate.pc.hud.title": "Point cloud",
 	"visualizegate.pc.hud.empty": "No data — open the hub and Re-analyze",
 	"visualizegate.pc.hud.legacy": "Point cloud: GPU3D N/A on this version",
+	"visualizegate.pc.panel.brief": "Brief",
+	"visualizegate.pc.panel.detail": "Detail",
+	"visualizegate.pc.panel.range": "Range",
+	"visualizegate.pc.panel.spacing": "Spacing",
+	"visualizegate.pc.panel.point": "Point",
 	"visualizegate.perf.cpu.title": "CPU %s%% · sys %s%%",
 
 	"visualizegate.card.linked.title": "Links to an existing gate",

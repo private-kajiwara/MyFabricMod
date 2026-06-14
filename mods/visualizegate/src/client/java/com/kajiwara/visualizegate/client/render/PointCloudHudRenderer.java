@@ -234,12 +234,132 @@ public final class PointCloudHudRenderer {
             GpuTextureView cv = PointCloudGpuRenderer.colorView();
             if (cv != null) {
                 g.blit(cv, PointCloudGpuRenderer.sampler(), x, y, x + w, y + h, 0f, 1f, 1f, 0f);
+                drawOverlay(g, mc, x, y, w, h, snap); // ⑤④ ミニマップ風 四隅オーバーレイ (層別)
             }
             pcWasVisible = true;
         } catch (Throwable t) {
             note(g, mc, x, y, w, h, "visualizegate.pc.hud.legacy");
             pcWasVisible = false;
         }
+    }
+
+    // ── ⑤④ ミニマップ風 四隅オーバーレイ (層別・スクリムで明背景でも可読)。 ──────────────────
+    private static final int SCRIM_STRONG = 0xB0000000;
+    private static final int SCRIM_LIGHT = 0x70000000;
+
+    /**
+     * プレビュー矩形 (x,y,w,h) の上に値をミニマップ風に重ねる。 視覚階層はスクリム強度＋色＋配置で表現
+     * (MC ビットマップフォントは単一サイズのため文字寸では分けない)。
+     *
+     * <p><b>層の振り分けはこのメソッド 1 か所で管理</b> (項目→層を user 指定で移動できるよう grouped):
+     * <ul>
+     *   <li>第1層 (スクリム強・白・最下): 座標 XYZ … 高頻度・最重要。</li>
+     *   <li>第2層 (スクリム弱・色): 現次元 / 総点群数 / 表示スケール / 簡略・詳細状態 … 中頻度。</li>
+     *   <li>第3層 (詳細トグル ON のみ): 範囲 / 間隔 / 点サイズ / GPU(描画/母数) / 層別点群 / 配色凡例 … 低頻度。</li>
+     * </ul>
+     */
+    private void drawOverlay(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int w, int h, PointCloudSnapshot snap) {
+        boolean detail = PointCloudViewState.isOverlayDetail();
+        int left = x + 3;
+        int right = x + w - 3;
+        int top = y + 2;
+        int bottomLine = y + h - 10;
+
+        // 値の取得 (HUD から直接・新規配線なし)。
+        boolean neth = snap.markerNether;
+        int owN = snap.owX.length;
+        int neN = snap.nX.length;
+        int totalN = owN + neN;
+        int sampledN = Math.max(snap.owSampled + snap.netherSampled, totalN);
+        int range = Math.round(snap.radius);
+        int spacing = PointCloudViewState.getDimensionSpacing();
+        int pointSz = PointCloudViewState.getPointSize();
+        float owSc = PointCloudViewState.getOwDisplayScale();
+        float neSc = PointCloudViewState.getNetherDisplayScale();
+        double px = mc.player != null ? mc.player.getX() : 0;
+        double py = mc.player != null ? mc.player.getY() : 0;
+        double pz = mc.player != null ? mc.player.getZ() : 0;
+
+        // ── 第2層: 上ストリップ (現次元 + 総点群数 / 右端=簡略・詳細状態)。 ──
+        Component dimC = Component.literal(neth ? "Ne" : "OW");
+        Component cntC = Component.literal(fmtCount(totalN) + " pts");
+        scrimLine(g, x, top, w, SCRIM_LIGHT);
+        g.text(mc.font, dimC, left, top, neth ? DIM_TINT_NETHER : DIM_TINT_OW);
+        g.text(mc.font, cntC, left + mc.font.width(dimC) + 6, top, GateColors.TEXT);
+        Component modeC = Component.translatable(
+                detail ? "visualizegate.pc.panel.detail" : "visualizegate.pc.panel.brief");
+        g.text(mc.font, modeC, right - mc.font.width(modeC), top, GateColors.LINK_GRAY);
+
+        // ── 第3層: 詳細 (トグル ON かつ縦に余地がある時のみ・上ストリップの下に小さく積む)。 ──
+        if (detail && h >= 78) {
+            int dy = top + 11;
+            scrimLine(g, x, dy, w, SCRIM_LIGHT);
+            int dx = left;
+            dx = field(g, mc, dx, dy, "visualizegate.pc.panel.range", Integer.toString(range));
+            dx = field(g, mc, dx, dy, "visualizegate.pc.panel.spacing", Integer.toString(spacing));
+            field(g, mc, dx, dy, "visualizegate.pc.panel.point", pointSz + "px");
+            dy += 10;
+            scrimLine(g, x, dy, w, SCRIM_LIGHT);
+            g.text(mc.font, Component.literal("GPU " + fmtCount(totalN) + "/" + fmtCount(sampledN)),
+                    left, dy, GateColors.LINK_GRAY);
+            Component perDim = Component.literal("OW " + fmtCount(owN) + "  Ne " + fmtCount(neN));
+            g.text(mc.font, perDim, right - mc.font.width(perDim), dy, GateColors.LINK_GRAY);
+            dy += 10;
+            scrimLine(g, x, dy, w, SCRIM_LIGHT); // 配色凡例 (OW=teal / Ne=橙 / リンク=紫)
+            int lx = legendDot(g, mc, left, dy, DIM_TINT_OW, "OW");
+            lx = legendDot(g, mc, lx, dy, DIM_TINT_NETHER, "Ne");
+            legendDot(g, mc, lx, dy, GateColors.PC_LINK,
+                    Component.translatable("visualizegate.legend.link_line").getString());
+        }
+
+        // ── 第2層: 表示スケール (座標の 1 行上・右端)。 ──
+        Component scaleC = Component.literal("OW" + fmt1(owSc) + " Ne" + fmt1(neSc));
+        int scY = bottomLine - 10;
+        g.fill(right - mc.font.width(scaleC) - 2, scY - 1, right + 1, scY + 9, SCRIM_LIGHT);
+        g.text(mc.font, scaleC, right - mc.font.width(scaleC), scY, GateColors.LINK_GRAY);
+
+        // ── 第1層: 座標 XYZ (最下・スクリム強・白)。 ──
+        Component coordC = Component.literal(
+                (int) Math.floor(px) + " / " + (int) Math.floor(py) + " / " + (int) Math.floor(pz));
+        scrimLine(g, x, bottomLine, w, SCRIM_STRONG);
+        g.text(mc.font, coordC, left, bottomLine, GateColors.TEXT);
+    }
+
+    /** 全幅の薄いスクリム帯 (テキスト 1 行ぶん)。 */
+    private void scrimLine(GuiGraphicsExtractor g, int x, int y, int w, int argb) {
+        g.fill(x, y - 1, x + w, y + 9, argb);
+    }
+
+    /** label(灰) + value(白) を描き次の x を返す。 */
+    private int field(GuiGraphicsExtractor g, Minecraft mc, int x, int y, String labelKey, String val) {
+        Component l = Component.translatable(labelKey);
+        g.text(mc.font, l, x, y, GateColors.LINK_GRAY);
+        x += mc.font.width(l) + 2;
+        Component v = Component.literal(val);
+        g.text(mc.font, v, x, y, GateColors.TEXT);
+        return x + mc.font.width(v) + 6;
+    }
+
+    /** 色ドット + ラベル (灰) を描き次の x を返す。 */
+    private int legendDot(GuiGraphicsExtractor g, Minecraft mc, int x, int y, int color, String label) {
+        g.fill(x, y + 1, x + 5, y + 6, color);
+        x += 7;
+        Component c = Component.literal(label);
+        g.text(mc.font, c, x, y, GateColors.LINK_GRAY);
+        return x + mc.font.width(c) + 6;
+    }
+
+    /** 点数の短縮表記 (>=1000 → "x.xk")。 */
+    private static String fmtCount(int n) {
+        if (n >= 1000) {
+            return String.format(java.util.Locale.ROOT, "%.1fk", n / 1000.0);
+        }
+        return Integer.toString(n);
+    }
+
+    /** スケールの 1 桁表記。 */
+    private static String fmt1(float v) {
+        return String.format(java.util.Locale.ROOT, "%.1f", v);
     }
 
     /** Vメニューと同じ署名の変化検出 (snapshot/トグル/スケール/detail/pointSize/spacing/hidden版)。 */

@@ -40,6 +40,7 @@
 
 	"visualizegate.cmd.cleanall": "/vg オーバーレイを全て OFF・逆算ワイヤーフレーム %s 件も消去",
 	"visualizegate.cmd.dock": "ドック展開: %s",
+	"visualizegate.cmd.detail": "パネルのオーバーレイ詳細: %s",
 	"visualizegate.dock.conflict": " · 競合 %s",
 	"visualizegate.dock.offset": " · ズレ %s",
 	"visualizegate.dock.perf": "パフォーマンス",
@@ -52,6 +53,7 @@
 	"visualizegate.help.pointcloud": "  /vg point-cloud — 点群サムネ [%s]",
 	"visualizegate.help.visualize": "  /vg visualize — ゲート関係ワイヤーフレーム [%s]",
 	"visualizegate.help.dock": "  /vg dock — フルメニュー (perf＋ゲート状態＋注記) の展開/畳み [%s]",
+	"visualizegate.help.detail": "  /vg detail — 点群パネルのオーバーレイ詳細を切替 [%s]",
 	"visualizegate.help.clean": "  /vg clean — すべて OFF",
 	"visualizegate.help.backcalc": "  /vg back-calculate <x y z | here> [ow|nether]",
 	"visualizegate.help.expanded": "展開",
@@ -59,6 +61,11 @@
 	"visualizegate.pc.hud.title": "点群",
 	"visualizegate.pc.hud.empty": "データ無し — ハブを開いて再解析",
 	"visualizegate.pc.hud.legacy": "点群: この版では GPU3D 非対応",
+	"visualizegate.pc.panel.brief": "簡略",
+	"visualizegate.pc.panel.detail": "詳細",
+	"visualizegate.pc.panel.range": "範囲",
+	"visualizegate.pc.panel.spacing": "間隔",
+	"visualizegate.pc.panel.point": "点",
 	"visualizegate.perf.cpu.title": "CPU %s%% · sys %s%%",
 
 	"visualizegate.card.linked.title": "既存のゲートにつながります",
