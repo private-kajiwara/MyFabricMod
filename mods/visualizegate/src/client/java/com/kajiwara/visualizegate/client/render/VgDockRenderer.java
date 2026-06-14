@@ -155,8 +155,13 @@ public final class VgDockRenderer {
     private static final int MIN_DOCK_W = 180; // 極小画面でも本文が収まる下限
     private static final int DIV = 6;        // セクション区切り (ヘアライン＋余白)
     private static final int GAP = 3;
-    private static final int SPARK_H = 18;   // スパークライン高
+    private static final int SPARK_H = 18;   // スパークライン高 (通常)
     private static final int SW = 7;         // スウォッチ一辺
+    // ㊼B コンパクト (tight) レイアウト値: 点群が小さくなる時だけ上部セクションを詰めて点群分の高さを捻出。
+    private static final int ROW_TIGHT = 10;     // 状態/注記の 1 行高 (通常 LINE=11)
+    private static final int SPARK_H_TIGHT = 8;  // CPU スパークライン高 (通常 18)
+    private static final int DIV_TIGHT = 4;      // セクション区切り間隔 (通常 DIV=6)
+    private static final int COMFORT_PC_TH = 56; // 点群高がこれ未満ならコンパクト化を試みる
     private static final int PC_ABS_MIN = 12; // ㊼A 点群サムネの絶対最低高 (これ未満になる極小画面でのみ非表示・通常は縮小して必ず表示)
     // ㊺C/㊼A 下部中央 HUD (ホットバー 182px＋体力/空腹/XP) の安全帯。 ドックがこの x 帯に掛かる時だけ下端を上に止める。
     private static final int HOTBAR_HALF_W = 100;  // ホットバー半幅 91px ＋ 余裕
@@ -167,6 +172,18 @@ public final class VgDockRenderer {
     private static final Component T_PERF = Component.translatable("visualizegate.dock.perf");
     private static final Component T_STATUS = Component.translatable("visualizegate.dock.status");
     private static final Component T_NOTES = Component.translatable("visualizegate.dock.notes");
+
+    // ㊼B 現レイアウト値 (通常 or tight)。 render スレッド単独＝インスタンスフィールドで安全。 高さ helper と draw が共有。
+    private int lRow = LINE;
+    private int lSpark = SPARK_H;
+    private int lDiv = DIV;
+
+    /** ㊼B レイアウトを通常/コンパクトに切替 (上部セクションの行高/スパーク高/区切り間隔)。 */
+    private void setLayout(boolean tight) {
+        lRow = tight ? ROW_TIGHT : LINE;
+        lSpark = tight ? SPARK_H_TIGHT : SPARK_H;
+        lDiv = tight ? DIV_TIGHT : DIV;
+    }
 
     private void drawExpanded(GuiGraphicsExtractor g, Minecraft mc, int x, int y) {
         // ㊸A 展開＝常にフルメニュー: perf＋ゲート状態＋注記をフラグ非依存で常時表示。 点群のみ pointCloud 連動で追加。
@@ -179,40 +196,33 @@ public final class VgDockRenderer {
         dockW = Math.min(dockW, sw - MARGIN * 2); // 極小画面の安全側クランプ
         int innerX = x + PAD;
         int innerW = dockW - PAD * 2;
-        // 固定セクション高 (最終 PAD 前まで): ヘッダ + perf + 状態 + 注記 (常時)。
-        int hSections = PAD + LINE; // top pad + header row
-        hSections += DIV + perfHeight();
-        hSections += DIV + statusHeight() + GAP + notesHeight();
 
         // ㊹C/㊺C ドック全体を画面内に収める。 ㊺C ドックの x 帯が下部中央 HUD (ホットバー/体力/空腹/XP) に掛かる時は
         //     下端を安全帯ぶん上で止める (被り防止)。 掛からない (狭い/極小画面) 時は下端 MARGIN まで使う。
         int sh = mc.getWindow().getGuiScaledHeight();
         boolean overlapsBottomHud = (x + dockW) > (sw / 2 - HOTBAR_HALF_W);
         int bottomReserve = overlapsBottomHud ? BOTTOM_SAFE : MARGIN;
-        int pcTw = 0;
-        int pcTh = 0;
-        boolean showPc = false;
-        if (pc) {
-            // ㊼A 点群は ON なら丸ごと drop せず必ず描く: 残り高にサムネを縮小 (shrink-to-fit)。 通常はフル下部安全帯
-            //     (BOTTOM_SAFE) を維持して HUD 非侵、 余裕ゼロの極小画面でだけ安全帯をホットバー最小まで詰めて雲を死守。
-            pcTw = Math.min(innerW, PC_W);
-            int aspectTh = Math.round(pcTw * (float) PC_H / PC_W);
-            int pcChrome = DIV + LINE + 2;                  // 区切り＋見出し行＋下余白
-            int fixed = (hSections + PAD) + pcChrome;       // 点群以外で確実に要る高さ
-            int want = Math.min(aspectTh, sh / 3);          // 望ましいサムネ高 (アスペクト維持・画面 1/3 上限)
-            int avail = (sh - MARGIN - bottomReserve) - fixed; // 下部 HUD 安全帯を確保した残り高
-            if (avail < PC_ABS_MIN && overlapsBottomHud) {
-                // フル安全帯では雲が消える極小画面のみ: ホットバー最小まで詰めて雲を残す (体力/空腹/XP 帯は一部諦める)。
-                avail = (sh - MARGIN - BOTTOM_SAFE_MIN) - fixed;
-            }
-            pcTh = Math.min(want, avail);
-            showPc = pcTh >= PC_ABS_MIN;                    // 絶対最低高未満 (真に余地が無い時) のみ非表示
-            if (!showPc) {
-                pcTh = 0;
-                pcTw = 0;
+
+        // ㊼A/㊼B 点群: 通常レイアウトでサムネ高を出し、 小さければ (4K Auto=gsh240 等) コンパクト化して捻出。
+        setLayout(false);
+        int pcTh = pc ? cloudHeight(sh, bottomReserve, overlapsBottomHud, innerW) : 0;
+        if (pc && pcTh < COMFORT_PC_TH) {
+            setLayout(true);
+            int tightTh = cloudHeight(sh, bottomReserve, overlapsBottomHud, innerW);
+            if (tightTh > pcTh) {
+                pcTh = tightTh;
+            } else {
+                setLayout(false); // コンパクト化で増えないなら通常レイアウトへ戻す
             }
         }
-        int h = hSections + (showPc ? (DIV + LINE + pcTh + 2) : 0) + PAD;
+        boolean showPc = pc && pcTh >= PC_ABS_MIN; // 絶対最低高未満 (真に余地が無い時) のみ非表示
+        int pcTw = showPc ? Math.min(innerW, PC_W) : 0;
+        if (!showPc) {
+            pcTh = 0;
+        }
+
+        int hSections = hSections();
+        int h = hSections + (showPc ? (lDiv + LINE + pcTh + 2) : 0) + PAD;
 
         g.fill(x, y, x + dockW, y + h, BG_EXPANDED);
         drawHeaderRow(g, mc, x, y, dockW, header(mc), true);
@@ -230,23 +240,49 @@ public final class VgDockRenderer {
         }
     }
 
+    /** 固定セクション高 (ヘッダ + perf + 状態 + 注記・最終 PAD 前まで)。 現レイアウト値 (lRow/lSpark/lDiv) で算出。 */
+    private int hSections() {
+        int h = PAD + LINE; // top pad + header row
+        h += lDiv + perfHeight();
+        h += lDiv + statusHeight() + GAP + notesHeight();
+        return h;
+    }
+
+    /**
+     * ㊼A/㊼B 現レイアウトでの点群サムネ高 (shrink-to-fit)。 通常はフル下部安全帯 (BOTTOM_SAFE) を維持して HUD 非侵、
+     * 余裕ゼロの極小画面でだけ安全帯をホットバー最小まで詰めて雲を死守。 ABS_MIN 未満 (真に余地無し) なら非表示扱いの値を返す。
+     */
+    private int cloudHeight(int sh, int bottomReserve, boolean overlapsBottomHud, int innerW) {
+        int pcTw = Math.min(innerW, PC_W);
+        int aspectTh = Math.round(pcTw * (float) PC_H / PC_W);
+        int want = Math.min(aspectTh, sh / 3);          // 望ましいサムネ高 (アスペクト維持・画面 1/3 上限)
+        int pcChrome = lDiv + LINE + 2;                 // 区切り＋見出し行＋下余白
+        int fixed = (hSections() + PAD) + pcChrome;     // 点群以外で確実に要る高さ
+        int avail = (sh - MARGIN - bottomReserve) - fixed;
+        if (avail < PC_ABS_MIN && overlapsBottomHud) {
+            // フル安全帯では雲が消える極小画面のみ: ホットバー最小まで詰めて雲を残す (体力/空腹/XP 帯は一部諦める)。
+            avail = (sh - MARGIN - BOTTOM_SAFE_MIN) - fixed;
+        }
+        return Math.min(want, avail);
+    }
+
     private int perfHeight() {
         // ㊹B タイトル + CPU(text+spark) のみ。 フレーム時間スパークライン/GPU% 注記は撤去 (fps はスリムバーに表示)。
-        return LINE + LINE + SPARK_H + 2;
+        return LINE + LINE + lSpark + 2;
     }
 
     private int statusHeight() {
-        return LINE + 3 * LINE; // title + 5 entries in 2 cols (3 rows)
+        return LINE + 3 * lRow; // title + 5 entries in 2 cols (3 rows)
     }
 
     private int notesHeight() {
-        return LINE + 2 * LINE; // title + 4 entries in 2 cols (2 rows)
+        return LINE + 2 * lRow; // title + 4 entries in 2 cols (2 rows)
     }
 
     /** ヘアライン区切りを描き、 次の Y を返す。 ドック実幅 {@code dockW} 内に収める。 */
     private int divider(GuiGraphicsExtractor g, int x, int y, int dockW) {
         g.fill(x + PAD, y + 2, x + dockW - PAD, y + 3, GateColors.MAIN_DIM);
-        return y + DIV;
+        return y + lDiv;
     }
 
     // ── パフォーマンス (㊹B CPU 使用率のみ: text＋スパークライン。 フレーム時間/GPU% 代理表示は撤去) ──
@@ -257,8 +293,8 @@ public final class VgDockRenderer {
         g.text(mc.font, cpuLine(), x, y, GateColors.TEXT);
         y += LINE;
         CpuSampler s = CpuSampler.get();
-        drawSpark(g, x, y, w, SPARK_H, s.historyRef(), s.head(), s.count(), 100f, GateColors.PC_NETHER_HIGH);
-        y += SPARK_H + 2;
+        drawSpark(g, x, y, w, lSpark, s.historyRef(), s.head(), s.count(), 100f, GateColors.PC_NETHER_HIGH);
+        y += lSpark + 2;
         return y;
     }
 
@@ -276,11 +312,11 @@ public final class VgDockRenderer {
         int colW = w / 2;
         for (int i = 0; i < STATE_KEYS.length; i++) {
             int sx = x + (i % 2) * colW;
-            int sy = y + (i / 2) * LINE;
+            int sy = y + (i / 2) * lRow;
             g.fill(sx, sy + 1, sx + SW, sy + 1 + SW, STATE_COLORS[i]); // FILL スウォッチ
             g.text(mc.font, Component.translatable(STATE_KEYS[i]), sx + SW + 4, sy, GateColors.TEXT);
         }
-        return y + 3 * LINE;
+        return y + 3 * lRow;
     }
 
     // ── 注記 (4 種・線/枠スウォッチ・2 列) ──
@@ -291,9 +327,9 @@ public final class VgDockRenderer {
         // row1: リンク(線/MAIN) | ズレ無し設置位置(枠/ACCENT) ; row2: 検索範囲(線/DOME) | 混線ゲート(枠/CROSSTALK)
         drawNote(g, mc, x, y, false, GateColors.MAIN, "visualizegate.legend.link_line");
         drawNote(g, mc, x + colW, y, true, GateColors.ACCENT, "visualizegate.legend.ghost");
-        drawNote(g, mc, x, y + LINE, false, GateColors.DOME, "visualizegate.legend.dome");
-        drawNote(g, mc, x + colW, y + LINE, true, GateColors.CROSSTALK, "visualizegate.legend.crosstalk");
-        return y + 2 * LINE;
+        drawNote(g, mc, x, y + lRow, false, GateColors.DOME, "visualizegate.legend.dome");
+        drawNote(g, mc, x + colW, y + lRow, true, GateColors.CROSSTALK, "visualizegate.legend.crosstalk");
+        return y + 2 * lRow;
     }
 
     /** 注記 1 行 (frame=true→枠スウォッチ / false→線スウォッチ ＋ ラベル)。 */
