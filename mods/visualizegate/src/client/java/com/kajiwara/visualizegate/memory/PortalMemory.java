@@ -74,6 +74,10 @@ public final class PortalMemory {
     private String currentWorldId;    // 現接続の world-id
     private long tickCounter = 0;
 
+    // ⑤⑦A 診断 (除去 vs 未復元 の切り分け・コード挙動は不変・ログのみ)。 join からのサイクル数と直近 dim を追跡。
+    private int diagCycles = -1;
+    private String diagLastDim = null;
+
     private PortalMemory() {
     }
 
@@ -95,9 +99,38 @@ public final class PortalMemory {
             ensureLoaded();
             currentWorldId = worldId(mc); // null 可 (= 取得不能なら記憶を触らない)
             VisualizeGateMod.LOGGER.info("[visualizegate] portal-memory JOIN worldId={}", currentWorldId);
+            // ⑤⑦A チェックポイント(i)(ii): ロード直後の JSON＝復元直後の RAM (まだ reconcile 前)。 OW=0 ならここで未復元/保存失敗。
+            diagCycles = 0;
+            diagLastDim = null;
+            logDimCounts("restored@join (pre-reconcile)");
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] portal-memory join failed: {}", t.toString());
         }
+    }
+
+    /** ⑤⑦A 診断: 現 world の dim 別ゲート件数＋確定リンク数をログ (除去 vs 未復元 の切り分け用・状態は不変)。 */
+    private void logDimCounts(String phase) {
+        if (file == null || currentWorldId == null) {
+            VisualizeGateMod.LOGGER.info("[visualizegate][diag] {} worldId={} (no file/worldId)", phase, currentWorldId);
+            return;
+        }
+        int ow = 0;
+        int ne = 0;
+        int other = 0;
+        for (Map.Entry<String, List<MemoryPortal>> e : file.worldPortals(currentWorldId).entrySet()) {
+            PortalDimension d = dimOf(e.getKey());
+            int c = e.getValue().size();
+            if (d == PortalDimension.OVERWORLD) {
+                ow += c;
+            } else if (d == PortalDimension.NETHER) {
+                ne += c;
+            } else {
+                other += c;
+            }
+        }
+        VisualizeGateMod.LOGGER.info(
+                "[visualizegate][diag] {} worldId={} gates OW={} Nether={} other={} links={}",
+                phase, currentWorldId, ow, ne, other, file.worldLinks(currentWorldId).size());
     }
 
     private void onLeave() {
@@ -154,8 +187,23 @@ public final class PortalMemory {
             reconcile(level, dimId);
             ensureNumbered(); // ㉛ 全 dim の number==0 を一意化 (別 dim の N-0 残りを根治)
             confirmLinks(); // ㉙ 開いて繋がった OW↔ネザーの確定ペアを永続記録
+            diagTick(dimId); // ⑤⑦A チェックポイント(iii)＋dim往復追跡 (reconcile 後の件数・ログのみ)
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn("[visualizegate] portal-memory tick failed (continuing): {}", t.toString());
+        }
+    }
+
+    /** ⑤⑦A 診断: dim 変化時と join からの settle サイクル (1/5/10/20s) で reconcile 後の件数を出す。 */
+    private void diagTick(String dimId) {
+        if (!dimId.equals(diagLastDim)) {
+            diagLastDim = dimId;
+            logDimCounts("dim=" + dimId + " (post-reconcile)");
+        }
+        if (diagCycles >= 0) {
+            diagCycles++;
+            if (diagCycles == 1 || diagCycles == 5 || diagCycles == 10 || diagCycles == 20) {
+                logDimCounts("settle +" + diagCycles + "s (post-reconcile)");
+            }
         }
     }
 
