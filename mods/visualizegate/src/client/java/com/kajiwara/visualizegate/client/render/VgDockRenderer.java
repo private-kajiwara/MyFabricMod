@@ -310,7 +310,8 @@ public final class VgDockRenderer {
         if (count <= 0 || w <= 0 || h <= 0) {
             return;
         }
-        g.fill(x, y + h, x + w, y + h + 1, GateColors.MAIN_DIM); // ベースライン
+        // ㊺D ベースライン横線は撤去: 直下のセクション区切り (divider) と並んで二重線に見えていた (㊹B で perf が
+        //     spark で終わるようになった残骸)。 セクション境界は divider 一本に。 バーは y+h を底に描く (不変)。
         int n = Math.min(count, w);
         for (int i = 0; i < n; i++) {
             int idx = ((head - 1 - i) % count + count) % count;
