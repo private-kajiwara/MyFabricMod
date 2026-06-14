@@ -31,6 +31,7 @@ public final class GateConfig {
     public float pcNetherDisplayScale = 1.0f; // ㉓ ネザー層の表示スケール (基準 1/8 × これ・既定=現状一致)
     public int pcSidebarW = 200;              // ㉞ サイドバー幅 (スプリッターで可変・ロード時にウィンドウクランプ)
     public boolean pcOverlayDetail = false;   // ⑤④ 右下点群パネルのオーバーレイ詳細度 (既定=簡略)
+    public boolean pcCloudOnly = false;       // ⑤⑤ 点群ソロ表示 (cloud-only・既定 OFF)
 
     public static GateConfig defaults() {
         return new GateConfig();

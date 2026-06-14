@@ -97,6 +97,10 @@ public final class VgDockRenderer {
     }
 
     private void onHudRender(GuiGraphicsExtractor g) {
+        if (VgOverlayState.isCloudSolo()) {
+            lastFrameNano = 0; // ⑤⑤ 点群ソロ中はドック抑止 (dockExpanded は不変＝解除で自前 /vg dock 状態へ復帰)
+            return;
+        }
         if (!VgOverlayState.dockVisible()) {
             lastFrameNano = 0; // 非表示中は計測を切る (再表示時の巨大 dt を防ぐ)
             return;

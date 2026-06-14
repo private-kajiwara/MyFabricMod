@@ -69,8 +69,19 @@ public final class PointCloudViewState {
     private static int sidebarWidth = SIDEBAR_W_DEFAULT;             // ㉞ サイドバー幅 (生値・画面側でウィンドウクランプ)
     /** ⑤④ 右下点群パネルのオーバーレイ詳細度 (false=簡略 / true=詳細)。 既定=簡略・config 永続。 */
     private static boolean overlayDetail = false;
+    /** ⑤⑤ 点群ソロ表示 (cloud-only): ON で点群パネル以外の VG HUD を抑止。 config 永続・既定 OFF。 */
+    private static boolean cloudOnly = false;
 
     private PointCloudViewState() {
+    }
+
+    /** ⑤⑤ 点群ソロ表示 (cloud-only) の生フラグ。 実効 solo は {@code VgOverlayState.isCloudSolo()} (パネルON時のみ)。 */
+    public static boolean isCloudOnly() {
+        return cloudOnly;
+    }
+
+    public static void setCloudOnly(boolean v) {
+        cloudOnly = v;
     }
 
     /** ⑤④ 点群パネルのオーバーレイ詳細度 (簡略/詳細)。 */

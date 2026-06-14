@@ -89,11 +89,17 @@ public final class VgCommands {
         }));
 
         // ㉟ オーバーレイ トグル (複数同時可・既定 OFF・切断でリセット・永続なし)。 再実行で OFF。
-        root.then(literal("point-cloud").executes(c -> {
+        LiteralArgumentBuilder<FabricClientCommandSource> pc = literal("point-cloud").executes(c -> {
             // ㊽B ドックの点群は DockRadar (ライブ局所レーダー) が自走で生成＝ここで whole-world 解析は不要。
             boolean on = VgOverlayState.togglePointCloud();
             return feedbackToggle(c, "visualizegate.cmd.pointcloud", on);
-        }));
+        });
+        // ⑤⑤ only <detail|compact|off>: 点群ソロ表示＋密度指定／明示解除 (密度は /vg detail と同一 state を共有)。
+        pc.then(literal("only")
+                .then(literal("detail").executes(c -> onlyDensity(c, true)))
+                .then(literal("compact").executes(c -> onlyDensity(c, false)))
+                .then(literal("off").executes(VgCommands::onlyOff)));
+        root.then(pc);
         root.then(literal("visualize").executes(
                 c -> feedbackToggle(c, "visualizegate.cmd.visualize", VgOverlayState.toggleVisualize())));
         // ㊲ ドック展/畳トグル (専用キーバインドと同一動作)。
@@ -219,6 +225,7 @@ public final class VgCommands {
         FabricClientCommandSource src = c.getSource();
         src.sendFeedback(Component.translatable("visualizegate.help.header"));
         src.sendFeedback(Component.translatable("visualizegate.help.pointcloud", onOff(VgOverlayState.isPointCloud())));
+        src.sendFeedback(Component.translatable("visualizegate.help.only", soloMode()));
         src.sendFeedback(Component.translatable("visualizegate.help.visualize", onOff(VgOverlayState.isVisualize())));
         src.sendFeedback(Component.translatable("visualizegate.help.dock", Component.translatable(
                 VgOverlayState.isDockExpanded() ? "visualizegate.help.expanded" : "visualizegate.help.collapsed")));
@@ -231,6 +238,39 @@ public final class VgCommands {
     /** 状態 ON/OFF の翻訳コンポーネント (state.on/off を再利用)。 */
     private static Component onOff(boolean on) {
         return Component.translatable(on ? "visualizegate.state.on" : "visualizegate.state.off");
+    }
+
+    /** ⑤⑤ /vg point-cloud only &lt;detail|compact&gt;: ソロ化＋密度設定。 ソロ中に同密度の再打ちで解除。 */
+    private static int onlyDensity(CommandContext<FabricClientCommandSource> c, boolean wantDetail) {
+        if (VgOverlayState.isCloudSolo() && PointCloudViewState.isOverlayDetail() == wantDetail) {
+            PointCloudViewState.setCloudOnly(false); // 同密度の再打ち＝ソロ解除 (密度値は保持)
+        } else {
+            PointCloudViewState.setCloudOnly(true);
+            VgOverlayState.setPointCloud(true);      // パネルを点ける (ドック auto-expand なし)
+            PointCloudViewState.setOverlayDetail(wantDetail);
+        }
+        GateConfigManager.save();
+        return feedbackMode(c);
+    }
+
+    /** ⑤⑤ /vg point-cloud only off: ソロ明示解除 (非ソロなら実質 no-op)。 密度値は保持。 */
+    private static int onlyOff(CommandContext<FabricClientCommandSource> c) {
+        PointCloudViewState.setCloudOnly(false);
+        GateConfigManager.save();
+        return feedbackMode(c);
+    }
+
+    /** ⑤⑤ 現在の点群ソロ・モードをチャット表示 (off / only:detail / only:compact)。 */
+    private static int feedbackMode(CommandContext<FabricClientCommandSource> c) {
+        c.getSource().sendFeedback(Component.translatable("visualizegate.cmd.only", soloMode()));
+        return 1;
+    }
+
+    /** ⑤⑤ 現在の点群ソロ・モード文字列 (言語非依存・help/feedback 共用)。 */
+    private static String soloMode() {
+        return VgOverlayState.isCloudSolo()
+                ? (PointCloudViewState.isOverlayDetail() ? "only:detail" : "only:compact")
+                : "off";
     }
 
     /** ㉟ トグル結果を ON/OFF つきの短いチャットで返す (lang en/ja・key は %s に状態を取る)。 */
