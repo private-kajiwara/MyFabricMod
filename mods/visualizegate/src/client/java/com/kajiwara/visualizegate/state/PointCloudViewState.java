@@ -67,8 +67,13 @@ public final class PointCloudViewState {
     private static float owDisplayScale = DISPLAY_SCALE_DEFAULT;     // ㉓ OW 層の表示スケール (基準 1:1 × これ)
     private static float netherDisplayScale = DISPLAY_SCALE_DEFAULT; // ㉓ ネザー層の表示スケール (基準 1/8 × これ)
     private static int sidebarWidth = SIDEBAR_W_DEFAULT;             // ㉞ サイドバー幅 (生値・画面側でウィンドウクランプ)
-    /** ⑤④ 右下点群パネルのオーバーレイ詳細度 (false=簡略 / true=詳細)。 既定=簡略・config 永続。 */
-    private static boolean overlayDetail = false;
+    /**
+     * ⑤④/⑤⑤ 右下点群パネルのオーバーレイ詳細度 (false=簡略 / true=詳細)。 config 永続。
+     * <b>⑤⑤B 三値</b>: {@code null}=未設定＝<b>実効=詳細</b> (初回既定)。 ユーザが {@code /vg detail} か
+     * {@code only detail|compact} で明示すると非 null 値が入り永続 (= 一度選んだらその選択を保持)。 既存 config に
+     * 明示 {@code false} が書かれていればそのまま簡略 (⑤④ は毎回 false を書いていたので移行不要)。
+     */
+    private static Boolean overlayDetail = null;
     /** ⑤⑤ 点群ソロ表示 (cloud-only): ON で点群パネル以外の VG HUD を抑止。 config 永続・既定 OFF。 */
     private static boolean cloudOnly = false;
 
@@ -84,18 +89,29 @@ public final class PointCloudViewState {
         cloudOnly = v;
     }
 
-    /** ⑤④ 点群パネルのオーバーレイ詳細度 (簡略/詳細)。 */
+    /** ⑤④/⑤⑤B 点群パネルのオーバーレイ詳細度の<b>実効値</b> (未設定 null → 詳細＝初回既定)。 */
     public static boolean isOverlayDetail() {
-        return overlayDetail;
+        return overlayDetail != null ? overlayDetail : true;
     }
 
+    /** 明示設定 (非 null 値が入り永続される)。 */
     public static void setOverlayDetail(boolean v) {
         overlayDetail = v;
     }
 
     public static boolean toggleOverlayDetail() {
-        overlayDetail = !overlayDetail;
+        setOverlayDetail(!isOverlayDetail());
         return overlayDetail;
+    }
+
+    /** ⑤⑤B 永続用の生値 (null=未設定)。 config 保存時に書き出す (GSON は null フィールドを省略＝未設定を保つ)。 */
+    public static Boolean getOverlayDetailRaw() {
+        return overlayDetail;
+    }
+
+    /** ⑤⑤B config ロード時に生値を反映 (null=未設定のまま＝実効 詳細)。 */
+    public static void setOverlayDetailRaw(Boolean v) {
+        overlayDetail = v;
     }
 
     /** ㉞ サイドバー幅 (生値)。 画面側がウィンドウ幅で再クランプして使う。 */

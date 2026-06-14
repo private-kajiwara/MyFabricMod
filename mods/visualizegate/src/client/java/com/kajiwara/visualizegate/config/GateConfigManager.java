@@ -71,7 +71,7 @@ public final class GateConfigManager {
             PointCloudViewState.setOwDisplayScale(cfg.pcOwDisplayScale);
             PointCloudViewState.setNetherDisplayScale(cfg.pcNetherDisplayScale);
             PointCloudViewState.setSidebarWidth(cfg.pcSidebarW); // ㉞ 生値 (画面 init で現ウィンドウへ再クランプ)
-            PointCloudViewState.setOverlayDetail(cfg.pcOverlayDetail); // ⑤④ 点群パネルのオーバーレイ詳細度
+            PointCloudViewState.setOverlayDetailRaw(cfg.pcOverlayDetail); // ⑤④/⑤⑤B 詳細度 (null=未設定→実効 詳細)
             PointCloudViewState.setCloudOnly(cfg.pcCloudOnly); // ⑤⑤ 点群ソロ表示 (cloud-only)
         } catch (Throwable t) {
             VisualizeGateMod.LOGGER.warn(
@@ -100,7 +100,7 @@ public final class GateConfigManager {
             cfg.pcOwDisplayScale = PointCloudViewState.getOwDisplayScale();
             cfg.pcNetherDisplayScale = PointCloudViewState.getNetherDisplayScale();
             cfg.pcSidebarW = PointCloudViewState.getSidebarWidth(); // ㉞ サイドバー幅
-            cfg.pcOverlayDetail = PointCloudViewState.isOverlayDetail(); // ⑤④ 点群パネルのオーバーレイ詳細度
+            cfg.pcOverlayDetail = PointCloudViewState.getOverlayDetailRaw(); // ⑤④/⑤⑤B 生値 (null=未設定→GSON 省略)
             cfg.pcCloudOnly = PointCloudViewState.isCloudOnly(); // ⑤⑤ 点群ソロ表示 (cloud-only)
             writeAtomic(file(), GSON.toJson(cfg));
         } catch (Throwable t) {
