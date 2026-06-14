@@ -498,6 +498,17 @@ public final class VgDockRenderer {
     private static final int DIM_TINT_OW = GateColors.PC_OW_HIGH;
     private static final int DIM_TINT_NETHER = GateColors.PC_NETHER_HIGH;
     private static final float DIM_TINT_FRAC = 0.15f;
+    // ㊺A プレイヤー中心の局所ズーム: マーカー周辺 ~PC_LOCAL_R ブロックがサムネに収まる距離 (全データ枠合わせをしない)。
+    private static final float PC_LOCAL_R = 60f;     // プレイヤー周辺の表示半径 (ブロック)
+    private static final float TAN_HALF_FOV = 0.70f; // tan(35°) ≒ render() の縦 fov 70° の半分
+    // ㊺A 現在地マーカー (金十字) の寸法比 (V-menu と同式・雲半径×比)。
+    private static final float GPU_MARKER_ARM_FRAC = 0.03f;
+    private static final float GPU_MARKER_W_FRAC = 0.0022f;
+    // ㊺B ゲート枠 (V-menu emitGateFrame と同式・雲半径×比)。
+    private static final float GPU_GATE_FRAME_HALF_H_FRAC = 0.022f;
+    private static final float GPU_GATE_FRAME_HALF_W_FRAC = 0.0176f;
+    private static final float GPU_GATE_BAR_W_FRAC = 0.0026f;
+    private static final float GPU_GATE_GRID_W_FRAC = 0.0014f;
     private float pcDistance = 200f;
     private boolean pcWasVisible = false;
     private final float[] pcEmpty = new float[0];
@@ -596,7 +607,12 @@ public final class VgDockRenderer {
         return true;
     }
 
-    /** Vメニュー (buildGpuGeometry) と同式: 両層を detail/scale/spacing/tint/pointSize で組み、 表示ゲートを状態色の点で。 */
+    /**
+     * Vメニュー (buildGpuGeometry) の品質設定を流用しつつ<b>プレイヤー中心の局所ビュー</b>に組む (㊺):
+     * 地形点 (両層)＋ゲート枠 (5状態色 wireframe・㊺B)＋現在地マーカー (金十字・㊺A) を、 全頂点から
+     * マーカー座標を引いて<b>プレイヤーを原点</b>に置き、 距離を局所ズームにする (㊺A)。 マーカーが無い次元では
+     * 従来どおり重心中心＋全データ枠合わせにフォールバック。
+     */
     private void pcUpload(PointCloudSnapshot snap) {
         float pivotY = PointCloudViewState.getDimensionSpacing() * 0.5f;
         boolean tint = PointCloudViewState.isDimTint();
@@ -605,57 +621,96 @@ public final class VgDockRenderer {
         float owScale = PointCloudViewState.getOwDisplayScale();
         float nScale = PointCloudViewState.getNetherDisplayScale();
         int detail = PointCloudViewState.getGpuDetail();
+
+        // ㊺A プレイヤー (現在地マーカー) を視点中心に: 全頂点からマーカー座標を引き、 局所ズームで周辺を見せる。
+        //     マーカーが無い (他次元等) ときは重心中心 (cx=cy=cz=0)＋全データ枠合わせにフォールバック。
+        float ms = owScale;
+        float cx = 0f;
+        float cy = 0f;
+        float cz = 0f;
+        if (snap.hasMarker) {
+            ms = snap.markerNether ? nScale : owScale;
+            cx = snap.markerX * ms;
+            cy = snap.markerNether ? snap.markerY - pivotY : snap.markerY + pivotY;
+            cz = snap.markerZ * ms;
+        }
+
+        // ── 地形点 (両層・⑤頂点色)。 ゲートは点でなく枠 (㊺B) で描く。 ──
         int owN = showOw ? snap.owX.length : 0;
         int nN = showN ? snap.nX.length : 0;
         int owStride = (owN > detail) ? (owN + detail - 1) / detail : 1;
         int nStride = (nN > detail) ? (nN + detail - 1) / detail : 1;
-        int gShown = 0;
-        for (int i = 0; i < snap.gateX.length; i++) {
-            boolean neth = snap.gateNether[i];
-            if ((neth ? showN : showOw) && !gateHidden(snap, i)) {
-                gShown++;
-            }
-        }
-        int total = (owN + owStride - 1) / owStride + (nN + nStride - 1) / nStride + gShown;
+        int total = (owN + owStride - 1) / owStride + (nN + nStride - 1) / nStride;
         float[] xyz = new float[total * 3];
         int[] col = new int[total];
         int k = 0;
         for (int i = 0; i < owN; i += owStride) {
-            xyz[k * 3] = snap.owX[i] * owScale;
-            xyz[k * 3 + 1] = snap.owY[i] + pivotY;
-            xyz[k * 3 + 2] = snap.owZ[i] * owScale;
+            xyz[k * 3] = snap.owX[i] * owScale - cx;
+            xyz[k * 3 + 1] = snap.owY[i] + pivotY - cy;
+            xyz[k * 3 + 2] = snap.owZ[i] * owScale - cz;
             col[k] = tint ? mix(snap.owColor[i], DIM_TINT_OW, DIM_TINT_FRAC) : snap.owColor[i];
             k++;
         }
         for (int i = 0; i < nN; i += nStride) {
-            xyz[k * 3] = snap.nX[i] * nScale;
-            xyz[k * 3 + 1] = snap.nY[i] - pivotY;
-            xyz[k * 3 + 2] = snap.nZ[i] * nScale;
+            xyz[k * 3] = snap.nX[i] * nScale - cx;
+            xyz[k * 3 + 1] = snap.nY[i] - pivotY - cy;
+            xyz[k * 3 + 2] = snap.nZ[i] * nScale - cz;
             col[k] = tint ? mix(snap.nColor[i], DIM_TINT_NETHER, DIM_TINT_FRAC) : snap.nColor[i];
             k++;
         }
-        int[] gateState = snap.gateMeta != null ? snap.gateMeta.gateState() : null;
-        for (int i = 0; i < snap.gateX.length; i++) {
-            boolean neth = snap.gateNether[i];
-            if (!(neth ? showN : showOw) || gateHidden(snap, i)) {
-                continue;
-            }
-            float gs = neth ? nScale : owScale;
-            xyz[k * 3] = snap.gateX[i] * gs;
-            xyz[k * 3 + 1] = snap.gateY[i] + (neth ? -pivotY : pivotY);
-            xyz[k * 3 + 2] = snap.gateZ[i] * gs;
-            int st = (gateState != null && i < gateState.length) ? gateState[i] : 0;
-            col[k] = GateColors.forStateOrdinal(st);
-            k++;
-        }
         // ㊶B 点サイズはサムネ寸法に縮小 (小ビューポートでは密で点が潰れる＝構造が見える細さに・最大 2px)。
-        //     SS FBO (㊶A) と相まって、 高密度 (gpuDetail) でも塊にならず構造が判別できる。
         int pointSize = Math.max(1, Math.min(2, PointCloudViewState.getPointSize()));
         PointCloudGpuRenderer.uploadPoints(xyz, col, k, pointSize);
-        PointCloudGpuRenderer.uploadOverlay(pcEmpty, pcEmptyI, 0); // 共有 overlay をクリア (画面のゲート枠を混ぜない)
-        // ㊶B 横長サムネに雲が埋まるよう Vメニューより気持ち寄せる (radius*1.8/spacing*1.3)。
-        pcDistance = Math.max(snap.radius * 1.8f,
-                Math.max(PointCloudViewState.getDimensionSpacing() * 1.3f, 30f));
+
+        // ── overlay: ゲート枠 (㊺B) ＋ 現在地マーカー (㊺A・原点)。 ──
+        int[] gateState = snap.gateMeta != null ? snap.gateMeta.gateState() : null;
+        int visGates = 0;
+        for (int i = 0; i < snap.gateX.length; i++) {
+            boolean neth = snap.gateNether[i];
+            if ((neth ? showN : showOw) && !gateHidden(snap, i)) {
+                visGates++;
+            }
+        }
+        float gateHalfH = Math.max(1.2f, snap.radius * GPU_GATE_FRAME_HALF_H_FRAC);
+        float gateHalfW = Math.max(0.9f, snap.radius * GPU_GATE_FRAME_HALF_W_FRAC);
+        float gateBarW = Math.max(0.08f, snap.radius * GPU_GATE_BAR_W_FRAC);
+        float gateGridW = Math.max(0.06f, snap.radius * GPU_GATE_GRID_W_FRAC);
+        int ov = visGates * 112 + (snap.hasMarker ? 48 : 0); // ゲート枠=112頂点 / 現在地十字=48頂点
+        if (ov > 0) {
+            float[] oxyz = new float[ov * 3];
+            int[] ocol = new int[ov];
+            int j = 0;
+            for (int i = 0; i < snap.gateX.length; i++) {
+                boolean neth = snap.gateNether[i];
+                if (!(neth ? showN : showOw) || gateHidden(snap, i)) {
+                    continue;
+                }
+                float gs = neth ? nScale : owScale;
+                float gx = snap.gateX[i] * gs - cx;
+                float gy = snap.gateY[i] + (neth ? -pivotY : pivotY) - cy;
+                float gz = snap.gateZ[i] * gs - cz;
+                int st = (gateState != null && i < gateState.length) ? gateState[i] : 0;
+                j = emitGateFrame(oxyz, ocol, j, gx, gy, gz,
+                        gateHalfW, gateHalfH, gateBarW, gateGridW, GateColors.forStateOrdinal(st));
+            }
+            if (snap.hasMarker) {
+                float markArm = Math.max(2f, snap.radius * GPU_MARKER_ARM_FRAC);
+                float markW = Math.max(0.1f, snap.radius * GPU_MARKER_W_FRAC);
+                int gold = 0xFF000000 | (GateColors.ACCENT & 0xFFFFFF);
+                j = emitCross(oxyz, ocol, j, 0f, 0f, 0f, markArm, markW, gold); // マーカー＝原点 (中心)
+            }
+            PointCloudGpuRenderer.uploadOverlay(oxyz, ocol, j);
+        } else {
+            PointCloudGpuRenderer.uploadOverlay(pcEmpty, pcEmptyI, 0);
+        }
+
+        // ㊺A 距離: マーカーありは局所ズーム (周辺 ~PC_LOCAL_R ブロックを縦に収める)、 無ければ従来の全データ枠合わせ。
+        if (snap.hasMarker) {
+            pcDistance = Math.max(PC_LOCAL_R * ms / TAN_HALF_FOV, 30f);
+        } else {
+            pcDistance = Math.max(snap.radius * 1.8f,
+                    Math.max(PointCloudViewState.getDimensionSpacing() * 1.3f, 30f));
+        }
     }
 
     /** ㉝C 非表示ゲート判定 (Vメニューの isGateHidden と同一・{@link PortalMemory#isHidden})。 */
@@ -678,6 +733,111 @@ public final class VgDockRenderer {
         int gg = Math.round(ag + (((b >> 8) & 0xFF) - ag) * t);
         int bl = Math.round(ab + ((b & 0xFF) - ab) * t);
         return (al << 24) | (r << 16) | (gg << 8) | bl;
+    }
+
+    // ── ㊺ 3D ワイヤージオメトリ emit (Vメニュー PointCloudScreen と同一ロジックを複製・画面は不変)。 ──
+    //    純 float[] 書込み (MC API 非依存)。 QUADS 経路 (quadPipeline) に載る展開済み頂点を書く。
+
+    /** ㊺B ゲート枠: 外枠 (emitPortalFrame・4 バー) ＋内側格子 (縦2・横1)＝計 7 バー×16=112 頂点。 */
+    private static int emitGateFrame(float[] xyz, int[] col, int v, float x, float y, float z,
+            float halfW, float halfH, float barW, float gridW, int c) {
+        v = emitPortalFrame(xyz, col, v, x, y, z, halfW, halfH, barW, c);
+        float vx = halfW * 0.34f;
+        v = emitBox(xyz, col, v, x - vx, y - halfH, z, x - vx, y + halfH, z, gridW, c);
+        v = emitBox(xyz, col, v, x + vx, y - halfH, z, x + vx, y + halfH, z, gridW, c);
+        v = emitBox(xyz, col, v, x - halfW, y, z, x + halfW, y, z, gridW, c);
+        return v;
+    }
+
+    /** ㊺B 黒曜石ポータル枠 (左右の柱2＋上下の桁2・各細角柱・4×16=64 頂点・X–Y 平面)。 */
+    private static int emitPortalFrame(float[] xyz, int[] col, int v, float x, float y, float z,
+            float halfW, float halfH, float barW, int c) {
+        float x0 = x - halfW;
+        float x1 = x + halfW;
+        float y0 = y - halfH;
+        float y1 = y + halfH;
+        v = emitBox(xyz, col, v, x0, y0, z, x0, y1, z, barW, c);
+        v = emitBox(xyz, col, v, x1, y0, z, x1, y1, z, barW, c);
+        v = emitBox(xyz, col, v, x0, y1, z, x1, y1, z, barW, c);
+        v = emitBox(xyz, col, v, x0, y0, z, x1, y0, z, barW, c);
+        return v;
+    }
+
+    /** ㊺A 現在地マーカー: 中心 (x,y,z) の 3D 太十字 (X/Y/Z 各 1 角柱=48 頂点)。 */
+    private static int emitCross(float[] xyz, int[] col, int v, float x, float y, float z,
+            float arm, float w, int c) {
+        v = emitBox(xyz, col, v, x - arm, y, z, x + arm, y, z, w, c);
+        v = emitBox(xyz, col, v, x, y - arm, z, x, y + arm, z, w, c);
+        v = emitBox(xyz, col, v, x, y, z - arm, x, y, z + arm, w, c);
+        return v;
+    }
+
+    /** 始点(a)→終点(b) の四角断面角柱 (半幅 w) の側面 4 枚=16 頂点。 退化時は無書込み。 */
+    private static int emitBox(float[] xyz, int[] col, int v, float ax, float ay, float az,
+            float bx, float by, float bz, float w, int c) {
+        float dx = bx - ax;
+        float dy = by - ay;
+        float dz = bz - az;
+        float len = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (len < 1e-4f) {
+            return v;
+        }
+        dx /= len;
+        dy /= len;
+        dz /= len;
+        float ux = 0f;
+        float uy = 1f;
+        float uz = 0f;
+        if (Math.abs(dy) > 0.9f) {
+            ux = 1f;
+            uy = 0f;
+            uz = 0f;
+        }
+        float s1x = dy * uz - dz * uy;
+        float s1y = dz * ux - dx * uz;
+        float s1z = dx * uy - dy * ux;
+        float s1l = (float) Math.sqrt(s1x * s1x + s1y * s1y + s1z * s1z);
+        s1x = s1x / s1l * w;
+        s1y = s1y / s1l * w;
+        s1z = s1z / s1l * w;
+        float s2x = dy * s1z - dz * s1y;
+        float s2y = dz * s1x - dx * s1z;
+        float s2z = dx * s1y - dy * s1x;
+        float s2l = (float) Math.sqrt(s2x * s2x + s2y * s2y + s2z * s2z);
+        s2x = s2x / s2l * w;
+        s2y = s2y / s2l * w;
+        s2z = s2z / s2l * w;
+        float a0x = ax - s1x - s2x, a0y = ay - s1y - s2y, a0z = az - s1z - s2z;
+        float a1x = ax + s1x - s2x, a1y = ay + s1y - s2y, a1z = az + s1z - s2z;
+        float a2x = ax + s1x + s2x, a2y = ay + s1y + s2y, a2z = az + s1z + s2z;
+        float a3x = ax - s1x + s2x, a3y = ay - s1y + s2y, a3z = az - s1z + s2z;
+        float b0x = bx - s1x - s2x, b0y = by - s1y - s2y, b0z = bz - s1z - s2z;
+        float b1x = bx + s1x - s2x, b1y = by + s1y - s2y, b1z = bz + s1z - s2z;
+        float b2x = bx + s1x + s2x, b2y = by + s1y + s2y, b2z = bz + s1z + s2z;
+        float b3x = bx - s1x + s2x, b3y = by - s1y + s2y, b3z = bz - s1z + s2z;
+        v = emitQuad(xyz, col, v, a0x, a0y, a0z, a1x, a1y, a1z, b1x, b1y, b1z, b0x, b0y, b0z, c);
+        v = emitQuad(xyz, col, v, a1x, a1y, a1z, a2x, a2y, a2z, b2x, b2y, b2z, b1x, b1y, b1z, c);
+        v = emitQuad(xyz, col, v, a2x, a2y, a2z, a3x, a3y, a3z, b3x, b3y, b3z, b2x, b2y, b2z, c);
+        v = emitQuad(xyz, col, v, a3x, a3y, a3z, a0x, a0y, a0z, b0x, b0y, b0z, b3x, b3y, b3z, c);
+        return v;
+    }
+
+    private static int emitQuad(float[] xyz, int[] col, int v,
+            float x0, float y0, float z0, float x1, float y1, float z1,
+            float x2, float y2, float z2, float x3, float y3, float z3, int c) {
+        v = putV(xyz, col, v, x0, y0, z0, c);
+        v = putV(xyz, col, v, x1, y1, z1, c);
+        v = putV(xyz, col, v, x2, y2, z2, c);
+        v = putV(xyz, col, v, x3, y3, z3, c);
+        return v;
+    }
+
+    private static int putV(float[] xyz, int[] col, int v, float x, float y, float z, int c) {
+        xyz[v * 3] = x;
+        xyz[v * 3 + 1] = y;
+        xyz[v * 3 + 2] = z;
+        col[v] = c;
+        return v + 1;
     }
     //?}
 
