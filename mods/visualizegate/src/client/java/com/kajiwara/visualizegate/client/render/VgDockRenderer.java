@@ -613,7 +613,12 @@ public final class VgDockRenderer {
             int rw = w * ss;
             int rh = h * ss;
             // ㊵C 向き＝プレイヤーの yaw (x,z) に追従 (アイドルスピンはしない)。
-            float yaw = (float) Math.toRadians(mc.player != null ? mc.player.getYRot(1.0f) : 0f);
+            // ⑤③ 追従方位に +π (180°)。 幾何は世界XZ非反転＋カメラは純 rotateY(+yaw)＝正面方向は yaw 非依存で
+            //     画面上の一点へピン留め (ヘディングアップ・回転方向は正)。 ただし位相が 180° ずれ「背面が手前」に
+            //     来ていた (鏡像ではない＝符号反転すると正面のピン留めが崩れ首振りになる)。 +π で正面を手前へ。
+            //     方位のみ補正＝幾何/÷8/表示スケール/重心/spacing/中心(cx,cy,cz)/マーカー座標は一切不変。
+            float yaw = (float) Math.toRadians(mc.player != null ? mc.player.getYRot(1.0f) : 0f)
+                    + (float) Math.PI;
             // ㊽A カメラ中心 = プレイヤー現在地 (毎フレーム追従)。 geometry は capture-player 基準 (3Hz)、 中心は
             //     marker + (現在地 − capture地) のビュー座標で毎フレーム動かす＝滑らかに寄る (滑らか追従)。
             float cx = 0f;
